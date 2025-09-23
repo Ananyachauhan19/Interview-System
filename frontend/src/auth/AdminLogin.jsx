@@ -35,7 +35,8 @@ export default function AdminLogin() {
           onChange={(e) => setPassword(e.target.value)}
           className="w-full border p-2 mb-4 rounded"
           required
-        />
+        /><h1 class="text-4xl text-red-500 font-bold">Hello Tailwind</h1>
+
 
         <button type="submit" className="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600">
           Login
