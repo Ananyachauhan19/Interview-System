@@ -6,25 +6,28 @@ export default function AdminLogin() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // Replace with backend API call
     if (username === "admin" && password === "admin123") {
-      alert("Admin login successful ✅");
+      alert("✅ Admin login successful");
     } else {
-      alert("Invalid admin credentials ❌");
+      alert("❌ Invalid admin credentials");
     }
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-100">
-      <form onSubmit={handleLogin} className="bg-white p-6 rounded-2xl shadow-md w-96">
-        <h2 className="text-2xl font-bold mb-4 text-center">Admin Login</h2>
-        
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-100 via-pink-100 to-purple-100 p-4">
+      <form
+        onSubmit={handleLogin}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-10 flex flex-col items-center"
+      >
+        <h2 className="text-3xl font-extrabold mb-2 text-center text-red-700 tracking-tight">Admin Portal</h2>
+        <p className="text-gray-500 text-center mb-8">Please login to manage the interview system</p>
+
         <input
           type="text"
           placeholder="Admin Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="w-full border p-2 mb-3 rounded"
+          className="w-full border border-gray-300 p-4 mb-4 rounded-xl focus:ring-2 focus:ring-red-400 focus:outline-none text-lg"
           required
         />
 
@@ -33,12 +36,14 @@ export default function AdminLogin() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border p-2 mb-4 rounded"
+          className="w-full border border-gray-300 p-4 mb-6 rounded-xl focus:ring-2 focus:ring-red-400 focus:outline-none text-lg"
           required
-        /><h1 class="text-4xl text-red-500 font-bold">Hello Tailwind</h1>
+        />
 
-
-        <button type="submit" className="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600">
+        <button
+          type="submit"
+          className="w-full bg-red-600 text-white p-4 rounded-xl font-bold shadow-lg hover:bg-red-700 transition text-lg"
+        >
           Login
         </button>
       </form>
