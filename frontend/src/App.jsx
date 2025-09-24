@@ -7,6 +7,7 @@ import AdminLogin from "./auth/AdminLogin";
 import StudentOnboarding from "./admin/StudentOnboarding";
 import EventManagement from "./admin/EventManagement";
 import AdminProtectedRoute from "./admin/AdminProtectedRoute";
+import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
 
 const gradientBg = "bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100";
 const cardStyle =
@@ -41,28 +42,34 @@ function MainCard() {
 function AppContent() {
   const location = useLocation();
   const isMain = location.pathname === "/";
+  const isStudent = location.pathname.startsWith("/student") && !isMain;
+  const isAdmin = location.pathname.startsWith("/admin") && location.pathname !== "/admin";
 
   return (
-    <div
-      className={`min-h-screen flex items-center justify-center ${gradientBg} p-6`}
-    >
-      {isMain ? (
-        <MainCard />
-      ) : (
-        <div className="w-full max-w-lg">
-          <Routes>
-            <Route path="/student" element={<StudentLogin />} />
-            <Route path="/admin" element={<AdminLogin />} />
-            <Route element={<AdminProtectedRoute />}>
-              <Route path="/admin/onboarding" element={<StudentOnboarding />} />
-              <Route path="/admin/event" element={<EventManagement />} />
-            </Route>
-            <Route path="/student/dashboard" element={<StudentDashboard />} />
-            <Route path="/student/pairing" element={<PairingAndScheduling />} />
-            <Route path="/student/session" element={<SessionAndFeedback />} />
-          </Routes>
-        </div>
-      )}
+    <div className={`min-h-screen flex flex-col ${gradientBg}`}> 
+      {/* Navbar */}
+      {isStudent && <StudentNavbar />}
+      {isAdmin && <AdminNavbar />}
+      <div className="flex-1 flex items-center justify-center p-6">
+        {isMain ? (
+          <MainCard />
+        ) : (
+          <div className="w-full max-w-lg">
+            <Routes>
+              <Route path="/student" element={<StudentLogin />} />
+              <Route path="/admin" element={<AdminLogin />} />
+              <Route element={<AdminProtectedRoute />}>
+                <Route path="/admin/onboarding" element={<StudentOnboarding />} />
+                <Route path="/admin/event" element={<EventManagement />} />
+              </Route>
+              <Route path="/student/dashboard" element={<StudentDashboard />} />
+              <Route path="/student/pairing" element={<PairingAndScheduling />} />
+              <Route path="/student/session" element={<SessionAndFeedback />} />
+            </Routes>
+          </div>
+        )}
+      </div>
+      <Footer />
     </div>
   );
 }
