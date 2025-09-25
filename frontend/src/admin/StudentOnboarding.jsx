@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { api } from "../utils/api";
 
 export default function StudentOnboarding() {
   const [csvFile, setCsvFile] = useState(null);
   const [students, setStudents] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [uploadResult, setUploadResult] = useState(null);
 
   // Parse CSV file and extract student data
   const handleFileChange = (e) => {
@@ -18,10 +20,13 @@ export default function StudentOnboarding() {
       const text = event.target.result;
       try {
         const rows = text.trim().split(/\r?\n/);
-        const parsed = rows.map((row, idx) => {
-          const [name, email, password] = row.split(",");
-          if (!name || !email || !password) throw new Error(`Invalid CSV format at line ${idx + 1}`);
-          return { name: name.trim(), email: email.trim(), password: password.trim() };
+        const header = rows.shift();
+        const cols = header.split(',').map((s) => s.trim().toLowerCase());
+        const parsed = rows.map((row) => {
+          const vals = row.split(',');
+          const obj = {};
+          cols.forEach((c, i) => (obj[c] = vals[i]?.trim() || ''));
+          return obj;
         });
         setStudents(parsed);
         setSuccess("CSV parsed successfully. Preview below.");
@@ -31,6 +36,19 @@ export default function StudentOnboarding() {
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleUpload = async () => {
+    if (!csvFile) return;
+    setError("");
+    setSuccess("");
+    try {
+      const res = await api.uploadStudentsCsv(csvFile);
+      setUploadResult(res);
+      setSuccess(`Uploaded ${res.count} records`);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
@@ -51,21 +69,25 @@ export default function StudentOnboarding() {
             <table className="min-w-full border border-gray-200 rounded-xl">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="py-3 px-6 border-b text-left">Name</th>
-                  <th className="py-3 px-6 border-b text-left">Email</th>
-                  <th className="py-3 px-6 border-b text-left">Password</th>
+                  {Object.keys(students[0]).map((k) => (
+                    <th key={k} className="py-3 px-6 border-b text-left">{k}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {students.map((student, idx) => (
                   <tr key={idx} className="text-left">
-                    <td className="py-2 px-6 border-b">{student.name}</td>
-                    <td className="py-2 px-6 border-b">{student.email}</td>
-                    <td className="py-2 px-6 border-b">{student.password}</td>
+                    {Object.keys(students[0]).map((k) => (
+                      <td key={k} className="py-2 px-6 border-b">{student[k]}</td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
+            <button onClick={handleUpload} className="mt-4 w-full bg-green-600 text-white p-3 rounded-xl font-bold hover:bg-green-700">Upload to Server</button>
+            {uploadResult && (
+              <div className="mt-2 text-sm text-gray-600">{uploadResult.count} processed.</div>
+            )}
           </div>
         )}
       </div>

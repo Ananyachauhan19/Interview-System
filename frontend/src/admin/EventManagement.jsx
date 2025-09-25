@@ -1,45 +1,46 @@
-import { useState } from "react";
-
-const emailTemplate = ({ title, description, date }) => `
-Subject: New Event - ${title}
-
-Dear Student,
-
-We are excited to announce a new event:
-
-Title: ${title}
-Date: ${date}
-Description: ${description}
-
-Please mark your calendar and stay tuned for more details!
-
-Best regards,
-Interview Management Team
-`;
+import { useEffect, useState } from "react";
+import { api } from "../utils/api";
 
 export default function EventManagement() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState("");
-  const [preview, setPreview] = useState("");
-  const [students, setStudents] = useState([]); // For demo, you can fill with sample emails
-  const [sent, setSent] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [template, setTemplate] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [msg, setMsg] = useState("");
 
-  // Demo: Load students from local onboarding preview
-  // In real app, fetch from backend
-  // useEffect(() => { setStudents([...]); }, []);
+  useEffect(() => {
+    api.listEvents().then(setEvents).catch(console.error);
+  }, []);
 
-  const handleCreateEvent = (e) => {
+  const handleCreateEvent = async (e) => {
     e.preventDefault();
-    if (!title || !description || !date) return;
-    setPreview(emailTemplate({ title, description, date }));
-    setSent(false);
+    try {
+      const ev = await api.createEvent({ name: title, description, startDate, endDate, template });
+      setEvents([ev, ...events]);
+      setMsg("Event created");
+    } catch (err) {
+      setMsg(err.message);
+    }
   };
 
-  const handleSendEmail = () => {
-    // Frontend only: Simulate sending email
-    setSent(true);
-    // In real app, call backend API to send email to all students
+  const handleExport = async (id) => {
+    try {
+      const csv = await api.exportParticipantsCsv(id);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `participants_${id}.csv`; a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) { setMsg(err.message); }
+  };
+
+  const handleGeneratePairs = async (id) => {
+    try {
+      const res = await api.generatePairs(id);
+      setMsg(`Generated ${res.count} pairs`);
+    } catch (err) { setMsg(err.message); }
   };
 
   return (
@@ -62,35 +63,50 @@ export default function EventManagement() {
             className="w-full border border-gray-300 p-4 mb-4 rounded-xl focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg"
             required
           />
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full border border-gray-300 p-4 mb-4 rounded-xl focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg"
-            required
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full border border-gray-300 p-4 rounded-xl focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg" />
+            <input type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full border border-gray-300 p-4 rounded-xl focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg" />
+          </div>
+          <input type="file" onChange={(e) => setTemplate(e.target.files?.[0] || null)} className="w-full border border-gray-300 p-3 mt-4 rounded-xl" />
           <button
             type="submit"
             className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition text-lg"
           >
-            Create Event & Preview Email
+            Create Event
           </button>
         </form>
-        {preview && (
-          <div className="mb-4">
-            <h3 className="font-semibold mb-2">Email Preview:</h3>
-            <pre className="bg-gray-100 p-4 rounded-xl text-sm whitespace-pre-wrap">{preview}</pre>
-            <button
-              onClick={handleSendEmail}
-              className="mt-2 w-full bg-green-600 text-white p-4 rounded-xl font-bold hover:bg-green-700 transition text-lg"
-            >
-              Send Email to All Students
-            </button>
-            {sent && (
-              <div className="text-green-600 mt-2 text-center">Email sent to all registered students (simulated).</div>
-            )}
-          </div>
-        )}
+        {msg && <div className="text-center text-sm text-gray-600 mb-4">{msg}</div>}
+        <h3 className="font-semibold mb-2">Existing Events</h3>
+        <ul className="divide-y divide-gray-200">
+          {events.map((e) => (
+            <li key={e._id} className="py-3 flex justify-between items-center">
+              <div>
+                <div className="font-bold text-blue-700">{e.name}</div>
+                <div className="text-sm text-gray-500">{new Date(e.startDate).toLocaleString()} → {new Date(e.endDate).toLocaleString()}</div>
+                {e.templateUrl && (
+                  <a href={e.templateUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">View template{e.templateName ? `: ${e.templateName}` : ''}</a>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => handleGeneratePairs(e._id)} className="bg-green-700 text-white px-3 py-2 rounded-xl text-sm">Generate Pairs</button>
+                <button onClick={() => handleExport(e._id)} className="bg-gray-800 text-white px-3 py-2 rounded-xl text-sm">Export CSV</button>
+                <label className="bg-white border px-3 py-2 rounded-xl text-sm cursor-pointer">
+                  <input type="file" className="hidden" onChange={async (ev) => {
+                    const file = ev.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const updated = await api.updateEventTemplate(e._id, file);
+                      setEvents((prev) => prev.map((x) => x._id === e._id ? updated : x));
+                      setMsg('Template updated');
+                    } catch (err) { setMsg(err.message); }
+                    ev.target.value = '';
+                  }} />
+                  Replace Template
+                </label>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

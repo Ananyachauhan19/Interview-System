@@ -1,15 +1,24 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { api, setToken } from "../utils/api";
 
 export default function AdminLogin() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (username === "admin" && password === "admin123") {
+    setError("");
+    try {
+      const res = await api.adminLogin(email, password);
+      setToken(res.token);
+      localStorage.setItem("isAdmin", "true");
       alert("✅ Admin login successful");
-    } else {
-      alert("❌ Invalid admin credentials");
+      navigate("/admin/event", { replace: true });
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -23,10 +32,10 @@ export default function AdminLogin() {
         <p className="text-gray-500 text-center mb-8">Please login to manage the interview system</p>
 
         <input
-          type="text"
-          placeholder="Admin Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          type="email"
+          placeholder="Admin Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="w-full border border-gray-300 p-4 mb-4 rounded-xl focus:ring-2 focus:ring-red-400 focus:outline-none text-lg"
           required
         />
@@ -46,6 +55,7 @@ export default function AdminLogin() {
         >
           Login
         </button>
+        {error && <div className="mt-3 text-red-600">{error}</div>}
       </form>
     </div>
   );
