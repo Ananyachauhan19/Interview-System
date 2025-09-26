@@ -13,6 +13,13 @@ export async function seedAdminIfNeeded() {
   console.log('Admin user seeded');
 }
 
+export function me(req, res) {
+  const u = req.user;
+  if (!u) return res.status(401).json({ error: 'Unauthorized' });
+  // Limit fields returned
+  res.json({ _id: u._id, email: u.email, name: u.name, role: u.role, studentId: u.studentId });
+}
+
 export async function loginAdmin(req, res) {
   const { email, password } = req.body;
   const admin = await User.findOne({ email, role: 'admin' });

@@ -2,59 +2,44 @@ import Event from '../models/Event.js';
 import Pair from '../models/Pair.js';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
+// meeting link is already hidden until 1 hour prior in listPairs
 
 export async function generatePairs(req, res) {
   const event = await Event.findById(req.params.id).populate('participants');
   if (!event) throw new HttpError(404, 'Event not found');
-  const students = event.participants.map((s) => s._id.toString());
-  if (students.length < 2) throw new HttpError(400, 'Not enough participants');
-
-  // Create a permutation p such that for each i, i interviews p[i], with no fixed points if possible
-  let indices = students.map((_, i) => i);
-  let perm = [...indices];
-  let attempts = 0;
-  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
-
-  // Try to find a derangement, else allow minimal fixed points and fix with cycle shifts
-  do {
-    perm = [...indices];
-    shuffle(perm);
-    attempts++;
-    if (attempts > 1000) break;
-  } while (perm.some((v, i) => v === i));
-
-  // If odd count, insert a bye by setting one mapping to itself and treat as 3-cycle later
-  const n = students.length;
-  const used = new Set();
-  const pairs = [];
-  for (let i = 0; i < n; i++) {
-    const interviewer = students[i];
-    const interviewee = students[perm[i]];
-    if (interviewer === interviewee) {
-      // self mapping due to odd or failure; skip, will handle later
-      continue;
-    }
-    if (used.has(`${interviewer}->${interviewee}`)) continue;
-    pairs.push([interviewer, interviewee]);
-    used.add(`${interviewer}->${interviewee}`);
-    used.add(`${interviewee}->${interviewer}`); // prevent reciprocal pairs
-  }
-
-  // Ensure each student appears at least once as interviewer and interviewee when possible
-  // If odd, one may get a bye; we won't force reciprocity.
-
-  // Persist pairs
+  const ids = event.participants.map((s) => s._id.toString());
+  if (ids.length < 2) throw new HttpError(400, 'Not enough participants');
+  // Rotation rule: i -> (i+1) % N
+  const pairs = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
+  // Persist pairs (replace any existing)
   await Pair.deleteMany({ event: event._id });
   const created = await Pair.insertMany(pairs.map(([a, b]) => ({ event: event._id, interviewer: a, interviewee: b })));
 
   // Notify students
   if (process.env.EMAIL_ON_PAIRING === 'true') {
     const byId = new Map(event.participants.map((s) => [s._id.toString(), s]));
+    const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
     for (const p of created) {
       const a = byId.get(p.interviewer.toString());
       const b = byId.get(p.interviewee.toString());
-      if (a?.email) await sendMail({ to: a.email, subject: `You interview ${b?.name || 'a peer'}`, text: renderTemplate('You are interviewing {interviewee}', { interviewee: b?.name || b?.email || 'a peer' }) });
-      if (b?.email) await sendMail({ to: b.email, subject: `You are interviewed by ${a?.name || 'a peer'}`, text: renderTemplate('You are being interviewed by {interviewer}', { interviewer: a?.name || a?.email || 'a peer' }) });
+      if (a?.email) {
+        const text = [
+          `Hi ${a.name || a.email},`,
+          `You are the interviewer for: ${b?.name || b?.email}.`,
+          b?.email ? `Their email: ${b.email}` : null,
+          `Propose time slots from your dashboard: ${fe}/`,
+        ].filter(Boolean).join('\n');
+        await sendMail({ to: a.email, subject: `Pairing info: You interview ${b?.name || b?.email || 'a peer'}`, text });
+      }
+      if (b?.email) {
+        const text = [
+          `Hi ${b.name || b.email},`,
+          `You will be interviewed by: ${a?.name || a?.email}.`,
+          a?.email ? `Their email: ${a.email}` : null,
+          `Review and accept slots from your dashboard: ${fe}/`,
+        ].filter(Boolean).join('\n');
+        await sendMail({ to: b.email, subject: `Pairing info: You are interviewed by ${a?.name || a?.email || 'a peer'}`, text });
+      }
     }
   }
 
@@ -62,6 +47,48 @@ export async function generatePairs(req, res) {
 }
 
 export async function listPairs(req, res) {
-  const pairs = await Pair.find({ event: req.params.id }).populate('interviewer interviewee');
-  res.json(pairs);
+  let query = { event: req.params.id };
+  // If not admin, restrict to pairs where user is interviewer or interviewee
+  if (req.user?.role !== 'admin') {
+    query = { event: req.params.id, $or: [ { interviewer: req.user._id }, { interviewee: req.user._id } ] };
+  }
+  const pairs = await Pair.find(query).populate('interviewer interviewee').lean();
+  const now = Date.now();
+  const oneHourMs = 60 * 60 * 1000;
+  const sanitized = pairs.map((p) => {
+    const copy = { ...p };
+    if (copy.meetingLink && copy.scheduledAt) {
+      const showAt = new Date(copy.scheduledAt).getTime() - oneHourMs;
+      if (now < showAt) {
+        // Hide meeting link until 1 hour before
+        delete copy.meetingLink;
+      }
+    }
+    // ensure status / rejection meta present
+    copy.status = copy.status || 'pending';
+    return copy;
+  });
+  res.json(sanitized);
+}
+
+export async function setMeetingLink(req, res) {
+  // Admin sets or updates meeting link; only allowed within 1 hour before start
+  if (req.user?.role !== 'admin') throw new HttpError(403, 'Admin only');
+  const { pairId } = req.params;
+  const { meetingLink } = req.body;
+  const pair = await Pair.findById(pairId).populate('interviewer interviewee');
+  if (!pair) throw new HttpError(404, 'Pair not found');
+  if (!pair.scheduledAt) throw new HttpError(400, 'Pair not scheduled yet');
+  const now = Date.now();
+  const showAt = new Date(pair.scheduledAt).getTime() - 60 * 60 * 1000;
+  if (now < showAt) throw new HttpError(400, 'Cannot set meeting link earlier than 1 hour before scheduled time');
+  pair.meetingLink = meetingLink;
+  await pair.save();
+  // Email both parties with generated link
+  const subject = 'Meeting link available';
+  const text = `Your interview at ${pair.scheduledAt.toISOString()} now has a meeting link: ${meetingLink}`;
+  for (const to of [pair.interviewer?.email, pair.interviewee?.email].filter(Boolean)) {
+    await sendMail({ to, subject, text });
+  }
+  res.json({ message: 'Link set', pairId: pair._id });
 }

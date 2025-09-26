@@ -48,13 +48,19 @@ export default function SessionAndFeedback() {
                 <span className="font-bold text-blue-700">{p.interviewer?.email} ➜ {p.interviewee?.email}</span> <br />
                 <span className="text-gray-500">Time: {new Date(p.scheduledAt).toLocaleString()}</span>
               </div>
-              {p.meetingLink && (
+              {p.meetingLink ? (
                 <div className="mt-2">
                   <span className="text-blue-600 font-semibold">Meeting Link: </span>
                   <a href={p.meetingLink} className="text-blue-600 underline font-semibold" target="_blank" rel="noopener noreferrer">
                     {p.meetingLink}
                   </a>
                 </div>
+              ) : (
+                p.scheduledAt && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    Meeting link will appear 1 hour before the scheduled time.
+                  </div>
+                )
               )}
               <button className="mt-2 text-sm text-purple-700" onClick={() => setActivePair(p)}>Fill Feedback</button>
             </li>

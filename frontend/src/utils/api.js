@@ -50,6 +50,16 @@ export const api = {
     if (template) fd.append('template', template);
     return request('/events', { method: 'POST', formData: fd });
   },
+  createSpecialEvent: ({ name, description, startDate, endDate, template, csv }) => {
+    const fd = new FormData();
+    fd.append('name', name);
+    fd.append('description', description);
+    if (startDate) fd.append('startDate', startDate);
+    if (endDate) fd.append('endDate', endDate);
+    if (template) fd.append('template', template);
+    if (csv) fd.append('csv', csv);
+    return request('/events/special', { method: 'POST', formData: fd });
+  },
   joinEvent: (eventId) => request(`/events/${eventId}/join`, { method: 'POST' }),
   exportParticipantsCsv: (eventId) => request(`/events/${eventId}/participants.csv`),
   updateEventTemplate: (eventId, file) => {
@@ -57,15 +67,20 @@ export const api = {
     fd.append('template', file);
     return request(`/events/${eventId}/template`, { method: 'POST', formData: fd });
   },
+  deleteEventTemplate: (eventId) => request(`/events/${eventId}/template`, { method: 'DELETE' }),
+  getEvent: (eventId) => request(`/events/${eventId}`),
+  getEventAnalytics: (eventId) => request(`/events/${eventId}/analytics`),
   getEventTemplateUrl: (eventId) => request(`/events/${eventId}/template-url`),
 
   // Pairing
   generatePairs: (eventId) => request(`/pairing/${eventId}/generate`, { method: 'POST' }),
   listPairs: (eventId) => request(`/pairing/${eventId}`),
+  setPairMeetingLink: (pairId, meetingLink) => request(`/pairing/pair/${pairId}/link`, { method: 'POST', body: { meetingLink } }),
 
   // Scheduling
   proposeSlots: (pairId, slots) => request(`/schedule/${pairId}/propose`, { method: 'POST', body: { slots } }),
   confirmSlot: (pairId, scheduledAt, meetingLink) => request(`/schedule/${pairId}/confirm`, { method: 'POST', body: { scheduledAt, meetingLink } }),
+  rejectSlots: (pairId) => request(`/schedule/${pairId}/reject`, { method: 'POST' }),
 
   // Feedback
   submitFeedback: (pairId, marks, comments) => request('/feedback/submit', { method: 'POST', body: { pairId, marks, comments } }),

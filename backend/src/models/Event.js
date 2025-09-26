@@ -8,6 +8,8 @@ const eventSchema = new mongoose.Schema({
   templateUrl: String,
   templateName: String,
   templateKey: String,
+  isSpecial: { type: Boolean, default: false },
+  allowedParticipants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // whitelist for special events
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 }, { timestamps: true });
 
