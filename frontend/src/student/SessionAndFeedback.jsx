@@ -27,8 +27,8 @@ export default function SessionAndFeedback() {
   // --
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-2xl w-full mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-10 w-full">
         <h2 className="text-3xl font-extrabold mb-4 text-blue-700 text-center tracking-tight">Session & Feedback</h2>
         {notification && (
           <div className="mb-6 text-green-600 font-bold text-center">{notification}</div>

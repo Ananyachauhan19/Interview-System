@@ -42,8 +42,8 @@ export default function EventManagement() {
   // Removed export/generate/replace controls per request
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-xl w-full mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-10 w-full">
         <h2 className="text-3xl font-extrabold mb-4 text-blue-700 text-center tracking-tight">Event Management</h2>
         <div className="flex justify-end mb-2">
           <button type="button" onClick={() => { setSpecialMode(!specialMode); setMsg(""); }} className={`text-xs px-3 py-1 rounded-full border ${specialMode ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-purple-700 border-purple-600'}`}>{specialMode ? 'Special Event Mode ON' : 'Normal Event Mode'}</button>
