@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api, setToken } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Book, Pen, Backpack, GraduationCap, Library, Notebook, Pencil, School, Scissors, Ruler, Brain, Globe, Code, Laptop, Calculator, Microscope, FlaskConical, Palette, Music, Headphones, Gamepad, Watch, Tablet, BookOpen, Highlighter, FileText, Clipboard, Award, Star, Lightbulb } from 'lucide-react';
 
-const FloatingIcon = ({ icon: Icon, delay, duration, startX, startY, endX, endY, size = 24, opacity = 0.65 }) => {
+// FloatingIcon uses Icon component prop (usage kept inside render)
+// eslint-disable-next-line no-unused-vars
+const FloatingIcon = ({ icon: IconComp, delay, duration, startX, startY, endX, endY, size = 24, opacity = 0.65 }) => {
   return (
     <div 
       className="absolute text-sky-500/40"
       style={{
-        animationName: `float-${delay}`,
-        animationDuration: `${duration}s`,
-        animationTimingFunction: 'ease-in-out',
-        animationIterationCount: 'infinite',
-        animationDelay: `${delay}s`,
+        animation: `float-${delay} ${duration}s ease-in-out infinite`,
         left: `${startX}%`,
         top: `${startY}%`,
         transform: 'translateZ(0)',
@@ -20,7 +18,7 @@ const FloatingIcon = ({ icon: Icon, delay, duration, startX, startY, endX, endY,
         zIndex: 1,
       }}
     >
-      <Icon size={size} className="drop-shadow-lg brightness-125" />
+  <IconComp size={size} className="drop-shadow-lg brightness-125" />
       <style jsx>{`
         @keyframes float-${delay} {
           0% {
@@ -70,10 +68,7 @@ const ParticleEffect = ({ count = 80 }) => {
             height: `${particle.size}px`,
             left: `${particle.left}%`,
             top: `${particle.top}%`,
-            animationName: 'particle-float',
-            animationDuration: `${particle.duration}s`,
-            animationTimingFunction: 'ease-in-out',
-            animationIterationCount: 'infinite',
+            animation: `particle-float ${particle.duration}s ease-in-out infinite`,
             animationDelay: `${particle.delay}s`,
             zIndex: 1,
           }}
@@ -88,10 +83,7 @@ const CircuitLine = ({ id, points, duration = 20, delay = 0 }) => {
     <svg
       className="absolute inset-0 w-full h-full pointer-events-none"
       style={{
-        animationName: `circuit-glow-${id}`,
-        animationDuration: `${duration}s`,
-        animationTimingFunction: 'linear',
-        animationIterationCount: 'infinite',
+        animation: `circuit-glow-${id} ${duration}s linear infinite`,
         animationDelay: `${delay}s`,
         zIndex: 1,
       }}
@@ -133,10 +125,7 @@ const AnimatedGrid = () => {
             top: 0,
             bottom: 0,
             width: '1px',
-            animationName: 'grid-pulse',
-            animationDuration: `${Math.random() * 3 + 2}s`,
-            animationTimingFunction: 'ease-in-out',
-            animationIterationCount: 'infinite',
+            animation: `grid-pulse ${Math.random() * 3 + 2}s ease-in-out infinite`,
             animationDelay: `${i * 0.1}s`,
           }}
         />
@@ -150,10 +139,7 @@ const AnimatedGrid = () => {
             left: 0,
             right: 0,
             height: '1px',
-            animationName: 'grid-pulse',
-            animationDuration: `${Math.random() * 3 + 2}s`,
-            animationTimingFunction: 'ease-in-out',
-            animationIterationCount: 'infinite',
+            animation: `grid-pulse ${Math.random() * 3 + 2}s ease-in-out infinite`,
             animationDelay: `${i * 0.1}s`,
           }}
         />
@@ -169,13 +155,11 @@ const ShieldCheck = ({ size = 16, className = "" }) => (
 );
 
 export default function StudentLoginPage() {
-  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [mustChange, setMustChange] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const floatingIcons = [
     { icon: Book, delay: 1, duration: 25, startX: 5, startY: 15, endX: 85, endY: 75, size: 36, opacity: 0.6 },
@@ -216,40 +200,8 @@ export default function StudentLoginPage() {
     { id: 3, points: "M0,60 Q200,30 400,80 T600,20 T800,60 T1000,30", duration: 35 },
   ];
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const res = await api.studentLogin(identifier, password);
-      setToken(res.token);
-      localStorage.setItem('isAdmin', 'false');
-      if (res.user.mustChangePassword) {
-        setMustChange(true);
-      } else {
-        alert('✅ Student login successful');
-        navigate('/student/dashboard', { replace: true });
-      }
-    } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
-    }
-  };
-
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      await api.changePassword(newPassword);
-      setMustChange(false);
-      alert('Password updated. Please login again.');
-      setToken('');
-      navigate('/student', { replace: true });
-    } catch (err) {
-      setError(err.message || 'Password update failed. Please try again.');
-    }
-  };
-
   return (
-    <div className="relative bg-transparent overflow-hidden h-screen lg:h-[95vh] w-screen lg:w-[95vw] flex items-center justify-center p-4 sm:p-6 lg:p-8 mx-auto">
+    <div className="relative bg-white overflow-hidden h-[80vh] w-[95vw] mx-auto flex items-center justify-center p-4 sm:p-6 lg:p-8">
       {/* Enhanced Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
         <AnimatedGrid />
@@ -263,12 +215,12 @@ export default function StudentLoginPage() {
       </div>
 
       {/* Main Content Container */}
-      <div className="relative z-10 w-full max-w-[1470px] mx-auto">
-        {/* Main Panels Grid - Only show right panel on mobile */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[68vh]">
+      <div className="relative z-10 w-full max-w-[1396px] mx-auto">
+        {/* Main Panels Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[65vh]">
           
-          {/* Left Panel - Image Section (Hidden on mobile) */}
-          <div className="hidden lg:flex items-center justify-center p-4 sm:p-6 lg:p-8 border border-sky-400/50 rounded-2xl lg:rounded-r-none lg:border-r-0 bg-transparent">
+          {/* Left Panel - Image Section (Hidden on Mobile) */}
+          <div className="hidden lg:flex items-center justify-center p-4 lg:p-8 border border-sky-400 rounded-2xl lg:rounded-r-none lg:border-r-0">
             <div className="relative w-full max-w-2xl flex items-center justify-center h-full">
               <div className="relative w-full h-full rounded-lg overflow-hidden bg-transparent">
                 <img 
@@ -283,161 +235,119 @@ export default function StudentLoginPage() {
             </div>
           </div>
 
-          {/* Right Panel - Login Form (Always visible) */}
-          <div className="flex items-center justify-center p-4 lg:p-8 border border-sky-400/50 rounded-2xl lg:rounded-l-none lg:border-l-0 bg-transparent backdrop-blur-sm">
+          {/* Right Panel - Login Form */}
+          <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8 border border-sky-400 rounded-2xl lg:rounded-l-none lg:border-l-0">
             <div className="relative w-full max-w-lg h-full flex items-center justify-center">
-              <div className="relative bg-white/30 rounded-lg p-6 lg:p-8 xl:p-12 w-full backdrop-blur-md">
-                {!mustChange ? (
-                  <>
-                    {/* Header Section */}
-                    <div className="relative text-center mb-6 lg:mb-8">
-                      <div className="inline-flex items-center justify-center w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-white/30 to-white/20 rounded-2xl mb-4 border border-white/40">
-                        <Book size={28} className="text-sky-600 drop-shadow-lg" />
-                      </div>
-                      <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-sky-800 mb-2 lg:mb-3 drop-shadow-lg">
-                        Student Portal
-                      </h1>
-                      <p className="text-sky-600/90 text-sm lg:text-base xl:text-lg font-medium">Access your learning platform</p>
-                      <div className="flex items-center justify-center space-x-4 lg:space-x-6 mt-3 lg:mt-4">
-                        <div className="flex items-center space-x-1 lg:space-x-2">
-                          <div className="w-2 h-2 lg:w-3 lg:h-3 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
-                          <span className="text-sky-600/80 text-xs lg:text-sm font-medium">System Online</span>
-                        </div>
-                        <div className="flex items-center space-x-1 lg:space-x-2">
-                          <div className="w-2 h-2 lg:w-3 lg:h-3 bg-sky-400 rounded-full shadow-lg"></div>
-                          <span className="text-sky-600/80 text-xs lg:text-sm font-medium">Secure</span>
-                        </div>
-                      </div>
+              <div className="relative bg-transparent rounded-lg p-6 sm:p-8 xl:p-12 w-full">
+                {/* Header Section */}
+                <div className="relative text-center mb-6 sm:mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-white/30 to-white/20 rounded-2xl mb-4 border border-white/40">
+                    <Book size={28} className="text-sky-600 drop-shadow-lg" />
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl xl:text-4xl font-bold text-sky-800 mb-2 sm:mb-3 drop-shadow-lg">
+                    Student Portal
+                  </h1>
+                  <p className="text-sky-600/90 text-sm sm:text-base font-medium">Access your learning platform</p>
+                  <div className="flex items-center justify-center space-x-4 sm:space-x-6 mt-3 sm:mt-4">
+                    <div className="flex items-center space-x-1 sm:space-x-2">
+                      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
+                      <span className="text-sky-600/80 text-xs sm:text-sm font-medium">System Online</span>
                     </div>
+                    <div className="flex items-center space-x-1 sm:space-x-2">
+                      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-sky-400 rounded-full shadow-lg"></div>
+                      <span className="text-sky-600/80 text-xs sm:text-sm font-medium">Secure</span>
+                    </div>
+                  </div>
+                </div>
 
-                    {/* Login Form Section */}
-                    <form onSubmit={handleLogin} className="relative space-y-4 lg:space-y-6">
-                      <div className="group">
-                        <label className="block text-xs lg:text-sm font-semibold text-sky-700/90 mb-2 uppercase tracking-wide">
-                          Email or Student ID
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 lg:pl-4 flex items-center pointer-events-none">
-                            <Mail size={18} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
-                          </div>
-                          <input
-                            type="text"
-                            value={identifier}
-                            onChange={(e) => setIdentifier(e.target.value)}
-                            className="w-full pl-10 lg:pl-12 pr-4 py-3 lg:py-4 bg-white/70 border border-sky-200/50 rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/80 text-sky-800 placeholder-sky-600/70 font-medium text-sm lg:text-base"
-                            placeholder="Enter your email or student ID"
-                            required
-                          />
-                        </div>
+                {/* Form Section */}
+                <div className="relative space-y-4 sm:space-y-6">
+                  <div className="group">
+                    <label className="block text-xs sm:text-sm font-semibold text-sky-700/90 mb-2 uppercase tracking-wide">
+                      Email or Student ID
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+                        <Mail size={18} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
                       </div>
-                      <div className="group">
-                        <label className="block text-xs lg:text-sm font-semibold text-sky-700/90 mb-2 uppercase tracking-wide">
-                          Password
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 lg:pl-4 flex items-center pointer-events-none">
-                            <Lock size={18} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
-                          </div>
-                          <input
-                            type={showPassword ? 'text' : 'password'}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full pl-10 lg:pl-12 pr-10 lg:pr-12 py-3 lg:py-4 bg-white/70 border border-sky-200/50 rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/80 text-sky-800 placeholder-sky-600/70 font-medium text-sm lg:text-base"
-                            placeholder="Enter your password"
-                            required
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute inset-y-0 right-0 pr-3 lg:pr-4 flex items-center text-sky-500 hover:text-sky-600 transition-colors duration-300"
-                          >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-xs lg:text-sm">
-                        <label className="flex items-center space-x-2">
-                          <div className="relative">
-                            <input 
-                              type="checkbox" 
-                              className="w-4 h-4 lg:w-5 lg:h-5 rounded-lg border-2 border-sky-400 text-sky-600 focus:ring-2 focus:ring-sky-300/50 transition-all duration-300 bg-white/70" 
-                            />
-                          </div>
-                          <span className="text-sky-700/90 font-medium">Remember this device</span>
-                        </label>
-                        <a href="#" className="font-semibold text-sky-600 hover:text-sky-700 transition-colors duration-300 hover:underline">
-                          Forgot password?
-                        </a>
-                      </div>
-                      <button
-                        type="submit"
-                        className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-3 lg:py-4 px-6 rounded-xl lg:rounded-2xl font-bold transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                        <span className="relative flex items-center justify-center text-sm lg:text-base">
-                          Sign In
-                          <svg className="ml-2 w-4 h-4 lg:w-5 lg:h-5 transform transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                        </span>
-                      </button>
-                      {error && <div className="mt-3 text-red-600 text-center text-sm lg:text-base">{error}</div>}
-                    </form>
-                  </>
-                ) : (
-                  <>
-                    {/* Change Password Form Section */}
-                    <div className="relative text-center mb-6 lg:mb-8">
-                      <div className="inline-flex items-center justify-center w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-white/30 to-white/20 rounded-2xl mb-4 border border-white/40">
-                        <Lock size={28} className="text-sky-600 drop-shadow-lg" />
-                      </div>
-                      <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-sky-800 mb-2 lg:mb-3 drop-shadow-lg">
-                        Change Password
-                      </h1>
-                      <p className="text-sky-600/90 text-sm lg:text-base xl:text-lg font-medium">Please set a new password to continue</p>
+                      <input
+                        type="text"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-white/40 border border-sky-200/50 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/50 text-sky-800 placeholder-sky-600/70 font-medium text-sm sm:text-base"
+                        placeholder="Enter email or student ID"
+                      />
                     </div>
-                    <form onSubmit={handleChangePassword} className="relative space-y-4 lg:space-y-6">
-                      <div className="group">
-                        <label className="block text-xs lg:text-sm font-semibold text-sky-700/90 mb-2 uppercase tracking-wide">
-                          New Password
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 lg:pl-4 flex items-center pointer-events-none">
-                            <Lock size={18} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
-                          </div>
-                          <input
-                            type={showPassword ? 'text' : 'password'}
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            className="w-full pl-10 lg:pl-12 pr-10 lg:pr-12 py-3 lg:py-4 bg-white/70 border border-sky-200/50 rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/80 text-sky-800 placeholder-sky-600/70 font-medium text-sm lg:text-base"
-                            placeholder="Enter your new password"
-                            required
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute inset-y-0 right-0 pr-3 lg:pr-4 flex items-center text-sky-500 hover:text-sky-600 transition-colors duration-300"
-                          >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                          </button>
-                        </div>
+                  </div>
+                  <div className="group">
+                    <label className="block text-xs sm:text-sm font-semibold text-sky-700/90 mb-2 uppercase tracking-wide">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+                        <Lock size={18} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
                       </div>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-4 bg-white/40 border border-sky-200/50 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/50 text-sky-800 placeholder-sky-600/70 font-medium text-sm sm:text-base"
+                        placeholder="Enter your password"
+                      />
                       <button
-                        type="submit"
-                        className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-3 lg:py-4 px-6 rounded-xl lg:rounded-2xl font-bold transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden"
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 sm:pr-4 flex items-center text-sky-500 hover:text-sky-600 transition-colors duration-300"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                        <span className="relative flex items-center justify-center text-sm lg:text-base">
-                          Update Password
-                          <svg className="ml-2 w-4 h-4 lg:w-5 lg:h-5 transform transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                        </span>
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
-                      {error && <div className="mt-3 text-red-600 text-center text-sm lg:text-base">{error}</div>}
-                    </form>
-                  </>
-                )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
+                    <label className="flex items-center space-x-2">
+                      <div className="relative">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 sm:w-5 sm:h-5 rounded-lg border-2 border-sky-400 text-sky-600 focus:ring-2 focus:ring-sky-300/50 transition-all duration-300 bg-white/40" 
+                        />
+                      </div>
+                      <span className="text-sky-700/90 font-medium">Remember this device</span>
+                    </label>
+                    <a href="#" className="font-semibold text-sky-600 hover:text-sky-700 transition-colors duration-300 hover:underline">
+                      Forgot password?
+                    </a>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setError('');
+                      try {
+                        const res = await api.login(email, password);
+                        setToken(res.token);
+                        const role = res.user?.role;
+                        if (role === 'admin') {
+                          localStorage.setItem('isAdmin', 'true');
+                          navigate('/admin/event', { replace: true });
+                        } else {
+                          localStorage.removeItem('isAdmin');
+                          navigate('/student/dashboard', { replace: true });
+                        }
+                      } catch (e) {
+                        setError(e.message || 'Login failed');
+                      }
+                    }}
+                    className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-3 sm:py-4 px-6 rounded-xl sm:rounded-2xl font-bold transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    <span className="relative flex items-center justify-center text-sm sm:text-base">
+                      Sign In
+                      <svg className="ml-2 w-4 h-4 sm:w-5 sm:h-5 transform transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </span>
+                  </button>
+                  {error && <div className="text-red-600 font-medium text-sm sm:text-base text-center">{error}</div>}
+                </div>
               </div>
               <div className="absolute -z-10 -top-4 -left-4 w-16 h-16 bg-sky-300/20 rounded-full blur-lg"></div>
               <div className="absolute -z-10 -bottom-4 -right-4 w-20 h-20 bg-sky-400/15 rounded-full blur-lg"></div>
@@ -468,33 +378,18 @@ export default function StudentLoginPage() {
 
         /* Mobile-specific optimizations */
         @media (max-width: 1024px) {
-          .grid-cols-1 {
-            grid-template-columns: 1fr;
+          .h-[80vh] {
+            height: 100vh;
           }
-        }
-
-        @media (max-width: 768px) {
-          .min-h-[68vh] {
-            min-height: 80vh;
+          .w-[95vw] {
+            width: 100vw;
+          }
+          .min-h-[65vh] {
+            min-height: 100vh;
           }
           input, button, a {
             font-size: 16px; /* Prevents zoom on iOS */
             -webkit-tap-highlight-color: transparent;
-          }
-          
-          /* Reduce animation intensity on mobile */
-          .absolute.overflow-hidden > div {
-            animation-duration: 1.5s !important;
-          }
-        }
-
-        /* Web-specific 5% reduction */
-        @media (min-width: 1024px) {
-          .lg\\:h-\\[95vh\\] {
-            height: 95vh;
-          }
-          .lg\\:w-\\[95vw\\] {
-            width: 95vw;
           }
         }
       `}</style>

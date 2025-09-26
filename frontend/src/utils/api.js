@@ -27,9 +27,8 @@ async function request(path, { method = 'GET', body, headers = {}, formData } = 
 }
 
 export const api = {
-  // Auth
-  adminLogin: (email, password) => request('/auth/admin/login', { method: 'POST', body: { email, password } }),
-  studentLogin: (identifier, password) => request('/auth/student/login', { method: 'POST', body: { identifier, password } }),
+  // Auth (unified)
+  login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password } }),
   changePassword: (newPassword) => request('/auth/password/change', { method: 'POST', body: { newPassword } }),
 
   // Students

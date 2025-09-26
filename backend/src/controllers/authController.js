@@ -20,21 +20,25 @@ export function me(req, res) {
   res.json({ _id: u._id, email: u.email, name: u.name, role: u.role, studentId: u.studentId });
 }
 
-export async function loginAdmin(req, res) {
-  const { email, password } = req.body;
-  const admin = await User.findOne({ email, role: 'admin' });
-  if (!admin) throw new HttpError(401, 'Invalid credentials');
-  const ok = await admin.verifyPassword(password);
-  if (!ok) throw new HttpError(401, 'Invalid credentials');
-  const token = signToken({ sub: admin._id, role: admin.role });
-  res.json({ token, user: { id: admin._id, email: admin.email, role: admin.role, name: admin.name } });
-}
+// Unified login: accepts either admin email or student email / studentId as 'identifier' (or legacy 'email')
+export async function login(req, res) {
+  const { identifier, email, password } = req.body;
+  const id = (identifier || email || '').trim();
+  if (!id || !password) throw new HttpError(400, 'Missing credentials');
 
-export async function loginStudent(req, res) {
-  const { identifier, password } = req.body; // email or studentId
+  // Try admin first (by email only)
+  const admin = await User.findOne({ role: 'admin', email: id });
+  if (admin) {
+    const ok = await admin.verifyPassword(password);
+    if (!ok) throw new HttpError(401, 'Invalid credentials');
+    const token = signToken({ sub: admin._id, role: admin.role });
+    return res.json({ token, user: { id: admin._id, email: admin.email, role: admin.role, name: admin.name } });
+  }
+
+  // Else attempt student by email OR studentId
   const student = await User.findOne({
     role: 'student',
-    $or: [{ email: identifier }, { studentId: identifier }],
+    $or: [{ email: id }, { studentId: id }],
   });
   if (!student) throw new HttpError(401, 'Invalid credentials');
   const ok = await student.verifyPassword(password);

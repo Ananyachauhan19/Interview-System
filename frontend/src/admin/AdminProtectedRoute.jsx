@@ -6,5 +6,5 @@ const isAdminAuthenticated = () => {
 };
 
 export default function AdminProtectedRoute() {
-  return isAdminAuthenticated() ? <Outlet /> : <Navigate to="/admin" replace />;
+  return isAdminAuthenticated() ? <Outlet /> : <Navigate to="/student" replace />;
 }
