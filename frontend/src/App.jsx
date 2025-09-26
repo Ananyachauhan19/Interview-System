@@ -10,7 +10,7 @@ import EventDetail from "./admin/EventDetail";
 import AdminProtectedRoute from "./admin/AdminProtectedRoute";
 import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
 
-const gradientBg = "bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100";
+const gradientBg = "bg-white"; // Set to solid white background
 const cardStyle = "bg-white rounded-2xl shadow-xl p-10 w-full max-w-3xl flex flex-col items-center";
 const titleStyle = "text-4xl font-extrabold text-gray-800 mb-6 tracking-tight text-center";
 const subtitleStyle = "text-lg text-gray-500 mb-8 text-center";
@@ -45,7 +45,7 @@ function AppContent() {
   const isLoginPage = isMain || isStudentLogin || isAdminLogin;
 
   return (
-    <div className={`min-h-screen flex flex-col ${isLoginPage ? "bg-white" : gradientBg} transform scale-90 origin-center`}>
+    <div className={`min-h-screen flex flex-col ${gradientBg}`}>
       {/* Navbar */}
       {(isStudentDashboard || isAdmin) && <StudentNavbar />}
       {isAdmin && <AdminNavbar />}
