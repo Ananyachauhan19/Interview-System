@@ -1,19 +1,25 @@
 import { Link, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpenCheck,
   Users2,
   CalendarDays,
   LogOut,
   Menu,
-  X
+  X,
+  GraduationCap
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function StudentNavbar() {
   const location = useLocation();
   const [active, setActive] = useState(location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("isStudent");
@@ -30,7 +36,7 @@ export function StudentNavbar() {
     { path: "/student/session", label: "Sessions", Icon: CalendarDays },
   ];
 
-  // Animation variants for mobile menu
+  // Animation variants
   const menuVariants = {
     closed: {
       x: "100%",
@@ -44,171 +50,188 @@ export function StudentNavbar() {
     }
   };
 
+  const itemHover = {
+    hover: { 
+      y: -2, 
+      scale: 1.02,
+      transition: { duration: 0.2, ease: "easeOut" }
+    },
+    tap: { scale: 0.98 }
+  };
+
   return (
     <motion.nav
-      initial={{ y: -30 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.36, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50"
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="fixed top-0 left-0 right-0 z-50 border-b border-blue-100/30"
       style={{
-        background: "linear-gradient(90deg, rgba(252,250,244,0.96) 0%, rgba(235,245,255,0.96) 100%)",
-        backdropFilter: "saturate(120%) blur(6px)",
-        boxShadow: "0 10px 30px rgba(14,42,80,0.06), inset 0 -1px 0 rgba(14,42,80,0.03)"
+        background: "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%)",
+        backdropFilter: "blur(12px) saturate(180%)",
+        boxShadow: "0 4px 20px rgba(14,42,80,0.08)"
       }}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-4">
-        {/* Left: Empty for mobile to allow centered text */}
-        <div className="md:flex items-center gap-4 hidden">
-          <div
-            className="w-16 h-16 rounded-3xl flex items-center justify-center shadow-lg"
-            style={{
-              background: "linear-gradient(135deg, rgba(56,189,248,1) 0%, rgba(59,130,246,1) 100%)",
-              boxShadow: "0 8px 20px rgba(59,130,246,0.16)"
-            }}
-          >
-            <span className="text-white text-3xl font-semibold font-mono">S</span>
+      <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6">
+        {/* Brand Logo and Title */}
+        <motion.div 
+          className="flex items-center gap-3"
+          whileHover={{ scale: 1.02 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <GraduationCap className="text-white w-5 h-5" />
+            </div>
+            <h1 className="text-slate-800 text-xl font-bold tracking-tight hidden sm:block">
+              Student Hub
+            </h1>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Center: Student Dashboard Text for Mobile */}
-        <div className="flex-1 flex justify-center items-center">
-          <h1 className="text-sky-900 text-lg md:text-3xl font-extrabold tracking-tight">
-            Student Dashboard
+        {/* Center: Mobile Title */}
+        <div className="flex-1 flex justify-center sm:hidden">
+          <h1 className="text-slate-800 text-lg font-bold tracking-tight flex items-center gap-2">
+            <GraduationCap className="text-purple-600 w-4 h-4" />
+            Student
           </h1>
         </div>
 
-        {/* Right: Desktop Nav + Mobile Menu Toggle */}
-        <div className="flex items-center">
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-4">
-            {navItems.map(({ path, label, Icon }) => {
-              const isActive = active === path || location.pathname === path;
-              return (
-                <Link
-                  key={path}
-                  to={path}
-                  onClick={() => setActive(path)}
-                  title={label}
-                  aria-label={label}
-                  aria-current={isActive ? "page" : undefined}
-                  className={`group flex items-center gap-3 px-5 py-3 rounded-2xl transition-all duration-300
-                    ${isActive ? "bg-sky-100/95 shadow-[0_6px_18px_rgba(14,42,80,0.06)]" : "hover:bg-sky-50/60"}
-                  `}
-                >
-                  <motion.div
-                    whileHover={{ y: -3, scale: 1.03 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ duration: 0.18 }}
-                    className="flex items-center gap-3"
-                  >
-                    <Icon
-                      size={22}
-                      className={`${isActive ? "text-sky-700" : "text-sky-600/90 group-hover:text-sky-700"}`}
-                    />
-                    <span className={`text-base md:text-lg font-semibold ${isActive ? "text-slate-900" : "text-slate-700 group-hover:text-slate-900"}`}>
-                      {label}
-                    </span>
-                  </motion.div>
-                </Link>
-              );
-            })}
-
-            {/* Desktop Logout Button */}
-            <button
-              onClick={handleLogout}
-              title="Logout"
-              aria-label="Logout"
-              className="group relative flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 hover:bg-rose-50/70"
-            >
-              <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.98 }} className="flex items-center justify-center w-full h-full">
-                <LogOut size={22} className="text-rose-600 group-hover:text-rose-700" />
-              </motion.div>
-            </button>
-          </div>
-
-          {/* Mobile Menu Toggle */}
-          <button
-            onClick={toggleMenu}
-            aria-label="Toggle Menu"
-            className="md:hidden flex items-center justify-center w-12 h-12 rounded-xl hover:bg-sky-50/70 transition-all duration-200"
-          >
-            {isMenuOpen ? (
-              <X size={26} className="text-sky-700" />
-            ) : (
-              <Menu size={26} className="text-sky-700" />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      <motion.div
-        initial="closed"
-        animate={isMenuOpen ? "open" : "closed"}
-        variants={menuVariants}
-        className="md:hidden fixed top-16 left-0 right-0 z-40"
-      >
-        {/* White Background Div Containing All Options */}
-        <div className="bg-white w-10/12 max-w-xs ml-auto rounded-l-2xl shadow-[0_10px_30px_rgba(14,42,80,0.1)] p-5 flex flex-col gap-3">
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-1">
           {navItems.map(({ path, label, Icon }) => {
             const isActive = active === path || location.pathname === path;
             return (
               <Link
                 key={path}
                 to={path}
-                onClick={() => {
-                  setActive(path);
-                  setIsMenuOpen(false); // Close menu on click
-                }}
-                title={label}
-                aria-label={label}
-                aria-current={isActive ? "page" : undefined}
-                className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300
-                  ${isActive ? "bg-sky-100 shadow-[0_4px_12px_rgba(14,42,80,0.06)]" : "hover:bg-sky-50"}
-                `}
+                onClick={() => setActive(path)}
+                className="relative"
               >
                 <motion.div
-                  whileHover={{ y: -2, scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ duration: 0.18 }}
-                  className="flex items-center gap-3"
+                  variants={itemHover}
+                  whileHover="hover"
+                  whileTap="tap"
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 mx-1 ${
+                    isActive 
+                      ? "bg-purple-50 text-purple-700 shadow-sm" 
+                      : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                  }`}
                 >
-                  <Icon
-                    size={22}
-                    className={`${isActive ? "text-sky-700" : "text-sky-600/90 group-hover:text-sky-700"}`}
-                  />
-                  <span className={`text-base font-semibold ${isActive ? "text-slate-900" : "text-slate-700 group-hover:text-slate-900"}`}>
-                    {label}
-                  </span>
+                  <Icon className="w-4 h-4" />
+                  <span className="font-medium text-sm">{label}</span>
+                  
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeIndicator"
+                      className="absolute inset-0 border-2 border-purple-200 rounded-xl"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
                 </motion.div>
               </Link>
             );
           })}
 
-          {/* Mobile Logout Button */}
-          <button
-            onClick={() => {
-              handleLogout();
-              setIsMenuOpen(false); // Close menu on logout
-            }}
-            title="Logout"
-            aria-label="Logout"
-            className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-rose-50"
+          {/* Desktop Logout Button */}
+          <motion.button
+            variants={itemHover}
+            whileHover="hover"
+            whileTap="tap"
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 ml-2 transition-all duration-200"
           >
-            <motion.div
-              whileHover={{ y: -2, scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ duration: 0.18 }}
-              className="flex items-center gap-3"
-            >
-              <LogOut size={22} className="text-rose-600 group-hover:text-rose-700" />
-              <span className="text-base font-semibold text-slate-700 group-hover:text-slate-900">
-                Logout
-              </span>
-            </motion.div>
-          </button>
+            <LogOut className="w-4 h-4" />
+            <span className="font-medium text-sm">Logout</span>
+          </motion.button>
         </div>
-      </motion.div>
+
+        {/* Mobile Menu Toggle */}
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={toggleMenu}
+          className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors duration-200"
+        >
+          {isMenuOpen ? (
+            <X className="text-slate-700 w-5 h-5" />
+          ) : (
+            <Menu className="text-slate-700 w-5 h-5" />
+          )}
+        </motion.button>
+      </div>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={toggleMenu}
+              className="md:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+            />
+            
+            {/* Menu Content */}
+            <motion.div
+              variants={menuVariants}
+              initial="closed"
+              animate="open"
+              exit="closed"
+              className="md:hidden fixed top-16 right-0 bottom-0 z-50 w-80 max-w-full"
+            >
+              <div className="bg-white h-full rounded-l-2xl shadow-2xl shadow-black/10 border-l border-slate-100 p-6 flex flex-col">
+                {/* Mobile Menu Header */}
+                <div className="flex items-center gap-3 pb-6 mb-4 border-b border-slate-100">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <GraduationCap className="text-white w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-slate-800 font-bold">Student Hub</h2>
+                    <p className="text-slate-500 text-sm">Welcome back!</p>
+                  </div>
+                </div>
+
+                {/* Mobile Menu Items */}
+                <div className="flex-1 space-y-2">
+                  {navItems.map(({ path, label, Icon }) => {
+                    const isActive = active === path || location.pathname === path;
+                    return (
+                      <Link
+                        key={path}
+                        to={path}
+                        onClick={() => setActive(path)}
+                        className={`block rounded-xl p-3 transition-all duration-200 ${
+                          isActive
+                            ? "bg-purple-50 text-purple-700 border border-purple-100"
+                            : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className="w-5 h-5" />
+                          <span className="font-medium">{label}</span>
+                          {isActive && (
+                            <div className="ml-auto w-2 h-2 bg-purple-500 rounded-full" />
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* Mobile Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className="mt-auto flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="font-medium">Logout</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </motion.nav>
   );
 }

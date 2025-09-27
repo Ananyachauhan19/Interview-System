@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../utils/api";
+import { Upload, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function StudentOnboarding() {
   const [csvFile, setCsvFile] = useState(null);
@@ -52,45 +54,145 @@ export default function StudentOnboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-10 w-full">
-        <h2 className="text-3xl font-extrabold mb-4 text-blue-700 text-center tracking-tight">Student Onboarding</h2>
-        <p className="mb-6 text-gray-500 text-center">Upload a CSV file with student credentials (name, email, password).</p>
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleFileChange}
-          className="mb-4 block w-full text-gray-700 border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-blue-400"
-        />
-        {error && <div className="text-red-500 mb-2 text-center">{error}</div>}
-        {success && <div className="text-green-600 mb-2 text-center">{success}</div>}
-        {students.length > 0 && (
-          <div className="overflow-x-auto mt-4">
-            <table className="min-w-full border border-gray-200 rounded-xl">
-              <thead>
-                <tr className="bg-gray-100">
-                  {Object.keys(students[0]).map((k) => (
-                    <th key={k} className="py-3 px-6 border-b text-left">{k}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((student, idx) => (
-                  <tr key={idx} className="text-left">
+    <div className="min-h-screen bg-gray-50 flex flex-col pt-16">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="flex-1 w-full mx-auto px-4 sm:px-6 md:px-8 py-6"
+      >
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8">
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-3xl font-bold text-gray-800 mb-4 text-center tracking-tight"
+          >
+            Student Onboarding
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-gray-600 mb-6 text-center text-base"
+          >
+            Upload a CSV file with student credentials (name, email, password).
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4 }}
+            className="mb-6"
+          >
+            <label className="flex items-center justify-center w-full p-4 bg-gray-50 rounded-xl border border-gray-200 hover:bg-gray-100 transition-all duration-200 cursor-pointer">
+              <Upload className="w-5 h-5 text-blue-500 mr-2" />
+              <span className="text-gray-700 font-medium">Choose CSV File</span>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </label>
+            {csvFile && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm text-gray-500 mt-2 text-center"
+              >
+                Selected: {csvFile.name}
+              </motion.p>
+            )}
+          </motion.div>
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="flex items-center justify-center text-red-600 mb-4 text-sm"
+              >
+                <AlertCircle className="w-5 h-5 mr-2" />
+                {error}
+              </motion.div>
+            )}
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="flex items-center justify-center text-green-600 mb-4 text-sm"
+              >
+                <CheckCircle className="w-5 h-5 mr-2" />
+                {success}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {students.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="overflow-x-auto mt-6"
+            >
+              <table className="min-w-full border border-gray-100 rounded-xl">
+                <thead>
+                  <tr className="bg-gray-50">
                     {Object.keys(students[0]).map((k) => (
-                      <td key={k} className="py-2 px-6 border-b">{student[k]}</td>
+                      <th
+                        key={k}
+                        className="py-3 px-6 border-b text-left text-sm font-semibold text-gray-800"
+                      >
+                        {k.charAt(0).toUpperCase() + k.slice(1)}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <button onClick={handleUpload} className="mt-4 w-full bg-green-600 text-white p-3 rounded-xl font-bold hover:bg-green-700">Upload to Server</button>
-            {uploadResult && (
-              <div className="mt-2 text-sm text-gray-600">{uploadResult.count} processed.</div>
-            )}
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody>
+                  {students.map((student, idx) => (
+                    <motion.tr
+                      key={idx}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 + idx * 0.1 }}
+                      className="text-left hover:bg-gray-50 transition-all duration-200"
+                    >
+                      {Object.keys(students[0]).map((k) => (
+                        <td
+                          key={k}
+                          className="py-3 px-6 border-b text-sm text-gray-700"
+                        >
+                          {student[k]}
+                        </td>
+                      ))}
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+              <motion.button
+                whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleUpload}
+                className="mt-6 w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-md"
+              >
+                Upload to Server
+              </motion.button>
+              <AnimatePresence>
+                {uploadResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="mt-4 text-sm text-gray-600 text-center"
+                  >
+                    {uploadResult.count} records processed.
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }
