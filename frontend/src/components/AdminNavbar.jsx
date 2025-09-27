@@ -22,10 +22,12 @@ export function AdminNavbar() {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  // Removed static "/admin/event/:id" link because it produced a literal ":id" segment
+  // and triggered API calls like /api/events/:id. Event detail access happens by selecting
+  // an event inside Event Management or within the EventDetail sidebar itself.
   const navItems = [
     { path: "/admin/onboarding", label: "Student Onboarding", Icon: Users },
     { path: "/admin/event", label: "Event Management", Icon: CalendarDays },
-    { path: "/admin/event/:id", label: "Event Details", Icon: BookOpen },
     { path: "/admin/feedback", label: "Feedback Review", Icon: GraduationCap },
   ];
 

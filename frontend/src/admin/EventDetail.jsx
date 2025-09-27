@@ -26,8 +26,15 @@ export default function EventDetail() {
       const [allEvents] = await Promise.all([api.listEvents()]);
       setEvents(allEvents);
 
-      // If no eventId provided or invalid, try to select the first event
+      // Determine requested event id
       let targetEventId = eventId || id;
+      const isValidObjectId = (val) => /^[0-9a-fA-F]{24}$/.test(val || '');
+      // Treat placeholder ":id" or any invalid value as missing
+      if (!targetEventId || targetEventId.startsWith(':') || !isValidObjectId(targetEventId)) {
+        targetEventId = '';
+      }
+
+      // Fallback to first event if invalid or absent
       if (!targetEventId && allEvents.length > 0) {
         targetEventId = allEvents[0]._id;
         setActiveEventId(targetEventId);
