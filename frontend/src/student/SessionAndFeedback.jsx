@@ -1,30 +1,41 @@
+
 import { useState, useEffect } from "react";
 import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, AlertCircle, Calendar, Link as LinkIcon, MessageSquare } from "lucide-react";
+import { CheckCircle, AlertCircle, Calendar, Link as LinkIcon, MessageSquare, X } from "lucide-react";
 
 export default function SessionAndFeedback() {
   const [events, setEvents] = useState([]);
-  const [eventId, setEventId] = useState("");
   const [pairs, setPairs] = useState([]);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [activePair, setActivePair] = useState(null);
   const [marks, setMarks] = useState("");
   const [comments, setComments] = useState("");
   const [notification, setNotification] = useState("");
-  const [myFeedback, setMyFeedback] = useState([]); // list of feedback user already submitted (pair ids)
+  const [myFeedback, setMyFeedback] = useState([]);
 
   useEffect(() => {
-    api.listEvents().then(setEvents).catch(console.error);
+    const loadData = async () => {
+      try {
+        const evs = await api.listEvents();
+        setEvents(evs);
+        const allPairs = [];
+        const feedbackPairs = [];
+        for (const ev of evs) {
+          const prs = await api.listPairs(ev._id);
+          allPairs.push(...prs.filter(p => p.scheduledAt).map(p => ({ ...p, event: ev })));
+          const feedback = await api.myFeedback(ev._id).catch(() => []);
+          feedbackPairs.push(...feedback.map(f => f.pair));
+        }
+        setPairs(allPairs);
+        setMyFeedback(feedbackPairs);
+      } catch (err) {
+        console.error(err);
+        setNotification("Failed to load sessions.");
+      }
+    };
+    loadData();
   }, []);
-
-  useEffect(() => {
-    if (eventId) {
-      api.listPairs(eventId).then(setPairs).catch(console.error);
-      api.myFeedback(eventId).then(list => setMyFeedback(list.map(f => f.pair))).catch(()=>{});
-    } else {
-      setPairs([]); setMyFeedback([]);
-    }
-  }, [eventId]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -32,6 +43,7 @@ export default function SessionAndFeedback() {
     try {
       await api.submitFeedback(activePair._id, Number(marks), comments);
       setNotification("Feedback submitted successfully");
+      setMyFeedback((prev) => [...prev, activePair._id]);
       setActivePair(null);
       setMarks("");
       setComments("");
@@ -42,184 +54,273 @@ export default function SessionAndFeedback() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col pt-16">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex-1 w-full mx-auto px-4 sm:px-6 md:px-8 py-6"
-      >
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8">
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-3xl font-bold text-gray-800 mb-4 text-center tracking-tight"
-          >
-            Session & Feedback
-          </motion.h2>
-          <AnimatePresence>
-            {notification && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className={`flex items-center justify-center text-sm text-center p-3 rounded-xl mb-6 ${
-                  notification.toLowerCase().includes("success")
-                    ? "bg-green-50 text-green-600 border border-green-100"
-                    : "bg-red-50 text-red-600 border border-red-100"
-                }`}
-              >
-                {notification.toLowerCase().includes("success") ? (
-                  <CheckCircle className="w-5 h-5 mr-2" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 mr-2" />
-                )}
-                {notification}
-              </motion.div>
-            )}
-          </AnimatePresence>
+      <div className="flex-1 w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] gap-6">
+          {/* Desktop Sidebar */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mb-6"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="hidden lg:block lg:w-80"
           >
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Select Event
-            </label>
-            <select
-              className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
-              value={eventId}
-              onChange={(e) => setEventId(e.target.value)}
-            >
-              <option value="">-- Choose Event --</option>
-              {events.map((e) => (
-                <option key={e._id} value={e._id}>
-                  {e.name}
-                </option>
-              ))}
-            </select>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Scheduled Sessions</h3>
-            {pairs.filter((p) => p.scheduledAt).length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-gray-600 text-sm text-center"
-              >
-                No scheduled sessions found.
-              </motion.div>
-            ) : (
-              <div className="space-y-4">
-                {pairs
-                  .filter((p) => p.scheduledAt)
-                  .map((p, idx) => (
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+              <h2 className="text-xl font-bold text-gray-800 mb-6">Scheduled Sessions</h2>
+              {pairs.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-gray-600 text-sm text-center py-8"
+                >
+                  No scheduled sessions found
+                </motion.div>
+              ) : (
+                <div className="space-y-4">
+                  {pairs.map((p, idx) => (
                     <motion.div
                       key={p._id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 + idx * 0.1 }}
-                      className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 hover:bg-gray-50 transition-all duration-200"
+                      transition={{ delay: 0.2 + idx * 0.1 }}
+                      className={`p-4 rounded-xl bg-white shadow-sm border border-gray-100 hover:bg-gray-50 transition-all duration-200 cursor-pointer ${
+                        activePair?._id === p._id ? "ring-2 ring-blue-500" : ""
+                      }`}
+                      onClick={() => setActivePair(p)}
                     >
-                      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-blue-500" />
-                            <span className="font-semibold text-gray-800">
-                              {p.interviewer?.email} ➜ {p.interviewee?.email}
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-5 h-5 text-blue-500" />
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800">
+                            {p.interviewer?.name || p.interviewer?.email} ➜ {p.interviewee?.name || p.interviewee?.email}
+                          </p>
+                          <p className="text-sm text-gray-600">{p.event.name}</p>
+                          <div className="flex gap-2 mt-2">
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                              {new Date(p.scheduledAt).toLocaleString()}
                             </span>
+                            {myFeedback.includes(p._id) && (
+                              <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                                Feedback Submitted
+                              </span>
+                            )}
                           </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            Time: {new Date(p.scheduledAt).toLocaleString()}
-                          </div>
-                          {p.meetingLink ? (
-                            <div className="mt-2 flex items-center gap-2">
-                              <LinkIcon className="w-4 h-4 text-blue-500" />
-                              <a
-                                href={p.meetingLink}
-                                className="text-blue-600 hover:text-blue-800 underline text-sm"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Join Meeting
-                              </a>
-                            </div>
-                          ) : (
-                            <div className="mt-2 text-sm text-gray-600">
-                              Meeting link will appear 1 hour before the scheduled time.
-                            </div>
-                          )}
                         </div>
-                        {!myFeedback.includes(p._id) && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setActivePair(p)}
-                          className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:from-purple-600 hover:to-indigo-600 transition-all duration-200 shadow-md"
-                        >
-                          <MessageSquare className="w-4 h-4 mr-2 inline" />
-                          Fill Feedback
-                        </motion.button>
-                        )}
                       </div>
                     </motion.div>
                   ))}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </motion.div>
-          {activePair && !myFeedback.includes(activePair._id) && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="mt-8 bg-gray-50 p-6 rounded-xl border border-gray-200"
+
+          {/* Mobile Sidebar Toggle */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="lg:hidden sticky top-16 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 py-4 px-4 flex items-center justify-between"
+          >
+            <h2 className="text-xl font-bold text-gray-800">Scheduled Sessions</h2>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+              className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200"
             >
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">Session Feedback</h3>
-              <form onSubmit={submit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">
-                    Marks out of 100
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={marks}
-                    onChange={(e) => setMarks(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
-                    required
-                  />
+              {isMobileSidebarOpen ? <X className="w-5 h-5 text-gray-600" /> : <Calendar className="w-5 h-5 text-blue-500" />}
+            </motion.button>
+          </motion.div>
+
+          {/* Mobile Sidebar Overlay */}
+          <AnimatePresence>
+            {isMobileSidebarOpen && (
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="lg:hidden fixed inset-0 top-28 z-30 bg-white p-6 overflow-y-auto"
+              >
+                <div className="space-y-4">
+                  {pairs.length === 0 ? (
+                    <div className="text-gray-600 text-sm text-center py-8">No scheduled sessions found</div>
+                  ) : (
+                    pairs.map((p) => (
+                      <motion.div
+                        key={p._id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+                        onClick={() => {
+                          setActivePair(p);
+                          setIsMobileSidebarOpen(false);
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Calendar className="w-5 h-5 text-blue-500" />
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-800">
+                              {p.interviewer?.name || p.interviewer?.email} ➜ {p.interviewee?.name || p.interviewee?.email}
+                            </p>
+                            <p className="text-sm text-gray-600">{p.event.name}</p>
+                            <div className="flex gap-2 mt-2">
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                                {new Date(p.scheduledAt).toLocaleString()}
+                              </span>
+                              {myFeedback.includes(p._id) && (
+                                <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                                  Feedback Submitted
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">
-                    Comments
-                  </label>
-                  <textarea
-                    value={comments}
-                    onChange={(e) => setComments(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
-                    rows="4"
-                    required
-                  />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Main Content */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="flex-1"
+          >
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8 lg:p-10 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+              {activePair ? (
+                <div className="space-y-6">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex items-center justify-between"
+                  >
+                    <h2 className="text-2xl lg:text-3xl font-bold text-gray-800">
+                      {activePair.interviewer?.name || activePair.interviewer?.email} ➜ {activePair.interviewee?.name || activePair.interviewee?.email}
+                    </h2>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setActivePair(null)}
+                      className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200 lg:hidden"
+                    >
+                      <X className="w-5 h-5 text-gray-600" />
+                    </motion.button>
+                  </motion.div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-blue-500" />
+                      <span className="text-sm text-gray-600">Time: {new Date(activePair.scheduledAt).toLocaleString()}</span>
+                    </div>
+                    {activePair.meetingLink ? (
+                      <div className="flex items-center gap-2">
+                        <LinkIcon className="w-5 h-5 text-blue-500" />
+                        <a
+                          href={activePair.meetingLink}
+                          className="text-blue-600 hover:text-blue-800 underline text-sm"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Join Meeting
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-600">Meeting link will appear 1 hour before the scheduled time.</div>
+                    )}
+                  </div>
+                  {myFeedback.includes(activePair._id) ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="p-4 bg-green-50 text-green-600 rounded-xl border border-green-100 text-sm font-medium flex items-center"
+                    >
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      Feedback already submitted for this session.
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="bg-gray-50 p-6 rounded-xl border border-gray-200"
+                    >
+                      <h3 className="text-xl font-semibold text-gray-800 mb-4">Session Feedback</h3>
+                      <form onSubmit={submit} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-800 mb-2">Marks out of 100</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={marks}
+                            onChange={(e) => setMarks(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-800 mb-2">Comments</label>
+                          <textarea
+                            value={comments}
+                            onChange={(e) => setComments(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
+                            rows="4"
+                            required
+                          />
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
+                          whileTap={{ scale: 0.95 }}
+                          type="submit"
+                          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 rounded-xl font-semibold text-sm hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-md"
+                        >
+                          Submit Feedback
+                        </motion.button>
+                      </form>
+                    </motion.div>
+                  )}
+                  <AnimatePresence>
+                    {notification && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className={`flex items-center text-sm p-4 rounded-xl mt-6 ${
+                          notification.toLowerCase().includes("success")
+                            ? "bg-green-50 text-green-600 border border-green-100"
+                            : "bg-red-50 text-red-600 border border-red-100"
+                        }`}
+                      >
+                        {notification.toLowerCase().includes("success") ? (
+                          <CheckCircle className="w-5 h-5 mr-2" />
+                        ) : (
+                          <AlertCircle className="w-5 h-5 mr-2" />
+                        )}
+                        {notification}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
-                  whileTap={{ scale: 0.95 }}
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 rounded-xl font-semibold text-sm hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-md"
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="flex flex-col items-center justify-center h-full text-center"
                 >
-                  Submit Feedback
-                </motion.button>
-              </form>
-            </motion.div>
-          )}
+                  <Calendar className="w-16 h-16 text-blue-500 mb-4" />
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">Select a Session</h3>
+                  <p className="text-gray-600">Choose a scheduled session from the sidebar to view details or submit feedback.</p>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

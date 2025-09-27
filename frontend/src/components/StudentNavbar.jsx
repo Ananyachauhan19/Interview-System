@@ -33,7 +33,7 @@ export function StudentNavbar() {
   const navItems = [
     { path: "/student/dashboard", label: "Dashboard", Icon: BookOpenCheck },
     { path: "/student/pairing", label: "Pairing", Icon: Users2 },
-    { path: "/student/session", label: "Sessions", Icon: CalendarDays },
+    { path: "/student/session", label: "Feedback", Icon: CalendarDays },
   ];
 
   // Animation variants
