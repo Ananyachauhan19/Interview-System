@@ -1,8 +1,9 @@
+
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../utils/api";
-import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, CheckCircle, AlertCircle, Calendar, ToggleRight, ToggleLeft } from "lucide-react";
+import { Upload, CheckCircle, AlertCircle, ToggleRight, ToggleLeft } from "lucide-react";
 
 export default function EventManagement() {
   const [title, setTitle] = useState("");
@@ -10,14 +11,10 @@ export default function EventManagement() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [template, setTemplate] = useState(null);
-  const [events, setEvents] = useState([]);
   const [msg, setMsg] = useState("");
   const [specialMode, setSpecialMode] = useState(false);
   const [csvFile, setCsvFile] = useState(null);
-
-  useEffect(() => {
-    api.listEvents().then(setEvents).catch(console.error);
-  }, []);
+  const navigate = useNavigate();
 
   const resetForm = () => {
     setTitle("");
@@ -35,10 +32,11 @@ export default function EventManagement() {
       if (specialMode) {
         const res = await api.createSpecialEvent({ name: title, description, startDate, endDate, template, csv: csvFile });
         setMsg(`Special event created (invited ${res.invited})`);
+        navigate(`/admin/event/${res._id}`);
       } else {
         ev = await api.createEvent({ name: title, description, startDate, endDate, template });
-        setEvents([ev, ...events]);
         setMsg("Event created successfully");
+        navigate(`/admin/event/${ev._id}`);
       }
       resetForm();
     } catch (err) {
@@ -52,14 +50,14 @@ export default function EventManagement() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex-1 w-full mx-auto px-4 sm:px-6 md:px-8 py-6"
+        className="flex-1 w-full max-w-full mx-auto px-4 sm:px-6 md:px-8 py-6"
       >
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8">
           <motion.h2
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-3xl font-bold text-gray-800 mb-4 text-center tracking-tight"
+            className="text-2xl lg:text-3xl font-bold text-gray-800 mb-4 text-center tracking-tight"
           >
             Event Management
           </motion.h2>
@@ -113,12 +111,14 @@ export default function EventManagement() {
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-700"
+                  required
                 />
                 <input
                   type="datetime-local"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-700"
+                  required
                 />
               </div>
               <label className="flex items-center justify-center w-full p-4 bg-gray-50 rounded-xl border border-gray-200 hover:bg-gray-100 transition-all duration-200 cursor-pointer">
@@ -208,67 +208,6 @@ export default function EventManagement() {
               </motion.div>
             )}
           </AnimatePresence>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Existing Events</h3>
-            {events.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-gray-500 text-sm text-center"
-              >
-                No events found
-              </motion.div>
-            ) : (
-              <div className="space-y-4">
-                {events.map((e, idx) => (
-                  <motion.div
-                    key={e._id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 + idx * 0.1 }}
-                    className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 hover:bg-gray-50 transition-all duration-200"
-                  >
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-blue-500" />
-                          <span className="font-semibold text-gray-800">{e.name}</span>
-                          {e.isSpecial && (
-                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                              Special
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {new Date(e.startDate).toLocaleString()} → {new Date(e.endDate).toLocaleString()}
-                        </div>
-                        {e.templateUrl && (
-                          <a
-                            href={e.templateUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:text-blue-800 underline"
-                          >
-                            View template{e.templateName ? `: ${e.templateName}` : ''}
-                          </a>
-                        )}
-                      </div>
-                      <Link
-                        to={`/admin/event/${e._id}`}
-                        className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-md"
-                      >
-                        Details
-                      </Link>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </motion.div>
         </div>
       </motion.div>
     </div>

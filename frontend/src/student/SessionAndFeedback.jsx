@@ -2,18 +2,19 @@
 import { useState, useEffect } from "react";
 import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, AlertCircle, Calendar, Link as LinkIcon, MessageSquare, X } from "lucide-react";
+import { CheckCircle, AlertCircle, Calendar, Link as LinkIcon, MessageSquare, X, Search } from "lucide-react";
 
 export default function SessionAndFeedback() {
   const [events, setEvents] = useState([]);
   const [pairs, setPairs] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [activePair, setActivePair] = useState(null);
   const [marks, setMarks] = useState("");
   const [comments, setComments] = useState("");
   const [notification, setNotification] = useState("");
-  const [myFeedback, setMyFeedback] = useState([]); // pairIds where I (as interviewer) submitted feedback
-  const [receivedFeedback, setReceivedFeedback] = useState({}); // map pairId -> feedback (about me as interviewee)
+  const [myFeedback, setMyFeedback] = useState([]);
+  const [receivedFeedback, setReceivedFeedback] = useState({});
 
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
 
@@ -23,14 +24,13 @@ export default function SessionAndFeedback() {
         const evs = await api.listEvents();
         setEvents(evs);
         const allPairs = [];
-        const feedbackPairs = []; // my submitted feedback (as interviewer)
-        const receivedMap = {}; // feedback about me
+        const feedbackPairs = [];
+        const receivedMap = {};
         for (const ev of evs) {
           const prs = await api.listPairs(ev._id);
           allPairs.push(...prs.filter(p => p.scheduledAt).map(p => ({ ...p, event: ev })));
           const feedback = await api.myFeedback(ev._id).catch(() => []);
           feedbackPairs.push(...feedback.map(f => f.pair));
-          // fetch feedback about me for this event
           const aboutMe = await api.feedbackForMe(ev._id).catch(() => []);
           aboutMe.forEach(f => { if (f.pair) receivedMap[f.pair] = f; });
         }
@@ -44,6 +44,12 @@ export default function SessionAndFeedback() {
     };
     loadData();
   }, []);
+
+  const filteredPairs = pairs.filter(p =>
+    p.event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.interviewer?.name || p.interviewer?.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.interviewee?.name || p.interviewee?.email || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const submit = async (e) => {
     e.preventDefault();
@@ -72,18 +78,40 @@ export default function SessionAndFeedback() {
             className="hidden lg:block lg:w-80"
           >
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-              <h2 className="text-xl font-bold text-gray-800 mb-6">Scheduled Sessions</h2>
-              {pairs.length === 0 ? (
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Scheduled Sessions</h2>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by event or name..."
+                  className="w-full bg-gray-50 border border-gray-200 pl-10 pr-10 py-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700 text-sm"
+                />
+                {searchQuery && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </motion.button>
+                )}
+              </div>
+              {filteredPairs.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="text-gray-600 text-sm text-center py-8"
                 >
-                  No scheduled sessions found
+                  No sessions found
                 </motion.div>
               ) : (
                 <div className="space-y-4">
-                  {pairs.map((p, idx) => (
+                  {filteredPairs.map((p, idx) => (
                     <motion.div
                       key={p._id}
                       initial={{ opacity: 0, y: 10 }}
@@ -94,14 +122,14 @@ export default function SessionAndFeedback() {
                       }`}
                       onClick={() => setActivePair(p)}
                     >
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-blue-500" />
+                      <div className="flex items-start gap-3">
+                        <Calendar className="w-5 h-5 text-blue-500 mt-1" />
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-800">
+                          <p className="font-bold text-gray-800 bg-blue-50 px-2 py-1 rounded-md">{p.event.name}</p>
+                          <p className="text-sm text-gray-600 mt-1">
                             {p.interviewer?.name || p.interviewer?.email} ➜ {p.interviewee?.name || p.interviewee?.email}
                           </p>
-                          <p className="text-sm text-gray-600">{p.event.name}</p>
-                          <div className="flex gap-2 mt-2">
+                          <div className="flex gap-2 mt-2 flex-wrap">
                             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                               {new Date(p.scheduledAt).toLocaleString()}
                             </span>
@@ -154,10 +182,32 @@ export default function SessionAndFeedback() {
                 className="lg:hidden fixed inset-0 top-28 z-30 bg-white p-6 overflow-y-auto"
               >
                 <div className="space-y-4">
-                  {pairs.length === 0 ? (
-                    <div className="text-gray-600 text-sm text-center py-8">No scheduled sessions found</div>
+                  <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by event or name..."
+                      className="w-full bg-gray-50 border border-gray-200 pl-10 pr-10 py-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700 text-sm"
+                    />
+                    {searchQuery && (
+                      <motion.button
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </motion.button>
+                    )}
+                  </div>
+                  {filteredPairs.length === 0 ? (
+                    <div className="text-gray-600 text-sm text-center py-8">No sessions found</div>
                   ) : (
-                    pairs.map((p) => (
+                    filteredPairs.map((p) => (
                       <motion.div
                         key={p._id}
                         initial={{ opacity: 0, y: 10 }}
@@ -169,14 +219,14 @@ export default function SessionAndFeedback() {
                           setIsMobileSidebarOpen(false);
                         }}
                       >
-                        <div className="flex items-center gap-3">
-                          <Calendar className="w-5 h-5 text-blue-500" />
+                        <div className="flex items-start gap-3">
+                          <Calendar className="w-5 h-5 text-blue-500 mt-1" />
                           <div className="flex-1">
-                            <p className="font-semibold text-gray-800">
+                            <p className="font-bold text-gray-800 bg-blue-50 px-2 py-1 rounded-md">{p.event.name}</p>
+                            <p className="text-sm text-gray-600 mt-1">
                               {p.interviewer?.name || p.interviewer?.email} ➜ {p.interviewee?.name || p.interviewee?.email}
                             </p>
-                            <p className="text-sm text-gray-600">{p.event.name}</p>
-                            <div className="flex gap-2 mt-2">
+                            <div className="flex gap-2 mt-2 flex-wrap">
                               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                                 {new Date(p.scheduledAt).toLocaleString()}
                               </span>
@@ -259,7 +309,11 @@ export default function SessionAndFeedback() {
                     const isInterviewee = userId && intervieweeId === userId;
                     if (isSubmitted) {
                       return (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-green-50 text-green-600 rounded-xl border border-green-100 text-sm font-medium flex items-center">
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="p-4 bg-green-50 text-green-600 rounded-xl border border-green-100 text-sm font-medium flex items-center"
+                        >
                           <CheckCircle className="w-5 h-5 mr-2" />
                           Feedback already submitted for this session.
                         </motion.div>
@@ -268,7 +322,12 @@ export default function SessionAndFeedback() {
                     if (isInterviewee) {
                       if (received) {
                         return (
-                          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-purple-50 p-6 rounded-xl border border-purple-200">
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="bg-purple-50 p-6 rounded-xl border border-purple-200"
+                          >
                             <h3 className="text-xl font-semibold text-purple-800 mb-2">Feedback Received</h3>
                             <p className="text-sm text-purple-700 mb-1"><strong>From:</strong> {received.from}</p>
                             <p className="text-sm text-purple-700 mb-1"><strong>Marks:</strong> {received.marks}</p>
@@ -277,34 +336,66 @@ export default function SessionAndFeedback() {
                         );
                       }
                       return (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-4 bg-gray-50 text-gray-600 rounded-xl border border-gray-200 text-sm">
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                          className="p-4 bg-gray-50 text-gray-600 rounded-xl border border-gray-200 text-sm"
+                        >
                           Waiting for interviewer feedback.
                         </motion.div>
                       );
                     }
                     if (isInterviewer) {
                       return (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 }}
+                          className="bg-gray-50 p-6 rounded-xl border border-gray-200"
+                        >
                           <h3 className="text-xl font-semibold text-gray-800 mb-4">Session Feedback</h3>
                           <form onSubmit={submit} className="space-y-4">
                             <div>
                               <label className="block text-sm font-semibold text-gray-800 mb-2">Marks out of 100</label>
-                              <input type="number" min="0" max="100" value={marks} onChange={(e) => setMarks(e.target.value)} className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700" required />
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={marks}
+                                onChange={(e) => setMarks(e.target.value)}
+                                className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
+                                required
+                              />
                             </div>
                             <div>
                               <label className="block text-sm font-semibold text-gray-800 mb-2">Comments</label>
-                              <textarea value={comments} onChange={(e) => setComments(e.target.value)} className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700" rows="4" required />
+                              <textarea
+                                value={comments}
+                                onChange={(e) => setComments(e.target.value)}
+                                className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
+                                rows="4"
+                                required
+                              />
                             </div>
-                            <motion.button whileHover={{ scale: 1.05, boxShadow: '0 10px 20px -5px rgba(59, 130, 246, 0.3)' }} whileTap={{ scale: 0.95 }} type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 rounded-xl font-semibold text-sm hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-md">
+                            <motion.button
+                              whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
+                              whileTap={{ scale: 0.95 }}
+                              type="submit"
+                              className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 rounded-xl font-semibold text-sm hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-md"
+                            >
                               Submit Feedback
                             </motion.button>
                           </form>
                         </motion.div>
                       );
                     }
-                    // Fallback (should rarely happen): user neither interviewer nor interviewee
                     return (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-gray-50 text-gray-600 rounded-xl border border-gray-200 text-sm">
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="p-4 bg-gray-50 text-gray-600 rounded-xl border border-gray-200 text-sm"
+                      >
                         You are not a participant in this session.
                       </motion.div>
                     );

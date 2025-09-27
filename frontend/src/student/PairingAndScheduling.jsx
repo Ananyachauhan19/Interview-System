@@ -155,13 +155,13 @@ export default function PairingAndScheduling() {
                       }`}
                       onClick={() => setSelectedPair(p)}
                     >
-                      <div className="flex items-center gap-3">
-                        <Users className="w-5 h-5 text-blue-500" />
+                      <div className="flex items-start gap-3">
+                        <Users className="w-5 h-5 text-blue-500 mt-1" />
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-800">
+                          <p className="font-bold text-gray-800 bg-blue-50 px-2 py-1 rounded-md">{p.event.name}</p>
+                          <p className="text-sm text-gray-600 mt-1">
                             {p.interviewer?.name || p.interviewer?.email} ➜ {p.interviewee?.name || p.interviewee?.email}
                           </p>
-                          <p className="text-sm text-gray-600">{p.event.name}</p>
                           <div className="flex gap-2 mt-2">
                             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                               Status: {p.status || "Pending"}
@@ -225,13 +225,13 @@ export default function PairingAndScheduling() {
                           setIsMobileSidebarOpen(false);
                         }}
                       >
-                        <div className="flex items-center gap-3">
-                          <Users className="w-5 h-5 text-blue-500" />
+                        <div className="flex items-start gap-3">
+                          <Users className="w-5 h-5 text-blue-500 mt-1" />
                           <div className="flex-1">
-                            <p className="font-semibold text-gray-800">
+                            <p className="font-bold text-gray-800 bg-blue-50 px-2 py-1 rounded-md">{p.event.name}</p>
+                            <p className="text-sm text-gray-600 mt-1">
                               {p.interviewer?.name || p.interviewer?.email} ➜ {p.interviewee?.name || p.interviewee?.email}
                             </p>
-                            <p className="text-sm text-gray-600">{p.event.name}</p>
                             <div className="flex gap-2 mt-2">
                               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                                 Status: {p.status || "Pending"}

@@ -1,14 +1,7 @@
+
 import { Link, useLocation } from "react-router-dom";
-// eslint-disable-next-line
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  LogOut,
-  Menu,
-  X,
-  Users,
-  CalendarDays,
-  GraduationCap
-} from "lucide-react";
+import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export function AdminNavbar() {
@@ -16,7 +9,6 @@ export function AdminNavbar() {
   const [active, setActive] = useState(location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Close mobile menu when route changes
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
@@ -33,29 +25,17 @@ export function AdminNavbar() {
   const navItems = [
     { path: "/admin/onboarding", label: "Student Onboarding", Icon: Users },
     { path: "/admin/event", label: "Event Management", Icon: CalendarDays },
+    { path: "/admin/event/:id", label: "Event Details", Icon: BookOpen },
     { path: "/admin/feedback", label: "Feedback Review", Icon: GraduationCap },
   ];
 
-  // Animation variants
   const menuVariants = {
-    closed: {
-      x: "100%",
-      opacity: 0,
-      transition: { duration: 0.3, ease: "easeInOut" }
-    },
-    open: {
-      x: 0,
-      opacity: 1,
-      transition: { duration: 0.3, ease: "easeInOut" }
-    }
+    closed: { x: "100%", opacity: 0, transition: { duration: 0.3, ease: "easeInOut" } },
+    open: { x: 0, opacity: 1, transition: { duration: 0.3, ease: "easeInOut" } }
   };
 
   const itemHover = {
-    hover: { 
-      y: -2, 
-      scale: 1.02,
-      transition: { duration: 0.2, ease: "easeOut" }
-    },
+    hover: { y: -2, scale: 1.02, transition: { duration: 0.2, ease: "easeOut" } },
     tap: { scale: 0.98 }
   };
 
@@ -72,7 +52,6 @@ export function AdminNavbar() {
       }}
     >
       <div className="max-w-full mx-auto flex items-center justify-between h-16 px-4 sm:px-6">
-        {/* Brand Logo and Title */}
         <motion.div 
           className="flex items-center gap-3"
           whileHover={{ scale: 1.02 }}
@@ -88,7 +67,6 @@ export function AdminNavbar() {
           </div>
         </motion.div>
 
-        {/* Center: Mobile Title */}
         <div className="flex-1 flex justify-center sm:hidden">
           <h1 className="text-slate-800 text-lg font-bold tracking-tight flex items-center gap-2">
             <GraduationCap className="text-purple-600 w-4 h-4" />
@@ -96,10 +74,9 @@ export function AdminNavbar() {
           </h1>
         </div>
 
-        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-1">
           {navItems.map(({ path, label, Icon }) => {
-            const isActive = active === path || location.pathname === path || location.pathname.startsWith(`${path}/`);
+            const isActive = active === path || location.pathname === path || location.pathname.startsWith(path.replace(":id", ""));
             return (
               <Link
                 key={path}
@@ -119,7 +96,6 @@ export function AdminNavbar() {
                 >
                   {Icon ? <Icon className="w-4 h-4" /> : null}
                   <span className="font-medium text-sm">{label}</span>
-                  
                   {isActive && (
                     <motion.div
                       layoutId="activeIndicator"
@@ -132,7 +108,6 @@ export function AdminNavbar() {
             );
           })}
 
-          {/* Desktop Logout Button */}
           <motion.button
             variants={itemHover}
             whileHover="hover"
@@ -145,7 +120,6 @@ export function AdminNavbar() {
           </motion.button>
         </div>
 
-        {/* Mobile Menu Toggle */}
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={toggleMenu}
@@ -159,11 +133,9 @@ export function AdminNavbar() {
         </motion.button>
       </div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {isMenuOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -171,8 +143,6 @@ export function AdminNavbar() {
               onClick={toggleMenu}
               className="md:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
             />
-            
-            {/* Menu Content */}
             <motion.div
               variants={menuVariants}
               initial="closed"
@@ -181,7 +151,6 @@ export function AdminNavbar() {
               className="md:hidden fixed top-16 right-0 bottom-0 z-50 w-80 max-w-full"
             >
               <div className="bg-white h-full rounded-l-2xl shadow-2xl shadow-black/10 border-l border-slate-100 p-6 flex flex-col">
-                {/* Mobile Menu Header */}
                 <div className="flex items-center gap-3 pb-6 mb-4 border-b border-slate-100">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                     <GraduationCap className="text-white w-6 h-6" />
@@ -191,11 +160,9 @@ export function AdminNavbar() {
                     <p className="text-slate-500 text-sm">Manage system</p>
                   </div>
                 </div>
-
-                {/* Mobile Menu Items */}
                 <div className="flex-1 space-y-2">
                   {navItems.map(({ path, label, Icon }) => {
-                    const isActive = active === path || location.pathname === path || location.pathname.startsWith(`${path}/`);
+                    const isActive = active === path || location.pathname === path || location.pathname.startsWith(path.replace(":id", ""));
                     return (
                       <Link
                         key={path}
@@ -218,8 +185,6 @@ export function AdminNavbar() {
                     );
                   })}
                 </div>
-
-                {/* Mobile Logout Button */}
                 <button
                   onClick={handleLogout}
                   className="mt-auto flex items-center gap-3 p-3 rounded-2xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
