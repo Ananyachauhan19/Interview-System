@@ -201,7 +201,8 @@ export default function StudentLoginPage() {
   ];
 
   return (
-    <div className="relative bg-white overflow-hidden h-[80vh] w-[95vw] mx-auto flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="relative bg-white overflow-hidden min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8">
+
       {/* Enhanced Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
         <AnimatedGrid />
@@ -396,3 +397,7 @@ export default function StudentLoginPage() {
     </div>
   );
 }
+
+
+
+
