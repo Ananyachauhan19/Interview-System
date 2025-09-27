@@ -11,13 +11,19 @@ export default function SessionAndFeedback() {
   const [marks, setMarks] = useState("");
   const [comments, setComments] = useState("");
   const [notification, setNotification] = useState("");
+  const [myFeedback, setMyFeedback] = useState([]); // list of feedback user already submitted (pair ids)
 
   useEffect(() => {
     api.listEvents().then(setEvents).catch(console.error);
   }, []);
 
   useEffect(() => {
-    if (eventId) api.listPairs(eventId).then(setPairs).catch(console.error);
+    if (eventId) {
+      api.listPairs(eventId).then(setPairs).catch(console.error);
+      api.myFeedback(eventId).then(list => setMyFeedback(list.map(f => f.pair))).catch(()=>{});
+    } else {
+      setPairs([]); setMyFeedback([]);
+    }
   }, [eventId]);
 
   const submit = async (e) => {
@@ -149,6 +155,7 @@ export default function SessionAndFeedback() {
                             </div>
                           )}
                         </div>
+                        {!myFeedback.includes(p._id) && (
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
@@ -158,13 +165,14 @@ export default function SessionAndFeedback() {
                           <MessageSquare className="w-4 h-4 mr-2 inline" />
                           Fill Feedback
                         </motion.button>
+                        )}
                       </div>
                     </motion.div>
                   ))}
               </div>
             )}
           </motion.div>
-          {activePair && (
+          {activePair && !myFeedback.includes(activePair._id) && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

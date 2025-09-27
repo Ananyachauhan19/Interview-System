@@ -84,4 +84,7 @@ export const api = {
   // Feedback
   submitFeedback: (pairId, marks, comments) => request('/feedback/submit', { method: 'POST', body: { pairId, marks, comments } }),
   exportFeedbackCsv: (eventId) => request(`/feedback/event/${eventId}.csv`),
+  listFeedback: (qs='') => request(`/feedback/admin/list${qs ? '?' + qs : ''}`),
+  exportFilteredFeedbackCsv: (qs='') => request(`/feedback/admin/export.csv${qs ? '?' + qs : ''}`),
+  myFeedback: (eventId) => request(`/feedback/mine${eventId ? ('?eventId=' + eventId) : ''}`),
 };

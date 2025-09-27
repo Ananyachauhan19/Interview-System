@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../utils/api';
-import { CheckCircle, AlertCircle, Upload, ArrowLeft, Download, Trash2, RefreshCw } from 'lucide-react';
+import { CheckCircle, AlertCircle, Upload, ArrowLeft, Download, Trash2, RefreshCw, Clock, Users } from 'lucide-react';
 
 export default function EventDetail() {
   const { id } = useParams();

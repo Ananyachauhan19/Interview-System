@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+// eslint-disable-next-line
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LogOut,
@@ -32,6 +33,7 @@ export function AdminNavbar() {
   const navItems = [
     { path: "/admin/onboarding", label: "Student Onboarding", Icon: Users },
     { path: "/admin/event", label: "Event Management", Icon: CalendarDays },
+    { path: "/admin/feedback", label: "Feedback Review", Icon: GraduationCap },
   ];
 
   // Animation variants
@@ -115,7 +117,7 @@ export function AdminNavbar() {
                       : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  {Icon ? <Icon className="w-4 h-4" /> : null}
                   <span className="font-medium text-sm">{label}</span>
                   
                   {isActive && (
@@ -206,7 +208,7 @@ export function AdminNavbar() {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <Icon className="w-5 h-5" />
+                          {Icon ? <Icon className="w-5 h-5" /> : null}
                           <span className="font-medium">{label}</span>
                           {isActive && (
                             <div className="ml-auto w-2 h-2 bg-purple-500 rounded-full" />

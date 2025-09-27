@@ -6,6 +6,7 @@ import SessionAndFeedback from "./student/SessionAndFeedback";
 import StudentOnboarding from "./admin/StudentOnboarding";
 import EventManagement from "./admin/EventManagement";
 import EventDetail from "./admin/EventDetail";
+import FeedbackReview from "./admin/FeedbackReview";
 import AdminProtectedRoute from "./admin/AdminProtectedRoute";
 import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
 
@@ -57,6 +58,7 @@ function AppContent() {
                 <Route path="/admin/onboarding" element={<StudentOnboarding />} />
                 <Route path="/admin/event" element={<EventManagement />} />
                 <Route path="/admin/event/:id" element={<EventDetail />} />
+                <Route path="/admin/feedback" element={<FeedbackReview />} />
               </Route>
             </Routes>
           </div>
