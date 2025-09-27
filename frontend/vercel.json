@@ -5,5 +5,8 @@
   "framework": "vite",
   "env": {
     "NPM_CONFIG_PRODUCTION": "false"
-  }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
