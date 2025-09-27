@@ -87,4 +87,5 @@ export const api = {
   listFeedback: (qs='') => request(`/feedback/admin/list${qs ? '?' + qs : ''}`),
   exportFilteredFeedbackCsv: (qs='') => request(`/feedback/admin/export.csv${qs ? '?' + qs : ''}`),
   myFeedback: (eventId) => request(`/feedback/mine${eventId ? ('?eventId=' + eventId) : ''}`),
+  feedbackForMe: (eventId) => request(`/feedback/for-me${eventId ? ('?eventId=' + eventId) : ''}`),
 };

@@ -116,3 +116,18 @@ export async function listMyFeedback(req, res) {
   const list = await Feedback.find(filter, 'pair event createdAt').lean();
   res.json(list.map(f => ({ pair: f.pair, event: f.event, submittedAt: f.createdAt })));
 }
+
+// Auth user: feedback about them (they are the interviewee / receiver)
+export async function listFeedbackForMe(req, res) {
+  const { eventId } = req.query;
+  const filter = { to: req.user._id };
+  if (eventId) filter.event = eventId;
+  const list = await Feedback.find(filter).populate('from pair').lean();
+  res.json(list.map(f => ({
+    pair: f.pair?._id || f.pair,
+    from: f.from?.name || f.from?.email,
+    marks: f.marks,
+    comments: f.comments,
+    submittedAt: f.createdAt,
+  })));
+}

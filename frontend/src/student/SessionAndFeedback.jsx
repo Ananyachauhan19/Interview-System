@@ -12,7 +12,10 @@ export default function SessionAndFeedback() {
   const [marks, setMarks] = useState("");
   const [comments, setComments] = useState("");
   const [notification, setNotification] = useState("");
-  const [myFeedback, setMyFeedback] = useState([]);
+  const [myFeedback, setMyFeedback] = useState([]); // pairIds where I (as interviewer) submitted feedback
+  const [receivedFeedback, setReceivedFeedback] = useState({}); // map pairId -> feedback (about me as interviewee)
+
+  const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
 
   useEffect(() => {
     const loadData = async () => {
@@ -20,15 +23,20 @@ export default function SessionAndFeedback() {
         const evs = await api.listEvents();
         setEvents(evs);
         const allPairs = [];
-        const feedbackPairs = [];
+        const feedbackPairs = []; // my submitted feedback (as interviewer)
+        const receivedMap = {}; // feedback about me
         for (const ev of evs) {
           const prs = await api.listPairs(ev._id);
           allPairs.push(...prs.filter(p => p.scheduledAt).map(p => ({ ...p, event: ev })));
           const feedback = await api.myFeedback(ev._id).catch(() => []);
           feedbackPairs.push(...feedback.map(f => f.pair));
+          // fetch feedback about me for this event
+          const aboutMe = await api.feedbackForMe(ev._id).catch(() => []);
+          aboutMe.forEach(f => { if (f.pair) receivedMap[f.pair] = f; });
         }
         setPairs(allPairs);
         setMyFeedback(feedbackPairs);
+        setReceivedFeedback(receivedMap);
       } catch (err) {
         console.error(err);
         setNotification("Failed to load sessions.");
@@ -102,6 +110,11 @@ export default function SessionAndFeedback() {
                                 Feedback Submitted
                               </span>
                             )}
+                            {!myFeedback.includes(p._id) && receivedFeedback[p._id] && (
+                              <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
+                                Feedback Received
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -172,6 +185,11 @@ export default function SessionAndFeedback() {
                                   Feedback Submitted
                                 </span>
                               )}
+                              {!myFeedback.includes(p._id) && receivedFeedback[p._id] && (
+                                <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
+                                  Feedback Received
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -232,57 +250,65 @@ export default function SessionAndFeedback() {
                       <div className="text-sm text-gray-600">Meeting link will appear 1 hour before the scheduled time.</div>
                     )}
                   </div>
-                  {myFeedback.includes(activePair._id) ? (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="p-4 bg-green-50 text-green-600 rounded-xl border border-green-100 text-sm font-medium flex items-center"
-                    >
-                      <CheckCircle className="w-5 h-5 mr-2" />
-                      Feedback already submitted for this session.
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                      className="bg-gray-50 p-6 rounded-xl border border-gray-200"
-                    >
-                      <h3 className="text-xl font-semibold text-gray-800 mb-4">Session Feedback</h3>
-                      <form onSubmit={submit} className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-800 mb-2">Marks out of 100</label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={marks}
-                            onChange={(e) => setMarks(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-800 mb-2">Comments</label>
-                          <textarea
-                            value={comments}
-                            onChange={(e) => setComments(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
-                            rows="4"
-                            required
-                          />
-                        </div>
-                        <motion.button
-                          whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
-                          whileTap={{ scale: 0.95 }}
-                          type="submit"
-                          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 rounded-xl font-semibold text-sm hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-md"
-                        >
-                          Submit Feedback
-                        </motion.button>
-                      </form>
-                    </motion.div>
-                  )}
+                  {(() => {
+                    const isSubmitted = myFeedback.includes(activePair._id);
+                    const received = receivedFeedback[activePair._id];
+                    const interviewerId = activePair.interviewer?._id || activePair.interviewer?.id;
+                    const intervieweeId = activePair.interviewee?._id || activePair.interviewee?.id;
+                    const isInterviewer = userId && interviewerId === userId;
+                    const isInterviewee = userId && intervieweeId === userId;
+                    if (isSubmitted) {
+                      return (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-green-50 text-green-600 rounded-xl border border-green-100 text-sm font-medium flex items-center">
+                          <CheckCircle className="w-5 h-5 mr-2" />
+                          Feedback already submitted for this session.
+                        </motion.div>
+                      );
+                    }
+                    if (isInterviewee) {
+                      if (received) {
+                        return (
+                          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-purple-50 p-6 rounded-xl border border-purple-200">
+                            <h3 className="text-xl font-semibold text-purple-800 mb-2">Feedback Received</h3>
+                            <p className="text-sm text-purple-700 mb-1"><strong>From:</strong> {received.from}</p>
+                            <p className="text-sm text-purple-700 mb-1"><strong>Marks:</strong> {received.marks}</p>
+                            <p className="text-sm text-purple-700 whitespace-pre-wrap"><strong>Comments:</strong> {received.comments}</p>
+                          </motion.div>
+                        );
+                      }
+                      return (
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-4 bg-gray-50 text-gray-600 rounded-xl border border-gray-200 text-sm">
+                          Waiting for interviewer feedback.
+                        </motion.div>
+                      );
+                    }
+                    if (isInterviewer) {
+                      return (
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                          <h3 className="text-xl font-semibold text-gray-800 mb-4">Session Feedback</h3>
+                          <form onSubmit={submit} className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-800 mb-2">Marks out of 100</label>
+                              <input type="number" min="0" max="100" value={marks} onChange={(e) => setMarks(e.target.value)} className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700" required />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-800 mb-2">Comments</label>
+                              <textarea value={comments} onChange={(e) => setComments(e.target.value)} className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700" rows="4" required />
+                            </div>
+                            <motion.button whileHover={{ scale: 1.05, boxShadow: '0 10px 20px -5px rgba(59, 130, 246, 0.3)' }} whileTap={{ scale: 0.95 }} type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 rounded-xl font-semibold text-sm hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-md">
+                              Submit Feedback
+                            </motion.button>
+                          </form>
+                        </motion.div>
+                      );
+                    }
+                    // Fallback (should rarely happen): user neither interviewer nor interviewee
+                    return (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-gray-50 text-gray-600 rounded-xl border border-gray-200 text-sm">
+                        You are not a participant in this session.
+                      </motion.div>
+                    );
+                  })()}
                   <AnimatePresence>
                     {notification && (
                       <motion.div

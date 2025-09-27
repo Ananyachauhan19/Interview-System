@@ -326,6 +326,11 @@ export default function StudentLoginPage() {
                         const res = await api.login(email, password);
                         setToken(res.token);
                         const role = res.user?.role;
+                        if (res.user?._id) {
+                          localStorage.setItem('userId', res.user._id);
+                        } else if (res.user?.id) {
+                          localStorage.setItem('userId', res.user.id);
+                        }
                         if (role === 'admin') {
                           localStorage.setItem('isAdmin', 'true');
                           navigate('/admin/event', { replace: true });
