@@ -20,10 +20,16 @@ try {
   log(`Platform: ${platform} Arch: ${arch}`);
   // Try a require of the native file indirectly
   try {
-    const rollup = require('rollup');
-    log(`Loaded rollup version: ${rollup.VERSION || 'unknown'}`);
+     const rollup = await import('rollup');
+     log(`Loaded rollup (ESM) version: ${rollup.VERSION || rollup.default?.VERSION || 'unknown'}`);
   } catch (e) {
-    log('Direct require("rollup") failed: ' + (e && e.message));
+     log('ESM import("rollup") failed: ' + (e && e.message));
+     try {
+      const wasm = await import('@rollup/wasm-node');
+      log('Loaded wasm fallback OK');
+     } catch (we) {
+      log('WASM fallback failed: ' + we.message);
+     }
   }
   // List installed @rollup/rollup-* scoped packages if any
   const nm = join(root, 'node_modules', '@rollup');
