@@ -3,6 +3,11 @@ export function notFound(req, res, next) {
 }
 
 export function errorHandler(err, req, res, next) {
+  // Normalize common Mongoose casting errors so they don't appear as opaque 500s
+  if (err?.name === 'CastError') {
+    err.status = 400;
+    err.message = 'Invalid identifier';
+  }
   console.error(err);
   const status = err.status || 500;
   res.status(status).json({ error: err.message || 'Server Error' });

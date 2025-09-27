@@ -1,5 +1,6 @@
 import Event from '../models/Event.js';
 import Pair from '../models/Pair.js';
+import mongoose from 'mongoose';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
 // meeting link is already hidden until 1 hour prior in listPairs
@@ -47,12 +48,30 @@ export async function generatePairs(req, res) {
 }
 
 export async function listPairs(req, res) {
-  let query = { event: req.params.id };
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new HttpError(400, 'Invalid event id');
+  }
+
+  // Optional existence check to provide clearer 404 vs empty result
+  const exists = await Event.exists({ _id: id });
+  if (!exists) throw new HttpError(404, 'Event not found');
+
+  let query = { event: id };
   // If not admin, restrict to pairs where user is interviewer or interviewee
   if (req.user?.role !== 'admin') {
-    query = { event: req.params.id, $or: [ { interviewer: req.user._id }, { interviewee: req.user._id } ] };
+    query = { event: id, $or: [{ interviewer: req.user._id }, { interviewee: req.user._id }] };
   }
-  const pairs = await Pair.find(query).populate('interviewer interviewee').lean();
+
+  let pairs;
+  try {
+    pairs = await Pair.find(query).populate('interviewer interviewee').lean();
+  } catch (e) {
+    // Add lightweight diagnostics (safe) to help track unexpected failures
+    console.error('[listPairs] query failed', { eventId: id, user: req.user?._id?.toString(), error: e.message });
+    throw e; // propagate to error handler
+  }
+
   const now = Date.now();
   const oneHourMs = 60 * 60 * 1000;
   const sanitized = pairs.map((p) => {
@@ -64,7 +83,6 @@ export async function listPairs(req, res) {
         delete copy.meetingLink;
       }
     }
-    // ensure status / rejection meta present
     copy.status = copy.status || 'pending';
     return copy;
   });
