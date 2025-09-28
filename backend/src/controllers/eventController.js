@@ -1,3 +1,35 @@
+// PATCH /events/:id/join-disable
+export async function updateEventJoinDisable(req, res) {
+  const event = await Event.findById(req.params.id);
+  if (!event) throw new HttpError(404, 'Event not found');
+  const { joinDisabled, joinDisableTime } = req.body;
+  // Manual disable overrides scheduled disable
+  if (typeof joinDisabled !== 'undefined') {
+    event.joinDisabled = !!joinDisabled;
+    if (joinDisabled) {
+      event.joinDisableTime = null; // clear scheduled if manually disabled
+    }
+  }
+  if (typeof joinDisableTime !== 'undefined' && !event.joinDisabled) {
+    event.joinDisableTime = joinDisableTime ? new Date(joinDisableTime) : null;
+  }
+  await event.save();
+  res.json(event);
+}
+export async function updateEventCapacity(req, res) {
+  console.log('PATCH /events/:id/capacity', req.params.id, req.body);
+  const event = await Event.findById(req.params.id);
+  if (!event) throw new HttpError(404, 'Event not found');
+  let { capacity } = req.body;
+  if (capacity === null || capacity === '' || typeof capacity === 'undefined') {
+    event.capacity = null;
+  } else {
+    if (isNaN(Number(capacity)) || Number(capacity) < 1) throw new HttpError(400, 'Invalid capacity');
+    event.capacity = Number(capacity);
+  }
+  await event.save();
+  res.json(event);
+}
 import Event from '../models/Event.js';
 import User from '../models/User.js';
 import { sendMail } from '../utils/mailer.js';
@@ -126,6 +158,10 @@ export async function joinEvent(req, res) {
   const userId = req.user._id;
   if (event.isSpecial && !event.allowedParticipants?.some?.(p => p.equals(userId))) throw new HttpError(403, 'Not allowed for this special event');
   if (event.participants.some(p => p.equals(userId))) return res.json({ message: 'Already joined' });
+  // Capacity check
+  if (event.capacity !== null && event.capacity !== '' && event.participants.length >= event.capacity) {
+    throw new HttpError(400, 'Event capacity reached');
+  }
   event.participants.push(userId);
   await event.save();
   res.json({ message: 'Joined', eventId: event._id });

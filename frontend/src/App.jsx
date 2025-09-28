@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import StudentLogin from "./auth/StudentLogin";
 import StudentDashboard from "./student/StudentDashboard";
+import ChangePassword from "./student/ChangePassword";
 import PairingAndScheduling from "./student/PairingAndScheduling";
 import SessionAndFeedback from "./student/SessionAndFeedback";
 import StudentOnboarding from "./admin/StudentOnboarding";
@@ -40,31 +41,23 @@ function AppContent() {
   const isLoginPage = isMain || isStudentLogin;
 
   return (
-    <div className={`min-h-screen flex flex-col ${isLoginPage ? "bg-white" : gradientBg}`}>
-      {/* Navbar */}
-      {isStudentDashboard && <StudentNavbar />}
-      {isAdmin && <AdminNavbar />}
-      <div className={`flex-1 w-full ${isLoginPage ? "p-0 flex items-center justify-center" : "p-0"}`}>
-        {isMain ? (
-          <MainCard />
-        ) : (
-          <div className="w-full">
-            <Routes>
-              <Route path="/student" element={<StudentLogin />} />
-              <Route path="/student/dashboard" element={<StudentDashboard />} />
-              <Route path="/student/pairing" element={<PairingAndScheduling />} />
-              <Route path="/student/session" element={<SessionAndFeedback />} />
-              <Route element={<AdminProtectedRoute />}>
-                <Route path="/admin/onboarding" element={<StudentOnboarding />} />
-                <Route path="/admin/event" element={<EventManagement />} />
-                <Route path="/admin/event/:id" element={<EventDetail />} />
-                <Route path="/admin/feedback" element={<FeedbackReview />} />
-              </Route>
-            </Routes>
-          </div>
-        )}
+    <div className={gradientBg + " min-h-screen w-full flex flex-col"}>
+      {isAdmin ? <AdminNavbar /> : isStudentDashboard ? <StudentNavbar /> : null}
+      <div className="flex-1 flex items-center justify-center">
+        <Routes>
+          <Route path="/" element={<MainCard />} />
+          <Route path="/student" element={<StudentLogin />} />
+          <Route path="/student/change-password" element={<ChangePassword />} />
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
+          <Route path="/student/pairing" element={<PairingAndScheduling />} />
+          <Route path="/student/session" element={<SessionAndFeedback />} />
+          <Route path="/admin/student" element={<StudentOnboarding />} />
+          <Route path="/admin/event" element={<EventManagement />} />
+          <Route path="/admin/event/:id" element={<EventDetail />} />
+          <Route path="/admin/feedback" element={<FeedbackReview />} />
+        </Routes>
       </div>
-      {(isStudentDashboard || isAdmin) && <Footer />}
+      {!isLoginPage && <Footer />}
     </div>
   );
 }

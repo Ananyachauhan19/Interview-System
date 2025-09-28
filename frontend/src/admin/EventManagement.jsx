@@ -10,6 +10,7 @@ export default function EventManagement() {
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [capacity, setCapacity] = useState("");
   const [template, setTemplate] = useState(null);
   const [msg, setMsg] = useState("");
   const [specialMode, setSpecialMode] = useState(false);
@@ -17,12 +18,13 @@ export default function EventManagement() {
   const navigate = useNavigate();
 
   const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setStartDate("");
-    setEndDate("");
-    setTemplate(null);
-    setCsvFile(null);
+  setTitle("");
+  setDescription("");
+  setStartDate("");
+  setEndDate("");
+  setCapacity("");
+  setTemplate(null);
+  setCsvFile(null);
   };
 
   const handleCreateEvent = async (e) => {
@@ -30,11 +32,11 @@ export default function EventManagement() {
     try {
       let ev;
       if (specialMode) {
-        const res = await api.createSpecialEvent({ name: title, description, startDate, endDate, template, csv: csvFile });
+        const res = await api.createSpecialEvent({ name: title, description, startDate, endDate, capacity, template, csv: csvFile });
         setMsg(`Special event created (invited ${res.invited})`);
         navigate(`/admin/event/${res._id}`);
       } else {
-        ev = await api.createEvent({ name: title, description, startDate, endDate, template });
+        ev = await api.createEvent({ name: title, description, startDate, endDate, capacity, template });
         setMsg("Event created successfully");
         navigate(`/admin/event/${ev._id}`);
       }
@@ -97,6 +99,41 @@ export default function EventManagement() {
                 className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-700"
                 required
               />
+              <div className="flex flex-col gap-2">
+                <label className="font-semibold text-gray-700 mb-1">Capacity</label>
+                <div className="flex gap-4 items-center">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="capacityType"
+                      value="unlimited"
+                      checked={capacity === '' || capacity === null}
+                      onChange={() => setCapacity('')}
+                    />
+                    <span>Unlimited</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="capacityType"
+                      value="limited"
+                      checked={capacity !== '' && capacity !== null}
+                      onChange={() => setCapacity(1)}
+                    />
+                    <span>Set Limit</span>
+                  </label>
+                  {capacity !== '' && capacity !== null && (
+                    <input
+                      type="number"
+                      min="1"
+                      value={capacity}
+                      onChange={e => setCapacity(e.target.value)}
+                      className="w-24 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm text-gray-700 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      required
+                    />
+                  )}
+                </div>
+              </div>
               <textarea
                 placeholder="Event Description"
                 value={description}

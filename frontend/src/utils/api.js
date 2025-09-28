@@ -27,9 +27,11 @@ async function request(path, { method = 'GET', body, headers = {}, formData } = 
 }
 
 export const api = {
+  updateEventJoinDisable: (eventId, joinDisabled, joinDisableTime) => request(`/events/${eventId}/join-disable`, { method: 'PATCH', body: { joinDisabled, joinDisableTime } }),
+  updateEventCapacity: (eventId, capacity) => request(`/events/${eventId}/capacity`, { method: 'PATCH', body: { capacity } }),
   // Auth (unified)
   login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password } }),
-  changePassword: (newPassword) => request('/auth/password/change', { method: 'POST', body: { newPassword } }),
+  changeStudentPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
 
   // Students
   uploadStudentsCsv: (file) => {

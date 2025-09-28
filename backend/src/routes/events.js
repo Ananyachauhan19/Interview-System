@@ -1,10 +1,14 @@
+
+
 import { Router } from 'express';
 import multer from 'multer';
-import { createEvent, listEvents, joinEvent, exportJoinedCsv, eventAnalytics, replaceEventTemplate, getTemplateUrl, deleteEventTemplate, getEvent, createSpecialEvent } from '../controllers/eventController.js';
+import { createEvent, listEvents, joinEvent, exportJoinedCsv, eventAnalytics, replaceEventTemplate, getTemplateUrl, deleteEventTemplate, getEvent, createSpecialEvent, updateEventCapacity, updateEventJoinDisable } from '../controllers/eventController.js';
 import { supabase } from '../utils/supabase.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
+router.patch('/:id/join-disable', requireAuth, requireAdmin, updateEventJoinDisable);
+router.patch('/:id/capacity', requireAuth, requireAdmin, updateEventCapacity);
 const upload = multer({ storage: multer.memoryStorage() });
 const multi = upload.fields([
 	{ name: 'template', maxCount: 1 },

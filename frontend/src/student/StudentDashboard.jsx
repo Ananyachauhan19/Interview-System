@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import RequirePasswordChange from "./RequirePasswordChange";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../utils/api";
 import {
@@ -7,6 +8,7 @@ import {
 } from "lucide-react";
 
 export default function StudentDashboard() {
+  const [user, setUser] = useState(null);
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [ackRead, setAckRead] = useState(false);
@@ -16,6 +18,7 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     api.listEvents().then(setEvents).catch(console.error);
+    api.me && api.me().then(setUser).catch(() => {});
   }, []);
 
   const handleEventClick = async (event) => {
@@ -50,11 +53,15 @@ export default function StudentDashboard() {
 
   const fmt = (d) => (d ? new Date(d).toLocaleString() : "TBD");
 
+  const now = new Date();
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          event.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = activeFilter === "all" ? true : activeFilter === "joined" ? event.joined : true;
-    return matchesSearch && matchesFilter;
+    if (!matchesSearch) return false;
+    if (activeFilter === "all") return true;
+    if (activeFilter === "joined") return event.joined;
+    if (activeFilter === "upcoming") return new Date(event.startDate) > now;
+    return true;
   });
 
   const stats = {
@@ -109,7 +116,7 @@ export default function StudentDashboard() {
         </span>
       </div>
       <div className="flex space-x-2 mb-6 p-1 bg-gray-50 rounded-xl">
-        {["all", "joined"].map((filter) => (
+        {["all", "joined", "upcoming"].map((filter) => (
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
@@ -164,10 +171,21 @@ export default function StudentDashboard() {
                   <motion.div
                     whileHover={{ scale: 1.1 }}
                     className={`p-2 rounded-lg ${
-                      event.joined ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"
+                      event.joined
+                        ? (new Date(event.startDate) > now
+                            ? "bg-red-100 text-red-600"
+                            : "bg-green-100 text-green-600")
+                        : (new Date(event.startDate) > now
+                            ? "bg-red-100 text-red-600"
+                            : "bg-blue-100 text-blue-600")
                     }`}
                   >
-                    {event.joined ? <CheckCircle size={16} /> : <Calendar size={16} />}
+                    {event.joined
+                      ? <CheckCircle size={16} />
+                      : (new Date(event.startDate) > now
+                          ? <Calendar size={16} />
+                          : <Calendar size={16} />)
+                    }
                   </motion.div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
@@ -287,19 +305,27 @@ export default function StudentDashboard() {
           className="flex flex-col items-end gap-4"
         >
           {!selectedEvent.joined ? (
-            <motion.button
-              whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleJoinEvent}
-              disabled={selectedEvent.templateUrl && !ackRead}
-              className={`px-6 py-3 rounded-xl font-semibold text-white shadow-md transition-all duration-200 ${
-                selectedEvent.templateUrl && !ackRead
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-              }`}
-            >
-              Join Event
-            </motion.button>
+            (() => {
+              const now = new Date();
+              const joinDisabled = selectedEvent.joinDisabled || (selectedEvent.joinDisableTime && now > new Date(selectedEvent.joinDisableTime));
+              return (
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleJoinEvent}
+                  disabled={joinDisabled || (selectedEvent.templateUrl && !ackRead)}
+                  className={`px-6 py-3 rounded-xl font-semibold text-white shadow-md transition-all duration-200 ${
+                    joinDisabled
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : selectedEvent.templateUrl && !ackRead
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                  }`}
+                >
+                  {joinDisabled ? "Participation Closed" : "Join Event"}
+                </motion.button>
+              );
+            })()
           ) : (
             <motion.div
               initial={{ scale: 0 }}
@@ -417,29 +443,31 @@ export default function StudentDashboard() {
   );
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 flex flex-col pt-16">
-      <div className="flex-1 w-full mx-auto px-4 sm:px-4 md:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className={`${selectedEvent ? 'hidden' : 'block'} lg:block lg:col-span-1`}
-          >
-            <EventList />
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className={`${selectedEvent ? 'block' : 'hidden'} lg:block lg:col-span-3`}
-          >
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8 h-[calc(100vh-4rem)] flex flex-col overflow-auto">
-              {selectedEvent ? <EventDetails /> : <Placeholder />}
-            </div>
-          </motion.div>
+    <RequirePasswordChange user={user}>
+      <div className="min-h-screen w-full bg-gray-50 flex flex-col pt-16">
+        <div className="flex-1 w-full mx-auto px-4 sm:px-4 md:px-6 lg:px-8 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className={`${selectedEvent ? 'hidden' : 'block'} lg:block lg:col-span-1`}
+            >
+              <EventList />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className={`${selectedEvent ? 'block' : 'hidden'} lg:block lg:col-span-3`}
+            >
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8 h-[calc(100vh-4rem)] flex flex-col overflow-auto">
+                {selectedEvent ? <EventDetails /> : <Placeholder />}
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
-    </div>
+    </RequirePasswordChange>
   );
 }

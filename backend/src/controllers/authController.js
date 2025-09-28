@@ -1,3 +1,20 @@
+// Change password for student (requires current password)
+export async function changePassword(req, res) {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  const user = req.user;
+  if (!user) throw new HttpError(401, 'Unauthorized');
+  if (user.role !== 'student') throw new HttpError(403, 'Only students can change password here');
+  if (!currentPassword || !newPassword || !confirmPassword) throw new HttpError(400, 'All fields required');
+  if (newPassword !== confirmPassword) throw new HttpError(400, 'New passwords do not match');
+  if (newPassword.length < 6) throw new HttpError(400, 'New password must be at least 6 characters');
+  if (!/[#@]/.test(newPassword)) throw new HttpError(400, 'New password must contain @ or #');
+  const ok = await user.verifyPassword(currentPassword);
+  if (!ok) throw new HttpError(401, 'Current password incorrect');
+  user.passwordHash = await User.hashPassword(newPassword);
+  user.mustChangePassword = false;
+  await user.save();
+  res.json({ message: 'Password changed' });
+}
 import User from '../models/User.js';
 import { signToken } from '../utils/jwt.js';
 import { HttpError } from '../utils/errors.js';

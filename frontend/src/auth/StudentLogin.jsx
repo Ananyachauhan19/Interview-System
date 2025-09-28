@@ -10,7 +10,10 @@ const FloatingIcon = ({ icon: IconComp, delay, duration, startX, startY, endX, e
     <div 
       className="absolute text-sky-500/40"
       style={{
-        animation: `float-${delay} ${duration}s ease-in-out infinite`,
+        animationName: `float-${delay}`,
+        animationDuration: `${duration}s`,
+        animationTimingFunction: 'ease-in-out',
+        animationIterationCount: 'infinite',
         left: `${startX}%`,
         top: `${startY}%`,
         transform: 'translateZ(0)',
@@ -19,7 +22,7 @@ const FloatingIcon = ({ icon: IconComp, delay, duration, startX, startY, endX, e
       }}
     >
   <IconComp size={size} className="drop-shadow-lg brightness-125" />
-      <style jsx>{`
+      <style>{`
         @keyframes float-${delay} {
           0% {
             transform: translate3d(0, 0, 0) rotate(0deg) scale(0.6);
@@ -68,7 +71,10 @@ const ParticleEffect = ({ count = 80 }) => {
             height: `${particle.size}px`,
             left: `${particle.left}%`,
             top: `${particle.top}%`,
-            animation: `particle-float ${particle.duration}s ease-in-out infinite`,
+            animationName: 'particle-float',
+            animationDuration: `${particle.duration}s`,
+            animationTimingFunction: 'ease-in-out',
+            animationIterationCount: 'infinite',
             animationDelay: `${particle.delay}s`,
             zIndex: 1,
           }}
@@ -83,8 +89,11 @@ const CircuitLine = ({ id, points, duration = 20, delay = 0 }) => {
     <svg
       className="absolute inset-0 w-full h-full pointer-events-none"
       style={{
-        animation: `circuit-glow-${id} ${duration}s linear infinite`,
-        animationDelay: `${delay}s`,
+  animationName: `circuit-glow-${id}`,
+  animationDuration: `${duration}s`,
+  animationTimingFunction: 'linear',
+  animationIterationCount: 'infinite',
+  animationDelay: `${delay}s`,
         zIndex: 1,
       }}
     >
@@ -102,7 +111,7 @@ const CircuitLine = ({ id, points, duration = 20, delay = 0 }) => {
           <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.8" />
         </linearGradient>
       </defs>
-      <style jsx>{`
+      <style>{`
         @keyframes circuit-glow-${id} {
           0% { opacity: 0.3; }
           50% { opacity: 0.6; }
@@ -125,7 +134,10 @@ const AnimatedGrid = () => {
             top: 0,
             bottom: 0,
             width: '1px',
-            animation: `grid-pulse ${Math.random() * 3 + 2}s ease-in-out infinite`,
+            animationName: 'grid-pulse',
+            animationDuration: `${Math.random() * 3 + 2}s`,
+            animationTimingFunction: 'ease-in-out',
+            animationIterationCount: 'infinite',
             animationDelay: `${i * 0.1}s`,
           }}
         />
@@ -139,7 +151,10 @@ const AnimatedGrid = () => {
             left: 0,
             right: 0,
             height: '1px',
-            animation: `grid-pulse ${Math.random() * 3 + 2}s ease-in-out infinite`,
+            animationName: 'grid-pulse',
+            animationDuration: `${Math.random() * 3 + 2}s`,
+            animationTimingFunction: 'ease-in-out',
+            animationIterationCount: 'infinite',
             animationDelay: `${i * 0.1}s`,
           }}
         />
@@ -336,7 +351,11 @@ export default function StudentLoginPage() {
                           navigate('/admin/event', { replace: true });
                         } else {
                           localStorage.removeItem('isAdmin');
-                          navigate('/student/dashboard', { replace: true });
+                          if (res.user?.mustChangePassword) {
+                            navigate('/student/change-password', { replace: true });
+                          } else {
+                            navigate('/student/dashboard', { replace: true });
+                          }
                         }
                       } catch (e) {
                         setError(e.message || 'Login failed');
@@ -363,7 +382,7 @@ export default function StudentLoginPage() {
       </div>
 
       {/* Styles */}
-      <style jsx>{`
+    <style>{`
         @keyframes particle-float {
           0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
           50% { transform: translateY(-20px) rotate(180deg); opacity: 0.7; }

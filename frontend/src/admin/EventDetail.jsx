@@ -137,9 +137,20 @@ export default function EventDetail() {
     setIsMobileSidebarOpen(false);
   };
 
-  const filteredEvents = events.filter(e =>
-    e.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Tab state for event filtering
+  const [eventTab, setEventTab] = useState('all');
+
+  // Filtering logic for tabs
+  const now = new Date();
+  const filteredEvents = events.filter(e => {
+    const nameMatch = e.name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!nameMatch) return false;
+    if (eventTab === 'all') return true;
+    if (eventTab === 'active') return new Date(e.startDate) <= now && new Date(e.endDate) >= now;
+    if (eventTab === 'upcoming') return new Date(e.startDate) > now;
+    if (eventTab === 'previous') return new Date(e.endDate) < now;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -168,6 +179,22 @@ export default function EventDetail() {
           >
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               <h2 className="text-xl font-bold text-gray-800 mb-4">Events</h2>
+              {/* Tabs for event filtering */}
+              <div className="flex gap-2 mb-4">
+                {['all', 'active', 'upcoming', 'previous'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setEventTab(tab)}
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
+                      eventTab === tab
+                        ? 'bg-blue-500 text-white border-blue-500 shadow'
+                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-blue-50'
+                    }`}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
                 <input
@@ -349,6 +376,55 @@ export default function EventDetail() {
                   </motion.div>
                   <p className="text-gray-600 text-sm">{event.description}</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    {/* Event Closed Disable Controls */}
+                    <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-xl">
+                      <Clock className="w-5 h-5 text-yellow-500" />
+                      <div>
+                        <div className="text-sm text-gray-500">Event Closed Control</div>
+                        <div className="font-medium text-gray-800 flex flex-col gap-2">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={!!event.joinDisabled}
+                              onChange={async (e) => {
+                                try {
+                                  const updated = await api.updateEventJoinDisable(event._id, e.target.checked, null);
+                                  setEvent(updated);
+                                  setMsg(e.target.checked ? 'Event Closed manually disabled' : 'Event Closed enabled');
+                                } catch (err) {
+                                  setMsg(err.message || 'Failed to update Event Closed status');
+                                }
+                              }}
+                            />
+                            <span>Manually Close Event</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <span>Close Event At:</span>
+                            <input
+                              type="datetime-local"
+                              value={event.joinDisableTime ? new Date(event.joinDisableTime).toISOString().slice(0,16) : ''}
+                              disabled={!!event.joinDisabled}
+                              onChange={async (e) => {
+                                try {
+                                  const updated = await api.updateEventJoinDisable(event._id, false, e.target.value);
+                                  setEvent(updated);
+                                  setMsg('Scheduled Event Close Time');
+                                } catch (err) {
+                                  setMsg(err.message || 'Failed to update disable time');
+                                }
+                              }}
+                              className="bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-500 focus:outline-none"
+                            />
+                          </label>
+                          {event.joinDisabled && (
+                            <span className="text-xs text-red-600">Event will be closed at</span>
+                          )}
+                          {!event.joinDisabled && event.joinDisableTime && (
+                            <span className="text-xs text-yellow-600">Event will be closed at {new Date(event.joinDisableTime).toLocaleString()}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                     <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
                       <Clock className="w-5 h-5 text-blue-500" />
                       <div>
@@ -370,8 +446,55 @@ export default function EventDetail() {
                     <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
                       <Users className="w-5 h-5 text-green-500" />
                       <div>
-                        <div className="text-sm text-gray-500">Participants</div>
-                        <div className="font-medium text-gray-800">{event.participantCount}</div>
+                        <div className="text-sm text-gray-500">Capacity</div>
+                        <div className="font-medium text-gray-800 flex items-center gap-2">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="capacityType"
+                              value="unlimited"
+                              checked={event.capacity === null || event.capacity === ''}
+                              onChange={() => setEvent(ev => ({ ...ev, capacity: null }))}
+                            />
+                            <span>Unlimited</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="capacityType"
+                              value="limited"
+                              checked={event.capacity !== null && event.capacity !== ''}
+                              onChange={() => setEvent(ev => ({ ...ev, capacity: 1 }))}
+                            />
+                            <span>Set Limit</span>
+                          </label>
+                          {event.capacity !== null && event.capacity !== '' && (
+                            <input
+                              type="number"
+                              min="1"
+                              value={event.capacity !== undefined ? String(event.capacity) : ''}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setEvent(ev => ({ ...ev, capacity: val === '' ? '' : Number(val) }));
+                              }}
+                              className="w-20 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            />
+                          )}
+                          <button
+                            onClick={async () => {
+                              try {
+                                const updated = await api.updateEventCapacity(event._id, event.capacity === '' ? null : event.capacity);
+                                setEvent(updated);
+                                setMsg('Capacity updated');
+                              } catch (err) {
+                                setMsg(err.message || 'Failed to update capacity');
+                              }
+                            }}
+                            className="px-2 py-1 bg-blue-500 text-white rounded text-xs font-semibold hover:bg-blue-600 transition-all"
+                          >
+                            Update
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
