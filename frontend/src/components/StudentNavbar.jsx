@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpenCheck,
@@ -39,11 +39,12 @@ export function StudentNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isProfileOpen]);
 
+  const navigate = useNavigate();
   const handleLogout = () => {
     localStorage.removeItem("isStudent");
     localStorage.removeItem("studentName");
     localStorage.removeItem("studentEmail");
-    window.location.href = "/student";
+  navigate("/");
   };
 
   const toggleMenu = () => {

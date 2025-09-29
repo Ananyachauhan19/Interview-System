@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -30,11 +30,12 @@ export function AdminNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isProfileOpen]);
 
+  const navigate = useNavigate();
   const handleLogout = () => {
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("adminName");
     localStorage.removeItem("adminEmail");
-    window.location.href = "/student";
+  navigate("/");
   };
 
   const toggleMenu = () => {
