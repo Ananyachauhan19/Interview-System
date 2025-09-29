@@ -176,6 +176,42 @@ export default function StudentLoginPage() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const handleLogin = async () => {
+    setError('');
+    try {
+      const res = await api.login(email, password);
+      setToken(res.token);
+      const role = res.user?.role;
+      // Store student name and email in localStorage
+      localStorage.setItem('studentName', res.user?.name || 'Student');
+      localStorage.setItem('studentEmail', res.user?.email || email);
+      if (res.user?._id) {
+        localStorage.setItem('userId', res.user._id);
+      } else if (res.user?.id) {
+        localStorage.setItem('userId', res.user.id);
+      }
+      if (role === 'admin') {
+        localStorage.setItem('isAdmin', 'true');
+        navigate('/admin/event', { replace: true });
+      } else {
+        localStorage.removeItem('isAdmin');
+        if (res.user?.mustChangePassword) {
+          navigate('/student/change-password', { replace: true });
+        } else {
+          navigate('/student/dashboard', { replace: true });
+        }
+      }
+    } catch (e) {
+      setError(e.message || 'Login failed');
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleLogin();
+    }
+  };
+
   const floatingIcons = [
     { icon: Book, delay: 1, duration: 25, startX: 5, startY: 15, endX: 85, endY: 75, size: 36, opacity: 0.6 },
     { icon: Pen, delay: 2, duration: 30, startX: 95, startY: 8, endX: 15, endY: 85, size: 32, opacity: 0.55 },
@@ -290,6 +326,7 @@ export default function StudentLoginPage() {
                         type="text"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        onKeyPress={handleKeyPress}
                         className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-white/40 border border-sky-200/50 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/50 text-sky-800 placeholder-sky-600/70 font-medium text-sm sm:text-base"
                         placeholder="Enter email or student ID"
                       />
@@ -307,6 +344,7 @@ export default function StudentLoginPage() {
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        onKeyPress={handleKeyPress}
                         className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-4 bg-white/40 border border-sky-200/50 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/50 text-sky-800 placeholder-sky-600/70 font-medium text-sm sm:text-base"
                         placeholder="Enter your password"
                       />
@@ -335,32 +373,7 @@ export default function StudentLoginPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={async () => {
-                      setError('');
-                      try {
-                        const res = await api.login(email, password);
-                        setToken(res.token);
-                        const role = res.user?.role;
-                        if (res.user?._id) {
-                          localStorage.setItem('userId', res.user._id);
-                        } else if (res.user?.id) {
-                          localStorage.setItem('userId', res.user.id);
-                        }
-                        if (role === 'admin') {
-                          localStorage.setItem('isAdmin', 'true');
-                          navigate('/admin/event', { replace: true });
-                        } else {
-                          localStorage.removeItem('isAdmin');
-                          if (res.user?.mustChangePassword) {
-                            navigate('/student/change-password', { replace: true });
-                          } else {
-                            navigate('/student/dashboard', { replace: true });
-                          }
-                        }
-                      } catch (e) {
-                        setError(e.message || 'Login failed');
-                      }
-                    }}
+                    onClick={handleLogin}
                     className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-3 sm:py-4 px-6 rounded-xl sm:rounded-2xl font-bold transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
@@ -421,7 +434,3 @@ export default function StudentLoginPage() {
     </div>
   );
 }
-
-
-
-

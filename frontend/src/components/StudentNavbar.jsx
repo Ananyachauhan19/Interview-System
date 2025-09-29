@@ -7,7 +7,8 @@ import {
   LogOut,
   Menu,
   X,
-  GraduationCap
+  GraduationCap,
+  User
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -15,14 +16,33 @@ export function StudentNavbar() {
   const location = useLocation();
   const [active, setActive] = useState(location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Retrieve student info from localStorage (set this in your login component)
+  const studentName = localStorage.getItem("studentName") || "Student";
+  const studentEmail = localStorage.getItem("studentEmail") || "email@example.com";
 
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMenuOpen(false);
+    setIsProfileOpen(false); // Also close profile dropdown on route change
   }, [location.pathname]);
+
+  // Close profile dropdown on outside click (for desktop and mobile)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isProfileOpen && !event.target.closest(".profile-container")) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isProfileOpen]);
 
   const handleLogout = () => {
     localStorage.removeItem("isStudent");
+    localStorage.removeItem("studentName");
+    localStorage.removeItem("studentEmail");
     window.location.href = "/student";
   };
 
@@ -59,17 +79,25 @@ export function StudentNavbar() {
     tap: { scale: 0.98 }
   };
 
+  const dropdownVariants = {
+    closed: {
+      opacity: 0,
+      y: -10,
+      transition: { duration: 0.2, ease: "easeInOut" }
+    },
+    open: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.2, ease: "easeInOut" }
+    }
+  };
+
   return (
     <motion.nav
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50 border-b border-blue-100/30"
-      style={{
-        background: "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%)",
-        backdropFilter: "blur(12px) saturate(180%)",
-        boxShadow: "0 4px 20px rgba(14,42,80,0.08)"
-      }}
+      className="fixed top-0 left-0 right-0 z-50 border-b border-blue-100/30 bg-white shadow-md"
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6">
         {/* Brand Logo and Title */}
@@ -96,67 +124,133 @@ export function StudentNavbar() {
           </h1>
         </div>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-1">
-          {navItems.map(({ path, label, Icon }) => {
-            const isActive = active === path || location.pathname === path;
-            return (
-              <Link
-                key={path}
-                to={path}
-                onClick={() => setActive(path)}
-                className="relative"
-              >
-                <motion.div
-                  variants={itemHover}
-                  whileHover="hover"
-                  whileTap="tap"
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 mx-1 ${
-                    isActive 
-                      ? "bg-purple-50 text-purple-700 shadow-sm" 
-                      : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-                  }`}
+        {/* Right Side: Desktop Navigation + Mobile Buttons */}
+        <div className="flex items-center gap-2">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-1">
+            {navItems.map(({ path, label, Icon }) => {
+              const isActive = active === path || location.pathname === path;
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  onClick={() => setActive(path)}
+                  className="relative"
                 >
-                  <Icon className="w-4 h-4" />
-                  <span className="font-medium text-sm">{label}</span>
-                  
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeIndicator"
-                      className="absolute inset-0 border-2 border-purple-200 rounded-xl"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                </motion.div>
-              </Link>
-            );
-          })}
+                  <motion.div
+                    variants={itemHover}
+                    whileHover="hover"
+                    whileTap="tap"
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 mx-1 ${
+                      isActive 
+                        ? "bg-purple-50 text-purple-700 shadow-sm" 
+                        : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="font-medium text-sm">{label}</span>
+                    
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeIndicator"
+                        className="absolute inset-0 border-2 border-purple-200 rounded-xl"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                  </motion.div>
+                </Link>
+              );
+            })}
 
-          {/* Desktop Logout Button */}
+            {/* Desktop Logout Button */}
+            <motion.button
+              variants={itemHover}
+              whileHover="hover"
+              whileTap="tap"
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 ml-2 transition-all duration-200"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="font-medium text-sm">Logout</span>
+            </motion.button>
+
+            {/* Desktop Profile */}
+            <div className="relative ml-2 profile-container">
+              <motion.button
+                variants={itemHover}
+                whileHover="hover"
+                whileTap="tap"
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
+              >
+                <User className="w-4 h-4" />
+                <span className="font-medium text-sm">Profile</span>
+              </motion.button>
+
+              <AnimatePresence>
+                {isProfileOpen && (
+                  <motion.div
+                    variants={dropdownVariants}
+                    initial="closed"
+                    animate="open"
+                    exit="closed"
+                    className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl p-4 border border-slate-100 z-50"
+                  >
+                    <h3 className="font-bold text-slate-800 text-base mb-3">Profile Info</h3>
+                    <div className="text-slate-600 text-sm space-y-1">
+                      <p className="font-semibold">{studentName}</p>
+                      <p className="text-slate-500">{studentEmail}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Mobile Profile */}
+          <div className="relative profile-container md:hidden">
+            <motion.button
+              variants={itemHover}
+              whileHover="hover"
+              whileTap="tap"
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors duration-200"
+            >
+              <User className="text-slate-700 w-5 h-5" />
+            </motion.button>
+
+            <AnimatePresence>
+              {isProfileOpen && (
+                <motion.div
+                  variants={dropdownVariants}
+                  initial="closed"
+                  animate="open"
+                  exit="closed"
+                  className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl p-4 border border-slate-100 z-50"
+                >
+                  <h3 className="font-bold text-slate-800 text-base mb-3">Profile Info</h3>
+                  <div className="text-slate-600 text-sm space-y-1">
+                    <p className="font-semibold">{studentName}</p>
+                    <p className="text-slate-500">{studentEmail}</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Mobile Menu Toggle */}
           <motion.button
-            variants={itemHover}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 ml-2 transition-all duration-200"
+            whileTap={{ scale: 0.95 }}
+            onClick={toggleMenu}
+            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors duration-200"
           >
-            <LogOut className="w-4 h-4" />
-            <span className="font-medium text-sm">Logout</span>
+            {isMenuOpen ? (
+              <X className="text-slate-700 w-5 h-5" />
+            ) : (
+              <Menu className="text-slate-700 w-5 h-5" />
+            )}
           </motion.button>
         </div>
-
-        {/* Mobile Menu Toggle */}
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={toggleMenu}
-          className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors duration-200"
-        >
-          {isMenuOpen ? (
-            <X className="text-slate-700 w-5 h-5" />
-          ) : (
-            <Menu className="text-slate-700 w-5 h-5" />
-          )}
-        </motion.button>
       </div>
 
       {/* Mobile Menu */}
@@ -187,8 +281,7 @@ export function StudentNavbar() {
                     <GraduationCap className="text-white w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-slate-800 font-bold">Student Hub</h2>
-                    <p className="text-slate-500 text-sm">Welcome back!</p>
+                    <h2 className="text-slate-800 font-bold text-lg">Student Hub</h2>
                   </div>
                 </div>
 
@@ -201,19 +294,17 @@ export function StudentNavbar() {
                         key={path}
                         to={path}
                         onClick={() => setActive(path)}
-                        className={`block rounded-xl p-3 transition-all duration-200 ${
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 ${
                           isActive
                             ? "bg-purple-50 text-purple-700 border border-purple-100"
                             : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <Icon className="w-5 h-5" />
-                          <span className="font-medium">{label}</span>
-                          {isActive && (
-                            <div className="ml-auto w-2 h-2 bg-purple-500 rounded-full" />
-                          )}
-                        </div>
+                        <Icon className="w-4 h-4" />
+                        <span className="font-medium text-sm">{label}</span>
+                        {isActive && (
+                          <div className="ml-auto w-2 h-2 bg-purple-500 rounded-full" />
+                        )}
                       </Link>
                     );
                   })}
@@ -222,10 +313,10 @@ export function StudentNavbar() {
                 {/* Mobile Logout Button */}
                 <button
                   onClick={handleLogout}
-                  className="mt-auto flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
+                  className="mt-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
                 >
-                  <LogOut className="w-5 h-5" />
-                  <span className="font-medium">Logout</span>
+                  <LogOut className="w-4 h-4" />
+                  <span className="font-medium text-sm">Logout</span>
                 </button>
               </div>
             </motion.div>
