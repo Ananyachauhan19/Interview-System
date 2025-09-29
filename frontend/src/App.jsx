@@ -43,7 +43,7 @@ function AppContent() {
   return (
     <div className={gradientBg + " min-h-screen w-full flex flex-col"}>
       {isAdmin ? <AdminNavbar /> : isStudentDashboard ? <StudentNavbar /> : null}
-      <div className="flex-1 flex items-center justify-center">
+     
         <Routes>
           <Route path="/" element={<MainCard />} />
           <Route path="/student" element={<StudentLogin />} />
@@ -56,7 +56,7 @@ function AppContent() {
           <Route path="/admin/event/:id" element={<EventDetail />} />
           <Route path="/admin/feedback" element={<FeedbackReview />} />
         </Routes>
-      </div>
+      
       {!isLoginPage && <Footer />}
     </div>
   );
