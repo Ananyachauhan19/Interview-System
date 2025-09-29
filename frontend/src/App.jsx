@@ -51,7 +51,7 @@ function AppContent() {
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/pairing" element={<PairingAndScheduling />} />
           <Route path="/student/session" element={<SessionAndFeedback />} />
-          <Route path="/admin/student" element={<StudentOnboarding />} />
+          <Route path="/admin/onboarding" element={<StudentOnboarding />} />
           <Route path="/admin/event" element={<EventManagement />} />
           <Route path="/admin/event/:id" element={<EventDetail />} />
           <Route path="/admin/feedback" element={<FeedbackReview />} />

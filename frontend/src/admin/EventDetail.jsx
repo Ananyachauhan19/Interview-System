@@ -1,10 +1,185 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../utils/api';
-import { CheckCircle, AlertCircle, Upload, ArrowLeft, Download, Trash2, RefreshCw, Clock, Users, Search, Calendar, X, Menu } from 'lucide-react';
+import { 
+  CheckCircle, 
+  AlertCircle, 
+  Upload, 
+  ArrowLeft, 
+  Download, 
+  Trash2, 
+  RefreshCw, 
+  Clock, 
+  Users, 
+  Search, 
+  Calendar, 
+  X, 
+  Menu,
+  FileText,
+  BarChart3,
+  Link2
+} from 'lucide-react';
 
+// Event Card Component
+const EventCard = ({ event, isActive, onClick }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`p-4 rounded-xl bg-white shadow-sm border transition-all duration-200 cursor-pointer ${
+      isActive 
+        ? "border-blue-500 ring-2 ring-blue-500 ring-opacity-20 bg-blue-50" 
+        : "border-gray-100 hover:border-gray-300 hover:bg-gray-50"
+    }`}
+    onClick={onClick}
+  >
+    <div className="flex items-start gap-3">
+      <Calendar className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <h3 className="font-bold text-gray-800 truncate">{event.name}</h3>
+        <div className="text-sm text-gray-600 mt-1 space-y-1">
+          <p>Start: {new Date(event.startDate).toLocaleDateString()}</p>
+          <p>End: {new Date(event.endDate).toLocaleDateString()}</p>
+        </div>
+        {event.isSpecial && (
+          <span className="inline-block mt-2 text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
+            Special Event
+          </span>
+        )}
+      </div>
+    </div>
+  </motion.div>
+);
+
+// Stat Card Component
+const StatCard = ({ icon: Icon, label, value, color = "blue" }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="p-4 bg-white rounded-xl shadow-sm border border-gray-100"
+  >
+    <div className="flex items-center gap-3">
+      <div className={`p-2 rounded-lg bg-${color}-50`}>
+        <Icon className={`w-4 h-4 text-${color}-500`} />
+      </div>
+      <div>
+        <div className="text-sm text-gray-500">{label}</div>
+        <div className="font-semibold text-gray-800">{value}</div>
+      </div>
+    </div>
+  </motion.div>
+);
+
+// Pair Card Component
+const PairCard = ({ pair, index }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.5 + index * 0.1 }}
+    className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200"
+  >
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="text-center min-w-0 flex-1">
+            <div className="font-semibold text-blue-700 truncate">
+              {pair.interviewer?.name || pair.interviewer?.email}
+            </div>
+            <div className="text-xs text-gray-500">Interviewer</div>
+          </div>
+          
+          <div className="text-gray-400 flex-shrink-0">→</div>
+          
+          <div className="text-center min-w-0 flex-1">
+            <div className="font-semibold text-pink-700 truncate">
+              {pair.interviewee?.name || pair.interviewee?.email}
+            </div>
+            <div className="text-xs text-gray-500">Interviewee</div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex flex-wrap gap-3 text-xs text-gray-600 border-t pt-3">
+        <span className={`px-2 py-1 rounded-full ${
+          pair.status === 'completed' ? 'bg-green-100 text-green-700' :
+          pair.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
+          'bg-gray-100 text-gray-700'
+        }`}>
+          {pair.status || (pair.scheduledAt ? 'Scheduled' : 'Pending')}
+        </span>
+        
+        {pair.scheduledAt && (
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {new Date(pair.scheduledAt).toLocaleString()}
+          </span>
+        )}
+        
+        {pair.meetingLink && (
+          <a
+            href={pair.meetingLink}
+            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 underline"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Link2 className="w-3 h-3" />
+            Meeting Link
+          </a>
+        )}
+        
+        {pair.rejectionCount > 0 && (
+          <span className="text-red-600">Rejections: {pair.rejectionCount}</span>
+        )}
+      </div>
+    </div>
+  </motion.div>
+);
+
+// Search and Filter Component
+const EventSearchFilter = ({ searchQuery, setSearchQuery, eventTab, setEventTab }) => (
+  <div className="space-y-4">
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="Search events..."
+        className="w-full bg-gray-50 border border-gray-200 pl-10 pr-10 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none text-gray-700 text-sm"
+      />
+      {searchQuery && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setSearchQuery("")}
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+        >
+          <X className="w-4 h-4" />
+        </motion.button>
+      )}
+    </div>
+    
+    <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+      {['all', 'active', 'upcoming', 'previous'].map(tab => (
+        <button
+          key={tab}
+          onClick={() => setEventTab(tab)}
+          className={`flex-1 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-200 ${
+            eventTab === tab
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+        >
+          {tab.charAt(0).toUpperCase() + tab.slice(1)}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+// Main Component
 export default function EventDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -18,6 +193,7 @@ export default function EventDetail() {
   const [msg, setMsg] = useState('');
   const [reloadingTemplateUrl, setReloadingTemplateUrl] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [eventTab, setEventTab] = useState('all');
 
   const load = useCallback(async (eventId) => {
     try {
@@ -26,15 +202,13 @@ export default function EventDetail() {
       const [allEvents] = await Promise.all([api.listEvents()]);
       setEvents(allEvents);
 
-      // Determine requested event id
       let targetEventId = eventId || id;
       const isValidObjectId = (val) => /^[0-9a-fA-F]{24}$/.test(val || '');
-      // Treat placeholder ":id" or any invalid value as missing
+      
       if (!targetEventId || targetEventId.startsWith(':') || !isValidObjectId(targetEventId)) {
         targetEventId = '';
       }
 
-      // Fallback to first event if invalid or absent
       if (!targetEventId && allEvents.length > 0) {
         targetEventId = allEvents[0]._id;
         setActiveEventId(targetEventId);
@@ -70,6 +244,19 @@ export default function EventDetail() {
     load(activeEventId);
   }, [activeEventId, load]);
 
+  // Filter events based on tab and search
+  const now = new Date();
+  const filteredEvents = events.filter(e => {
+    const nameMatch = e.name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!nameMatch) return false;
+    if (eventTab === 'all') return true;
+    if (eventTab === 'active') return new Date(e.startDate) <= now && new Date(e.endDate) >= now;
+    if (eventTab === 'upcoming') return new Date(e.startDate) > now;
+    if (eventTab === 'previous') return new Date(e.endDate) < now;
+    return true;
+  });
+
+  // Action handlers
   const handleGeneratePairs = async () => {
     try {
       await api.generatePairs(activeEventId);
@@ -97,7 +284,7 @@ export default function EventDetail() {
   };
 
   const handleDeleteTemplate = async () => {
-    if (!window.confirm('Delete template? This cannot be undone.')) return;
+    if (!window.confirm('Are you sure you want to delete this template? This action cannot be undone.')) return;
     try {
       await api.deleteEventTemplate(activeEventId);
       setMsg('Template deleted successfully');
@@ -137,21 +324,6 @@ export default function EventDetail() {
     setIsMobileSidebarOpen(false);
   };
 
-  // Tab state for event filtering
-  const [eventTab, setEventTab] = useState('all');
-
-  // Filtering logic for tabs
-  const now = new Date();
-  const filteredEvents = events.filter(e => {
-    const nameMatch = e.name.toLowerCase().includes(searchQuery.toLowerCase());
-    if (!nameMatch) return false;
-    if (eventTab === 'all') return true;
-    if (eventTab === 'active') return new Date(e.startDate) <= now && new Date(e.endDate) >= now;
-    if (eventTab === 'upcoming') return new Date(e.startDate) > now;
-    if (eventTab === 'previous') return new Date(e.endDate) < now;
-    return true;
-  });
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-16">
@@ -168,286 +340,144 @@ export default function EventDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col pt-16">
-      <div className="flex-1 w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-        <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] gap-6">
-          {/* Desktop Sidebar */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="hidden lg:block lg:w-80"
-          >
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Events</h2>
-              {/* Tabs for event filtering */}
-              <div className="flex gap-2 mb-4">
-                {['all', 'active', 'upcoming', 'previous'].map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setEventTab(tab)}
-                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
-                      eventTab === tab
-                        ? 'bg-blue-500 text-white border-blue-500 shadow'
-                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-blue-50'
-                    }`}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search events..."
-                  className="w-full bg-gray-50 border border-gray-200 pl-10 pr-10 py-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700 text-sm"
-                />
-                {searchQuery && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    <X className="w-4 h-4" />
-                  </motion.button>
-                )}
-              </div>
-              {filteredEvents.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-gray-600 text-sm text-center py-8"
-                >
-                  No events found
-                </motion.div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredEvents.map((e, idx) => (
-                    <motion.div
-                      key={e._id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 + idx * 0.1 }}
-                      className={`p-4 rounded-xl bg-white shadow-sm border border-gray-100 hover:bg-gray-50 transition-all duration-200 cursor-pointer ${
-                        activeEventId === e._id ? "ring-2 ring-blue-500" : ""
-                      }`}
-                      onClick={() => handleEventSelect(e._id)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Calendar className="w-5 h-5 text-blue-500 mt-1" />
-                        <div className="flex-1">
-                          <p className="font-bold text-gray-800 bg-blue-50 px-2 py-1 rounded-md">{e.name}</p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {new Date(e.startDate).toLocaleString()} → {new Date(e.endDate).toLocaleString()}
-                          </p>
-                          <div className="flex gap-2 mt-2 flex-wrap">
-                            {e.isSpecial && (
-                              <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
-                                Special
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Mobile Sidebar Toggle */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="lg:hidden sticky top-16 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 py-4 px-4 flex items-center justify-between"
-          >
-            <h2 className="text-xl font-bold text-gray-800">Events</h2>
+      <div className="flex-1 w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Mobile Header */}
+          <div className="lg:hidden flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <h1 className="text-xl font-bold text-gray-800">Event Management</h1>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-              className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+              className="p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all duration-200"
             >
-              {isMobileSidebarOpen ? <X className="w-5 h-5 text-gray-600" /> : <Menu className="w-5 h-5 text-blue-500" />}
+              {isMobileSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </motion.button>
-          </motion.div>
+          </div>
 
-          {/* Mobile Sidebar Overlay */}
+          {/* Sidebar */}
           <AnimatePresence>
-            {isMobileSidebarOpen && (
+            {(isMobileSidebarOpen || window.innerWidth >= 1024) && (
               <motion.div
-                initial={{ x: "-100%" }}
+                initial={{ x: window.innerWidth < 1024 ? "-100%" : 0 }}
                 animate={{ x: 0 }}
-                exit={{ x: "-100%" }}
+                exit={{ x: window.innerWidth < 1024 ? "-100%" : 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="lg:hidden fixed inset-0 top-28 z-30 bg-white p-6 overflow-y-auto"
+                className={`lg:block lg:w-80 ${
+                  window.innerWidth < 1024 
+                    ? "fixed inset-0 top-16 z-30 bg-white p-6 overflow-y-auto" 
+                    : "relative"
+                }`}
               >
-                <div className="space-y-4">
-                  <div className="relative mb-4">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search events..."
-                      className="w-full bg-gray-50 border border-gray-200 pl-10 pr-10 py-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700 text-sm"
-                    />
-                    {searchQuery && (
-                      <motion.button
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setSearchQuery("")}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full overflow-y-auto">
+                  <h2 className="text-xl font-bold text-gray-800 mb-4">Events</h2>
+                  
+                  <EventSearchFilter 
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    eventTab={eventTab}
+                    setEventTab={setEventTab}
+                  />
+
+                  <div className="mt-4 space-y-3">
+                    {filteredEvents.length === 0 ? (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-gray-500 text-sm text-center py-8"
                       >
-                        <X className="w-4 h-4" />
-                      </motion.button>
+                        No events found
+                      </motion.div>
+                    ) : (
+                      filteredEvents.map((e, idx) => (
+                        <EventCard
+                          key={e._id}
+                          event={e}
+                          isActive={activeEventId === e._id}
+                          onClick={() => handleEventSelect(e._id)}
+                        />
+                      ))
                     )}
                   </div>
-                  {filteredEvents.length === 0 ? (
-                    <div className="text-gray-600 text-sm text-center py-8">No events found</div>
-                  ) : (
-                    filteredEvents.map((e) => (
-                      <motion.div
-                        key={e._id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 hover:bg-gray-50 transition-all duration-200 cursor-pointer"
-                        onClick={() => handleEventSelect(e._id)}
-                      >
-                        <div className="flex items-start gap-3">
-                          <Calendar className="w-5 h-5 text-blue-500 mt-1" />
-                          <div className="flex-1">
-                            <p className="font-bold text-gray-800 bg-blue-50 px-2 py-1 rounded-md">{e.name}</p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {new Date(e.startDate).toLocaleString()} → {new Date(e.endDate).toLocaleString()}
-                            </p>
-                            <div className="flex gap-2 mt-2 flex-wrap">
-                              {e.isSpecial && (
-                                <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
-                                  Special
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))
-                  )}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* Main Content */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="flex-1"
-          >
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8 lg:p-10 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          <div className="flex-1">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full">
               {event ? (
                 <div className="space-y-6">
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="flex items-center justify-between"
-                  >
-                    <h2 className="text-2xl lg:text-3xl font-bold text-gray-800">{event.name}</h2>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setIsMobileSidebarOpen(true)}
-                      className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200 lg:hidden"
+                  {/* Header */}
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-800">{event.name}</h1>
+                      <p className="text-gray-600 mt-1">{event.description}</p>
+                    </div>
+                    <Link
+                      to="/admin/event"
+                      className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
                     >
-                      <Menu className="w-5 h-5 text-gray-600" />
-                    </motion.button>
-                  </motion.div>
-                  <p className="text-gray-600 text-sm">{event.description}</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                    {/* Event Closed Disable Controls */}
-                    <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-xl">
-                      <Clock className="w-5 h-5 text-yellow-500" />
-                      <div>
-                        <div className="text-sm text-gray-500">Event Closed Control</div>
-                        <div className="font-medium text-gray-800 flex flex-col gap-2">
-                          <label className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={!!event.joinDisabled}
-                              onChange={async (e) => {
-                                try {
-                                  const updated = await api.updateEventJoinDisable(event._id, e.target.checked, null);
-                                  setEvent(updated);
-                                  setMsg(e.target.checked ? 'Event Closed manually disabled' : 'Event Closed enabled');
-                                } catch (err) {
-                                  setMsg(err.message || 'Failed to update Event Closed status');
-                                }
-                              }}
-                            />
-                            <span>Manually Close Event</span>
-                          </label>
-                          <label className="flex items-center gap-2">
-                            <span>Close Event At:</span>
-                            <input
-                              type="datetime-local"
-                              value={event.joinDisableTime ? new Date(event.joinDisableTime).toISOString().slice(0,16) : ''}
-                              disabled={!!event.joinDisabled}
-                              onChange={async (e) => {
-                                try {
-                                  const updated = await api.updateEventJoinDisable(event._id, false, e.target.value);
-                                  setEvent(updated);
-                                  setMsg('Scheduled Event Close Time');
-                                } catch (err) {
-                                  setMsg(err.message || 'Failed to update disable time');
-                                }
-                              }}
-                              className="bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-500 focus:outline-none"
-                            />
-                          </label>
-                          {event.joinDisabled && (
-                            <span className="text-xs text-red-600">Event will be closed at</span>
-                          )}
-                          {!event.joinDisabled && event.joinDisableTime && (
-                            <span className="text-xs text-yellow-600">Event will be closed at {new Date(event.joinDisableTime).toLocaleString()}</span>
-                          )}
+                      <ArrowLeft className="w-4 h-4" />
+                      Back to Events
+                    </Link>
+                  </div>
+
+                  {/* Event Controls */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                      <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-yellow-600" />
+                        Event Access Control
+                      </h3>
+                      <div className="space-y-3 text-sm">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={!!event.joinDisabled}
+                            onChange={async (e) => {
+                              try {
+                                const updated = await api.updateEventJoinDisable(event._id, e.target.checked, null);
+                                setEvent(updated);
+                                setMsg(e.target.checked ? 'Event closed' : 'Event opened');
+                              } catch (err) {
+                                setMsg(err.message || 'Failed to update event status');
+                              }
+                            }}
+                            className="rounded text-blue-500"
+                          />
+                          <span>Close event registration</span>
+                        </label>
+                        
+                        <div className="flex items-center gap-2">
+                          <span>Auto-close at:</span>
+                          <input
+                            type="datetime-local"
+                            value={event.joinDisableTime ? new Date(event.joinDisableTime).toISOString().slice(0,16) : ''}
+                            disabled={!!event.joinDisabled}
+                            onChange={async (e) => {
+                              try {
+                                const updated = await api.updateEventJoinDisable(event._id, false, e.target.value);
+                                setEvent(updated);
+                                setMsg('Auto-close time set');
+                              } catch (err) {
+                                setMsg(err.message || 'Failed to update auto-close time');
+                              }
+                            }}
+                            className="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-yellow-500 focus:outline-none"
+                          />
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
-                      <Clock className="w-5 h-5 text-blue-500" />
-                      <div>
-                        <div className="text-sm text-gray-500">Start Time</div>
-                        <div className="font-medium text-gray-800">
-                          {event.startDate ? new Date(event.startDate).toLocaleString() : 'N/A'}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
-                      <Clock className="w-5 h-5 text-purple-500" />
-                      <div>
-                        <div className="text-sm text-gray-500">End Time</div>
-                        <div className="font-medium text-gray-800">
-                          {event.endDate ? new Date(event.endDate).toLocaleString() : 'N/A'}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
-                      <Users className="w-5 h-5 text-green-500" />
-                      <div>
-                        <div className="text-sm text-gray-500">Capacity</div>
-                        <div className="font-medium text-gray-800 flex items-center gap-2">
+
+                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                      <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-blue-600" />
+                        Capacity Settings
+                      </h3>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex items-center gap-3">
                           <label className="flex items-center gap-2">
                             <input
                               type="radio"
@@ -455,6 +485,7 @@ export default function EventDetail() {
                               value="unlimited"
                               checked={event.capacity === null || event.capacity === ''}
                               onChange={() => setEvent(ev => ({ ...ev, capacity: null }))}
+                              className="text-blue-500"
                             />
                             <span>Unlimited</span>
                           </label>
@@ -465,10 +496,14 @@ export default function EventDetail() {
                               value="limited"
                               checked={event.capacity !== null && event.capacity !== ''}
                               onChange={() => setEvent(ev => ({ ...ev, capacity: 1 }))}
+                              className="text-blue-500"
                             />
-                            <span>Set Limit</span>
+                            <span>Limited</span>
                           </label>
-                          {event.capacity !== null && event.capacity !== '' && (
+                        </div>
+                        
+                        {event.capacity !== null && event.capacity !== '' && (
+                          <div className="flex items-center gap-2">
                             <input
                               type="number"
                               min="1"
@@ -477,53 +512,50 @@ export default function EventDetail() {
                                 const val = e.target.value;
                                 setEvent(ev => ({ ...ev, capacity: val === '' ? '' : Number(val) }));
                               }}
-                              className="w-20 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                              className="w-20 bg-white border border-gray-200 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             />
-                          )}
-                          <button
-                            onClick={async () => {
-                              try {
-                                const updated = await api.updateEventCapacity(event._id, event.capacity === '' ? null : event.capacity);
-                                setEvent(updated);
-                                setMsg('Capacity updated');
-                              } catch (err) {
-                                setMsg(err.message || 'Failed to update capacity');
-                              }
-                            }}
-                            className="px-2 py-1 bg-blue-500 text-white rounded text-xs font-semibold hover:bg-blue-600 transition-all"
-                          >
-                            Update
-                          </button>
-                        </div>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const updated = await api.updateEventCapacity(event._id, event.capacity === '' ? null : event.capacity);
+                                  setEvent(updated);
+                                  setMsg('Capacity updated');
+                                } catch (err) {
+                                  setMsg(err.message || 'Failed to update capacity');
+                                }
+                              }}
+                              className="px-3 py-1 bg-blue-500 text-white rounded text-sm font-medium hover:bg-blue-600 transition-all"
+                            >
+                              Update
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-3 mb-6">
-                    <Link
-                      to="/admin/event"
-                      className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm underline"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Back to Event Creation
-                    </Link>
+
+                  {/* Quick Actions */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <motion.button
-                      whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={handleGeneratePairs}
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-xl font-semibold text-sm hover:from-green-600 hover:to-emerald-600 transition-all duration-200 shadow-md"
+                      className="p-3 bg-green-500 text-white rounded-xl font-semibold text-sm hover:bg-green-600 transition-all duration-200 shadow-sm"
                     >
                       Generate Pairs
                     </motion.button>
+                    
                     <motion.button
-                      whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={handleExportCsv}
-                      className="w-full bg-gradient-to-r from-gray-600 to-gray-800 text-white px-4 py-3 rounded-xl font-semibold text-sm hover:from-gray-700 hover:to-gray-900 transition-all duration-200 shadow-md"
+                      className="p-3 bg-gray-600 text-white rounded-xl font-semibold text-sm hover:bg-gray-700 transition-all duration-200 shadow-sm flex items-center justify-center gap-2"
                     >
-                      <Download className="w-4 h-4 mr-2 inline" />
+                      <Download className="w-4 h-4" />
                       Export CSV
                     </motion.button>
-                    <label className="w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-sm cursor-pointer hover:bg-gray-100 transition-all duration-200 flex items-center justify-center gap-2">
+                    
+                    <label className="p-3 bg-white border border-gray-200 rounded-xl text-sm cursor-pointer hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2">
                       <Upload className="w-4 h-4 text-blue-500" />
                       Replace Template
                       <input
@@ -536,171 +568,132 @@ export default function EventDetail() {
                         }}
                       />
                     </label>
-                    {event.templateUrl && (
-                      <a
-                        href={event.templateUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:text-blue-800 underline text-center"
-                      >
-                        View Template{event.templateName ? `: ${event.templateName}` : ''}
-                      </a>
-                    )}
-                    {!event.ended && event.templateUrl && (
-                      <div className="text-xs text-gray-500 text-center">
-                        Template deletable after event ends
-                      </div>
-                    )}
+
                     {event.canDeleteTemplate && (
                       <motion.button
-                        whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(239, 68, 68, 0.3)" }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={handleDeleteTemplate}
-                        className="w-full bg-gradient-to-r from-red-500 to-rose-500 text-white px-4 py-3 rounded-xl font-semibold text-sm hover:from-red-600 hover:to-rose-600 transition-all duration-200 shadow-md"
+                        className="p-3 bg-red-500 text-white rounded-xl font-semibold text-sm hover:bg-red-600 transition-all duration-200 shadow-sm flex items-center justify-center gap-2"
                       >
-                        <Trash2 className="w-4 h-4 mr-2 inline" />
+                        <Trash2 className="w-4 h-4" />
                         Delete Template
                       </motion.button>
                     )}
-                    {event.templateKey && import.meta.env.VITE_SUPABASE_PUBLIC !== 'true' && (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        disabled={reloadingTemplateUrl}
-                        onClick={refreshSignedUrl}
-                        className="text-sm text-purple-600 hover:text-purple-800 underline disabled:opacity-50 disabled:cursor-not-allowed text-center"
-                      >
-                        <RefreshCw className={`w-4 h-4 mr-2 inline ${reloadingTemplateUrl ? 'animate-spin' : ''}`} />
-                        Refresh Signed URL
-                      </motion.button>
-                    )}
                   </div>
-                  {analytics && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                      className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 mb-6"
-                    >
-                      <h3 className="text-lg font-semibold text-gray-800 mb-3">Analytics</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                        {[
-                          { label: 'Joined', value: analytics.joined },
-                          { label: 'Pairs', value: analytics.pairs },
-                          { label: 'Scheduled', value: analytics.scheduled },
-                          { label: 'Feedback', value: analytics.feedbackSubmissions },
-                          { label: 'Avg Score', value: analytics.averageScore, colSpan: 'col-span-2 md:col-span-1' },
-                        ].map((stat, idx) => (
-                          <motion.div
-                            key={stat.label}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.4 + idx * 0.1 }}
-                            className={`p-3 bg-white rounded-xl shadow-sm border border-gray-100 ${stat.colSpan || ''}`}
-                          >
-                            <div className="text-gray-500 text-xs">{stat.label}</div>
-                            <div className="font-medium text-gray-800">{stat.value}</div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Pairs</h3>
-                  {pairs.length === 0 ? (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-gray-500 text-sm text-center"
-                    >
-                      No pairs yet.
-                    </motion.div>
-                  ) : (
-                    <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-2">
-                      {pairs.map((p, idx) => (
-                        <motion.div
-                          key={p._id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.5 + idx * 0.1 }}
-                          className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 hover:bg-gray-50 transition-all duration-200"
+
+                  {/* Template Management */}
+                  {event.templateUrl && (
+                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                      <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-gray-600" />
+                        Template Management
+                      </h3>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-sm">
+                        <a
+                          href={event.templateUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 font-medium"
                         >
-                          <div className="flex flex-col gap-2">
-                            <div className="flex justify-between items-center">
-                              <span className="font-semibold text-blue-700">
-                                {p.interviewer?.name || p.interviewer?.email}
-                              </span>
-                              <span className="text-gray-400">→</span>
-                              <span className="font-semibold text-pink-700">
-                                {p.interviewee?.name || p.interviewee?.email}
-                              </span>
-                            </div>
-                            <div className="flex flex-wrap gap-3 text-xs text-gray-600">
-                              <span>Status: {p.status || (p.scheduledAt ? 'Scheduled' : 'Pending')}</span>
-                              {p.scheduledAt && (
-                                <span>Time: {new Date(p.scheduledAt).toLocaleString()}</span>
-                              )}
-                              {p.meetingLink && (
-                                <a
-                                  href={p.meetingLink}
-                                  className="text-blue-600 hover:text-blue-800 underline"
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  Meeting Link
-                                </a>
-                              )}
-                              {p.rejectionCount > 0 && (
-                                <span className="text-red-600">Rejections: {p.rejectionCount}</span>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
+                          View Template{event.templateName ? `: ${event.templateName}` : ''}
+                        </a>
+                        
+                        {event.templateKey && import.meta.env.VITE_SUPABASE_PUBLIC !== 'true' && (
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            disabled={reloadingTemplateUrl}
+                            onClick={refreshSignedUrl}
+                            className="text-purple-600 hover:text-purple-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                          >
+                            <RefreshCw className={`w-4 h-4 ${reloadingTemplateUrl ? 'animate-spin' : ''}`} />
+                            Refresh URL
+                          </motion.button>
+                        )}
+                        
+                        {!event.ended && (
+                          <span className="text-xs text-gray-500">
+                            Template can be deleted after event ends
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
-                  <AnimatePresence>
-                    {msg && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className={`flex items-center justify-center text-sm text-center p-4 rounded-xl mt-6 ${
-                          msg.toLowerCase().includes('success')
-                            ? 'bg-green-50 text-green-600 border border-green-100'
-                            : 'bg-red-50 text-red-600 border border-red-100'
-                        }`}
-                      >
-                        {msg.toLowerCase().includes('success') ? (
-                          <CheckCircle className="w-5 h-5 mr-2" />
-                        ) : (
-                          <AlertCircle className="w-5 h-5 mr-2" />
-                        )}
-                        {msg}
-                      </motion.div>
+
+                  {/* Analytics */}
+                  {analytics && (
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-blue-500" />
+                        Event Analytics
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                        <StatCard icon={Users} label="Joined" value={analytics.joined} color="blue" />
+                        <StatCard icon={Link2} label="Pairs" value={analytics.pairs} color="green" />
+                        <StatCard icon={Calendar} label="Scheduled" value={analytics.scheduled} color="purple" />
+                        <StatCard icon={FileText} label="Feedback" value={analytics.feedbackSubmissions} color="orange" />
+                        <StatCard icon={BarChart3} label="Avg Score" value={analytics.averageScore} color="red" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pairs Section */}
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Interview Pairs</h3>
+                    {pairs.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
+                        No pairs generated yet. Click "Generate Pairs" to create interview pairs.
+                      </div>
+                    ) : (
+                      <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        {pairs.map((pair, idx) => (
+                          <PairCard key={pair._id} pair={pair} index={idx} />
+                        ))}
+                      </div>
                     )}
-                  </AnimatePresence>
+                  </div>
                 </div>
               ) : (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="flex flex-col items-center justify-center h-full text-center"
-                >
+                <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Calendar className="w-16 h-16 text-blue-500 mb-4" />
-                  <h3 className="text-2xl font-bold text-gray-800 mb-2">No Event Available</h3>
-                  <p className="text-gray-600 max-w-md">
-                    {msg || 'No events are available. Please create an event in Event Management.'}
-                    {msg ? (
-                      <Link to="/admin/event" className="text-blue-600 hover:text-blue-800 underline mt-2 inline-block">
-                        Go to Event Management
-                      </Link>
-                    ) : null}
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">No Event Selected</h3>
+                  <p className="text-gray-600 max-w-md mb-4">
+                    {msg || 'Select an event from the sidebar or create a new event to get started.'}
                   </p>
-                </motion.div>
+                  <Link
+                    to="/admin/event"
+                    className="px-6 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all duration-200"
+                  >
+                    Create New Event
+                  </Link>
+                </div>
               )}
+
+              {/* Message Alert */}
+              <AnimatePresence>
+                {msg && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className={`flex items-center justify-center p-4 rounded-xl mt-6 ${
+                      msg.toLowerCase().includes('success')
+                        ? 'bg-green-50 text-green-600 border border-green-200'
+                        : 'bg-red-50 text-red-600 border border-red-200'
+                    }`}
+                  >
+                    {msg.toLowerCase().includes('success') ? (
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 mr-2" />
+                    )}
+                    {msg}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>
