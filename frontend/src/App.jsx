@@ -18,20 +18,6 @@ const subtitleStyle = "text-lg text-gray-500 mb-8 text-center";
 const buttonStyle = "w-full px-6 py-3 font-semibold rounded-xl shadow-md transition-all duration-200 text-lg flex items-center justify-center";
 const studentBtn = `${buttonStyle} bg-blue-600 hover:bg-blue-700 text-white border-2 border-blue-600 mb-4`;
 
-function MainCard() {
-  return (
-    <div className={cardStyle}>
-      <h1 className={titleStyle}>Interview Management System</h1>
-      <p className={subtitleStyle}>Login to continue</p>
-      <div className="w-full flex flex-col gap-4 mb-4">
-        <Link to="/student" className={studentBtn}>
-          Login
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 function AppContent() {
   const location = useLocation();
   const isMain = location.pathname === "/";
@@ -45,8 +31,7 @@ function AppContent() {
       {isAdmin ? <AdminNavbar /> : isStudentDashboard ? <StudentNavbar /> : null}
      
         <Routes>
-          <Route path="/" element={<MainCard />} />
-          <Route path="/student" element={<StudentLogin />} />
+          <Route path="/" element={<StudentLogin />} />
           <Route path="/student/change-password" element={<ChangePassword />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/pairing" element={<PairingAndScheduling />} />
