@@ -5,7 +5,7 @@ import User from '../models/User.js';
 import { HttpError } from '../utils/errors.js';
 
 // Only interviewer can submit feedback about the interviewee.
-// Feedback allowed after the scheduled interview time (if set) OR after event end.
+// Feedback allowed only after the meeting END (scheduledAt + duration) OR after event end.
 export async function submitFeedback(req, res) {
   const { pairId, marks, comments } = req.body;
   if (marks == null || isNaN(marks)) throw new HttpError(400, 'Marks required');
@@ -18,10 +18,12 @@ export async function submitFeedback(req, res) {
   const event = await Event.findById(pair.event);
   if (!event) throw new HttpError(404, 'Event not found');
   const now = Date.now();
-  const scheduled = pair.scheduledAt ? new Date(pair.scheduledAt).getTime() : null;
+  const scheduledStart = pair.scheduledAt ? new Date(pair.scheduledAt).getTime() : null;
+  const durationMin = Number(process.env.MEETING_DURATION_MIN || 30);
+  const scheduledEnd = scheduledStart ? (scheduledStart + durationMin * 60 * 1000) : null;
   const eventEnd = event.endDate ? new Date(event.endDate).getTime() : null;
-  if (!( (scheduled && now > scheduled) || (eventEnd && now > eventEnd) )) {
-    throw new HttpError(400, 'Feedback not allowed before session completes');
+  if (!((scheduledEnd && now >= scheduledEnd) || (eventEnd && now >= eventEnd))) {
+    throw new HttpError(400, `Feedback opens after session ends${scheduledEnd ? ' at ' + new Date(scheduledEnd).toLocaleString() : ''}`);
   }
   const to = pair.interviewee; // receiver always interviewee
   // Block duplicate submissions

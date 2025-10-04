@@ -347,6 +347,22 @@ export default function SessionAndFeedback() {
                       );
                     }
                     if (isInterviewer) {
+                      const now = Date.now();
+                      const durationMin = 30; // mirror server default; could be injected via env if needed
+                      const meetingEnd = new Date(activePair.scheduledAt).getTime() + durationMin * 60 * 1000;
+                      const feedbackOpen = now >= meetingEnd;
+                      if (!feedbackOpen) {
+                        return (
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="p-4 bg-yellow-50 text-yellow-700 rounded-xl border border-yellow-200 text-sm"
+                          >
+                            Feedback will open after the session ends at {new Date(meetingEnd).toLocaleTimeString()}.
+                          </motion.div>
+                        );
+                      }
                       return (
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}

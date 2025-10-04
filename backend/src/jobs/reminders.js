@@ -14,7 +14,7 @@ cron.schedule('*/5 * * * *', async () => {
     const emails = [p.interviewer?.email, p.interviewee?.email].filter(Boolean);
     // Auto-generate meeting link within 1 hour window if not already generated
     if (!p.meetingLink && diff <= 60 * 60 * 1000) {
-      const base = (process.env.MEETING_LINK_BASE || 'https://meet.example.com').replace(/\/$/, '');
+      const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
       const token = crypto.randomUUID();
       p.meetingLink = `${base}/${token}`;
       await p.save();

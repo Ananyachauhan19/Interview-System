@@ -3,6 +3,7 @@ import SlotProposal from '../models/SlotProposal.js';
 import Event from '../models/Event.js';
 import { sendMail, buildICS } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
+import crypto from 'crypto';
 
 export async function proposeSlots(req, res) {
   const pair = await Pair.findById(req.params.pairId);
@@ -85,7 +86,14 @@ export async function confirmSlot(req, res) {
   if (event?.endDate && scheduled.getTime() > new Date(event.endDate).getTime()) throw new HttpError(400, 'Scheduled time after event end');
 
   pair.scheduledAt = scheduled;
-  pair.meetingLink = meetingLink || pair.meetingLink || '';
+  // Auto-generate a Jitsi meet link if none provided yet.
+  if (meetingLink) {
+    pair.meetingLink = meetingLink;
+  } else if (!pair.meetingLink) {
+    const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
+    const room = `Interview-${pair._id}-${crypto.randomBytes(3).toString('hex')}`; // 6 hex chars
+    pair.meetingLink = `${base}/${room}`;
+  }
   pair.status = 'scheduled';
   await pair.save();
   // notify both

@@ -74,18 +74,7 @@ export async function listPairs(req, res) {
 
   const now = Date.now();
   const oneHourMs = 60 * 60 * 1000;
-  const sanitized = pairs.map((p) => {
-    const copy = { ...p };
-    if (copy.meetingLink && copy.scheduledAt) {
-      const showAt = new Date(copy.scheduledAt).getTime() - oneHourMs;
-      if (now < showAt) {
-        // Hide meeting link until 1 hour before
-        delete copy.meetingLink;
-      }
-    }
-    copy.status = copy.status || 'pending';
-    return copy;
-  });
+  const sanitized = pairs.map((p) => ({ ...p, status: p.status || 'pending' }));
   res.json(sanitized);
 }
 

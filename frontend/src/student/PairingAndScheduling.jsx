@@ -281,7 +281,7 @@ export default function PairingAndScheduling() {
                     </motion.button>
                   </motion.div>
                   <p className="text-sm text-gray-600">
-                    Interviewer proposes times within the event window. Interviewee either accepts or rejects (triggering a re-proposal). Meeting link is auto-generated within 1 hour of start. Once scheduled, no further changes are allowed.
+                    Interviewer proposes times within the event window. Interviewee accepts or rejects (triggering re-proposal). A Jitsi meeting link is generated automatically upon scheduling (or within 1 hour if still missing). Once scheduled, no further changes are allowed.
                   </p>
                   {isLocked && (
                     <motion.div
@@ -410,6 +410,41 @@ export default function PairingAndScheduling() {
                       </span>
                     )}
                   </div>
+                  {isLocked && selectedPair.meetingLink && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-6 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex flex-col gap-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-indigo-700 text-sm">Meeting Link</span>
+                        <span className="text-xs text-gray-500">Jitsi</span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <input
+                          type="text"
+                          readOnly
+                          value={selectedPair.meetingLink}
+                          className="flex-1 bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => window.open(selectedPair.meetingLink, '_blank')}
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow"
+                          >
+                            Join
+                          </button>
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(selectedPair.meetingLink); setMessage('Link copied'); }}
+                            className="px-4 py-2 bg-white border border-indigo-300 hover:bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500">Share only with your interview partner. This is a public Jitsi room.</p>
+                    </motion.div>
+                  )}
                   <AnimatePresence>
                     {message && (
                       <motion.div
