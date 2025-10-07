@@ -11,7 +11,7 @@ export async function proposeSlots(req, res) {
   if (![pair.interviewer.toString(), pair.interviewee.toString()].includes(req.user._id.toString())) throw new HttpError(403, 'Not your pair');
   const { slots } = req.body || {}; // array of ISO strings (optional)
   const isInterviewer = req.user._id.equals(pair.interviewer);
-  const partnerId = pair.interviewee; // interviewer proposes, interviewee is partner
+  const partnerId = pair.interviewer.equals(req.user._id) ? pair.interviewee : pair.interviewer;
 
   // If already scheduled, disallow any further modifications to slots.
   if (pair.status === 'scheduled') {
@@ -19,28 +19,16 @@ export async function proposeSlots(req, res) {
     // Read-only fetch still allowed below when no slots provided
   }
 
-  // Only interviewer can propose (business rule update)
-  if (!isInterviewer) {
-    // Read-only fetch allowed for interviewee
-    if (!slots || slots.length === 0) {
-      const interviewerProposalRO = await SlotProposal.findOne({ pair: pair._id, user: pair.interviewer, event: pair.event });
-      return res.json({
-        mine: [],
-        partner: (interviewerProposalRO?.slots || []).map(d => new Date(d).toISOString()),
-        common: null,
-      });
-    }
-    throw new HttpError(403, 'Only interviewer can propose slots');
-  }
-
-  // If no slots provided, return current proposals (read-only)
+  // If no slots provided, return current proposals (read-only for both roles)
   if (!slots || slots.length === 0) {
-    const mine = await SlotProposal.findOne({ pair: pair._id, user: pair.interviewer, event: pair.event });
-    return res.json({
-      mine: (mine?.slots || []).map(d => new Date(d).toISOString()),
-      partner: [],
-      common: null,
-    });
+    const mineDoc = await SlotProposal.findOne({ pair: pair._id, user: req.user._id, event: pair.event });
+    const partnerDoc = await SlotProposal.findOne({ pair: pair._id, user: partnerId, event: pair.event });
+    const mine = (mineDoc?.slots || []).map(d => new Date(d).toISOString());
+    const partner = (partnerDoc?.slots || []).map(d => new Date(d).toISOString());
+    // find first common
+    const partnerSet = new Set(partner.map(d => new Date(d).getTime()));
+    const common = mine.map(d => new Date(d).getTime()).find(t => partnerSet.has(t));
+    return res.json({ mine, partner, common: common ? new Date(common).toISOString() : null });
   }
 
   // Validate slots within event window
@@ -51,22 +39,36 @@ export async function proposeSlots(req, res) {
   if (dates.some(d => isNaN(d.getTime()))) throw new HttpError(400, 'Invalid slot date');
   if (startBoundary && dates.some(d => d.getTime() < startBoundary)) throw new HttpError(400, 'Slot before event start');
   if (endBoundary && dates.some(d => d.getTime() > endBoundary)) throw new HttpError(400, 'Slot after event end');
+
+  // Business rules: interviewer can propose any number; interviewee can propose up to 3 alternatives when requesting change
+  if (!isInterviewer && dates.length > 3) {
+    throw new HttpError(400, 'Interviewee may propose up to 3 alternative slots');
+  }
+
   const doc = await SlotProposal.findOneAndUpdate(
     { pair: pair._id, user: req.user._id, event: pair.event },
     { slots: dates },
     { upsert: true, new: true }
   );
 
-  // Check intersection with partner
-  res.json({ proposed: doc.slots.map((d) => new Date(d).toISOString()) });
+  // Return both proposals and intersection
+  const mineDoc = doc;
+  const partnerDoc = await SlotProposal.findOne({ pair: pair._id, user: partnerId, event: pair.event });
+  const mine = (mineDoc?.slots || []).map(d => new Date(d).toISOString());
+  const partner = (partnerDoc?.slots || []).map(d => new Date(d).toISOString());
+  const partnerSet = new Set(partner.map(d => new Date(d).getTime()));
+  const common = mine.map(d => new Date(d).getTime()).find(t => partnerSet.has(t));
+  res.json({ mine, partner, common: common ? new Date(common).toISOString() : null });
 }
 
 export async function confirmSlot(req, res) {
   const pair = await Pair.findById(req.params.pairId);
   if (!pair) throw new HttpError(404, 'Pair not found');
   if (![pair.interviewer.toString(), pair.interviewee.toString()].includes(req.user._id.toString())) throw new HttpError(403, 'Not your pair');
-  // Rule: Only interviewee can confirm a time.
-  if (!req.user._id.equals(pair.interviewee)) throw new HttpError(403, 'Only the interviewee can confirm the meeting time');
+  // Rule: Either party may confirm, but the chosen time must exist in the OTHER party's proposals.
+  const confirmerIsInterviewee = req.user._id.equals(pair.interviewee);
+  const confirmerIsInterviewer = req.user._id.equals(pair.interviewer);
+  if (!confirmerIsInterviewee && !confirmerIsInterviewer) throw new HttpError(403, 'Only pair participants can confirm the meeting time');
 
   if (pair.status === 'scheduled') throw new HttpError(400, 'Pair already scheduled; confirmation cannot be changed');
 
@@ -74,11 +76,12 @@ export async function confirmSlot(req, res) {
   const scheduled = new Date(scheduledAt);
   if (isNaN(scheduled.getTime())) throw new HttpError(400, 'Invalid scheduledAt');
 
-  // Validate the selected time is among the interviewer proposed slots
-  const interviewerProposal = await SlotProposal.findOne({ pair: pair._id, user: pair.interviewer, event: pair.event });
-  if (!interviewerProposal || !interviewerProposal.slots?.length) throw new HttpError(400, 'No interviewer slots available to confirm');
-  const proposedSet = new Set((interviewerProposal.slots || []).map((d) => new Date(d).getTime()));
-  if (!proposedSet.has(scheduled.getTime())) throw new HttpError(400, 'Selected time is not one of the interviewer proposed slots');
+  // Validate the selected time is among the OTHER party's proposed slots
+  const otherUserId = confirmerIsInterviewer ? pair.interviewee : pair.interviewer;
+  const otherProposal = await SlotProposal.findOne({ pair: pair._id, user: otherUserId, event: pair.event });
+  if (!otherProposal || !otherProposal.slots?.length) throw new HttpError(400, 'No slots proposed by the other party to confirm');
+  const proposedSet = new Set((otherProposal.slots || []).map((d) => new Date(d).getTime()));
+  if (!proposedSet.has(scheduled.getTime())) throw new HttpError(400, 'Selected time is not one of the other party proposed slots');
 
   // Enforce event window on confirmation too
   const event = await Event.findById(pair.event);
