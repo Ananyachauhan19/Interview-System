@@ -14,6 +14,8 @@ export default function PairingAndScheduling() {
   const [me, setMe] = useState(null);
   const [currentProposals, setCurrentProposals] = useState({ mine: [], partner: [], common: null });
   const [selectedToAccept, setSelectedToAccept] = useState("");
+  const [meetingLinkEnabled, setMeetingLinkEnabled] = useState(false);
+  const [timeUntilEnable, setTimeUntilEnable] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -88,6 +90,33 @@ export default function PairingAndScheduling() {
     };
     fetch();
   }, [selectedPair]);
+
+  // Enable meeting link only 30 minutes before scheduled time. Update countdown while visible.
+  useEffect(() => {
+    let timer;
+    if (!selectedPair?.scheduledAt) {
+      setMeetingLinkEnabled(false);
+      setTimeUntilEnable(null);
+      return;
+    }
+    const scheduled = new Date(selectedPair.scheduledAt).getTime();
+    const enableAt = scheduled - 30 * 60 * 1000; // 30 minutes before
+
+    function tick() {
+      const now = Date.now();
+      if (now >= enableAt) {
+        setMeetingLinkEnabled(true);
+        setTimeUntilEnable(0);
+      } else {
+        setMeetingLinkEnabled(false);
+        setTimeUntilEnable(enableAt - now);
+      }
+    }
+
+    tick();
+    timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [selectedPair?.scheduledAt]);
 
   // Reset selectedToAccept when proposals change
   useEffect(() => {
@@ -539,24 +568,31 @@ export default function PairingAndScheduling() {
                         <input
                           type="text"
                           readOnly
-                          value={selectedPair.meetingLink}
-                          className="flex-1 bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none"
+                          value={meetingLinkEnabled ? selectedPair.meetingLink : `Meeting link hidden until ${new Date(new Date(selectedPair.scheduledAt).getTime() - 30 * 60 * 1000).toLocaleString()}`}
+                          className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none ${meetingLinkEnabled ? 'bg-white border-indigo-200 text-gray-700' : 'bg-gray-50 border-gray-200 text-gray-400 select-none'}`}
                         />
                         <div className="flex gap-2">
                           <button
-                            onClick={() => window.open(selectedPair.meetingLink, '_blank')}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow"
+                            onClick={() => { if (!meetingLinkEnabled) return; window.open(selectedPair.meetingLink, '_blank'); }}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium shadow ${meetingLinkEnabled ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                            disabled={!meetingLinkEnabled}
+                            aria-disabled={!meetingLinkEnabled}
                           >
                             Join
                           </button>
                           <button
-                            onClick={() => { navigator.clipboard.writeText(selectedPair.meetingLink); setMessage('Link copied'); }}
-                            className="px-4 py-2 bg-white border border-indigo-300 hover:bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium"
+                            onClick={() => { if (!meetingLinkEnabled) return; navigator.clipboard.writeText(selectedPair.meetingLink); setMessage('Link copied'); }}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium ${meetingLinkEnabled ? 'bg-white border border-indigo-300 hover:bg-indigo-100 text-indigo-700' : 'bg-gray-50 border border-gray-200 text-gray-400 cursor-not-allowed'}`}
+                            disabled={!meetingLinkEnabled}
+                            aria-disabled={!meetingLinkEnabled}
                           >
                             Copy
                           </button>
                         </div>
                       </div>
+                      {!meetingLinkEnabled && selectedPair?.scheduledAt && (
+                        <div className="text-xs text-gray-500 mt-1">Meeting link will be enabled at {new Date(new Date(selectedPair.scheduledAt).getTime() - 30 * 60 * 1000).toLocaleString()} {timeUntilEnable > 0 && (`(in ${Math.ceil(timeUntilEnable/1000)}s)`)}</div>
+                      )}
                       <p className="text-xs text-gray-500">Share only with your interview partner. This is a public Jitsi room.</p>
                     </motion.div>
                   )}
