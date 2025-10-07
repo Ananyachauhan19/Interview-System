@@ -14,6 +14,7 @@ export default function StudentOnboarding() {
   // order fields as CSV: course, name, email, studentid, password, branch, college
   const [singleForm, setSingleForm] = useState({ course: '', name: '', email: '', studentid: '', password: '', branch: '', college: '' });
   const [singleMsg, setSingleMsg] = useState('');
+  const [singleLoading, setSingleLoading] = useState(false);
 
   const errorsByRow = clientErrors.reduce((acc, cur) => {
     const msg = cur.details ? (Array.isArray(cur.details) ? cur.details.join(', ') : cur.details) : cur.error;
@@ -136,22 +137,28 @@ export default function StudentOnboarding() {
 
   const submitSingle = async () => {
     setSingleMsg('');
+    setSingleLoading(true);
     const { name, email, studentid, branch } = singleForm;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!name || !email || !studentid || !branch) {
       setSingleMsg('Please fill required fields: name, email, studentid, branch');
+      setSingleLoading(false);
       return;
     }
     if (!emailRegex.test(email)) { setSingleMsg('Invalid email'); return; }
     try {
       const data = await api.createStudent(singleForm);
       setSingleMsg('Student created: ' + (data.email || data.studentid));
+      // show success briefly
+      setTimeout(() => setSingleMsg(''), 4000);
   // add to preview with keys in CSV order
   const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', password: singleForm.password || '', branch: singleForm.branch || '', college: singleForm.college || '', __row: 'N/A' };
   setStudents((s) => [newStudent, ...s]);
       setSingleForm({ name: '', email: '', studentid: '', password: '', branch: '', course: '', college: '' });
+      setSingleLoading(false);
     } catch (err) {
       setSingleMsg(err.message);
+      setSingleLoading(false);
     }
   };
 
@@ -201,10 +208,16 @@ export default function StudentOnboarding() {
                 <input value={singleForm.password} onChange={(e) => handleSingleChange('password', e.target.value)} placeholder="Password (optional)" className="p-2 border rounded" />
               </div>
               <div className="flex gap-2 mt-3">
-                <button onClick={submitSingle} disabled={!isSingleValid()} className={`p-2 rounded ${!isSingleValid() ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-blue-600 text-white'}`}>Create</button>
+                <button onClick={submitSingle} disabled={!isSingleValid() || singleLoading} className={`p-2 rounded ${(!isSingleValid() || singleLoading) ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-blue-600 text-white'}`}>
+                  {singleLoading ? 'Creating...' : 'Create'}
+                </button>
                 <button onClick={() => { setShowSingleForm(false); setSingleMsg(''); }} className="p-2 bg-white border rounded">Cancel</button>
               </div>
-              {singleMsg && <div className="mt-2 text-sm text-red-600">{singleMsg}</div>}
+              {singleMsg && (
+                <div className={`mt-2 text-sm ${singleMsg.toLowerCase().includes('created') ? 'text-green-600' : 'text-red-600'}`}>
+                  {singleMsg}
+                </div>
+              )}
             </div>
           )}
           <motion.div

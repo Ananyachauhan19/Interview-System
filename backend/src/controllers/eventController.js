@@ -69,6 +69,49 @@ export async function createEvent(req, res) {
   const { name, description, startDate, endDate } = req.body;
   const tpl = await uploadTemplate(req.file);
   const event = await Event.create({ name, description, startDate, endDate, ...tpl });
+  // For normal events: auto-select all students in DB as participants and generate pairs
+  try {
+    const students = await User.find({ role: 'student', email: { $exists: true, $ne: null } }, '_id email name');
+    const ids = students.map(s => s._id.toString());
+    // Always set participants to all students in DB (so analytics show joined count)
+    event.participants = students.map(s => s._id);
+    await event.save();
+    if (ids.length >= 2) {
+      // Rotation pairing
+      const pairs = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
+      await Pair.deleteMany({ event: event._id });
+      const created = await Pair.insertMany(pairs.map(([a, b]) => ({ event: event._id, interviewer: a, interviewee: b })));
+      // Notify students if enabled
+      if (process.env.EMAIL_ON_PAIRING === 'true') {
+        const byId = new Map(students.map((s) => [s._id.toString(), s]));
+        const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+        for (const p of created) {
+          const a = byId.get(p.interviewer.toString());
+          const b = byId.get(p.interviewee.toString());
+          if (a?.email) {
+            const text = [
+              `Hi ${a.name || a.email},`,
+              `You are the interviewer for: ${b?.name || b?.email}.`,
+              b?.email ? `Their email: ${b.email}` : null,
+              `Propose time slots from your dashboard: ${fe}/`,
+            ].filter(Boolean).join('\n');
+            await sendMail({ to: a.email, subject: `Pairing info: You interview ${b?.name || b?.email || 'a peer'}`, text });
+          }
+          if (b?.email) {
+            const text = [
+              `Hi ${b.name || b.email},`,
+              `You will be interviewed by: ${a?.name || a?.email}.`,
+              a?.email ? `Their email: ${a.email}` : null,
+              `Review and accept slots from your dashboard: ${fe}/`,
+            ].filter(Boolean).join('\n');
+            await sendMail({ to: b.email, subject: `Pairing info: You are interviewed by ${a?.name || a?.email || 'a peer'}`, text });
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[createEvent] pairing failed', e.message);
+  }
   if (process.env.EMAIL_ON_EVENT === 'true') {
     const students = await User.find({ role: 'student', email: { $exists: true, $ne: null } }, 'email name');
     const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
@@ -109,6 +152,46 @@ export async function createSpecialEvent(req, res) {
   const users = await User.find({ $or: or }, '_id email name studentId');
   const tpl = await uploadTemplate(req.files?.template?.[0]);
   const event = await Event.create({ name, description, startDate, endDate, ...tpl, isSpecial: true, allowedParticipants: users.map(u => u._id) });
+  // Auto-generate pairs among uploaded CSV users
+  try {
+    const ids = users.map(u => u._id.toString());
+    // Always set participants to invited users so analytics reflect the invited/joined count
+    event.participants = users.map(u => u._id);
+    await event.save();
+    if (ids.length >= 2) {
+      const pairs = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
+      await Pair.deleteMany({ event: event._id });
+      const created = await Pair.insertMany(pairs.map(([a, b]) => ({ event: event._id, interviewer: a, interviewee: b })));
+      if (process.env.EMAIL_ON_PAIRING === 'true') {
+        const byId = new Map(users.map((s) => [s._id.toString(), s]));
+        const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+        for (const p of created) {
+          const a = byId.get(p.interviewer.toString());
+          const b = byId.get(p.interviewee.toString());
+          if (a?.email) {
+            const text = [
+              `Hi ${a.name || a.email},`,
+              `You are the interviewer for: ${b?.name || b?.email}.`,
+              b?.email ? `Their email: ${b.email}` : null,
+              `Propose time slots from your dashboard: ${fe}/`,
+            ].filter(Boolean).join('\n');
+            await sendMail({ to: a.email, subject: `Pairing info: You interview ${b?.name || b?.email || 'a peer'}`, text });
+          }
+          if (b?.email) {
+            const text = [
+              `Hi ${b.name || b.email},`,
+              `You will be interviewed by: ${a?.name || a?.email}.`,
+              a?.email ? `Their email: ${a.email}` : null,
+              `Review and accept slots from your dashboard: ${fe}/`,
+            ].filter(Boolean).join('\n');
+            await sendMail({ to: b.email, subject: `Pairing info: You are interviewed by ${a?.name || a?.email || 'a peer'}`, text });
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[createSpecialEvent] pairing failed', e.message);
+  }
   if (process.env.EMAIL_ON_EVENT === 'true') {
     const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
     for (const u of users) {

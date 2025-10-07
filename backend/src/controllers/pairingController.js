@@ -5,20 +5,19 @@ import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
 // meeting link is already hidden until 1 hour prior in listPairs
 
-export async function generatePairs(req, res) {
-  const event = await Event.findById(req.params.id).populate('participants');
-  if (!event) throw new HttpError(404, 'Event not found');
-  const ids = event.participants.map((s) => s._id.toString());
-  if (ids.length < 2) throw new HttpError(400, 'Not enough participants');
-  // Rotation rule: i -> (i+1) % N
+// Internal helper: generate rotation pairs for an event (not exported)
+// This is intentionally internal because pairs are auto-generated on event creation.
+async function generateRotationPairsForEvent(event) {
+  const participants = event.participants || [];
+  const ids = participants.map((s) => (s._id ? s._id.toString() : String(s)));
+  if (ids.length < 2) return [];
   const pairs = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
-  // Persist pairs (replace any existing)
   await Pair.deleteMany({ event: event._id });
   const created = await Pair.insertMany(pairs.map(([a, b]) => ({ event: event._id, interviewer: a, interviewee: b })));
 
-  // Notify students
-  if (process.env.EMAIL_ON_PAIRING === 'true') {
-    const byId = new Map(event.participants.map((s) => [s._id.toString(), s]));
+  // Optionally notify participants when enabled
+  if (process.env.EMAIL_ON_PAIRING === 'true' && participants.length) {
+    const byId = new Map(participants.map((s) => [s._id?.toString?.() || String(s), s]));
     const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
     for (const p of created) {
       const a = byId.get(p.interviewer.toString());
@@ -44,7 +43,7 @@ export async function generatePairs(req, res) {
     }
   }
 
-  res.json({ count: created.length, pairs: created });
+  return created;
 }
 
 export async function listPairs(req, res) {

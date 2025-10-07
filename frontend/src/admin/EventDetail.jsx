@@ -257,15 +257,6 @@ export default function EventDetail() {
   });
 
   // Action handlers
-  const handleGeneratePairs = async () => {
-    try {
-      await api.generatePairs(activeEventId);
-      setMsg('Pairs generated successfully');
-      load(activeEventId);
-    } catch (e) {
-      setMsg(e.message);
-    }
-  };
 
   const handleExportCsv = async () => {
     try {
@@ -536,14 +527,7 @@ export default function EventDetail() {
 
                   {/* Quick Actions */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleGeneratePairs}
-                      className="p-3 bg-green-500 text-white rounded-xl font-semibold text-sm hover:bg-green-600 transition-all duration-200 shadow-sm"
-                    >
-                      Generate Pairs
-                    </motion.button>
+                    {/* Manual pair generation removed; pairs are auto-generated on event creation */}
                     
                     <motion.button
                       whileHover={{ scale: 1.02 }}
@@ -643,7 +627,7 @@ export default function EventDetail() {
                     <h3 className="text-xl font-semibold text-gray-800 mb-4">Interview Pairs</h3>
                     {pairs.length === 0 ? (
                       <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
-                        No pairs generated yet. Click "Generate Pairs" to create interview pairs.
+                        No pairs available for this event.
                       </div>
                     ) : (
                       <div className="space-y-3 max-h-96 overflow-y-auto pr-2">

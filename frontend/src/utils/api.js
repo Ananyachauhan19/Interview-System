@@ -75,7 +75,7 @@ export const api = {
   getEventTemplateUrl: (eventId) => request(`/events/${eventId}/template-url`),
 
   // Pairing
-  generatePairs: (eventId) => request(`/pairing/${eventId}/generate`, { method: 'POST' }),
+  // Manual pair generation is removed; pairs are generated automatically on event creation.
   listPairs: (eventId) => request(`/pairing/${eventId}`),
   setPairMeetingLink: (pairId, meetingLink) => request(`/pairing/pair/${pairId}/link`, { method: 'POST', body: { meetingLink } }),
 

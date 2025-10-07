@@ -37,7 +37,7 @@ export default function EventManagement() {
         navigate(`/admin/event/${res._id}`);
       } else {
         ev = await api.createEvent({ name: title, description, startDate, endDate, capacity, template });
-        setMsg("Event created successfully");
+        setMsg("Event created successfully — pairs are auto-generated for normal events");
         navigate(`/admin/event/${ev._id}`);
       }
       resetForm();
@@ -222,6 +222,11 @@ export default function EventManagement() {
               >
                 {specialMode ? 'Create Special Event' : 'Create Event'}
               </motion.button>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                {specialMode
+                  ? 'Note: For special events, pairs are auto-generated among invited participants when enough users are found.'
+                  : 'Note: For normal events, pairs are auto-generated among all students when the event is created.'}
+              </p>
             </motion.div>
           </form>
           <AnimatePresence>
