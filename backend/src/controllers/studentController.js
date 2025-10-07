@@ -89,6 +89,29 @@ export async function uploadStudentsCsv(req, res) {
   res.json({ count: results.length, results });
 }
 
+export async function createStudent(req, res) {
+  try {
+    const { name, email, studentid, password, branch, course, college } = req.body || {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!name || !email || !studentid || !branch) return res.status(400).json({ error: 'Missing required fields (name, email, studentid, branch)' });
+    if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
+
+    const exists = await User.findOne({ $or: [{ email }, { studentId: studentid }] });
+    if (exists) return res.status(409).json({ error: 'Student with email or studentId already exists' });
+
+    const passwordHash = await User.hashPassword(password || generateTempPassword());
+    const user = await User.create({ role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, mustChangePassword: true });
+
+    if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
+      await sendMail({ to: email, subject: 'Welcome to Interview System', text: renderTemplate('Hello {studentName}, you have been onboarded.', { studentName: name || email }) });
+    }
+
+    return res.status(201).json({ id: user._id, email: user.email, studentid: user.studentId, status: 'created' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 function normalizeRow(r) {
   const map = {};
   for (const [k, v] of Object.entries(r)) map[k.trim().toLowerCase()] = (v ?? '').toString().trim();

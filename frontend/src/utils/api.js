@@ -39,6 +39,7 @@ export const api = {
     fd.append('file', file);
     return request('/students/upload', { method: 'POST', formData: fd });
   },
+  createStudent: (body) => request('/students/create', { method: 'POST', body }),
 
   // Events
   listEvents: () => request('/events'),

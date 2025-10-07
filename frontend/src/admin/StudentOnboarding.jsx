@@ -10,6 +10,10 @@ export default function StudentOnboarding() {
   const [success, setSuccess] = useState("");
   const [uploadResult, setUploadResult] = useState(null);
   const [clientErrors, setClientErrors] = useState([]);
+  const [showSingleForm, setShowSingleForm] = useState(false);
+  // order fields as CSV: course, name, email, studentid, password, branch, college
+  const [singleForm, setSingleForm] = useState({ course: '', name: '', email: '', studentid: '', password: '', branch: '', college: '' });
+  const [singleMsg, setSingleMsg] = useState('');
 
   const errorsByRow = clientErrors.reduce((acc, cur) => {
     const msg = cur.details ? (Array.isArray(cur.details) ? cur.details.join(', ') : cur.details) : cur.error;
@@ -51,7 +55,7 @@ export default function StudentOnboarding() {
     setCsvFile(file);
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const text = event.target.result;
       try {
         const rows = text.trim().split(/\r?\n/);
@@ -90,6 +94,17 @@ export default function StudentOnboarding() {
         setStudents(parsed);
         setClientErrors(errs);
         setSuccess("CSV parsed successfully. Preview below.");
+
+        // Auto-upload when there are no client-side errors
+        if (errs.length === 0) {
+          try {
+            const data = await api.uploadStudentsCsv(file);
+            setUploadResult(data);
+            setSuccess(`Processed ${data.count} rows (auto-upload)`);
+          } catch (uploadErr) {
+            setError(uploadErr.message || 'Upload failed');
+          }
+        }
       } catch (err) {
         setError(err.message);
         setStudents([]);
@@ -109,16 +124,41 @@ export default function StudentOnboarding() {
       return;
     }
     try {
-      const form = new FormData();
-      form.append('file', csvFile);
-      const res = await fetch('/api/students/upload', { method: 'POST', body: form });
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
+      const data = await api.uploadStudentsCsv(csvFile);
       setUploadResult(data);
       setSuccess(`Processed ${data.count} rows`);
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  const handleSingleChange = (k, v) => setSingleForm((s) => ({ ...s, [k]: v }));
+
+  const submitSingle = async () => {
+    setSingleMsg('');
+    const { name, email, studentid, branch } = singleForm;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!name || !email || !studentid || !branch) {
+      setSingleMsg('Please fill required fields: name, email, studentid, branch');
+      return;
+    }
+    if (!emailRegex.test(email)) { setSingleMsg('Invalid email'); return; }
+    try {
+      const data = await api.createStudent(singleForm);
+      setSingleMsg('Student created: ' + (data.email || data.studentid));
+  // add to preview with keys in CSV order
+  const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', password: singleForm.password || '', branch: singleForm.branch || '', college: singleForm.college || '', __row: 'N/A' };
+  setStudents((s) => [newStudent, ...s]);
+      setSingleForm({ name: '', email: '', studentid: '', password: '', branch: '', course: '', college: '' });
+    } catch (err) {
+      setSingleMsg(err.message);
+    }
+  };
+
+  const isSingleValid = () => {
+    const { name, email, studentid, branch } = singleForm;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return name && email && studentid && branch && emailRegex.test(email);
   };
 
   return (
@@ -146,6 +186,27 @@ export default function StudentOnboarding() {
           >
             Upload a CSV file with student credentials (name, email, password).
           </motion.p>
+          <div className="flex justify-center mb-4">
+            <button onClick={() => setShowSingleForm(!showSingleForm)} className="text-sm text-blue-600 underline">{showSingleForm ? 'Hide Add Single Student' : 'Add Single Student'}</button>
+          </div>
+          {showSingleForm && (
+            <div className="bg-gray-50 p-4 rounded-lg mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <input value={singleForm.name} onChange={(e) => handleSingleChange('name', e.target.value)} placeholder="Name" className="p-2 border rounded" />
+                <input value={singleForm.email} onChange={(e) => handleSingleChange('email', e.target.value)} placeholder="Email" className="p-2 border rounded" />
+                <input value={singleForm.studentid} onChange={(e) => handleSingleChange('studentid', e.target.value)} placeholder="Student ID" className="p-2 border rounded" />
+                <input value={singleForm.branch} onChange={(e) => handleSingleChange('branch', e.target.value)} placeholder="Branch" className="p-2 border rounded" />
+                <input value={singleForm.course} onChange={(e) => handleSingleChange('course', e.target.value)} placeholder="Course" className="p-2 border rounded" />
+                <input value={singleForm.college} onChange={(e) => handleSingleChange('college', e.target.value)} placeholder="College" className="p-2 border rounded" />
+                <input value={singleForm.password} onChange={(e) => handleSingleChange('password', e.target.value)} placeholder="Password (optional)" className="p-2 border rounded" />
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button onClick={submitSingle} disabled={!isSingleValid()} className={`p-2 rounded ${!isSingleValid() ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-blue-600 text-white'}`}>Create</button>
+                <button onClick={() => { setShowSingleForm(false); setSingleMsg(''); }} className="p-2 bg-white border rounded">Cancel</button>
+              </div>
+              {singleMsg && <div className="mt-2 text-sm text-red-600">{singleMsg}</div>}
+            </div>
+          )}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
