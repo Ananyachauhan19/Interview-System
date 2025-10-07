@@ -8,28 +8,84 @@ export async function uploadStudentsCsv(req, res) {
   const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
   const rows = parsed.data;
   const results = [];
-  for (const row of rows) {
-    const { course, name, email, studentid, password, branch, college } = normalizeRow(row);
-    if (!email && !studentid) continue;
-    const exists = await User.findOne({ $or: [{ email }, { studentId: studentid }] });
-    if (exists) {
-      results.push({ email, studentid, status: 'exists' });
+
+  // Required fields for onboarding
+  const requiredFields = ['name', 'email', 'studentid', 'branch'];
+
+  // Track duplicates inside the CSV
+  const seenEmails = new Set();
+  const seenStudentIds = new Set();
+
+  // Normalize all rows first and collect emails/studentids for bulk DB check
+  const normalizedRows = rows.map((r, idx) => ({ ...normalizeRow(r), __row: idx + 2 })); // header is line 1
+  const emails = normalizedRows.map((r) => r.email).filter(Boolean);
+  const studentIds = normalizedRows.map((r) => r.studentid).filter(Boolean);
+
+  // Bulk query existing users in DB to avoid per-row queries
+  const existing = await User.find({ $or: [{ email: { $in: emails } }, { studentId: { $in: studentIds } }] }).select('email studentId').lean();
+  const existingEmails = new Set(existing.map((u) => (u.email || '').toLowerCase()));
+  const existingStudentIds = new Set(existing.map((u) => (u.studentId || '').toString()));
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  for (const row of normalizedRows) {
+    const { course, name, email, studentid, password, branch, college } = row;
+
+    // Skip completely empty rows
+    if (!email && !studentid && !name) continue;
+
+    // Check required fields
+    const missing = requiredFields.filter((f) => {
+      if (f === 'studentid') return !studentid;
+      return !(row[f] && row[f].toString().trim());
+    });
+    if (missing.length > 0) {
+      results.push({ row: row.__row, email, studentid, status: 'missing_fields', missing });
       continue;
     }
-    const passwordHash = await User.hashPassword(password || generateTempPassword());
-    const user = await User.create({
-      role: 'student', course, name, email, studentId: studentid, passwordHash, branch, college,
-      mustChangePassword: true,
-    });
-    results.push({ id: user._id, email, studentid, status: 'created' });
-    if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
-      await sendMail({
-        to: email,
-        subject: 'Welcome to Interview System',
-        text: renderTemplate('Hello {studentName}, you have been onboarded.', { studentName: name || email }),
+
+    // Validate email format
+    if (!emailRegex.test(email)) {
+      results.push({ row: row.__row, email, studentid, status: 'invalid_email' });
+      continue;
+    }
+
+    // Check duplicates inside the CSV file
+    const lowerEmail = email.toLowerCase();
+    if (seenEmails.has(lowerEmail) || seenStudentIds.has(studentid)) {
+      results.push({ row: row.__row, email, studentid, status: 'duplicate_in_file' });
+      continue;
+    }
+    seenEmails.add(lowerEmail);
+    seenStudentIds.add(studentid);
+
+    // Check existing in DB
+    if (existingEmails.has(lowerEmail) || existingStudentIds.has(studentid)) {
+      results.push({ row: row.__row, email, studentid, status: 'exists' });
+      continue;
+    }
+
+    // Create user
+    try {
+      const passwordHash = await User.hashPassword(password || generateTempPassword());
+      const user = await User.create({
+        role: 'student', course, name, email, studentId: studentid, passwordHash, branch, college,
+        mustChangePassword: true,
       });
+  results.push({ row: row.__row, id: user._id, email, studentid, status: 'created' });
+
+      if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
+        await sendMail({
+          to: email,
+          subject: 'Welcome to Interview System',
+          text: renderTemplate('Hello {studentName}, you have been onboarded.', { studentName: name || email }),
+        });
+      }
+    } catch (err) {
+      results.push({ row: row.__row, email, studentid, status: 'error', message: err.message });
     }
   }
+
   res.json({ count: results.length, results });
 }
 

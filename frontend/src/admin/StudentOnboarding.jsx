@@ -9,6 +9,39 @@ export default function StudentOnboarding() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [uploadResult, setUploadResult] = useState(null);
+  const [clientErrors, setClientErrors] = useState([]);
+
+  const errorsByRow = clientErrors.reduce((acc, cur) => {
+    const msg = cur.details ? (Array.isArray(cur.details) ? cur.details.join(', ') : cur.details) : cur.error;
+    if (!acc[cur.row]) acc[cur.row] = [];
+    acc[cur.row].push(msg || cur.error);
+    return acc;
+  }, {});
+
+  function downloadErrorsCsv() {
+    if (!students || students.length === 0) return;
+    const headerKeys = Object.keys(students[0]).filter((k) => k !== '__row');
+    const header = [...headerKeys, 'error'];
+    const rows = [];
+    for (const s of students) {
+      const rowNum = s.__row;
+      const errs = errorsByRow[rowNum];
+      if (!errs) continue; // only include rows with errors
+      const values = headerKeys.map((k) => `"${(s[k] ?? '').toString().replace(/"/g, '""')}"`);
+      values.push(`"${errs.join('; ').replace(/"/g, '""')}"`);
+      rows.push(values.join(','));
+    }
+    const csv = header.map((h) => `"${h}"`).join(',') + '\n' + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `students-errors.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 
   // Parse CSV file and extract student data
   const handleFileChange = (e) => {
@@ -24,17 +57,43 @@ export default function StudentOnboarding() {
         const rows = text.trim().split(/\r?\n/);
         const header = rows.shift();
         const cols = header.split(',').map((s) => s.trim().toLowerCase());
-        const parsed = rows.map((row) => {
+        const parsed = rows.map((row, i) => {
           const vals = row.split(',');
-          const obj = {};
-          cols.forEach((c, i) => (obj[c] = vals[i]?.trim() || ''));
+          const obj = { __row: i + 2 }; // keep original CSV row number (header is line 1)
+          cols.forEach((c, idx) => (obj[c] = vals[idx]?.trim() || ''));
           return obj;
         });
+
+        // Client-side validation
+        const errs = [];
+        const seenEmails = new Set();
+        const seenIds = new Set();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        parsed.forEach((r) => {
+          const rowNum = r.__row;
+          const missing = [];
+          if (!r.name) missing.push('name');
+          if (!r.email) missing.push('email');
+          if (!r.studentid && !r.student_id && !r.sid) missing.push('studentid');
+          if (!r.branch) missing.push('branch');
+          if (missing.length > 0) errs.push({ row: rowNum, error: 'missing_fields', details: missing });
+          else {
+            const email = r.email.toLowerCase();
+            if (!emailRegex.test(email)) errs.push({ row: rowNum, error: 'invalid_email' });
+            if (seenEmails.has(email)) errs.push({ row: rowNum, error: 'duplicate_in_file', details: 'email' });
+            if (seenIds.has(r.studentid || r.student_id || r.sid)) errs.push({ row: rowNum, error: 'duplicate_in_file', details: 'studentid' });
+            seenEmails.add(email);
+            seenIds.add(r.studentid || r.student_id || r.sid);
+          }
+        });
+
         setStudents(parsed);
+        setClientErrors(errs);
         setSuccess("CSV parsed successfully. Preview below.");
       } catch (err) {
         setError(err.message);
         setStudents([]);
+        setClientErrors([]);
       }
     };
     reader.readAsText(file);
@@ -44,10 +103,19 @@ export default function StudentOnboarding() {
     if (!csvFile) return;
     setError("");
     setSuccess("");
+    // prevent upload if client-side errors exist
+    if (clientErrors.length > 0) {
+      setError('Please fix CSV errors before uploading. See details below.');
+      return;
+    }
     try {
-      const res = await api.uploadStudentsCsv(csvFile);
-      setUploadResult(res);
-      setSuccess(`Uploaded ${res.count} records`);
+      const form = new FormData();
+      form.append('file', csvFile);
+      const res = await fetch('/api/students/upload', { method: 'POST', body: form });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      setUploadResult(data);
+      setSuccess(`Processed ${data.count} rows`);
     } catch (err) {
       setError(err.message);
     }
@@ -138,7 +206,7 @@ export default function StudentOnboarding() {
               <table className="min-w-full border border-gray-100 rounded-xl">
                 <thead>
                   <tr className="bg-gray-50">
-                    {Object.keys(students[0]).map((k) => (
+                    {Object.keys(students[0]).filter(k => k !== '__row').map((k) => (
                       <th
                         key={k}
                         className="py-3 px-6 border-b text-left text-sm font-semibold text-gray-800"
@@ -146,6 +214,7 @@ export default function StudentOnboarding() {
                         {k.charAt(0).toUpperCase() + k.slice(1)}
                       </th>
                     ))}
+                    <th className="py-3 px-6 border-b text-left text-sm font-semibold text-gray-800">Error</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -157,7 +226,7 @@ export default function StudentOnboarding() {
                       transition={{ delay: 0.6 + idx * 0.1 }}
                       className="text-left hover:bg-gray-50 transition-all duration-200"
                     >
-                      {Object.keys(students[0]).map((k) => (
+                      {Object.keys(students[0]).filter(k => k !== '__row').map((k) => (
                         <td
                           key={k}
                           className="py-3 px-6 border-b text-sm text-gray-700"
@@ -165,18 +234,37 @@ export default function StudentOnboarding() {
                           {student[k]}
                         </td>
                       ))}
+                      <td className="py-3 px-6 border-b text-sm text-rose-700">
+                        {(errorsByRow[student.__row] || []).join('; ')}
+                      </td>
                     </motion.tr>
                   ))}
                 </tbody>
               </table>
-              <motion.button
-                whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleUpload}
-                className="mt-6 w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-md"
-              >
-                Upload to Server
-              </motion.button>
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleUpload}
+                  disabled={clientErrors.length > 0}
+                  className={`mt-6 w-full p-3 rounded-xl font-semibold transition-all duration-200 shadow-md ${clientErrors.length > 0 ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600'}`}
+                >
+                  Upload to Server
+                </motion.button>
+                <button
+                  onClick={() => { setStudents([]); setCsvFile(null); setClientErrors([]); setUploadResult(null); setError(''); setSuccess(''); }}
+                  className="mt-6 w-full bg-white border border-gray-200 text-gray-700 p-3 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-200"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={downloadErrorsCsv}
+                  disabled={clientErrors.length === 0}
+                  className={`mt-6 w-full p-3 rounded-xl font-semibold transition-all duration-200 ${clientErrors.length === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-rose-500 text-white hover:bg-rose-600'}`}
+                >
+                  Download Errors CSV
+                </button>
+              </div>
               <AnimatePresence>
                 {uploadResult && (
                   <motion.div
@@ -186,10 +274,45 @@ export default function StudentOnboarding() {
                     className="mt-4 text-sm text-gray-600 text-center"
                   >
                     {uploadResult.count} records processed.
+                    <div className="mt-2 text-left max-w-4xl mx-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-gray-600">
+                            <th className="py-1">Row</th>
+                            <th className="py-1">Email</th>
+                            <th className="py-1">StudentId</th>
+                            <th className="py-1">Status</th>
+                            <th className="py-1">Message</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {uploadResult.results.map((r, i) => (
+                            <tr key={i} className="border-t">
+                              <td className="py-1">{r.row || '-'}</td>
+                              <td className="py-1">{r.email || '-'}</td>
+                              <td className="py-1">{r.studentid || '-'}</td>
+                              <td className={`py-1 ${r.status === 'created' ? 'text-green-600' : 'text-rose-600'}`}>{r.status}</td>
+                              <td className="py-1">{r.message || (r.status === 'exists' ? 'Already exists' : '')}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.div>
+          )}
+
+          {clientErrors.length > 0 && (
+            <div className="mt-6 bg-rose-50 border border-rose-100 p-4 rounded-lg">
+              <h3 className="font-semibold text-rose-700 mb-2">CSV Errors (fix before upload)</h3>
+              <ul className="text-sm text-rose-700">
+                {clientErrors.map((ce, i) => (
+                  <li key={i}>Row {ce.row}: {ce.error} {ce.details ? `(${Array.isArray(ce.details) ? ce.details.join(', ') : ce.details})` : ''}</li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       </motion.div>
