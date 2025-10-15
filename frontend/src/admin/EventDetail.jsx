@@ -76,12 +76,12 @@ const PairCard = ({ pair, index }) => (
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay: 0.5 + index * 0.1 }}
-    className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200"
+    className="p-3 rounded-xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200"
   >
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="text-center min-w-0 flex-1">
+          <div className="min-w-0 flex-1">
             <div className="font-semibold text-blue-700 truncate">
               {pair.interviewer?.name || pair.interviewer?.email}
             </div>
@@ -90,7 +90,7 @@ const PairCard = ({ pair, index }) => (
           
           <div className="text-gray-400 flex-shrink-0">→</div>
           
-          <div className="text-center min-w-0 flex-1">
+          <div className="min-w-0 flex-1">
             <div className="font-semibold text-pink-700 truncate">
               {pair.interviewee?.name || pair.interviewee?.email}
             </div>
@@ -99,8 +99,8 @@ const PairCard = ({ pair, index }) => (
         </div>
       </div>
       
-      <div className="flex flex-wrap gap-3 text-xs text-gray-600 border-t pt-3">
-        <span className={`px-2 py-1 rounded-full ${
+      <div className="flex flex-wrap gap-2 text-xs text-gray-600 border-t pt-2">
+        <span className={`px-2 py-0.5 rounded-full ${
           pair.status === 'completed' ? 'bg-green-100 text-green-700' :
           pair.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
           'bg-gray-100 text-gray-700'
