@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User } from "lucide-react";
+import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export function AdminNavbar() {
@@ -155,6 +155,19 @@ export function AdminNavbar() {
               );
             })}
 
+            {/* Desktop: Download Sample CSV */}
+            <motion.a
+              variants={itemHover}
+              whileHover="hover"
+              whileTap="tap"
+              href="/sample-students.csv"
+              download
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-green-700 hover:bg-green-50 ml-2 transition-all duration-200"
+            >
+              <Download className="w-4 h-4" />
+              <span className="font-medium text-sm">Sample CSV</span>
+            </motion.a>
+
             {/* Desktop Logout Button */}
             <motion.button
               variants={itemHover}
@@ -301,6 +314,16 @@ export function AdminNavbar() {
                       </Link>
                     );
                   })}
+
+                  {/* Mobile: Download Sample CSV */}
+                  <a
+                    href="/sample-students.csv"
+                    download
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 text-slate-600 hover:text-green-700 hover:bg-green-50 border border-transparent hover:border-green-100"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="font-medium text-sm">Sample CSV</span>
+                  </a>
                 </div>
 
                 {/* Mobile Logout Button */}

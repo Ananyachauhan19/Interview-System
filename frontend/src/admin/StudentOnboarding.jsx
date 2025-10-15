@@ -215,7 +215,16 @@ export default function StudentOnboarding() {
           Efficiently onboard students via CSV upload or individual entry.
         </motion.p>
 
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-6 gap-4 flex-wrap">
+          <motion.a
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            href="/sample-students.csv"
+            download
+            className="flex items-center px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition-all duration-200"
+          >
+            Download Sample CSV
+          </motion.a>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
