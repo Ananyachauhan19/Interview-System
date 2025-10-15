@@ -14,6 +14,8 @@ export default function PairingAndScheduling() {
   const [me, setMe] = useState(null);
   const [currentProposals, setCurrentProposals] = useState({ mine: [], partner: [], common: null });
   const [selectedToAccept, setSelectedToAccept] = useState("");
+  const [meetingLinkEnabled, setMeetingLinkEnabled] = useState(false);
+  const [timeUntilEnable, setTimeUntilEnable] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -33,11 +35,18 @@ export default function PairingAndScheduling() {
       try {
         const t = localStorage.getItem('token');
         if (t) {
-          const payload = JSON.parse(atob(t.split('.')[1]));
-          setMe({ id: payload.id, role: payload.role, email: payload.email, name: payload.name });
+          const raw = t.split('.')?.[1];
+          if (raw) {
+              const payload = JSON.parse(atob(raw));
+              // backend signs token with { sub: user._id, role }
+              const id = payload.sub || payload.id || payload.userId || null;
+              const fallbackId = localStorage.getItem('userId') || null;
+              setMe({ id: id || fallbackId, role: payload.role, email: payload.email, name: payload.name });
+            }
         }
-      } catch {
+      } catch (e) {
         // ignore decode errors
+        console.warn('Failed to decode token payload', e);
       }
     };
     loadData();
@@ -45,14 +54,27 @@ export default function PairingAndScheduling() {
 
   const isInterviewer = useMemo(() => {
     if (!selectedPair || !me) return false;
-    return (
-      selectedPair.interviewer?._id === me.id ||
-      selectedPair.interviewer?._id === me?.sub ||
-      selectedPair.interviewer?.email === me?.email
-    );
+  const interviewer = selectedPair.interviewer;
+  // interviewer may be populated as object or id
+  const interviewerId = interviewer?._id || interviewer;
+    if (!interviewerId) return false;
+    if (me.id && String(interviewerId) === String(me.id)) return true;
+    if (me.email && interviewer?.email && interviewer.email === me.email) return true;
+    return false;
   }, [selectedPair, me]);
 
   const isLocked = selectedPair?.status === 'scheduled';
+
+  // Derived slot lists (always show interviewer slots on the left, interviewee on the right)
+  const interviewerSlots = useMemo(() => {
+    if (!currentProposals) return [];
+    return isInterviewer ? currentProposals.mine || [] : currentProposals.partner || [];
+  }, [currentProposals, isInterviewer]);
+
+  const intervieweeSlots = useMemo(() => {
+    if (!currentProposals) return [];
+    return isInterviewer ? currentProposals.partner || [] : currentProposals.mine || [];
+  }, [currentProposals, isInterviewer]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -69,11 +91,48 @@ export default function PairingAndScheduling() {
     fetch();
   }, [selectedPair]);
 
+  // Enable meeting link only 30 minutes before scheduled time. Update countdown while visible.
+  useEffect(() => {
+    let timer;
+    if (!selectedPair?.scheduledAt) {
+      setMeetingLinkEnabled(false);
+      setTimeUntilEnable(null);
+      return;
+    }
+    const scheduled = new Date(selectedPair.scheduledAt).getTime();
+    const enableAt = scheduled - 30 * 60 * 1000; // 30 minutes before
+
+    function tick() {
+      const now = Date.now();
+      if (now >= enableAt) {
+        setMeetingLinkEnabled(true);
+        setTimeUntilEnable(0);
+      } else {
+        setMeetingLinkEnabled(false);
+        setTimeUntilEnable(enableAt - now);
+      }
+    }
+
+    tick();
+    timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [selectedPair?.scheduledAt]);
+
+  // Reset selectedToAccept when proposals change
+  useEffect(() => {
+    setSelectedToAccept("");
+  }, [currentProposals.mine, currentProposals.partner]);
+
   const handlePropose = async () => {
     setMessage("");
     const isoSlots = slots.filter(Boolean);
     if (!selectedPair || isoSlots.length === 0) {
       setMessage("Please select a pair and add at least one slot.");
+      return;
+    }
+    // Client-side enforcement: interviewee may propose up to 3 alternatives
+    if (!isInterviewer && isoSlots.length > 3) {
+      setMessage('You may propose up to 3 alternative slots');
       return;
     }
     try {
@@ -85,6 +144,19 @@ export default function PairingAndScheduling() {
     } catch (err) {
       setMessage(err.message);
     }
+  };
+
+  const addSlot = () => {
+    // interviewee limited to 3 total
+    if (!isInterviewer && slots.filter(Boolean).length >= 3) {
+      setMessage('You may propose up to 3 alternative slots');
+      return;
+    }
+    setSlots((s) => [...s, ""]);
+  };
+
+  const removeSlot = (idx) => {
+    setSlots((s) => s.filter((_, i) => i !== idx));
   };
 
   const handleConfirm = async (dt, link) => {
@@ -281,8 +353,14 @@ export default function PairingAndScheduling() {
                     </motion.button>
                   </motion.div>
                   <p className="text-sm text-gray-600">
-                    Interviewer proposes times within the event window. Interviewee accepts or rejects (triggering re-proposal). A Jitsi meeting link is generated automatically upon scheduling (or within 1 hour if still missing). Once scheduled, no further changes are allowed.
+                    Interviewer proposes times within the event window; the interviewee may accept one of those or propose up to 3 alternatives. The interviewer can also accept any interviewee-proposed slot. A Jitsi meeting link is generated automatically when a slot is confirmed. Once scheduled, no further changes are allowed.
                   </p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <span className={`text-xs px-2 py-1 rounded-full ${isInterviewer ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                      You are the {isInterviewer ? 'Interviewer' : 'Interviewee'}
+                    </span>
+                    <span className="text-xs text-gray-500">Select a slot from the other party's list and click Accept.</span>
+                  </div>
                   {isLocked && (
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -290,7 +368,15 @@ export default function PairingAndScheduling() {
                       className="p-4 bg-green-50 text-green-600 rounded-xl border border-green-100 text-sm font-medium flex items-center"
                     >
                       <CheckCircle className="w-5 h-5 mr-2" />
-                      This interview is scheduled and cannot be modified.
+                      <div>
+                        <div>This interview is scheduled and cannot be modified.</div>
+                        {selectedPair?.scheduledAt && (
+                          <div className="text-xs text-green-700 mt-1 flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            Scheduled for: {new Date(selectedPair.scheduledAt).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
                     </motion.div>
                   )}
                   <div className="space-y-4">
@@ -300,6 +386,7 @@ export default function PairingAndScheduling() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 + idx * 0.1 }}
+                        className="flex items-center gap-2"
                       >
                         <input
                           type="datetime-local"
@@ -307,59 +394,97 @@ export default function PairingAndScheduling() {
                           onChange={(e) =>
                             setSlots((prev) => prev.map((v, i) => (i === idx ? e.target.value : v)))
                           }
-                          className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
+                          className="flex-1 bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
                           disabled={isLocked}
                         />
+                        {!isLocked && (
+                          <button
+                            onClick={() => removeSlot(idx)}
+                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+                            title="Remove slot"
+                          >
+                            ×
+                          </button>
+                        )}
                       </motion.div>
                     ))}
                     {!isLocked && (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setSlots((prev) => [...prev, ""])}
-                        className="flex items-center gap-2 text-blue-600 text-sm hover:text-blue-800"
-                      >
-                        <PlusCircle className="w-4 h-4" />
-                        Add Slot
-                      </motion.button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-2">Interviewer Proposed</h4>
-                      <ul className="text-sm text-gray-600 list-disc ml-5 space-y-2">
-                        {currentProposals.partner && currentProposals.partner.length > 0 ? (
-                          currentProposals.partner.map((s, i) => (
-                            <li key={i} className="flex items-center gap-2">
-                              {!isInterviewer && !isLocked && (
-                                <input
-                                  type="radio"
-                                  name="acceptSlot"
-                                  value={s}
-                                  onChange={() => setSelectedToAccept(s)}
-                                  className="text-purple-500 focus:ring-purple-500"
-                                />
+                      <div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="font-semibold text-gray-800 mb-2">Interviewer Proposed</h4>
+                            <div className="text-xs text-gray-500 mb-2">(Times suggested by the interviewer)</div>
+                            <ul className="text-sm text-gray-600 list-none space-y-2">
+                              {interviewerSlots.length > 0 ? (
+                                interviewerSlots.map((s, i) => (
+                                  <li key={i} className={`flex items-center gap-2 p-2 rounded ${selectedToAccept === s ? 'bg-indigo-50 border border-indigo-100' : ''}`}>
+                                    {!isInterviewer && (
+                                      <input
+                                        type="radio"
+                                        name="acceptSlot"
+                                        value={s}
+                                        checked={selectedToAccept === s}
+                                        onChange={() => setSelectedToAccept(s)}
+                                        className="text-purple-500 focus:ring-purple-500"
+                                      />
+                                    )}
+                                    <div className="flex-1">
+                                      <div className="text-sm">{new Date(s).toLocaleString()}</div>
+                                      <div className="text-xs text-gray-400">Proposed by: {selectedPair?.interviewer?.name || selectedPair?.interviewer?.email}</div>
+                                    </div>
+                                  </li>
+                                ))
+                              ) : (
+                                <li className="text-gray-500">No slots proposed yet.</li>
                               )}
-                              <span>{new Date(s).toLocaleString()}</span>
-                            </li>
-                          ))
-                        ) : (
-                          <li>No slots proposed yet.</li>
-                        )}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-2">Your Proposed</h4>
-                      <ul className="text-sm text-gray-600 list-disc ml-5 space-y-2">
-                        {currentProposals.mine && currentProposals.mine.length > 0 ? (
-                          currentProposals.mine.map((s, i) => (
-                            <li key={i}>{new Date(s).toLocaleString()}</li>
-                          ))
-                        ) : (
-                          <li>No slots proposed yet.</li>
-                        )}
-                      </ul>
-                    </div>
+                            </ul>
+                          </div>
+
+                          <div>
+                            <h4 className="font-semibold text-gray-800 mb-2">Interviewee Proposed</h4>
+                            <div className="text-xs text-gray-500 mb-2">(Times suggested by the interviewee)</div>
+                            <ul className="text-sm text-gray-600 list-none space-y-2">
+                                  {intervieweeSlots.length > 0 ? (
+                                      intervieweeSlots.map((s, i) => (
+                                        <li key={i} className="p-2 rounded flex items-center gap-2">
+                                          {isInterviewer && (
+                                            <input
+                                              type="radio"
+                                              name="acceptSlot"
+                                              value={s}
+                                              checked={selectedToAccept === s}
+                                              onChange={() => setSelectedToAccept(s)}
+                                              className="text-purple-500 focus:ring-purple-500"
+                                            />
+                                          )}
+                                          <div className="flex-1">
+                                            <div className="text-sm">{new Date(s).toLocaleString()}</div>
+                                            <div className="text-xs text-gray-400">Proposed by: {selectedPair?.interviewee?.name || selectedPair?.interviewee?.email}</div>
+                                          </div>
+                                        </li>
+                                      ))
+                                    ) : (
+                                      <li className="text-gray-500">No slots proposed yet.</li>
+                                    )}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {/* Add slot controls */}
+                    {!isLocked && (
+                      <div className="mt-3 flex items-center gap-3">
+                        <button
+                          onClick={addSlot}
+                          disabled={!isInterviewer && slots.filter(Boolean).length >= 3}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm"
+                        >
+                          <PlusCircle className="w-4 h-4" />
+                          Add slot
+                        </button>
+                        <div className="text-xs text-gray-500">You may propose up to 3 alternate slots if you're the interviewee.</div>
+                      </div>
+                    )}
                   </div>
                   {currentProposals.common && (
                     <motion.div
@@ -382,8 +507,21 @@ export default function PairingAndScheduling() {
                     >
                       {isInterviewer ? "Propose Slots" : "Request Change / Send Alternatives"}
                     </motion.button>
-                    {!isInterviewer && (
-                      <div className="flex gap-4">
+                    <div className="flex gap-4 items-center">
+                      {/* Interviewer can accept interviewee-proposed slots when available */}
+                      {isInterviewer && (
+                        <motion.button
+                          whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
+                          whileTap={{ scale: 0.95 }}
+                          disabled={!selectedToAccept || isLocked}
+                          onClick={() => handleConfirm(selectedToAccept, "")}
+                          className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                          Accept Selected Slot
+                        </motion.button>
+                      )}
+
+                      {!isInterviewer && (
                         <motion.button
                           whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(124, 58, 237, 0.3)" }}
                           whileTap={{ scale: 0.95 }}
@@ -393,17 +531,18 @@ export default function PairingAndScheduling() {
                         >
                           Accept Selected Slot
                         </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(239, 68, 68, 0.3)" }}
-                          whileTap={{ scale: 0.95 }}
-                          disabled={isLocked}
-                          onClick={handleReject}
-                          className="bg-gradient-to-r from-red-500 to-rose-500 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:from-red-600 hover:to-rose-600 transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Reject
-                        </motion.button>
-                      </div>
-                    )}
+                      )}
+
+                      <motion.button
+                        whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(239, 68, 68, 0.3)" }}
+                        whileTap={{ scale: 0.95 }}
+                        disabled={isLocked}
+                        onClick={handleReject}
+                        className="bg-gradient-to-r from-red-500 to-rose-500 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:from-red-600 hover:to-rose-600 transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Reject
+                      </motion.button>
+                    </div>
                     {isInterviewer && (
                       <span className="text-sm text-gray-600">
                         {isLocked ? "Scheduled." : "Waiting for interviewee to accept or reject."}
@@ -417,31 +556,43 @@ export default function PairingAndScheduling() {
                       className="mt-6 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex flex-col gap-3"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-indigo-700 text-sm">Meeting Link</span>
+                        <div>
+                          <span className="font-semibold text-indigo-700 text-sm">Meeting Link</span>
+                          {selectedPair?.scheduledAt && (
+                            <div className="text-xs text-indigo-600">Scheduled: {new Date(selectedPair.scheduledAt).toLocaleString()}</div>
+                          )}
+                        </div>
                         <span className="text-xs text-gray-500">Jitsi</span>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-3">
                         <input
                           type="text"
                           readOnly
-                          value={selectedPair.meetingLink}
-                          className="flex-1 bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none"
+                          value={meetingLinkEnabled ? selectedPair.meetingLink : `Meeting link hidden until ${new Date(new Date(selectedPair.scheduledAt).getTime() - 30 * 60 * 1000).toLocaleString()}`}
+                          className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none ${meetingLinkEnabled ? 'bg-white border-indigo-200 text-gray-700' : 'bg-gray-50 border-gray-200 text-gray-400 select-none'}`}
                         />
                         <div className="flex gap-2">
                           <button
-                            onClick={() => window.open(selectedPair.meetingLink, '_blank')}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow"
+                            onClick={() => { if (!meetingLinkEnabled) return; window.open(selectedPair.meetingLink, '_blank'); }}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium shadow ${meetingLinkEnabled ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                            disabled={!meetingLinkEnabled}
+                            aria-disabled={!meetingLinkEnabled}
                           >
                             Join
                           </button>
                           <button
-                            onClick={() => { navigator.clipboard.writeText(selectedPair.meetingLink); setMessage('Link copied'); }}
-                            className="px-4 py-2 bg-white border border-indigo-300 hover:bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium"
+                            onClick={() => { if (!meetingLinkEnabled) return; navigator.clipboard.writeText(selectedPair.meetingLink); setMessage('Link copied'); }}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium ${meetingLinkEnabled ? 'bg-white border border-indigo-300 hover:bg-indigo-100 text-indigo-700' : 'bg-gray-50 border border-gray-200 text-gray-400 cursor-not-allowed'}`}
+                            disabled={!meetingLinkEnabled}
+                            aria-disabled={!meetingLinkEnabled}
                           >
                             Copy
                           </button>
                         </div>
                       </div>
+                      {!meetingLinkEnabled && selectedPair?.scheduledAt && (
+                        <div className="text-xs text-gray-500 mt-1">Meeting link will be enabled at {new Date(new Date(selectedPair.scheduledAt).getTime() - 30 * 60 * 1000).toLocaleString()} {timeUntilEnable > 0 && (`(in ${Math.ceil(timeUntilEnable/1000)}s)`)}</div>
+                      )}
                       <p className="text-xs text-gray-500">Share only with your interview partner. This is a public Jitsi room.</p>
                     </motion.div>
                   )}
