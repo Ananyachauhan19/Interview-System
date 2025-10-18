@@ -1,6 +1,7 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+/* eslint-disable no-unused-vars */
+import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Download } from "lucide-react";
+import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export function AdminNavbar() {
@@ -30,12 +31,11 @@ export function AdminNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isProfileOpen]);
 
-  const navigate = useNavigate();
   const handleLogout = () => {
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("adminName");
     localStorage.removeItem("adminEmail");
-  navigate("/");
+    window.location.href = "/";
   };
 
   const toggleMenu = () => {
@@ -90,29 +90,32 @@ export function AdminNavbar() {
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50 border-b border-blue-100/30 bg-white shadow-md"
+      className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white shadow-sm"
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6">
-        {/* Brand Logo and Title */}
-        <motion.div 
+      <div className="w-full flex items-center justify-between h-16 px-4 sm:px-6">
+        {/* Brand Logo and Title (PeerPrep) */}
+        <motion.div
           className="flex items-center gap-3"
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
-              <GraduationCap className="text-white w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+              <GraduationCap className="text-indigo-600 w-5 h-5" />
             </div>
-            <h1 className="text-slate-800 text-xl font-bold tracking-tight hidden sm:block">
-              Admin Dashboard
-            </h1>
+            <div className="hidden sm:block">
+              <div>
+                <h1 className="text-xl font-bold text-slate-800">PeerPrep</h1>
+                <p className="text-xs text-indigo-600 -mt-1">Interview Practice Platform</p>
+              </div>
+            </div>
           </div>
         </motion.div>
 
         {/* Center: Mobile Title */}
         <div className="flex-1 flex justify-center sm:hidden">
-          <h1 className="text-slate-800 text-lg font-bold tracking-tight flex items-center gap-2">
-            <GraduationCap className="text-purple-600 w-4 h-4" />
+          <h1 className="text-white text-lg font-bold tracking-tight flex items-center gap-2">
+            <GraduationCap className="text-white w-4 h-4" />
             Admin
           </h1>
         </div>
@@ -134,10 +137,10 @@ export function AdminNavbar() {
                     variants={itemHover}
                     whileHover="hover"
                     whileTap="tap"
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 mx-1 ${
-                      isActive 
-                        ? "bg-purple-50 text-purple-700 shadow-sm" 
-                        : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors mx-1 ${
+                      isActive
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-slate-700 hover:text-slate-800 hover:bg-slate-50"
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -146,7 +149,7 @@ export function AdminNavbar() {
                     {isActive && (
                       <motion.div
                         layoutId="activeIndicator"
-                        className="absolute inset-0 border-2 border-purple-200 rounded-xl"
+                        className="absolute inset-0 border-2 border-white/40 rounded-xl"
                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                       />
                     )}
@@ -155,26 +158,13 @@ export function AdminNavbar() {
               );
             })}
 
-            {/* Desktop: Download Sample CSV */}
-            <motion.a
-              variants={itemHover}
-              whileHover="hover"
-              whileTap="tap"
-              href="/sample-students.csv"
-              download
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-green-700 hover:bg-green-50 ml-2 transition-all duration-200"
-            >
-              <Download className="w-4 h-4" />
-              <span className="font-medium text-sm">Sample CSV</span>
-            </motion.a>
-
             {/* Desktop Logout Button */}
             <motion.button
               variants={itemHover}
               whileHover="hover"
               whileTap="tap"
               onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 ml-2 transition-all duration-200"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 hover:text-red-600 hover:bg-red-50 ml-2 transition-colors duration-200 border border-transparent hover:border-red-200"
             >
               <LogOut className="w-4 h-4" />
               <span className="font-medium text-sm">Logout</span>
@@ -187,7 +177,7 @@ export function AdminNavbar() {
                 whileHover="hover"
                 whileTap="tap"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 hover:text-slate-800 hover:bg-slate-50 transition-colors duration-200 border border-transparent hover:border-slate-200"
               >
                 <User className="w-4 h-4" />
                 <span className="font-medium text-sm">Profile</span>
@@ -200,10 +190,10 @@ export function AdminNavbar() {
                     initial="closed"
                     animate="open"
                     exit="closed"
-                    className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl p-4 border border-slate-100 z-50"
+                    className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 p-4 z-50"
                   >
-                    <h3 className="font-bold text-slate-800 text-base mb-3">Profile Info</h3>
-                    <div className="text-slate-600 text-sm space-y-1">
+                    <h3 className="font-bold text-slate-900 text-base mb-3">Profile Info</h3>
+                    <div className="text-slate-700 text-sm space-y-1">
                       <p className="font-semibold">{adminName}</p>
                       <p className="text-slate-500">{adminEmail}</p>
                     </div>
@@ -220,7 +210,7 @@ export function AdminNavbar() {
               whileHover="hover"
               whileTap="tap"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors duration-200"
+              className="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors duration-200 border border-transparent"
             >
               <User className="text-slate-700 w-5 h-5" />
             </motion.button>
@@ -232,10 +222,10 @@ export function AdminNavbar() {
                   initial="closed"
                   animate="open"
                   exit="closed"
-                  className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl p-4 border border-slate-100 z-50"
+                  className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 p-4 z-50"
                 >
-                  <h3 className="font-bold text-slate-800 text-base mb-3">Profile Info</h3>
-                  <div className="text-slate-600 text-sm space-y-1">
+                  <h3 className="font-bold text-slate-900 text-base mb-3">Profile Info</h3>
+                  <div className="text-slate-700 text-sm space-y-1">
                     <p className="font-semibold">{adminName}</p>
                     <p className="text-slate-500">{adminEmail}</p>
                   </div>
@@ -248,12 +238,12 @@ export function AdminNavbar() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={toggleMenu}
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors duration-200"
+            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 transition-colors duration-200 border border-white/30"
           >
             {isMenuOpen ? (
-              <X className="text-slate-700 w-5 h-5" />
+              <X className="text-white w-5 h-5" />
             ) : (
-              <Menu className="text-slate-700 w-5 h-5" />
+              <Menu className="text-white w-5 h-5" />
             )}
           </motion.button>
         </div>
@@ -269,7 +259,7 @@ export function AdminNavbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={toggleMenu}
-              className="md:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+              className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
             />
             
             {/* Menu Content */}
@@ -280,14 +270,14 @@ export function AdminNavbar() {
               exit="closed"
               className="md:hidden fixed top-16 right-0 bottom-0 z-50 w-80 max-w-full"
             >
-              <div className="bg-white h-full rounded-l-2xl shadow-2xl shadow-black/10 border-l border-slate-100 p-6 flex flex-col">
+              <div className="bg-white h-full rounded-l-2xl shadow-2xl border-l border-slate-200 p-6 flex flex-col">
                 {/* Mobile Menu Header */}
-                <div className="flex items-center gap-3 pb-6 mb-4 border-b border-slate-100">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <div className="flex items-center gap-3 pb-6 mb-4 border-b border-slate-200">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-800 flex items-center justify-center">
                     <GraduationCap className="text-white w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-slate-800 font-bold text-lg">Admin Dashboard</h2>
+                    <h2 className="text-slate-900 font-bold text-lg">Admin Dashboard</h2>
                   </div>
                 </div>
 
@@ -300,36 +290,26 @@ export function AdminNavbar() {
                         key={path}
                         to={path}
                         onClick={() => setActive(path)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                           isActive
-                            ? "bg-purple-50 text-purple-700 border border-purple-100"
-                            : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                            ? "bg-indigo-50 text-indigo-800"
+                            : "text-slate-700 hover:text-indigo-800 hover:bg-slate-50"
                         }`}
                       >
                         <Icon className="w-4 h-4" />
                         <span className="font-medium text-sm">{label}</span>
                         {isActive && (
-                          <div className="ml-auto w-2 h-2 bg-purple-500 rounded-full" />
+                          <div className="ml-auto w-2 h-2 bg-indigo-600 rounded-full" />
                         )}
                       </Link>
                     );
                   })}
-
-                  {/* Mobile: Download Sample CSV */}
-                  <a
-                    href="/sample-students.csv"
-                    download
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 text-slate-600 hover:text-green-700 hover:bg-green-50 border border-transparent hover:border-green-100"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span className="font-medium text-sm">Sample CSV</span>
-                  </a>
                 </div>
 
                 {/* Mobile Logout Button */}
                 <button
                   onClick={handleLogout}
-                  className="mt-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
+                  className="mt-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-700 hover:text-red-600 hover:bg-red-50 transition-all duration-200 border border-transparent hover:border-red-200"
                 >
                   <LogOut className="w-4 h-4" />
                   <span className="font-medium text-sm">Logout</span>

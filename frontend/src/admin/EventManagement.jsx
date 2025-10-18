@@ -1,16 +1,16 @@
-
-import { useEffect, useState } from "react";
+/* eslint-disable no-unused-vars */
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, CheckCircle, AlertCircle, ToggleRight, ToggleLeft } from "lucide-react";
+import { CheckCircle, AlertCircle, ToggleRight, ToggleLeft, Calendar, FileText, Upload } from "lucide-react";
+import { toast } from 'react-toastify';
 
 export default function EventManagement() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [capacity, setCapacity] = useState("");
   const [template, setTemplate] = useState(null);
   const [msg, setMsg] = useState("");
   const [specialMode, setSpecialMode] = useState(false);
@@ -18,176 +18,260 @@ export default function EventManagement() {
   const navigate = useNavigate();
 
   const resetForm = () => {
-  setTitle("");
-  setDescription("");
-  setStartDate("");
-  setEndDate("");
-  setCapacity("");
-  setTemplate(null);
-  setCsvFile(null);
+    setTitle("");
+    setDescription("");
+    setStartDate("");
+    setEndDate("");
+    setTemplate(null);
+    setCsvFile(null);
   };
+
+  function localDateTimeNow() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const min = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  }
+
+  const [nowLocal, setNowLocal] = useState(localDateTimeNow());
+  useEffect(() => {
+    const t = setInterval(() => setNowLocal(localDateTimeNow()), 15000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Auto-dismiss toast after 3 seconds
+  // react-toastify will auto-dismiss; no local timer needed
+
+  function parseLocalDateTime(value) {
+    // value expected in 'YYYY-MM-DDTHH:MM' format (datetime-local)
+    if (!value) return NaN;
+    const [datePart, timePart] = String(value).split('T');
+    if (!datePart || !timePart) return NaN;
+    const [y, m, d] = datePart.split('-').map(Number);
+    const [hh, mm] = timePart.split(':').map(Number);
+    if ([y, m, d, hh, mm].some(v => Number.isNaN(v))) return NaN;
+    return new Date(y, m - 1, d, hh, mm).getTime();
+  }
+
+  function toLocalInputValue(val) {
+    if (!val) return '';
+    // If already in YYYY-MM-DDTHH:MM return as-is
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(val)) return val;
+    // Try parsing ISO or other formats into a Date, then format as local YYYY-MM-DDTHH:MM
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const min = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  }
 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
+    // client-side validation: ensure start >= now and end >= start
+    const nowIsoLocal = new Date().toISOString().slice(0,16);
+    if (startDate) {
+      const s = parseLocalDateTime(startDate);
+      if (isNaN(s)) { setMsg('Invalid start date'); return; }
+      if (s < Date.now()) { setMsg('Start date cannot be in the past'); return; }
+    }
+    if (startDate && endDate) {
+      const s = parseLocalDateTime(startDate);
+      const en = parseLocalDateTime(endDate);
+      if (isNaN(s) || isNaN(en)) { setMsg('Invalid start or end date'); return; }
+      if (en < s) { setMsg('End date must be the same or after start date'); return; }
+    }
+    let toastId;
     try {
       let ev;
+      const payloadStart = startDate ? new Date(parseLocalDateTime(startDate)).toISOString() : undefined;
+      const payloadEnd = endDate ? new Date(parseLocalDateTime(endDate)).toISOString() : undefined;
+
+      // Show an immediate loading toast so user sees feedback instantly
+      toastId = toast.loading('Creating event...');
+
       if (specialMode) {
-        const res = await api.createSpecialEvent({ name: title, description, startDate, endDate, capacity, template, csv: csvFile });
-        setMsg(`Special event created (invited ${res.invited})`);
-        navigate(`/admin/event/${res._id}`);
+        const res = await api.createSpecialEvent({ name: title, description, startDate: payloadStart, endDate: payloadEnd, template, csv: csvFile });
+        const eventName = res.name || title;
+        // Backend returns { eventId } for special events — use it if present
+        const newId = res._id || res.eventId;
+        toast.update(toastId, { render: `Event "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
+        resetForm();
+        if (newId) navigate(`/admin/event/${newId}`, { state: { eventCreated: true } });
       } else {
-        ev = await api.createEvent({ name: title, description, startDate, endDate, capacity, template });
-        setMsg("Event created successfully — pairs are auto-generated for normal events");
-        navigate(`/admin/event/${ev._id}`);
+        ev = await api.createEvent({ name: title, description, startDate: payloadStart, endDate: payloadEnd, template });
+        const eventName = ev.name || title;
+        toast.update(toastId, { render: `Event "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
+        resetForm();
+        if (ev && ev._id) navigate(`/admin/event/${ev._id}`, { state: { eventCreated: true } });
       }
-      resetForm();
     } catch (err) {
-      setMsg(err.message);
+      // Update the loading toast if present; otherwise show error toast
+      if (toastId) {
+        toast.update(toastId, { render: err?.message || 'Failed to create event', type: 'error', isLoading: false, autoClose: 5000 });
+      } else {
+        toast.error(err?.message || 'Failed to create event');
+      }
+      setMsg(err.message || 'Failed to create event');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col pt-16">
+    <div className="min-h-screen bg-slate-50 flex flex-col pt-16">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex-1 w-full max-w-full mx-auto px-4 sm:px-6 md:px-8 py-6"
+        className="flex-1 w-full max-w-2xl mx-auto px-4 py-4"
       >
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8">
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-2xl lg:text-3xl font-bold text-gray-800 mb-4 text-center tracking-tight"
-          >
-            Event Management
-          </motion.h2>
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex justify-end mb-6"
-          >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          {/* Header Section */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-indigo-800 rounded-lg flex items-center justify-center">
+              <Calendar className="text-white w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-slate-800">Event Management</h2>
+              <p className="text-slate-600 text-sm">Create interview practice events</p>
+            </div>
+          </div>
+
+          {/* Mode Toggle */}
+          <div className="flex justify-end mb-4">
+            <button
               type="button"
               onClick={() => { setSpecialMode(!specialMode); setMsg(""); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 specialMode
-                  ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white border border-purple-200'
-                  : 'bg-gray-50 text-purple-600 border border-purple-200 hover:bg-gray-100'
+                  ? 'bg-indigo-800 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              {specialMode ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-              {specialMode ? 'Special Event Mode ON' : 'Normal Event Mode'}
-            </motion.button>
-          </motion.div>
-          <form onSubmit={handleCreateEvent} className="mb-8">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="space-y-4"
-            >
-              <input
-                type="text"
-                placeholder="Event Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-700"
-                required
-              />
-              <div className="flex flex-col gap-2">
-                <label className="font-semibold text-gray-700 mb-1">Capacity</label>
-                <div className="flex gap-4 items-center">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="capacityType"
-                      value="unlimited"
-                      checked={capacity === '' || capacity === null}
-                      onChange={() => setCapacity('')}
-                    />
-                    <span>Unlimited</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="capacityType"
-                      value="limited"
-                      checked={capacity !== '' && capacity !== null}
-                      onChange={() => setCapacity(1)}
-                    />
-                    <span>Set Limit</span>
-                  </label>
-                  {capacity !== '' && capacity !== null && (
-                    <input
-                      type="number"
-                      min="1"
-                      value={capacity}
-                      onChange={e => setCapacity(e.target.value)}
-                      className="w-24 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm text-gray-700 focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                      required
-                    />
-                  )}
+              {specialMode ? <ToggleRight className="w-3 h-3" /> : <ToggleLeft className="w-3 h-3" />}
+              {specialMode ? 'Special Event' : 'Normal Event'}
+            </button>
+          </div>
+
+          <form onSubmit={handleCreateEvent}>
+            <div className="space-y-3">
+              {/* Event Title */}
+              <div>
+                <label className="block text-sm font-medium text-slate-800 mb-1">Event Title</label>
+                <input
+                  type="text"
+                  placeholder="Enter event title..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
+                  required
+                />
+              </div>
+
+              {/* Event Description */}
+              <div>
+                <label className="block text-sm font-medium text-slate-800 mb-1">Event Description</label>
+                <textarea
+                  placeholder="Describe the event purpose and format..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
+                  rows="3"
+                  required
+                />
+              </div>
+
+              {/* Date & Time */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-800 mb-1">Start Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    value={toLocalInputValue(startDate)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      const parsed = parseLocalDateTime(v);
+                      if (!isNaN(parsed) && parsed < Date.now()) {
+                        setMsg('Start cannot be before now; clamped to current time');
+                        setStartDate(localDateTimeNow());
+                        return;
+                      }
+                      setStartDate(v);
+                    }}
+                    min={nowLocal}
+                    max={toLocalInputValue(endDate) || undefined}
+                    className="w-full bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-800 mb-1">End Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    value={toLocalInputValue(endDate)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      const parsed = parseLocalDateTime(v);
+                      const startParsed = parseLocalDateTime(startDate);
+                      if (!isNaN(parsed) && !isNaN(startParsed) && parsed < startParsed) {
+                        setMsg('End cannot be before start; clamped to start time');
+                        setEndDate(toLocalInputValue(startDate));
+                        return;
+                      }
+                      setEndDate(v);
+                    }}
+                    min={toLocalInputValue(startDate) || nowLocal}
+                    className="w-full bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
+                    required
+                  />
                 </div>
               </div>
-              <textarea
-                placeholder="Event Description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-700"
-                rows="4"
-                required
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="datetime-local"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-700"
-                  required
-                />
-                <input
-                  type="datetime-local"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-700"
-                  required
-                />
+
+              {/* Template Upload */}
+              <div>
+                <label className="block text-sm font-medium text-slate-800 mb-1">Interview Template (Optional)</label>
+                <label className="flex items-center justify-center w-full p-3 bg-white rounded-lg border border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer">
+                  <Upload className="w-4 h-4 text-sky-500 mr-2" />
+                  <span className="text-slate-700 text-sm font-medium">Upload Template File</span>
+                  <input
+                    type="file"
+                    onChange={(e) => setTemplate(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                </label>
+                {template && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center gap-2 mt-2 p-2 bg-sky-50 rounded border border-sky-200"
+                  >
+                    <FileText className="w-4 h-4 text-sky-600" />
+                    <span className="text-sky-800 text-sm font-medium">{template.name}</span>
+                  </motion.div>
+                )}
+                <p className="text-xs text-slate-500 mt-1">
+                  Upload a template file for interview questions or guidelines (optional)
+                </p>
               </div>
-              <label className="flex items-center justify-center w-full p-4 bg-gray-50 rounded-xl border border-gray-200 hover:bg-gray-100 transition-all duration-200 cursor-pointer">
-                <Upload className="w-5 h-5 text-blue-500 mr-2" />
-                <span className="text-gray-700 font-medium">Upload Template</span>
-                <input
-                  type="file"
-                  onChange={(e) => setTemplate(e.target.files?.[0] || null)}
-                  className="hidden"
-                />
-              </label>
-              {template && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-sm text-gray-500 text-center"
-                >
-                  Selected: {template.name}
-                </motion.p>
-              )}
+
+              {/* Special Mode CSV Upload */}
               {specialMode && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <label className="block text-sm font-semibold text-gray-800 mb-1">
+                <div className="bg-sky-50 border border-sky-200 rounded-lg p-3">
+                  <label className="block text-sm font-medium text-slate-800 mb-2">
+                    <FileText className="w-4 h-4 inline mr-1 text-sky-600" />
                     Allowed Participants CSV
                   </label>
-                  <label className="flex items-center justify-center w-full p-4 bg-gray-50 rounded-xl border border-gray-200 hover:bg-gray-100 transition-all duration-200 cursor-pointer">
-                    <Upload className="w-5 h-5 text-purple-500 mr-2" />
-                    <span className="text-gray-700 font-medium">Upload CSV</span>
+                  <label className="flex items-center justify-center w-full p-3 bg-white rounded border border-sky-300 hover:bg-sky-50 cursor-pointer border-dashed">
+                    <div className="text-center">
+                      <FileText className="w-6 h-6 text-sky-500 mx-auto mb-1" />
+                      <span className="text-slate-700 text-sm font-medium">Upload CSV File</span>
+                    </div>
                     <input
                       type="file"
                       accept=".csv"
@@ -197,54 +281,55 @@ export default function EventManagement() {
                     />
                   </label>
                   {csvFile && (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-sm text-gray-500 mt-2 text-center"
-                    >
-                      Selected: {csvFile.name}
-                    </motion.p>
+                    <div className="flex items-center gap-2 mt-2 p-2 bg-white rounded border border-sky-200">
+                      <FileText className="w-4 h-4 text-sky-600" />
+                      <span className="text-sky-800 text-sm">{csvFile.name}</span>
+                    </div>
                   )}
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    CSV headers: email or studentId (case-insensitive). Only listed users will see & join this event.
+                  <p className="text-xs text-slate-600 mt-2">
+                    CSV headers: email or studentId. Only listed users can join.
                   </p>
-                </motion.div>
+                </div>
               )}
-              <motion.button
-                whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
-                whileTap={{ scale: 0.95 }}
+
+              {/* Submit Button */}
+              <button
                 type="submit"
-                className={`w-full p-4 rounded-xl font-semibold text-white text-base shadow-md transition-all duration-200 ${
+                className={`w-full p-3 rounded-lg font-medium text-white text-sm transition-colors ${
                   specialMode
-                    ? 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600'
-                    : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
+                    ? 'bg-indigo-800 hover:bg-indigo-900'
+                    : 'bg-sky-500 hover:bg-sky-600'
                 }`}
               >
                 {specialMode ? 'Create Special Event' : 'Create Event'}
-              </motion.button>
-              <p className="text-xs text-gray-500 mt-2 text-center">
+              </button>
+
+              {/* Help Text */}
+              <p className="text-xs text-slate-500 text-center">
                 {specialMode
-                  ? 'Note: For special events, pairs are auto-generated among invited participants when enough users are found.'
-                  : 'Note: For normal events, pairs are auto-generated among all students when the event is created.'}
+                  ? 'Pairs are auto-generated among invited participants'
+                  : 'Pairs are auto-generated among all students'}
               </p>
-            </motion.div>
+            </div>
           </form>
+
+          {/* Status Message */}
           <AnimatePresence>
             {msg && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className={`flex items-center justify-center text-sm text-center p-4 rounded-xl mb-6 ${
-                  msg.toLowerCase().includes('success')
-                    ? 'bg-green-50 text-green-600 border border-green-100'
-                    : 'bg-red-50 text-red-600 border border-red-100'
+                exit={{ opacity: 0, y: 5 }}
+                className={`flex items-center justify-center text-sm p-3 rounded-lg mt-3 ${
+                  msg.toLowerCase().includes('success') || msg.toLowerCase().includes('created')
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
                 }`}
               >
-                {msg.toLowerCase().includes('success') ? (
-                  <CheckCircle className="w-5 h-5 mr-2" />
+                {msg.toLowerCase().includes('success') || msg.toLowerCase().includes('created') ? (
+                  <CheckCircle className="w-4 h-4 mr-2" />
                 ) : (
-                  <AlertCircle className="w-5 h-5 mr-2" />
+                  <AlertCircle className="w-4 h-4 mr-2" />
                 )}
                 {msg}
               </motion.div>
@@ -252,6 +337,8 @@ export default function EventManagement() {
           </AnimatePresence>
         </div>
       </motion.div>
+
+      {/* react-toastify handles toasts globally */}
     </div>
   );
 }

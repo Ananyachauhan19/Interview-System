@@ -1,3 +1,4 @@
+import { sendSlotProposalEmail, sendSlotAcceptanceEmail, sendInterviewScheduledEmail } from '../utils/mailer.js';
 import Event from '../models/Event.js';
 import Pair from '../models/Pair.js';
 import mongoose from 'mongoose';
@@ -29,7 +30,11 @@ async function generateRotationPairsForEvent(event) {
           b?.email ? `Their email: ${b.email}` : null,
           `Propose time slots from your dashboard: ${fe}/`,
         ].filter(Boolean).join('\n');
-        await sendMail({ to: a.email, subject: `Pairing info: You interview ${b?.name || b?.email || 'a peer'}`, text });
+        await sendSlotProposalEmail({
+          to: a.email,
+          interviewer: a.name || a.email,
+          slot: 'Please propose a slot from dashboard.',
+        });
       }
       if (b?.email) {
         const text = [
@@ -38,7 +43,12 @@ async function generateRotationPairsForEvent(event) {
           a?.email ? `Their email: ${a.email}` : null,
           `Review and accept slots from your dashboard: ${fe}/`,
         ].filter(Boolean).join('\n');
-        await sendMail({ to: b.email, subject: `Pairing info: You are interviewed by ${a?.name || a?.email || 'a peer'}`, text });
+        await sendSlotAcceptanceEmail({
+          to: b.email,
+          interviewee: b.name || b.email,
+          slot: 'Please review and accept slot from dashboard.',
+          accepted: false,
+        });
       }
     }
   }
@@ -94,7 +104,13 @@ export async function setMeetingLink(req, res) {
   const subject = 'Meeting link available';
   const text = `Your interview at ${pair.scheduledAt.toISOString()} now has a meeting link: ${meetingLink}`;
   for (const to of [pair.interviewer?.email, pair.interviewee?.email].filter(Boolean)) {
-    await sendMail({ to, subject, text });
+    await sendInterviewScheduledEmail({
+      to,
+      interviewer: pair.interviewer?.name || pair.interviewer?.email,
+      interviewee: pair.interviewee?.name || pair.interviewee?.email,
+      event: { title: 'Interview', date: pair.scheduledAt, details: 'Interview scheduled' },
+      link: meetingLink,
+    });
   }
   res.json({ message: 'Link set', pairId: pair._id });
 }

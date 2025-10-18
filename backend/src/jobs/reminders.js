@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import crypto from 'crypto';
 import Pair from '../models/Pair.js';
 import { sendMail, buildICS } from '../utils/mailer.js';
+import { sendInterviewScheduledEmail } from '../utils/mailer.js';
 
 // Run every 5 minutes to send reminders
 cron.schedule('*/5 * * * *', async () => {
@@ -36,7 +37,13 @@ cron.schedule('*/5 * * * *', async () => {
         ].filter(a => a.email),
       });
       const attachments = [{ filename: 'interview.ics', content: ics, contentType: 'text/calendar; charset=utf-8; method=REQUEST' }];
-      for (const to of emails) await sendMail({ to, subject: subjectLink, text: textLink, attachments });
+      for (const to of emails) await sendInterviewScheduledEmail({
+        to,
+        interviewer: p.interviewer?.name || p.interviewer?.email,
+        interviewee: p.interviewee?.name || p.interviewee?.email,
+        event: { title: 'Interview', date: p.scheduledAt, details: 'Interview scheduled' },
+        link: p.meetingLink,
+      });
     }
     let subject;
     if (diff <= 60 * 60 * 1000) subject = 'Interview in 1 hour';

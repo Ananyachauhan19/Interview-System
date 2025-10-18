@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -25,10 +26,10 @@ export function StudentNavbar() {
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMenuOpen(false);
-    setIsProfileOpen(false); // Also close profile dropdown on route change
+    setIsProfileOpen(false);
   }, [location.pathname]);
 
-  // Close profile dropdown on outside click (for desktop and mobile)
+  // Close profile dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isProfileOpen && !event.target.closest(".profile-container")) {
@@ -44,7 +45,7 @@ export function StudentNavbar() {
     localStorage.removeItem("isStudent");
     localStorage.removeItem("studentName");
     localStorage.removeItem("studentEmail");
-  navigate("/");
+    navigate("/");
   };
 
   const toggleMenu = () => {
@@ -71,15 +72,6 @@ export function StudentNavbar() {
     }
   };
 
-  const itemHover = {
-    hover: { 
-      y: -2, 
-      scale: 1.02,
-      transition: { duration: 0.2, ease: "easeOut" }
-    },
-    tap: { scale: 0.98 }
-  };
-
   const dropdownVariants = {
     closed: {
       opacity: 0,
@@ -98,37 +90,34 @@ export function StudentNavbar() {
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50 border-b border-blue-100/30 bg-white shadow-md"
+      className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white shadow-sm"
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6">
-        {/* Brand Logo and Title */}
-        <motion.div 
-          className="flex items-center gap-3"
-          whileHover={{ scale: 1.02 }}
-          transition={{ duration: 0.2 }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
-              <GraduationCap className="text-white w-5 h-5" />
-            </div>
-            <h1 className="text-slate-800 text-xl font-bold tracking-tight hidden sm:block">
-              Student Hub
-            </h1>
+      <div className="w-full flex items-center justify-between h-14 px-4">
+        {/* Brand Logo and Title (PeerPrep) */}
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+            <GraduationCap className="text-indigo-600 w-4 h-4" />
           </div>
-        </motion.div>
+          <div className="hidden sm:block">
+            <div>
+              <h1 className="text-slate-800 text-lg font-bold">PeerPrep</h1>
+              <p className="text-xs text-indigo-600 -mt-1">Interview Practice Platform</p>
+            </div>
+          </div>
+        </div>
 
         {/* Center: Mobile Title */}
         <div className="flex-1 flex justify-center sm:hidden">
-          <h1 className="text-slate-800 text-lg font-bold tracking-tight flex items-center gap-2">
-            <GraduationCap className="text-purple-600 w-4 h-4" />
+          <h1 className="text-slate-800 font-semibold flex items-center gap-1 text-sm">
+            <GraduationCap className="text-indigo-600 w-3 h-3" />
             Student
           </h1>
         </div>
 
         {/* Right Side: Desktop Navigation + Mobile Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-0">
             {navItems.map(({ path, label, Icon }) => {
               const isActive = active === path || location.pathname === path;
               return (
@@ -138,55 +127,29 @@ export function StudentNavbar() {
                   onClick={() => setActive(path)}
                   className="relative"
                 >
-                  <motion.div
-                    variants={itemHover}
-                    whileHover="hover"
-                    whileTap="tap"
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 mx-1 ${
+                  <div
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors mx-0.5 ${
                       isActive 
-                        ? "bg-purple-50 text-purple-700 shadow-sm" 
+                        ? "bg-indigo-50 text-indigo-700" 
                         : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3 h-3" />
                     <span className="font-medium text-sm">{label}</span>
-                    
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="absolute inset-0 border-2 border-purple-200 rounded-xl"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                      />
-                    )}
-                  </motion.div>
+                  </div>
                 </Link>
               );
             })}
 
-            {/* Desktop Logout Button */}
-            <motion.button
-              variants={itemHover}
-              whileHover="hover"
-              whileTap="tap"
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 ml-2 transition-all duration-200"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="font-medium text-sm">Logout</span>
-            </motion.button>
-
             {/* Desktop Profile */}
-            <div className="relative ml-2 profile-container">
-              <motion.button
-                variants={itemHover}
-                whileHover="hover"
-                whileTap="tap"
+            <div className="relative profile-container ml-1">
+              <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-800 hover:bg-slate-50 transition-colors"
               >
-                <User className="w-4 h-4" />
+                <User className="w-3 h-3" />
                 <span className="font-medium text-sm">Profile</span>
-              </motion.button>
+              </button>
 
               <AnimatePresence>
                 {isProfileOpen && (
@@ -195,13 +158,20 @@ export function StudentNavbar() {
                     initial="closed"
                     animate="open"
                     exit="closed"
-                    className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl p-4 border border-slate-100 z-50"
+                    className="absolute top-full right-0 mt-1 w-56 bg-white rounded-lg shadow-lg p-3 border border-slate-200 z-50"
                   >
-                    <h3 className="font-bold text-slate-800 text-base mb-3">Profile Info</h3>
-                    <div className="text-slate-600 text-sm space-y-1">
-                      <p className="font-semibold">{studentName}</p>
+                    <h3 className="font-semibold text-slate-800 text-sm mb-2">Profile Info</h3>
+                    <div className="text-slate-600 text-xs space-y-1">
+                      <p className="font-medium">{studentName}</p>
                       <p className="text-slate-500">{studentEmail}</p>
                     </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full mt-3 flex items-center gap-1.5 px-2 py-1.5 rounded text-slate-600 hover:text-red-600 hover:bg-red-50 transition-colors text-xs font-medium"
+                    >
+                      <LogOut className="w-3 h-3" />
+                      <span>Logout</span>
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -210,15 +180,12 @@ export function StudentNavbar() {
 
           {/* Mobile Profile */}
           <div className="relative profile-container md:hidden">
-            <motion.button
-              variants={itemHover}
-              whileHover="hover"
-              whileTap="tap"
+            <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors duration-200"
+              className="flex items-center justify-center w-8 h-8 rounded bg-slate-100 hover:bg-slate-200 transition-colors"
             >
-              <User className="text-slate-700 w-5 h-5" />
-            </motion.button>
+              <User className="text-slate-700 w-4 h-4" />
+            </button>
 
             <AnimatePresence>
               {isProfileOpen && (
@@ -227,11 +194,11 @@ export function StudentNavbar() {
                   initial="closed"
                   animate="open"
                   exit="closed"
-                  className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl p-4 border border-slate-100 z-50"
+                  className="absolute top-full right-0 mt-1 w-56 bg-white rounded-lg shadow-lg p-3 border border-slate-200 z-50"
                 >
-                  <h3 className="font-bold text-slate-800 text-base mb-3">Profile Info</h3>
-                  <div className="text-slate-600 text-sm space-y-1">
-                    <p className="font-semibold">{studentName}</p>
+                  <h3 className="font-semibold text-slate-800 text-sm mb-2">Profile Info</h3>
+                  <div className="text-slate-600 text-xs space-y-1">
+                    <p className="font-medium">{studentName}</p>
                     <p className="text-slate-500">{studentEmail}</p>
                   </div>
                 </motion.div>
@@ -240,17 +207,16 @@ export function StudentNavbar() {
           </div>
 
           {/* Mobile Menu Toggle */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={toggleMenu}
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors duration-200"
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded bg-slate-100 hover:bg-slate-200 transition-colors"
           >
             {isMenuOpen ? (
-              <X className="text-slate-700 w-5 h-5" />
+              <X className="text-slate-700 w-4 h-4" />
             ) : (
-              <Menu className="text-slate-700 w-5 h-5" />
+              <Menu className="text-slate-700 w-4 h-4" />
             )}
-          </motion.button>
+          </button>
         </div>
       </div>
 
@@ -264,7 +230,7 @@ export function StudentNavbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={toggleMenu}
-              className="md:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+              className="md:hidden fixed inset-0 z-40 bg-black/20"
             />
             
             {/* Menu Content */}
@@ -273,21 +239,21 @@ export function StudentNavbar() {
               initial="closed"
               animate="open"
               exit="closed"
-              className="md:hidden fixed top-16 right-0 bottom-0 z-50 w-80 max-w-full"
+              className="md:hidden fixed top-14 right-0 bottom-0 z-50 w-64 max-w-full"
             >
-              <div className="bg-white h-full rounded-l-2xl shadow-2xl shadow-black/10 border-l border-slate-100 p-6 flex flex-col">
+              <div className="bg-white h-full rounded-l-lg border-l border-slate-200 p-4 flex flex-col">
                 {/* Mobile Menu Header */}
-                <div className="flex items-center gap-3 pb-6 mb-4 border-b border-slate-100">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <GraduationCap className="text-white w-6 h-6" />
+                <div className="flex items-center gap-2 pb-4 mb-3 border-b border-slate-200">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-800 flex items-center justify-center">
+                    <GraduationCap className="text-white w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-slate-800 font-bold text-lg">Student Hub</h2>
+                    <h2 className="text-slate-800 font-semibold">Student Hub</h2>
                   </div>
                 </div>
 
                 {/* Mobile Menu Items */}
-                <div className="flex-1 space-y-2">
+                <div className="flex-1 space-y-1">
                   {navItems.map(({ path, label, Icon }) => {
                     const isActive = active === path || location.pathname === path;
                     return (
@@ -295,16 +261,16 @@ export function StudentNavbar() {
                         key={path}
                         to={path}
                         onClick={() => setActive(path)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                           isActive
-                            ? "bg-purple-50 text-purple-700 border border-purple-100"
+                            ? "bg-indigo-50 text-indigo-700"
                             : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
                         }`}
                       >
                         <Icon className="w-4 h-4" />
                         <span className="font-medium text-sm">{label}</span>
                         {isActive && (
-                          <div className="ml-auto w-2 h-2 bg-purple-500 rounded-full" />
+                          <div className="ml-auto w-1.5 h-1.5 bg-indigo-600 rounded-full" />
                         )}
                       </Link>
                     );
@@ -314,10 +280,10 @@ export function StudentNavbar() {
                 {/* Mobile Logout Button */}
                 <button
                   onClick={handleLogout}
-                  className="mt-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-600 hover:text-red-600 hover:bg-red-50 transition-colors text-sm font-medium"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span className="font-medium text-sm">Logout</span>
+                  <span>Logout</span>
                 </button>
               </div>
             </motion.div>

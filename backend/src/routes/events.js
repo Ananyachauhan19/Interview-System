@@ -2,13 +2,11 @@
 
 import { Router } from 'express';
 import multer from 'multer';
-import { createEvent, listEvents, joinEvent, exportJoinedCsv, eventAnalytics, replaceEventTemplate, getTemplateUrl, deleteEventTemplate, getEvent, createSpecialEvent, updateEventCapacity, updateEventJoinDisable } from '../controllers/eventController.js';
+import { createEvent, listEvents, joinEvent, exportJoinedCsv, eventAnalytics, replaceEventTemplate, getTemplateUrl, deleteEventTemplate, getEvent, createSpecialEvent} from '../controllers/eventController.js';
 import { supabase } from '../utils/supabase.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
-router.patch('/:id/join-disable', requireAuth, requireAdmin, updateEventJoinDisable);
-router.patch('/:id/capacity', requireAuth, requireAdmin, updateEventCapacity);
 const upload = multer({ storage: multer.memoryStorage() });
 const multi = upload.fields([
 	{ name: 'template', maxCount: 1 },
@@ -41,8 +39,8 @@ router.get('/__supabase/write-test', requireAuth, requireAdmin, async (req, res)
 		if (!supabase) return res.status(500).json({ ok: false, reason: 'not_configured' });
 		const bucket = process.env.SUPABASE_BUCKET || 'templates';
 		const key = `__health/${Date.now()}_ping.txt`;
-		const blob = new Blob([`ping ${new Date().toISOString()}`], { type: 'text/plain' });
-		const up = await supabase.storage.from(bucket).upload(key, blob, { contentType: 'text/plain', upsert: false });
+		const data = Buffer.from(`ping ${new Date().toISOString()}`, 'utf8');
+		const up = await supabase.storage.from(bucket).upload(key, data, { contentType: 'text/plain', upsert: false });
 		if (up.error) return res.status(500).json({ ok: false, reason: 'upload_failed', error: up.error.message });
 		// cleanup
 		await supabase.storage.from(bucket).remove([key]);

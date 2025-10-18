@@ -1,6 +1,7 @@
 import Papa from 'papaparse';
 import User from '../models/User.js';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
+import { sendOnboardingEmail } from '../utils/mailer.js';
 
 export async function uploadStudentsCsv(req, res) {
   if (!req.file) return res.status(400).json({ error: 'CSV file required' });
@@ -75,10 +76,10 @@ export async function uploadStudentsCsv(req, res) {
   results.push({ row: row.__row, id: user._id, email, studentid, status: 'created' });
 
       if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
-        await sendMail({
+        await sendOnboardingEmail({
           to: email,
-          subject: 'Welcome to Interview System',
-          text: renderTemplate('Hello {studentName}, you have been onboarded.', { studentName: name || email }),
+          studentId: studentid,
+          password: password || 'Set via password reset',
         });
       }
     } catch (err) {
@@ -103,7 +104,11 @@ export async function createStudent(req, res) {
     const user = await User.create({ role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, mustChangePassword: true });
 
     if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
-      await sendMail({ to: email, subject: 'Welcome to Interview System', text: renderTemplate('Hello {studentName}, you have been onboarded.', { studentName: name || email }) });
+      await sendOnboardingEmail({
+        to: email,
+        studentId: studentid,
+        password: password || 'Set via password reset',
+      });
     }
 
     return res.status(201).json({ id: user._id, email: user.email, studentid: user.studentId, status: 'created' });

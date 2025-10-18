@@ -1,17 +1,17 @@
+/* eslint-disable no-unused-vars */
 import { useEffect, useState } from "react";
 import RequirePasswordChange from "./RequirePasswordChange";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../utils/api";
 import {
   CheckCircle, Clock, Calendar, Users, Info, ChevronLeft,
-  BookOpen, Award, X
+  BookOpen, Award, X, Search
 } from "lucide-react";
 
 export default function StudentDashboard() {
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [ackRead, setAckRead] = useState(false);
   const [joinMsg, setJoinMsg] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
@@ -24,7 +24,6 @@ export default function StudentDashboard() {
   const handleEventClick = async (event) => {
     setSelectedEvent({ ...event });
     setJoinMsg("");
-    setAckRead(false);
     try {
       const res = await api.getEventTemplateUrl(event._id);
       if (res?.templateUrl) {
@@ -37,10 +36,6 @@ export default function StudentDashboard() {
 
   const handleJoinEvent = async () => {
     if (!selectedEvent) return;
-    if (selectedEvent?.templateUrl && !ackRead) {
-      setJoinMsg("Please confirm you have read the template.");
-      return;
-    }
     try {
       const res = await api.joinEvent(selectedEvent._id);
       setJoinMsg(res?.message || "Successfully joined the event!");
@@ -59,8 +54,12 @@ export default function StudentDashboard() {
                          event.description.toLowerCase().includes(searchTerm.toLowerCase());
     if (!matchesSearch) return false;
     if (activeFilter === "all") return true;
-    if (activeFilter === "joined") return event.joined;
-    if (activeFilter === "upcoming") return new Date(event.startDate) > now;
+    if (activeFilter === "active") {
+      const started = event.startDate ? new Date(event.startDate) <= now : false;
+      const notEnded = !event.endDate || new Date(event.endDate) > now;
+      return started && notEnded;
+    }
+    if (activeFilter === "upcoming") return event.startDate ? new Date(event.startDate) > now : false;
     return true;
   });
 
@@ -74,29 +73,27 @@ export default function StudentDashboard() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.7 }}
-      className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
+      className="grid grid-cols-3 gap-3 mb-4"
     >
       {[
-        { label: "Total Events", value: stats.totalEvents, icon: BookOpen, color: "blue" },
-        { label: "Joined", value: stats.joinedEvents, icon: CheckCircle, color: "green" },
-        { label: "Completed", value: stats.completedEvents, icon: Award, color: "orange" }
+        { label: "Total Events", value: stats.totalEvents, icon: BookOpen, color: "sky" },
+        { label: "Joined", value: stats.joinedEvents, icon: CheckCircle, color: "emerald" },
+        { label: "Completed", value: stats.completedEvents, icon: Award, color: "amber" }
       ].map((stat, index) => (
         <motion.div
           key={stat.label}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.8 + index * 0.1 }}
-          whileHover={{ scale: 1.05, y: -2 }}
-          className={`bg-gradient-to-br from-${stat.color}-50 to-${stat.color}-100 rounded-2xl p-4 border border-${stat.color}-200 shadow-sm`}
+          transition={{ delay: index * 0.1 }}
+          className={`bg-white rounded-lg border border-slate-200 p-3`}
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl font-bold text-gray-800">{stat.value}</div>
-              <div className="text-sm text-gray-600">{stat.label}</div>
+              <div className="text-lg font-semibold text-slate-800">{stat.value}</div>
+              <div className="text-xs text-slate-600">{stat.label}</div>
             </div>
-            <div className={`p-2 bg-${stat.color}-500/10 rounded-lg`}>
-              <stat.icon className={`w-4 h-4 text-${stat.color}-600`} />
+            <div className={`p-1.5 bg-${stat.color}-50 rounded`}>
+              <stat.icon className={`w-3 h-3 text-${stat.color}-600`} />
             </div>
           </div>
         </motion.div>
@@ -105,110 +102,109 @@ export default function StudentDashboard() {
   );
 
   const EventList = () => (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
-      <div className="lg:hidden mb-6">
+    <div className="bg-white rounded-lg border border-slate-200 p-4 h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+      <div className="lg:hidden mb-4">
         <StatsComponent />
       </div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Events</h2>
-        <span className="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full text-sm font-medium">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-slate-800">Events</h2>
+        <span className="px-2 py-0.5 bg-sky-500 text-white rounded text-xs font-medium">
           {filteredEvents.length}
         </span>
       </div>
-      <div className="flex space-x-2 mb-6 p-1 bg-gray-50 rounded-xl">
-        {["all", "joined", "upcoming"].map((filter) => (
+      
+      {/* Filters */}
+      <div className="flex space-x-1 mb-3 p-1 bg-slate-100 rounded">
+        {["all", "active", "upcoming"].map((filter) => (
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+            className={`flex-1 py-1 px-2 rounded text-xs font-medium transition-colors ${
               activeFilter === filter
-                ? "bg-white text-gray-800 shadow-sm"
-                : "text-gray-600 hover:text-gray-800"
+                ? "bg-white text-slate-800 shadow-sm"
+                : "text-slate-600 hover:text-slate-800"
             }`}
           >
             {filter.charAt(0).toUpperCase() + filter.slice(1)}
           </button>
         ))}
       </div>
-      <div className="relative mb-6">
+
+      {/* Search */}
+      <div className="relative mb-3">
+        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500" />
         <input
           type="text"
           placeholder="Search events..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          className="w-full pl-7 pr-3 py-1.5 bg-slate-50 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
         />
       </div>
-      <div className="space-y-4 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-2">
+
+      {/* Event List */}
+      <div className="space-y-2 flex-1 overflow-y-auto pr-1">
         {filteredEvents.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center text-gray-500 py-8"
+            className="text-center text-slate-500 py-6"
           >
-            <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p>No events found</p>
+            <Calendar className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+            <p className="text-sm">No events found</p>
           </motion.div>
         ) : (
           filteredEvents.map((event, index) => {
             const active = selectedEvent && selectedEvent._id === event._id;
+            const isUpcoming = new Date(event.startDate) > now;
+            const isActive = !isUpcoming && new Date(event.endDate) > now;
+            
             return (
               <motion.button
                 key={event._id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.05 }}
                 onClick={() => handleEventClick(event)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`w-full text-left p-4 rounded-xl transition-all duration-300 border ${
+                className={`w-full text-left p-3 rounded-lg transition-colors border ${
                   active
-                    ? "border-blue-300 bg-blue-50 shadow-md"
-                    : "border-gray-100 bg-gray-50/50 hover:bg-white hover:border-gray-200"
-                } ${event.joined ? "ring-1 ring-green-200" : ""}`}
+                    ? "border-sky-300 bg-sky-50"
+                    : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300"
+                } ${event.joined ? "ring-1 ring-emerald-200" : ""}`}
               >
-                <div className="flex items-start space-x-3">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className={`p-2 rounded-lg ${
-                      event.joined
-                        ? (new Date(event.startDate) > now
-                            ? "bg-red-100 text-red-600"
-                            : "bg-green-100 text-green-600")
-                        : (new Date(event.startDate) > now
-                            ? "bg-red-100 text-red-600"
-                            : "bg-blue-100 text-blue-600")
-                    }`}
-                  >
-                    {event.joined
-                      ? <CheckCircle size={16} />
-                      : (new Date(event.startDate) > now
-                          ? <Calendar size={16} />
-                          : <Calendar size={16} />)
-                    }
-                  </motion.div>
+                <div className="flex items-start gap-2">
+                  <div className={`p-1.5 rounded ${
+                    event.joined
+                      ? isActive 
+                        ? "bg-emerald-100 text-emerald-600" // Green for active events
+                        : "bg-amber-100 text-amber-600"     // Orange for upcoming events
+                      : "bg-sky-100 text-sky-600"
+                  }`}>
+                    {event.joined ? <CheckCircle size={14} /> : <Calendar size={14} />}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
-                      <h3 className="font-semibold text-gray-800 truncate text-base">{event.name}</h3>
+                      <h3 className="font-medium text-slate-800 truncate text-sm">{event.name}</h3>
                       {event.joined && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="flex-shrink-0"
-                        >
-                          <CheckCircle size={14} className="text-green-500" />
-                        </motion.div>
+                        <CheckCircle size={12} className={`flex-shrink-0 mt-0.5 ${
+                          isActive ? "text-emerald-500" : "text-amber-500"
+                        }`} />
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">{event.description}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">{event.description}</p>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
                         {fmt(event.startDate)}
                       </span>
-                      <div className="flex items-center space-x-1 text-xs text-gray-500">
-                        <Users size={12} />
-                        <span>{event.capacity || "∞"}</span>
-                      </div>
+                      {event.joined && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                          isActive 
+                            ? "bg-emerald-100 text-emerald-700" 
+                            : "bg-amber-100 text-amber-700"
+                        }`}>
+                          {isActive ? "Active" : "Upcoming"}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -222,180 +218,158 @@ export default function StudentDashboard() {
 
   const EventDetails = () => (
     <div className="flex-1 flex flex-col">
+      {/* Mobile Header */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="lg:hidden flex items-center space-x-3 mb-6 p-4 bg-white border-b border-gray-100 sticky top-0 z-10"
+        className="lg:hidden flex items-center gap-2 mb-4 p-3 bg-white border-b border-slate-200 sticky top-0"
       >
         <button
           onClick={() => setSelectedEvent(null)}
-          className="p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all"
+          className="p-1.5 rounded bg-slate-100 hover:bg-slate-200"
         >
-          <ChevronLeft size={20} className="text-gray-700" />
+          <ChevronLeft size={16} className="text-slate-700" />
         </button>
-        <h2 className="text-xl font-bold text-gray-800 truncate">{selectedEvent.name}</h2>
+        <h2 className="text-lg font-semibold text-slate-800 truncate">{selectedEvent.name}</h2>
       </motion.div>
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-8"
-      >
+
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
         <div className="flex-1">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center space-x-3 mb-4"
+            className="flex items-center gap-2 mb-3"
           >
             {selectedEvent.joined && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium"
-              >
-                <CheckCircle size={14} />
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
+                new Date(selectedEvent.startDate) > new Date()
+                  ? "bg-amber-100 text-amber-700" // Orange for upcoming
+                  : "bg-emerald-100 text-emerald-700" // Green for active
+              }`}>
+                <CheckCircle size={12} />
                 <span>Joined</span>
-              </motion.div>
+              </div>
             )}
-            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+            <span className="px-2 py-0.5 bg-sky-100 text-sky-700 rounded text-xs font-medium">
               {new Date(selectedEvent.startDate) > new Date() ? 'Upcoming' : 'Active'}
             </span>
           </motion.div>
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="hidden lg:block text-3xl font-bold text-gray-800 mb-4"
-          >
+          
+          <h2 className="hidden lg:block text-xl font-semibold text-slate-800 mb-3">
             {selectedEvent.name}
-          </motion.h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
-              <Clock className="w-5 h-5 text-blue-500" />
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded">
+              <Clock className="w-4 h-4 text-sky-500" />
               <div>
-                <div className="text-sm text-gray-500">Start Time</div>
-                <div className="font-medium text-gray-800">{fmt(selectedEvent.startDate)}</div>
+                <div className="text-xs text-slate-500">Start Time</div>
+                <div className="font-medium text-slate-800 text-sm">{fmt(selectedEvent.startDate)}</div>
               </div>
             </div>
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
-              <Clock className="w-5 h-5 text-purple-500" />
+            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded">
+              <Clock className="w-4 h-4 text-indigo-500" />
               <div>
-                <div className="text-sm text-gray-500">End Time</div>
-                <div className="font-medium text-gray-800">{fmt(selectedEvent.endDate)}</div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
-              <Users className="w-5 h-5 text-green-500" />
-              <div>
-                <div className="text-sm text-gray-500">Capacity</div>
-                <div className="font-medium text-gray-800">{selectedEvent.capacity || "Unlimited"}</div>
+                <div className="text-xs text-slate-500">End Time</div>
+                <div className="font-medium text-slate-800 text-sm">{fmt(selectedEvent.endDate)}</div>
               </div>
             </div>
           </div>
+          
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-gray-700 text-base leading-relaxed bg-gray-50/50 p-4 rounded-xl"
+            className="text-slate-700 text-sm bg-slate-50 p-3 rounded"
           >
             {selectedEvent.description}
           </motion.p>
         </div>
+        
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-end gap-4"
+          className="flex flex-col items-end gap-2"
         >
           {!selectedEvent.joined ? (
             (() => {
               const now = new Date();
               const joinDisabled = selectedEvent.joinDisabled || (selectedEvent.joinDisableTime && now > new Date(selectedEvent.joinDisableTime));
               return (
-                <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: "0 10px 20px -5px rgba(59, 130, 246, 0.3)" }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   onClick={handleJoinEvent}
-                  disabled={joinDisabled || (selectedEvent.templateUrl && !ackRead)}
-                  className={`px-6 py-3 rounded-xl font-semibold text-white shadow-md transition-all duration-200 ${
-                    joinDisabled
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : selectedEvent.templateUrl && !ackRead
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                  disabled={joinDisabled}
+                  className={`px-4 py-2 rounded-lg font-medium text-white text-sm transition-colors ${
+                    joinDisabled ? "bg-slate-400 cursor-not-allowed" : "bg-sky-500 hover:bg-sky-600"
                   }`}
                 >
                   {joinDisabled ? "Participation Closed" : "Join Event"}
-                </motion.button>
+                </button>
               );
             })()
           ) : (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold shadow-md"
-            >
-              <CheckCircle size={20} />
+            <div className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-white font-medium text-sm ${
+              new Date(selectedEvent.startDate) > new Date()
+                ? "bg-amber-500" // Orange for upcoming
+                : "bg-emerald-500" // Green for active
+            }`}>
+              <CheckCircle size={16} />
               <span>Successfully Joined</span>
-            </motion.div>
+            </div>
           )}
         </motion.div>
-      </motion.div>
-      {selectedEvent.templateUrl && (
+      </div>
+
+      {/* Template Section */}
+      {selectedEvent && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 mb-6"
+          className="bg-sky-50 rounded-lg p-3 border border-sky-200 mb-3"
         >
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-blue-500 rounded-lg">
-              <Info className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 bg-sky-500 rounded">
+              <Info className="w-3 h-3 text-white" />
             </div>
-            <h3 className="font-semibold text-gray-800 text-lg">Event Preparation</h3>
+            <h3 className="font-medium text-slate-800 text-sm">Event Preparation</h3>
           </div>
-          <p className="text-gray-700 mb-4 text-sm">
-            Review the event template to prepare for this session and maximize your learning experience.
+          <p className="text-slate-700 text-xs mb-2">
+            Review the event template to prepare for this session.
           </p>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <label className="flex items-center space-x-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={ackRead}
-                onChange={(e) => setAckRead(e.target.checked)}
-                className="w-5 h-5 text-blue-500 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-gray-700 font-medium text-sm">
-                I have read and understood the event template
-              </span>
-            </label>
-            <motion.a
-              whileHover={{ scale: 1.05 }}
-              href={selectedEvent.templateUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-white border border-blue-200 rounded-xl text-blue-600 hover:bg-blue-50 transition-all duration-200 font-medium shadow-sm text-sm"
+          <div className="flex justify-end">
+            <button
+              onClick={(e) => { if (selectedEvent.templateUrl) window.open(selectedEvent.templateUrl, '_blank'); }}
+              disabled={!selectedEvent.templateUrl}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                !selectedEvent.templateUrl 
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                  : 'bg-white border border-sky-300 text-sky-600 hover:bg-sky-50'
+              }`}
             >
-              <BookOpen size={16} />
+              <BookOpen size={12} />
               <span>View Template</span>
-            </motion.a>
+            </button>
           </div>
         </motion.div>
       )}
+
+      {/* Join Message */}
       <AnimatePresence>
         {joinMsg && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.9 }}
-            className={`p-4 rounded-xl text-center font-medium text-sm ${
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            className={`p-2 rounded text-xs text-center font-medium ${
               joinMsg.toLowerCase().includes("fail") || joinMsg.toLowerCase().includes("error")
-                ? "bg-red-50 text-red-700 border border-red-100"
-                : "bg-green-50 text-green-700 border border-green-100"
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
             }`}
           >
-            <div className="flex items-center justify-center space-x-2">
+            <div className="flex items-center justify-center gap-1">
               {joinMsg.toLowerCase().includes("fail") || joinMsg.toLowerCase().includes("error") ? (
-                <X className="w-5 h-5" />
+                <X className="w-3 h-3" />
               ) : (
-                <CheckCircle className="w-5 h-5" />
+                <CheckCircle className="w-3 h-3" />
               )}
               <span>{joinMsg}</span>
             </div>
@@ -408,35 +382,23 @@ export default function StudentDashboard() {
   const Placeholder = () => (
     <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="max-w-lg"
+        className="max-w-md"
       >
         <motion.div
-          initial={{ scale: 0, rotate: -180 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ delay: 0.4, type: "spring" }}
-          className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-xl"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="w-16 h-16 mx-auto mb-4 bg-indigo-800 rounded-lg flex items-center justify-center"
         >
-          <BookOpen className="w-10 h-10 text-white" />
+          <BookOpen className="w-6 h-6 text-white" />
         </motion.div>
-        <motion.h1
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="text-2xl md:text-4xl font-bold text-gray-800 mb-4"
-        >
+        <h1 className="text-xl font-semibold text-slate-800 mb-2">
           Explore Learning Events
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="text-gray-600 text-base mb-8"
-        >
-          Select an event from the left to dive into exciting learning opportunities.
-        </motion.p>
+        </h1>
+        <p className="text-slate-600 text-sm mb-4">
+          Select an event to dive into exciting learning opportunities.
+        </p>
         <StatsComponent />
       </motion.div>
     </div>
@@ -444,24 +406,22 @@ export default function StudentDashboard() {
 
   return (
     <RequirePasswordChange user={user}>
-      <div className="min-h-screen w-full bg-gray-50 flex flex-col pt-16">
-        <div className="flex-1 w-full mx-auto px-4 sm:px-4 md:px-6 lg:px-8 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="min-h-screen w-full bg-slate-50 flex flex-col pt-16">
+        <div className="flex-1 w-full mx-auto px-4 py-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
               className={`${selectedEvent ? 'hidden' : 'block'} lg:block lg:col-span-1`}
             >
               <EventList />
             </motion.div>
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
               className={`${selectedEvent ? 'block' : 'hidden'} lg:block lg:col-span-3`}
             >
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8 h-[calc(100vh-4rem)] flex flex-col overflow-auto">
+              <div className="bg-white rounded-lg border border-slate-200 p-4 h-[calc(100vh-4rem)] flex flex-col overflow-auto">
                 {selectedEvent ? <EventDetails /> : <Placeholder />}
               </div>
             </motion.div>

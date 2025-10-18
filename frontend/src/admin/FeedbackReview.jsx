@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,7 +11,6 @@ import {
   User,
   Users,
   FileText,
-  Calendar,
   School,
   Star,
   MessageSquare,
@@ -22,56 +22,56 @@ const FeedbackCard = ({ feedback }) => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-white rounded-xl border border-gray-200 p-4 space-y-3"
+    className="bg-white rounded-lg border border-slate-200 p-3 space-y-2"
   >
     <div className="flex items-start justify-between">
       <div className="flex-1">
-        <h3 className="font-semibold text-gray-800 text-sm">{feedback.event}</h3>
-        <p className="text-xs text-gray-500 mt-1">
+        <h3 className="font-semibold text-slate-800 text-sm">{feedback.event}</h3>
+        <p className="text-xs text-slate-500 mt-0.5">
           {new Date(feedback.submittedAt).toLocaleString()}
         </p>
       </div>
-      <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-full">
-        <Star className="w-3 h-3 text-blue-500" />
-        <span className="text-xs font-semibold text-blue-700">{feedback.marks}</span>
+      <div className="flex items-center gap-1 bg-sky-50 px-1.5 py-0.5 rounded">
+        <Star className="w-3 h-3 text-sky-500" />
+        <span className="text-xs font-semibold text-sky-700">{feedback.marks}</span>
       </div>
     </div>
 
-    <div className="grid grid-cols-1 gap-2 text-sm">
-      <div className="flex items-center gap-2">
-        <User className="w-4 h-4 text-green-500" />
+    <div className="grid grid-cols-1 gap-1.5 text-sm">
+      <div className="flex items-center gap-1.5">
+        <User className="w-3 h-3 text-emerald-500" />
         <div>
-          <div className="text-xs text-gray-500">Interviewer</div>
-          <div className="font-medium text-gray-800">{feedback.interviewer}</div>
+          <div className="text-xs text-slate-500">Interviewer</div>
+          <div className="font-medium text-slate-800 text-sm">{feedback.interviewer}</div>
         </div>
       </div>
       
-      <div className="flex items-center gap-2">
-        <Users className="w-4 h-4 text-purple-500" />
+      <div className="flex items-center gap-1.5">
+        <Users className="w-3 h-3 text-indigo-500" />
         <div>
-          <div className="text-xs text-gray-500">Interviewee</div>
-          <div className="font-medium text-gray-800">{feedback.interviewee}</div>
+          <div className="text-xs text-slate-500">Interviewee</div>
+          <div className="font-medium text-slate-800 text-sm">{feedback.interviewee}</div>
         </div>
       </div>
 
       {feedback.intervieweeCollege && (
-        <div className="flex items-center gap-2">
-          <School className="w-4 h-4 text-orange-500" />
+        <div className="flex items-center gap-1.5">
+          <School className="w-3 h-3 text-amber-500" />
           <div>
-            <div className="text-xs text-gray-500">College</div>
-            <div className="font-medium text-gray-800">{feedback.intervieweeCollege}</div>
+            <div className="text-xs text-slate-500">College</div>
+            <div className="font-medium text-slate-800 text-sm">{feedback.intervieweeCollege}</div>
           </div>
         </div>
       )}
     </div>
 
     {feedback.comments && (
-      <div className="bg-gray-50 rounded-lg p-3">
-        <div className="flex items-center gap-2 mb-1">
-          <MessageSquare className="w-4 h-4 text-gray-500" />
-          <div className="text-xs font-semibold text-gray-600">Comments</div>
+      <div className="bg-slate-50 rounded p-2">
+        <div className="flex items-center gap-1.5 mb-1">
+          <MessageSquare className="w-3 h-3 text-slate-500" />
+          <div className="text-xs font-semibold text-slate-600">Comments</div>
         </div>
-        <p className="text-sm text-gray-700 line-clamp-3">{feedback.comments}</p>
+        <p className="text-sm text-slate-700 line-clamp-2">{feedback.comments}</p>
       </div>
     )}
   </motion.div>
@@ -108,23 +108,23 @@ const FilterSection = ({
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6 mb-6"
+      className="bg-sky-50 rounded-lg border border-sky-200 p-4 mb-4"
     >
-      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-        <Filter className="w-5 h-5 text-blue-500" />
+      <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-1.5 text-sm">
+        <Filter className="w-4 h-4 text-sky-600" />
         Filter Feedback
       </h3>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-medium text-slate-700 mb-1">
               Event
             </label>
             <select 
               value={eventId} 
               onChange={(e) => setEventId(e.target.value)}
-              className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-700 text-sm focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
             >
               <option value="">All Events</option>
               {events.map(ev => (
@@ -134,73 +134,65 @@ const FilterSection = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-medium text-slate-700 mb-1">
               Interviewee College
             </label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500" />
               <input 
                 value={localCollege}
                 onChange={(e) => setLocalCollege(e.target.value)}
                 placeholder="Search by college name..."
-                className="w-full bg-white border border-gray-300 rounded-xl pl-10 pr-4 py-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full bg-white border border-slate-300 rounded-lg pl-7 pr-7 py-2 text-slate-700 text-sm focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
               />
               {localCollege && (
                 <button
                   type="button"
                   onClick={() => setLocalCollege('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3 h-3" />
                 </button>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 pt-2">
-          <motion.button
+        <div className="flex flex-wrap gap-2 pt-1">
+          <button
             type="submit"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-6 py-3 bg-blue-500 text-white rounded-xl font-semibold flex items-center gap-2 hover:bg-blue-600 transition-all"
+            className="px-3 py-1.5 bg-sky-500 text-white rounded-lg font-medium text-sm flex items-center gap-1 hover:bg-sky-600 transition-colors"
           >
-            <Filter className="w-4 h-4" />
+            <Filter className="w-3 h-3" />
             Apply Filters
-          </motion.button>
+          </button>
 
-          <motion.button
+          <button
             type="button"
             onClick={handleReset}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all"
+            className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg font-medium text-sm hover:bg-slate-200 transition-colors"
           >
             Reset
-          </motion.button>
+          </button>
 
-          <motion.button
+          <button
             type="button"
             onClick={onReload}
             disabled={loading}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-xl font-semibold flex items-center gap-2 hover:bg-gray-50 disabled:opacity-50 transition-all"
+            className="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium text-sm flex items-center gap-1 hover:bg-slate-50 disabled:opacity-50 transition-colors"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Loading...' : 'Refresh'}
-          </motion.button>
+          </button>
 
-          <motion.button
+          <button
             type="button"
             onClick={onDownload}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-6 py-3 bg-green-500 text-white rounded-xl font-semibold flex items-center gap-2 hover:bg-green-600 transition-all ml-auto"
+            className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg font-medium text-sm flex items-center gap-1 hover:bg-emerald-600 transition-colors ml-auto"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3 h-3" />
             Export CSV
-          </motion.button>
+          </button>
         </div>
       </form>
     </motion.div>
@@ -288,38 +280,38 @@ export default function FeedbackReview() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col pt-16">
-      <div className="flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-slate-50 flex flex-col pt-16">
+      <div className="flex-1 w-full mx-auto px-4 py-4">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
+          className="mb-4"
         >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl">
-                <GraduationCap className="w-6 h-6 text-white" />
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-indigo-800 rounded-lg flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">Feedback Review</h1>
-                <p className="text-gray-600 mt-1">Review and analyze interview feedback</p>
+                <h1 className="text-xl font-semibold text-slate-800">Feedback Review</h1>
+                <p className="text-slate-600 text-sm">Review and analyze interview feedback</p>
               </div>
             </div>
             
             {/* Stats */}
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-                <div className="text-xs text-gray-500">Total</div>
+                <div className="text-lg font-semibold text-sky-600">{stats.total}</div>
+                <div className="text-xs text-slate-500">Total</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{stats.averageScore}</div>
-                <div className="text-xs text-gray-500">Avg Score</div>
+                <div className="text-lg font-semibold text-emerald-600">{stats.averageScore}</div>
+                <div className="text-xs text-slate-500">Avg Score</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{stats.uniqueColleges}</div>
-                <div className="text-xs text-gray-500">Colleges</div>
+                <div className="text-lg font-semibold text-indigo-600">{stats.uniqueColleges}</div>
+                <div className="text-xs text-slate-500">Colleges</div>
               </div>
             </div>
           </div>
@@ -343,17 +335,17 @@ export default function FeedbackReview() {
         <AnimatePresence>
           {msg && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className={`p-4 rounded-xl mb-6 ${
+              exit={{ opacity: 0, y: -5 }}
+              className={`p-2 rounded-lg mb-3 text-sm ${
                 msg.includes('success') 
-                  ? 'bg-green-50 text-green-700 border border-green-200' 
-                  : 'bg-blue-50 text-blue-700 border border-blue-200'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                  : 'bg-sky-50 text-sky-700 border border-sky-200'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
+              <div className="flex items-center gap-1.5">
+                <FileText className="w-3 h-3" />
                 {msg}
               </div>
             </motion.div>
@@ -362,18 +354,18 @@ export default function FeedbackReview() {
 
         {/* Content */}
         {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
+          <div className="flex justify-center items-center py-8">
+            <RefreshCw className="w-6 h-6 text-sky-500 animate-spin" />
           </div>
         ) : (
           <>
             {/* Mobile View - Cards */}
-            <div className="lg:hidden space-y-4">
+            <div className="lg:hidden space-y-2">
               {feedback.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 bg-white rounded-2xl border border-gray-200">
-                  <GraduationCap className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p>No feedback records found</p>
-                  <p className="text-sm mt-1">Try adjusting your filters</p>
+                <div className="text-center py-8 text-slate-500 bg-white rounded-lg border border-slate-300">
+                  <GraduationCap className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <p className="text-sm">No feedback records found</p>
+                  <p className="text-xs mt-0.5">Try adjusting your filters</p>
                 </div>
               ) : (
                 feedback.map((f, index) => (
@@ -387,76 +379,76 @@ export default function FeedbackReview() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden"
+                className="bg-white rounded-lg border border-slate-200 overflow-hidden"
               >
                 {feedback.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-lg">No feedback records found</p>
-                    <p className="text-sm mt-1">Try adjusting your search filters</p>
+                  <div className="text-center py-8 text-slate-500">
+                    <GraduationCap className="w-12 h-12 text-slate-400 mx-auto mb-2" />
+                    <p className="text-sm">No feedback records found</p>
+                    <p className="text-xs mt-0.5">Try adjusting your search filters</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-50 border-b border-gray-200">
+                      <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
-                          <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                             Event
                           </th>
-                          <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                             Interviewer
                           </th>
-                          <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                             Interviewee
                           </th>
-                          <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                             College
                           </th>
-                          <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                             Marks
                           </th>
-                          <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                             Comments
                           </th>
-                          <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                             Submitted
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody className="divide-y divide-slate-200">
                         {feedback.map((f, index) => (
                           <motion.tr
                             key={f.id}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: index * 0.05 }}
-                            className="hover:bg-gray-50 transition-colors"
+                            className="hover:bg-slate-50 transition-colors"
                           >
-                            <td className="py-4 px-6 text-sm font-medium text-gray-900">
+                            <td className="py-2 px-3 text-sm font-medium text-slate-900">
                               {f.event}
                             </td>
-                            <td className="py-4 px-6 text-sm text-gray-700">
+                            <td className="py-2 px-3 text-sm text-slate-700">
                               {f.interviewer}
                             </td>
-                            <td className="py-4 px-6 text-sm text-gray-700">
+                            <td className="py-2 px-3 text-sm text-slate-700">
                               {f.interviewee}
                             </td>
-                            <td className="py-4 px-6 text-sm text-gray-700">
+                            <td className="py-2 px-3 text-sm text-slate-700">
                               {f.intervieweeCollege || '-'}
                             </td>
-                            <td className="py-4 px-6">
+                            <td className="py-2 px-3">
                               <div className="flex items-center gap-1">
-                                <Star className="w-4 h-4 text-yellow-500" />
-                                <span className="text-sm font-semibold text-gray-800">
+                                <Star className="w-3 h-3 text-amber-500" />
+                                <span className="text-sm font-semibold text-slate-800">
                                   {f.marks}
                                 </span>
                               </div>
                             </td>
-                            <td className="py-4 px-6 text-sm text-gray-700 max-w-xs">
+                            <td className="py-2 px-3 text-sm text-slate-700 max-w-xs">
                               <div className="line-clamp-2">{f.comments}</div>
                             </td>
-                            <td className="py-4 px-6 text-sm text-gray-500">
-                              {new Date(f.submittedAt).toLocaleString()}
+                            <td className="py-2 px-3 text-sm text-slate-500">
+                              {new Date(f.submittedAt).toLocaleDateString()}
                             </td>
                           </motion.tr>
                         ))}

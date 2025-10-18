@@ -1,3 +1,13 @@
+import Event from '../models/Event.js';
+import { sendEventNotificationEmail } from '../utils/mailer.js';
+import User from '../models/User.js';
+import { sendMail } from '../utils/mailer.js';
+import { HttpError } from '../utils/errors.js';
+import Pair from '../models/Pair.js';
+import Feedback from '../models/Feedback.js';
+import { supabase } from '../utils/supabase.js';
+import { parse } from 'csv-parse/sync';
+
 // PATCH /events/:id/join-disable
 export async function updateEventJoinDisable(req, res) {
   const event = await Event.findById(req.params.id);
@@ -16,28 +26,6 @@ export async function updateEventJoinDisable(req, res) {
   await event.save();
   res.json(event);
 }
-export async function updateEventCapacity(req, res) {
-  console.log('PATCH /events/:id/capacity', req.params.id, req.body);
-  const event = await Event.findById(req.params.id);
-  if (!event) throw new HttpError(404, 'Event not found');
-  let { capacity } = req.body;
-  if (capacity === null || capacity === '' || typeof capacity === 'undefined') {
-    event.capacity = null;
-  } else {
-    if (isNaN(Number(capacity)) || Number(capacity) < 1) throw new HttpError(400, 'Invalid capacity');
-    event.capacity = Number(capacity);
-  }
-  await event.save();
-  res.json(event);
-}
-import Event from '../models/Event.js';
-import User from '../models/User.js';
-import { sendMail } from '../utils/mailer.js';
-import { HttpError } from '../utils/errors.js';
-import Pair from '../models/Pair.js';
-import Feedback from '../models/Feedback.js';
-import { supabase } from '../utils/supabase.js';
-import { parse } from 'csv-parse/sync';
 
 async function uploadTemplate(file) {
   if (!file) return {};
@@ -46,11 +34,12 @@ async function uploadTemplate(file) {
   const templateName = file.originalname;
   const key = `${Date.now()}_${templateName}`;
   const contentType = file.mimetype || 'application/octet-stream';
-  const blob = new Blob([file.buffer], { type: contentType });
+  // multer provides file.buffer (Buffer) - use it directly for Node environment
+  const data = file.buffer;
   let upErr;
-  try { const up = await supabase.storage.from(bucket).upload(key, blob, { contentType, upsert: false }); upErr = up.error || null; } catch (e) { upErr = e; }
+  try { const up = await supabase.storage.from(bucket).upload(key, data, { contentType, upsert: false }); upErr = up.error || null; } catch (e) { upErr = e; }
   if (upErr) {
-    try { await supabase.storage.createBucket(bucket, { public: process.env.SUPABASE_PUBLIC === 'true' }); const retry = await supabase.storage.from(bucket).upload(key, blob, { contentType, upsert: false }); if (retry.error) throw retry.error; } catch (e2) { throw new HttpError(500, 'Template upload failed: ' + (upErr?.message || e2?.message || 'unknown')); }
+  try { await supabase.storage.createBucket(bucket, { public: process.env.SUPABASE_PUBLIC === 'true' }); const retry = await supabase.storage.from(bucket).upload(key, data, { contentType, upsert: false }); if (retry.error) throw retry.error; } catch (e2) { throw new HttpError(500, 'Template upload failed: ' + (upErr?.message || e2?.message || 'unknown')); }
   }
   let templateUrl;
   if (process.env.SUPABASE_PUBLIC === 'true') {
@@ -67,8 +56,14 @@ async function uploadTemplate(file) {
 
 export async function createEvent(req, res) {
   const { name, description, startDate, endDate } = req.body;
+  // Validate dates
+  const start = startDate ? new Date(startDate) : null;
+  const end = endDate ? new Date(endDate) : null;
+  const now = Date.now();
+  if (start && start.getTime() < now) throw new HttpError(400, 'Start date cannot be in the past');
+  if (start && end && end.getTime() < start.getTime()) throw new HttpError(400, 'End date must be the same or after start date');
   const tpl = await uploadTemplate(req.file);
-  const event = await Event.create({ name, description, startDate, endDate, ...tpl });
+  const event = await Event.create({ name, description, startDate: start || undefined, endDate: end || undefined, ...tpl });
   // For normal events: auto-select all students in DB as participants and generate pairs
   try {
     const students = await User.find({ role: 'student', email: { $exists: true, $ne: null } }, '_id email name');
@@ -95,7 +90,12 @@ export async function createEvent(req, res) {
               b?.email ? `Their email: ${b.email}` : null,
               `Propose time slots from your dashboard: ${fe}/`,
             ].filter(Boolean).join('\n');
-            await sendMail({ to: a.email, subject: `Pairing info: You interview ${b?.name || b?.email || 'a peer'}`, text });
+            await sendEventNotificationEmail({
+              to: a.email,
+              event: { title: event.name, date: event.startDate, details: event.description },
+              interviewer: a.name || a.email,
+              interviewee: b.name || b.email,
+            });
           }
           if (b?.email) {
             const text = [
@@ -104,7 +104,12 @@ export async function createEvent(req, res) {
               a?.email ? `Their email: ${a.email}` : null,
               `Review and accept slots from your dashboard: ${fe}/`,
             ].filter(Boolean).join('\n');
-            await sendMail({ to: b.email, subject: `Pairing info: You are interviewed by ${a?.name || a?.email || 'a peer'}`, text });
+            await sendEventNotificationEmail({
+              to: b.email,
+              event: { title: event.name, date: event.startDate, details: event.description },
+              interviewer: a.name || a.email,
+              interviewee: b.name || b.email,
+            });
           }
         }
       }
@@ -134,6 +139,12 @@ export async function createEvent(req, res) {
 
 export async function createSpecialEvent(req, res) {
   const { name, description, startDate, endDate } = req.body;
+  // Validate dates
+  const start = startDate ? new Date(startDate) : null;
+  const end = endDate ? new Date(endDate) : null;
+  const now = Date.now();
+  if (start && start.getTime() < now) throw new HttpError(400, 'Start date cannot be in the past');
+  if (start && end && end.getTime() < start.getTime()) throw new HttpError(400, 'End date must be the same or after start date');
   if (!req.files?.csv?.[0]) throw new HttpError(400, 'CSV file required');
   let rows;
   try { rows = parse(req.files.csv[0].buffer.toString('utf8'), { columns: true, skip_empty_lines: true }); }
@@ -151,7 +162,7 @@ export async function createSpecialEvent(req, res) {
   const or = dedup.map(i => i.type === 'email' ? { email: i.value } : { studentId: i.value });
   const users = await User.find({ $or: or }, '_id email name studentId');
   const tpl = await uploadTemplate(req.files?.template?.[0]);
-  const event = await Event.create({ name, description, startDate, endDate, ...tpl, isSpecial: true, allowedParticipants: users.map(u => u._id) });
+  const event = await Event.create({ name, description, startDate: start || undefined, endDate: end || undefined, ...tpl, isSpecial: true, allowedParticipants: users.map(u => u._id) });
   // Auto-generate pairs among uploaded CSV users
   try {
     const ids = users.map(u => u._id.toString());
@@ -241,10 +252,7 @@ export async function joinEvent(req, res) {
   const userId = req.user._id;
   if (event.isSpecial && !event.allowedParticipants?.some?.(p => p.equals(userId))) throw new HttpError(403, 'Not allowed for this special event');
   if (event.participants.some(p => p.equals(userId))) return res.json({ message: 'Already joined' });
-  // Capacity check
-  if (event.capacity !== null && event.capacity !== '' && event.participants.length >= event.capacity) {
-    throw new HttpError(400, 'Event capacity reached');
-  }
+  // capacity removed - no limit enforced
   event.participants.push(userId);
   await event.save();
   res.json({ message: 'Joined', eventId: event._id });
@@ -286,14 +294,38 @@ export async function replaceEventTemplate(req, res) {
 export async function getTemplateUrl(req, res) {
   const event = await Event.findById(req.params.id).lean();
   if (!event) throw new HttpError(404, 'Event not found');
-  if (!event.templateKey) return res.json({ templateUrl: event.templateUrl || null });
-  if (process.env.SUPABASE_PUBLIC === 'true') return res.json({ templateUrl: event.templateUrl });
+  const isAdmin = req.user?.role === 'admin';
+  if (!event.templateKey) return res.json(isAdmin ? { templateUrl: event.templateUrl || null, templateKey: event.templateKey } : { templateUrl: event.templateUrl || null });
+  if (process.env.SUPABASE_PUBLIC === 'true') return res.json(isAdmin ? { templateUrl: event.templateUrl, templateKey: event.templateKey } : { templateUrl: event.templateUrl });
   if (!supabase) throw new HttpError(500, 'Supabase not configured');
-  const bucket = process.env.SUPABASE_BUCKET || 'templates';
   const ttl = Number(process.env.SUPABASE_SIGNED_TTL || 600);
-  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(event.templateKey, ttl);
-  if (error) throw new HttpError(500, `Failed to create signed URL: ${error.message}`);
-  res.json({ templateUrl: data.signedUrl });
+  // Try a set of likely buckets in case configuration changed after upload
+  const configured = process.env.SUPABASE_BUCKET || 'templates';
+  const tryBuckets = Array.from(new Set([configured, 'templates', 'patient-records']));
+  for (const bucket of tryBuckets) {
+    try {
+      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(event.templateKey, ttl);
+      if (!error && data?.signedUrl) {
+        return res.json(isAdmin ? { templateUrl: data.signedUrl, templateKey: event.templateKey, bucket } : { templateUrl: data.signedUrl });
+      }
+      // if error indicates object not found, continue to try next bucket
+      if (error && /not found|Object not found|404/i.test(error.message || '')) {
+        continue;
+      }
+      if (error) {
+        // other errors are surfaced
+        throw error;
+      }
+    } catch (e) {
+      // If supabase client throws, try next bucket unless it's a critical error
+      if (e && /not found|Object not found|404/i.test(e.message || '')) {
+        continue;
+      }
+      throw new HttpError(500, `Failed to create signed URL: ${e?.message || String(e)}`);
+    }
+  }
+  // If we reached here, object wasn't found in any bucket
+  throw new HttpError(404, `Template object not found in configured buckets (${tryBuckets.join(', ')}).`);
 }
 
 export async function deleteEventTemplate(req, res) {

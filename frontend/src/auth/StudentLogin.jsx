@@ -1,10 +1,9 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import { api, setToken } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Book, Pen, Backpack, GraduationCap, Library, Notebook, Pencil, School, Scissors, Ruler, Brain, Globe, Code, Laptop, Calculator, Microscope, FlaskConical, Palette, Music, Headphones, Gamepad, Watch, Tablet, BookOpen, Highlighter, FileText, Clipboard, Award, Star, Lightbulb } from 'lucide-react';
 
-// FloatingIcon uses Icon component prop (usage kept inside render)
-// eslint-disable-next-line no-unused-vars
 const FloatingIcon = ({ icon: IconComp, delay, duration, startX, startY, endX, endY, size = 24, opacity = 0.65 }) => {
   return (
     <div 
@@ -252,7 +251,7 @@ export default function StudentLoginPage() {
   ];
 
   return (
-    <div className="relative bg-white overflow-hidden min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="relative bg-white overflow-hidden min-h-screen w-full flex items-center justify-center p-4">
 
       {/* Enhanced Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
@@ -266,136 +265,144 @@ export default function StudentLoginPage() {
         ))}
       </div>
 
-      {/* Main Content Container */}
-      <div className="relative z-10 w-full max-w-[1396px] mx-auto">
-        {/* Main Panels Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[65vh]">
-          
-          {/* Left Panel - Image Section (Hidden on Mobile) */}
-          <div className="hidden lg:flex items-center justify-center p-4 lg:p-8 border border-sky-400 rounded-2xl lg:rounded-r-none lg:border-r-0">
-            <div className="relative w-full max-w-2xl flex items-center justify-center h-full">
-              <div className="relative w-full h-full rounded-lg overflow-hidden bg-transparent">
-                <img 
-                  src="/images/loginimg.webp" 
-                  alt="Student Login" 
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-sky-600/20 via-transparent to-sky-400/10"></div>
-              </div>
-              <div className="absolute -top-4 -left-4 w-24 h-24 bg-sky-400/10 rounded-full blur-xl animate-pulse"></div>
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-sky-300/15 rounded-full blur-xl animate-pulse-slow"></div>
-            </div>
-          </div>
-
-          {/* Right Panel - Login Form */}
-          <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8 border border-sky-400 rounded-2xl lg:rounded-l-none lg:border-l-0">
-            <div className="relative w-full max-w-lg h-full flex items-center justify-center">
-              <div className="relative bg-transparent rounded-lg p-6 sm:p-8 xl:p-12 w-full">
-                {/* Header Section */}
-                <div className="relative text-center mb-6 sm:mb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-white/30 to-white/20 rounded-2xl mb-4 border border-white/40">
-                    <Book size={28} className="text-sky-600 drop-shadow-lg" />
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl xl:text-4xl font-bold text-sky-800 mb-2 sm:mb-3 drop-shadow-lg">
-                    Student Portal
-                  </h1>
-                  <p className="text-sky-600/90 text-sm sm:text-base font-medium">Access your learning platform</p>
-                  <div className="flex items-center justify-center space-x-4 sm:space-x-6 mt-3 sm:mt-4">
-                    <div className="flex items-center space-x-1 sm:space-x-2">
-                      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
-                      <span className="text-sky-600/80 text-xs sm:text-sm font-medium">System Online</span>
-                    </div>
-                    <div className="flex items-center space-x-1 sm:space-x-2">
-                      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-sky-400 rounded-full shadow-lg"></div>
-                      <span className="text-sky-600/80 text-xs sm:text-sm font-medium">Secure</span>
-                    </div>
-                  </div>
+      {/* Main Content Container - Centered Card */}
+      {/* Crop wrapper: keeps the inner card the same size but crops its top and bottom
+          The background effects (absolute inset-0 earlier) remain visible above/below */}
+      <div className="relative z-10 w-full max-w-4xl mx-auto flex items-center justify-center py-8">
+        {/* responsive cropper - controls visible area and shows rounded corners/peeking */}
+        <div className="relative w-full overflow-hidden mx-auto h-[420px] md:h-[480px] lg:h-[520px] rounded-xl">
+          {/* subtle top/bottom mask gradients to smooth crop edges */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white/90 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white/90 to-transparent" />
+          {/* center the card inside the cropper and keep its original size */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border border-sky-200/50 w-full max-w-3xl">
+          {/* Main Panels Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[480px]">
+            
+            {/* Left Panel - Image Section (Hidden on Mobile) */}
+            <div className="hidden lg:flex items-center justify-center p-5 border-r border-sky-400/30">
+              <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative w-full h-56 rounded-lg overflow-hidden bg-transparent">
+                  <img 
+                    src="/images/loginimg.webp" 
+                    alt="Student Login" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-sky-600/20 via-transparent to-sky-400/10"></div>
                 </div>
+                <div className="absolute -top-2 -left-2 w-14 h-14 bg-sky-400/10 rounded-full blur-xl animate-pulse"></div>
+                <div className="absolute -bottom-2 -right-2 w-18 h-18 bg-sky-300/15 rounded-full blur-xl animate-pulse-slow"></div>
+              </div>
+            </div>
 
-                {/* Form Section */}
-                <div className="relative space-y-4 sm:space-y-6">
-                  <div className="group">
-                    <label className="block text-xs sm:text-sm font-semibold text-sky-700/90 mb-2 uppercase tracking-wide">
-                      Email or Student ID
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                        <Mail size={18} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
+            {/* Right Panel - Login Form */}
+            <div className="flex items-center justify-center p-5">
+              <div className="relative w-full max-w-sm h-full flex items-center justify-center">
+                <div className="relative bg-transparent rounded-lg w-full">
+                  {/* Header Section */}
+                  <div className="relative text-center mb-5">
+                    <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-white/30 to-white/20 rounded-xl mb-3 border border-white/40">
+                      <Book size={26} className="text-sky-600 drop-shadow-lg" />
+                    </div>
+                    <h1 className="text-xl font-bold text-sky-800 mb-2 drop-shadow-lg">
+                      Student Portal
+                    </h1>
+                    <p className="text-sky-600/90 text-sm font-medium mb-3">Access your learning platform</p>
+                    <div className="flex items-center justify-center space-x-6 mt-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
+                        <span className="text-sky-600/80 text-xs font-medium">System</span>
                       </div>
-                      <input
-                        type="text"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-white/40 border border-sky-200/50 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/50 text-sky-800 placeholder-sky-600/70 font-medium text-sm sm:text-base"
-                        placeholder="Enter email or student ID"
-                      />
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-sky-400 rounded-full shadow-lg"></div>
+                        <span className="text-sky-600/80 text-xs font-medium">Online</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="group">
-                    <label className="block text-xs sm:text-sm font-semibold text-sky-700/90 mb-2 uppercase tracking-wide">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                        <Lock size={18} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
-                      </div>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-4 bg-white/40 border border-sky-200/50 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/50 text-sky-800 placeholder-sky-600/70 font-medium text-sm sm:text-base"
-                        placeholder="Enter your password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 sm:pr-4 flex items-center text-sky-500 hover:text-sky-600 transition-colors duration-300"
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <label className="flex items-center space-x-2">
+
+                  {/* Form Section */}
+                  <div className="relative space-y-4">
+                    <div className="group">
+                      <label className="block text-xs font-semibold text-sky-700/90 mb-2 uppercase tracking-wide">
+                        EMAIL OR STUDENT ID
+                      </label>
                       <div className="relative">
-                        <input 
-                          type="checkbox" 
-                          className="w-4 h-4 sm:w-5 sm:h-5 rounded-lg border-2 border-sky-400 text-sky-600 focus:ring-2 focus:ring-sky-300/50 transition-all duration-300 bg-white/40" 
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Mail size={15} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
+                        </div>
+                        <input
+                          type="text"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          onKeyPress={handleKeyPress}
+                          className="w-full pl-10 pr-4 py-2 bg-white/40 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/50 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
+                          placeholder="Enter email"
                         />
                       </div>
-                      <span className="text-sky-700/90 font-medium">Remember this device</span>
-                    </label>
-                    <a href="#" className="font-semibold text-sky-600 hover:text-sky-700 transition-colors duration-300 hover:underline">
-                      Forgot password?
-                    </a>
+                    </div>
+                    <div className="group">
+                      <label className="block text-xs font-semibold text-sky-700/90 mb-2 uppercase tracking-wide">
+                        PASSWORD
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Lock size={15} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
+                        </div>
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          onKeyPress={handleKeyPress}
+                          className="w-full pl-10 pr-10 py-2 bg-white/40 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/50 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
+                          placeholder="Enter →"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-sky-500 hover:text-sky-600 transition-colors duration-300"
+                        >
+                          {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <label className="flex items-center space-x-2">
+                        <input 
+                          type="checkbox" 
+                          className="w-3.5 h-3.5 rounded border-2 border-sky-400 text-sky-600 focus:ring-2 focus:ring-sky-300/50 transition-all duration-300 bg-white/40" 
+                        />
+                        <span className="text-sky-700/90 font-medium">Remember</span>
+                      </label>
+                      <a href="#" className="font-medium text-sky-600 hover:text-sky-700 transition-colors duration-300 hover:underline">
+                        Forgot password?
+                      </a>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleLogin}
+                      className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-2 px-6 rounded-lg font-bold transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                      <span className="relative flex items-center justify-center text-sm font-semibold">
+                        Sign In
+                      </span>
+                    </button>
+                    {error && <div className="text-red-600 font-medium text-sm text-center">{error}</div>}
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleLogin}
-                    className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-3 sm:py-4 px-6 rounded-xl sm:rounded-2xl font-bold transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                    <span className="relative flex items-center justify-center text-sm sm:text-base">
-                      Sign In
-                      <svg className="ml-2 w-4 h-4 sm:w-5 sm:h-5 transform transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                      </svg>
-                    </span>
-                  </button>
-                  {error && <div className="text-red-600 font-medium text-sm sm:text-base text-center">{error}</div>}
                 </div>
+                <div className="absolute -z-10 -top-2 -left-2 w-12 h-12 bg-sky-300/20 rounded-full blur-lg"></div>
+                <div className="absolute -z-10 -bottom-2 -right-2 w-14 h-14 bg-sky-400/15 rounded-full blur-lg"></div>
               </div>
-              <div className="absolute -z-10 -top-4 -left-4 w-16 h-16 bg-sky-300/20 rounded-full blur-lg"></div>
-              <div className="absolute -z-10 -bottom-4 -right-4 w-20 h-20 bg-sky-400/15 rounded-full blur-lg"></div>
             </div>
           </div>
         </div>
       </div>
+          </div>
+        </div>
 
       {/* Styles */}
-    <style>{`
+      <style>{`
         @keyframes particle-float {
           0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
           50% { transform: translateY(-20px) rotate(180deg); opacity: 0.7; }
@@ -416,17 +423,11 @@ export default function StudentLoginPage() {
 
         /* Mobile-specific optimizations */
         @media (max-width: 1024px) {
-          .h-[80vh] {
-            height: 100vh;
-          }
-          .w-[95vw] {
-            width: 100vw;
-          }
-          .min-h-[65vh] {
-            min-height: 100vh;
+          .min-h-[550px] {
+            min-height: 500px;
           }
           input, button, a {
-            font-size: 16px; /* Prevents zoom on iOS */
+            font-size: 16px;
             -webkit-tap-highlight-color: transparent;
           }
         }
