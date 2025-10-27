@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import StudentLogin from '../auth/StudentLogin';
+import { useNavigate } from 'react-router-dom';
 import { Footer } from '../components/Footer';
 import { Users, ArrowRight, Zap, Video, MessageCircle, Target, Calendar, Shield, CheckCircle } from 'lucide-react';
 
 export default function LandingPage() {
-  const [loginOpen, setLoginOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  const handleLoginClick = () => {
+    navigate('/student');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 relative overflow-hidden">
@@ -35,7 +39,7 @@ export default function LandingPage() {
             </div>
 
             <button 
-              onClick={() => setLoginOpen(true)} 
+              onClick={handleLoginClick} 
               className="px-6 py-2.5 bg-white text-indigo-800 rounded-lg font-semibold shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 hover:bg-indigo-50"
             >
               Login
@@ -71,7 +75,7 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button 
-                  onClick={() => setLoginOpen(true)}
+                  onClick={handleLoginClick}
                   className="group px-8 py-3.5 bg-sky-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2 hover:bg-sky-600"
                 >
                   Start Practicing Now
@@ -268,7 +272,7 @@ export default function LandingPage() {
               Join thousands of students worldwide who are mastering interviews through collaborative practice.
             </p>
             <button 
-              onClick={() => setLoginOpen(true)}
+              onClick={handleLoginClick}
               className="group px-10 py-4 bg-white text-indigo-800 rounded-xl font-bold text-lg shadow-2xl hover:shadow-3xl transform hover:scale-110 transition-all duration-300 flex items-center gap-3 mx-auto hover:bg-indigo-50"
             >
               Start Practicing Today
@@ -278,20 +282,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Login Modal */}
-      {loginOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
-            onClick={() => setLoginOpen(false)}
-          ></div>
-          <div className="relative z-50 w-full max-w-2xl mx-auto transform transition-all duration-300">
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-              <StudentLogin isModal={true} onClose={() => setLoginOpen(false)} />
-            </div>
-          </div>
-        </div>
-      )}
       {/* Footer */}
       <Footer />
     </div>

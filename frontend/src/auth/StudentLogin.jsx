@@ -251,7 +251,7 @@ export default function StudentLoginPage() {
   ];
 
   return (
-    <div className="relative bg-white overflow-hidden min-h-screen w-full flex items-center justify-center p-4">
+    <div className="relative bg-white overflow-hidden min-h-screen w-screen flex items-center justify-center">
 
       {/* Enhanced Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
@@ -265,25 +265,17 @@ export default function StudentLoginPage() {
         ))}
       </div>
 
-      {/* Main Content Container - Centered Card */}
-      {/* Crop wrapper: keeps the inner card the same size but crops its top and bottom
-          The background effects (absolute inset-0 earlier) remain visible above/below */}
-      <div className="relative z-10 w-full max-w-4xl mx-auto flex items-center justify-center py-8">
-        {/* responsive cropper - controls visible area and shows rounded corners/peeking */}
-        <div className="relative w-full overflow-hidden mx-auto h-[420px] md:h-[480px] lg:h-[520px] rounded-xl">
-          {/* subtle top/bottom mask gradients to smooth crop edges */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white/90 to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white/90 to-transparent" />
-          {/* center the card inside the cropper and keep its original size */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border border-sky-200/50 w-full max-w-3xl">
-          {/* Main Panels Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[480px]">
+      {/* Main Content Container - Full Screen Layout */}
+      <div className="relative z-10 w-full h-full flex items-center justify-center px-4 md:px-8 lg:px-16 py-8">
+        {/* Single outer border container with rounded corners - 70% transparent */}
+        <div className="w-full max-w-6xl bg-white/30 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border-2 border-[#bcd4ff]">
+          {/* Main Panels Grid - Two Equal Panels */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[600px]">
             
-            {/* Left Panel - Image Section (Hidden on Mobile) */}
-            <div className="hidden lg:flex items-center justify-center p-5 border-r border-sky-400/30">
+            {/* Left Panel - Image Section (Square Format) */}
+            <div className="hidden lg:flex items-center justify-center p-10">
               <div className="relative w-full h-full flex items-center justify-center">
-                <div className="relative w-full h-56 rounded-lg overflow-hidden bg-transparent">
+                <div className="relative w-full aspect-square max-w-md rounded-lg overflow-hidden bg-transparent">
                   <img 
                     src="/images/loginimg.webp" 
                     alt="Student Login" 
@@ -297,18 +289,18 @@ export default function StudentLoginPage() {
             </div>
 
             {/* Right Panel - Login Form */}
-            <div className="flex items-center justify-center p-5">
-              <div className="relative w-full max-w-sm h-full flex items-center justify-center">
+            <div className="flex items-center justify-center p-10">
+              <div className="relative w-full max-w-md h-full flex items-center justify-center">
                 <div className="relative bg-transparent rounded-lg w-full">
                   {/* Header Section */}
-                  <div className="relative text-center mb-5">
-                    <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-white/30 to-white/20 rounded-xl mb-3 border border-white/40">
-                      <Book size={26} className="text-sky-600 drop-shadow-lg" />
+                  <div className="relative text-center mb-6">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-sky-100 to-sky-200 rounded-xl mb-4 border border-sky-300/40">
+                      <Book size={28} className="text-sky-600 drop-shadow-lg" />
                     </div>
-                    <h1 className="text-xl font-bold text-sky-800 mb-2 drop-shadow-lg">
+                    <h1 className="text-2xl font-bold text-sky-800 mb-2 drop-shadow-lg">
                       Student Portal
                     </h1>
-                    <p className="text-sky-600/90 text-sm font-medium mb-3">Access your learning platform</p>
+                    <p className="text-sky-600/90 text-base font-medium mb-4">Access your learning platform</p>
                     <div className="flex items-center justify-center space-x-6 mt-3">
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
@@ -322,21 +314,21 @@ export default function StudentLoginPage() {
                   </div>
 
                   {/* Form Section */}
-                  <div className="relative space-y-4">
+                  <div className="relative space-y-5">
                     <div className="group">
                       <label className="block text-xs font-semibold text-sky-700/90 mb-2 uppercase tracking-wide">
                         EMAIL OR STUDENT ID
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Mail size={15} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
+                          <Mail size={16} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
                         </div>
                         <input
                           type="text"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           onKeyPress={handleKeyPress}
-                          className="w-full pl-10 pr-4 py-2 bg-white/40 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/50 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
+                          className="w-full pl-10 pr-4 py-3 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
                           placeholder="Enter email"
                         />
                       </div>
@@ -347,22 +339,22 @@ export default function StudentLoginPage() {
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Lock size={15} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
+                          <Lock size={16} className="text-sky-500 group-focus-within:text-sky-600 transition-colors duration-300" />
                         </div>
                         <input
                           type={showPassword ? 'text' : 'password'}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           onKeyPress={handleKeyPress}
-                          className="w-full pl-10 pr-10 py-2 bg-white/40 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/50 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
-                          placeholder="Enter →"
+                          className="w-full pl-10 pr-10 py-3 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
+                          placeholder="Enter password"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute inset-y-0 right-0 pr-3 flex items-center text-sky-500 hover:text-sky-600 transition-colors duration-300"
                         >
-                          {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
                     </div>
@@ -370,9 +362,9 @@ export default function StudentLoginPage() {
                       <label className="flex items-center space-x-2">
                         <input 
                           type="checkbox" 
-                          className="w-3.5 h-3.5 rounded border-2 border-sky-400 text-sky-600 focus:ring-2 focus:ring-sky-300/50 transition-all duration-300 bg-white/40" 
+                          className="w-4 h-4 rounded border-2 border-sky-400 text-sky-600 focus:ring-2 focus:ring-sky-300/50 transition-all duration-300 bg-white/60" 
                         />
-                        <span className="text-sky-700/90 font-medium">Remember</span>
+                        <span className="text-sky-700/90 font-medium">Remember me</span>
                       </label>
                       <a href="#" className="font-medium text-sky-600 hover:text-sky-700 transition-colors duration-300 hover:underline">
                         Forgot password?
@@ -381,14 +373,14 @@ export default function StudentLoginPage() {
                     <button
                       type="button"
                       onClick={handleLogin}
-                      className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-2 px-6 rounded-lg font-bold transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden"
+                      className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-3 px-6 rounded-lg font-bold transform transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden shadow-lg"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                      <span className="relative flex items-center justify-center text-sm font-semibold">
+                      <span className="relative flex items-center justify-center text-base font-semibold">
                         Sign In
                       </span>
                     </button>
-                    {error && <div className="text-red-600 font-medium text-sm text-center">{error}</div>}
+                    {error && <div className="text-red-600 font-medium text-sm text-center mt-3">{error}</div>}
                   </div>
                 </div>
                 <div className="absolute -z-10 -top-2 -left-2 w-12 h-12 bg-sky-300/20 rounded-full blur-lg"></div>
@@ -398,8 +390,6 @@ export default function StudentLoginPage() {
           </div>
         </div>
       </div>
-          </div>
-        </div>
 
       {/* Styles */}
       <style>{`
@@ -423,9 +413,6 @@ export default function StudentLoginPage() {
 
         /* Mobile-specific optimizations */
         @media (max-width: 1024px) {
-          .min-h-[550px] {
-            min-height: 500px;
-          }
           input, button, a {
             font-size: 16px;
             -webkit-tap-highlight-color: transparent;

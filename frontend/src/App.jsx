@@ -29,6 +29,7 @@ function AppContent() {
      
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/student" element={<StudentLogin />} />
           <Route path="/student/change-password" element={<ChangePassword />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/pairing" element={<PairingAndScheduling />} />
