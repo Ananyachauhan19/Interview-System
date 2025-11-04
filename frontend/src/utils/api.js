@@ -33,6 +33,12 @@ export const api = {
   changeStudentPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
 
   // Students
+  listAllStudents: (search = '') => request(`/students/list${search ? '?search=' + encodeURIComponent(search) : ''}`),
+  checkStudentsCsv: (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return request('/students/check', { method: 'POST', formData: fd });
+  },
   uploadStudentsCsv: (file) => {
     const fd = new FormData();
     fd.append('file', file);

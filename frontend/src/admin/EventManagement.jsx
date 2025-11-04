@@ -39,7 +39,8 @@ export default function EventManagement() {
 
   const [nowLocal, setNowLocal] = useState(localDateTimeNow());
   useEffect(() => {
-    const t = setInterval(() => setNowLocal(localDateTimeNow()), 15000);
+    // Update minimum time more frequently (every 30 seconds) to keep restrictions current
+    const t = setInterval(() => setNowLocal(localDateTimeNow()), 30000);
     return () => clearInterval(t);
   }, []);
 
@@ -75,19 +76,33 @@ export default function EventManagement() {
 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
+    setMsg(""); // Clear previous messages
+    
     // client-side validation: ensure start >= now and end >= start
-    const nowIsoLocal = new Date().toISOString().slice(0,16);
     if (startDate) {
       const s = parseLocalDateTime(startDate);
-      if (isNaN(s)) { setMsg('Invalid start date'); return; }
-      if (s < Date.now()) { setMsg('Start date cannot be in the past'); return; }
+      if (isNaN(s)) { 
+        setMsg('Please select a valid start date and time'); 
+        return; 
+      }
+      if (s < Date.now()) { 
+        setMsg('Start date and time cannot be in the past. Please select a future date and time.'); 
+        return; 
+      }
     }
     if (startDate && endDate) {
       const s = parseLocalDateTime(startDate);
       const en = parseLocalDateTime(endDate);
-      if (isNaN(s) || isNaN(en)) { setMsg('Invalid start or end date'); return; }
-      if (en < s) { setMsg('End date must be the same or after start date'); return; }
+      if (isNaN(s) || isNaN(en)) { 
+        setMsg('Please select valid start and end dates'); 
+        return; 
+      }
+      if (en < s) { 
+        setMsg('End date must be after or equal to the start date'); 
+        return; 
+      }
     }
+    
     let toastId;
     try {
       let ev;
@@ -95,31 +110,67 @@ export default function EventManagement() {
       const payloadEnd = endDate ? new Date(parseLocalDateTime(endDate)).toISOString() : undefined;
 
       // Show an immediate loading toast so user sees feedback instantly
-      toastId = toast.loading('Creating event...');
+      toastId = toast.loading('Creating your event...');
 
       if (specialMode) {
         const res = await api.createSpecialEvent({ name: title, description, startDate: payloadStart, endDate: payloadEnd, template, csv: csvFile });
         const eventName = res.name || title;
-        // Backend returns { eventId } for special events — use it if present
         const newId = res._id || res.eventId;
+        
+        // Update toast to success and navigate immediately
         toast.update(toastId, { render: `Event "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
+        setMsg(''); // Clear any error messages
         resetForm();
+        
+        // Navigate immediately
         if (newId) navigate(`/admin/event/${newId}`, { state: { eventCreated: true } });
+        
+        // Show email notification after a delay (emails are being sent in background)
+        setTimeout(() => {
+          toast.info('Invitation emails are being sent to participants...', { autoClose: 5000 });
+        }, 2000);
+        
       } else {
         ev = await api.createEvent({ name: title, description, startDate: payloadStart, endDate: payloadEnd, template });
         const eventName = ev.name || title;
+        
+        // Update toast to success and navigate immediately
         toast.update(toastId, { render: `Event "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
+        setMsg(''); // Clear any error messages
         resetForm();
+        
+        // Navigate immediately
         if (ev && ev._id) navigate(`/admin/event/${ev._id}`, { state: { eventCreated: true } });
+        
+        // Show email notification after a delay (emails are being sent in background)
+        setTimeout(() => {
+          toast.info('Notification emails are being sent to all students...', { autoClose: 5000 });
+        }, 2000);
       }
     } catch (err) {
+      const errorMessage = err?.message || 'Failed to create event';
+      let userFriendlyError = errorMessage;
+      
+      // Make error messages user-friendly
+      if (errorMessage.includes('past')) {
+        userFriendlyError = 'The selected date and time cannot be in the past. Please choose a future date.';
+      } else if (errorMessage.includes('end') && errorMessage.includes('start')) {
+        userFriendlyError = 'The end date must be after the start date. Please adjust your dates.';
+      } else if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
+        userFriendlyError = 'Please check that all fields are filled correctly';
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        userFriendlyError = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (errorMessage.includes('CSV') || errorMessage.includes('csv')) {
+        userFriendlyError = 'There was an issue with the participant CSV file. Please check the format and try again.';
+      }
+      
       // Update the loading toast if present; otherwise show error toast
       if (toastId) {
-        toast.update(toastId, { render: err?.message || 'Failed to create event', type: 'error', isLoading: false, autoClose: 5000 });
+        toast.update(toastId, { render: userFriendlyError, type: 'error', isLoading: false, autoClose: 5000 });
       } else {
-        toast.error(err?.message || 'Failed to create event');
+        toast.error(userFriendlyError);
       }
-      setMsg(err.message || 'Failed to create event');
+      setMsg(userFriendlyError);
     }
   };
 
@@ -194,42 +245,112 @@ export default function EventManagement() {
                   <input
                     type="datetime-local"
                     value={toLocalInputValue(startDate)}
+                    onBlur={(e) => {
+                      // Validate on blur (when user finishes selecting)
+                      const v = e.target.value;
+                      if (!v) return;
+                      
+                      const selectedTime = parseLocalDateTime(v);
+                      const currentTime = Date.now();
+                      
+                      if (!isNaN(selectedTime) && selectedTime < currentTime) {
+                        setMsg('Start date and time cannot be in the past. Please select a future time.');
+                        setStartDate(''); // Clear invalid selection
+                        e.target.value = ''; // Clear input display
+                      }
+                    }}
                     onChange={(e) => {
                       const v = e.target.value;
-                      const parsed = parseLocalDateTime(v);
-                      if (!isNaN(parsed) && parsed < Date.now()) {
-                        setMsg('Start cannot be before now; clamped to current time');
-                        setStartDate(localDateTimeNow());
+                      
+                      // Only update if valid value provided
+                      if (!v) {
+                        setStartDate('');
+                        setMsg("");
                         return;
                       }
+                      
+                      const selectedTime = parseLocalDateTime(v);
+                      const currentTime = Date.now();
+                      
+                      // Prevent selecting past times (extra validation layer)
+                      if (!isNaN(selectedTime) && selectedTime < currentTime) {
+                        setMsg('Start date and time cannot be in the past');
+                        return;
+                      }
+                      
                       setStartDate(v);
+                      setMsg(""); // Clear error messages when user makes changes
+                      
+                      // If end date exists and is now before new start date, clear it
+                      if (endDate) {
+                        const newStart = parseLocalDateTime(v);
+                        const currentEnd = parseLocalDateTime(endDate);
+                        if (!isNaN(newStart) && !isNaN(currentEnd) && currentEnd < newStart) {
+                          setEndDate(''); // Clear end date so user selects a valid one
+                        }
+                      }
                     }}
                     min={nowLocal}
-                    max={toLocalInputValue(endDate) || undefined}
+                    step="60"
                     className="w-full bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
                     required
                   />
+                  <p className="text-xs text-slate-500 mt-1">Past dates are disabled. Select current or future time only.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-800 mb-1">End Date & Time</label>
                   <input
                     type="datetime-local"
                     value={toLocalInputValue(endDate)}
+                    onBlur={(e) => {
+                      // Validate on blur (when user finishes selecting)
+                      const v = e.target.value;
+                      if (!v || !startDate) return;
+                      
+                      const selectedEnd = parseLocalDateTime(v);
+                      const selectedStart = parseLocalDateTime(startDate);
+                      
+                      if (!isNaN(selectedStart) && !isNaN(selectedEnd) && selectedEnd < selectedStart) {
+                        setMsg('End date and time must be after or equal to start date and time');
+                        setEndDate(''); // Clear invalid selection
+                        e.target.value = ''; // Clear input display
+                      }
+                    }}
                     onChange={(e) => {
                       const v = e.target.value;
-                      const parsed = parseLocalDateTime(v);
-                      const startParsed = parseLocalDateTime(startDate);
-                      if (!isNaN(parsed) && !isNaN(startParsed) && parsed < startParsed) {
-                        setMsg('End cannot be before start; clamped to start time');
-                        setEndDate(toLocalInputValue(startDate));
+                      
+                      // Only update if valid value provided
+                      if (!v) {
+                        setEndDate('');
+                        setMsg("");
                         return;
                       }
+                      
+                      const selectedEnd = parseLocalDateTime(v);
+                      const selectedStart = parseLocalDateTime(startDate);
+                      
+                      // Prevent selecting end time before start time (extra validation layer)
+                      if (!isNaN(selectedStart) && !isNaN(selectedEnd) && selectedEnd < selectedStart) {
+                        setMsg('End date and time must be after or equal to start date and time');
+                        return;
+                      }
+                      
                       setEndDate(v);
+                      setMsg(""); // Clear error messages when user makes changes
                     }}
-                    min={toLocalInputValue(startDate) || nowLocal}
-                    className="w-full bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
+                    min={startDate ? toLocalInputValue(startDate) : nowLocal}
+                    step="60"
+                    disabled={!startDate}
+                    className={`w-full border p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm transition-colors ${
+                      !startDate 
+                        ? 'bg-slate-100 border-slate-200 cursor-not-allowed text-slate-400' 
+                        : 'bg-white border-slate-300'
+                    }`}
                     required
                   />
+                  <p className="text-xs text-slate-500 mt-1">
+                    {!startDate ? 'Select start date first' : 'Must be after or equal to start time'}
+                  </p>
                 </div>
               </div>
 

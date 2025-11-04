@@ -29,40 +29,53 @@ export default function PairingAndScheduling() {
   const [selectedToAccept, setSelectedToAccept] = useState("");
   const [meetingLinkEnabled, setMeetingLinkEnabled] = useState(false);
   const [timeUntilEnable, setTimeUntilEnable] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
+      setIsLoading(true);
       try {
+        // Decode token first (synchronous)
+        try {
+          const t = localStorage.getItem("token");
+          if (t) {
+            const raw = t.split(".")?.[1];
+            if (raw) {
+              const payload = JSON.parse(atob(raw));
+              const id = payload.sub || payload.id || payload.userId || null;
+              const fallbackId = localStorage.getItem("userId") || null;
+              setMe({
+                id: id || fallbackId,
+                role: payload.role,
+                email: payload.email,
+                name: payload.name,
+              });
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to decode token payload", e);
+        }
+
+        // Fetch events
         const evs = await api.listEvents();
         setEvents(evs);
+        
+        // Fetch all pairs in parallel for better performance
+        const pairPromises = evs.map(ev => api.listPairs(ev._id));
+        const pairResults = await Promise.all(pairPromises);
+        
+        // Flatten and combine pairs with their events
         const allPairs = [];
-        for (const ev of evs) {
-          const prs = await api.listPairs(ev._id);
-          allPairs.push(...prs.map((p) => ({ ...p, event: ev })));
-        }
+        pairResults.forEach((prs, index) => {
+          allPairs.push(...prs.map((p) => ({ ...p, event: evs[index] })));
+        });
+        
         setPairs(allPairs);
       } catch (err) {
         console.error(err);
         setMessage("Failed to load pairs.");
-      }
-      try {
-        const t = localStorage.getItem("token");
-        if (t) {
-          const raw = t.split(".")?.[1];
-          if (raw) {
-            const payload = JSON.parse(atob(raw));
-            const id = payload.sub || payload.id || payload.userId || null;
-            const fallbackId = localStorage.getItem("userId") || null;
-            setMe({
-              id: id || fallbackId,
-              role: payload.role,
-              email: payload.email,
-              name: payload.name,
-            });
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to decode token payload", e);
+      } finally {
+        setIsLoading(false);
       }
     };
     loadData();
@@ -225,11 +238,16 @@ export default function PairingAndScheduling() {
       const iso = dt && dt.includes("T") ? new Date(dt).toISOString() : dt;
       await api.confirmSlot(selectedPair._id, iso, link);
       setMessage("Scheduled successfully!");
+      
+      // Fetch updated pairs in parallel for better performance
+      const pairPromises = events.map(ev => api.listPairs(ev._id));
+      const pairResults = await Promise.all(pairPromises);
+      
       const updated = [];
-      for (const ev of events) {
-        const prs = await api.listPairs(ev._id);
-        updated.push(...prs.map((p) => ({ ...p, event: ev })));
-      }
+      pairResults.forEach((prs, index) => {
+        updated.push(...prs.map((p) => ({ ...p, event: events[index] })));
+      });
+      
       setPairs(updated);
     } catch (err) {
       setMessage(err.message);
@@ -241,11 +259,16 @@ export default function PairingAndScheduling() {
     try {
       await api.rejectSlots(selectedPair._id);
       setMessage("Rejected slots. Waiting for new proposal from interviewer.");
+      
+      // Fetch updated pairs in parallel for better performance
+      const pairPromises = events.map(ev => api.listPairs(ev._id));
+      const pairResults = await Promise.all(pairPromises);
+      
       const updated = [];
-      for (const ev of events) {
-        const prs = await api.listPairs(ev._id);
-        updated.push(...prs.map((p) => ({ ...p, event: ev })));
-      }
+      pairResults.forEach((prs, index) => {
+        updated.push(...prs.map((p) => ({ ...p, event: events[index] })));
+      });
+      
       setPairs(updated);
       setCurrentProposals({ mine: [], partner: [], common: null });
     } catch (err) {
@@ -291,7 +314,12 @@ export default function PairingAndScheduling() {
               <h2 className="text-lg font-semibold text-slate-900 mb-4">
                 Interview Pairs
               </h2>
-              {pairs.length === 0 ? (
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 mb-3"></div>
+                  <p className="text-slate-500 text-sm">Loading pairs...</p>
+                </div>
+              ) : pairs.length === 0 ? (
                 <div className="text-slate-500 text-sm text-center py-6">
                   No pairs found
                 </div>
@@ -431,7 +459,12 @@ export default function PairingAndScheduling() {
                 className="lg:hidden fixed inset-0 top-28 z-30 bg-white p-4 overflow-y-auto"
               >
                 <div className="space-y-2">
-                  {pairs.length === 0 ? (
+                  {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 mb-3"></div>
+                      <p className="text-slate-500 text-sm">Loading pairs...</p>
+                    </div>
+                  ) : pairs.length === 0 ? (
                     <div className="text-slate-500 text-sm text-center py-6">
                       No pairs found
                     </div>

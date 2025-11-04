@@ -74,6 +74,7 @@ export default function StudentOnboarding() {
     setError("");
     setSuccess("");
     setUploadSuccess(false);
+    setUploadResult(null); // Clear previous upload results
     const file = e.target.files[0];
     setCsvFile(file);
     if (!file) return;
@@ -102,12 +103,12 @@ export default function StudentOnboarding() {
           if (!r.email) missing.push('email');
           if (!r.studentid && !r.student_id && !r.sid) missing.push('studentid');
           if (!r.branch) missing.push('branch');
-          if (missing.length > 0) errs.push({ row: rowNum, error: 'missing_fields', details: missing });
+          if (missing.length > 0) errs.push({ row: rowNum, error: 'Missing required fields', details: missing });
           else {
             const email = r.email.toLowerCase();
-            if (!emailRegex.test(email)) errs.push({ row: rowNum, error: 'invalid_email' });
-            if (seenEmails.has(email)) errs.push({ row: rowNum, error: 'duplicate_in_file', details: 'email' });
-            if (seenIds.has(r.studentid || r.student_id || r.sid)) errs.push({ row: rowNum, error: 'duplicate_in_file', details: 'studentid' });
+            if (!emailRegex.test(email)) errs.push({ row: rowNum, error: 'Invalid email address format' });
+            if (seenEmails.has(email)) errs.push({ row: rowNum, error: 'Duplicate email found in this file', details: 'email' });
+            if (seenIds.has(r.studentid || r.student_id || r.sid)) errs.push({ row: rowNum, error: 'Duplicate student ID found in this file', details: 'studentid' });
             seenEmails.add(email);
             seenIds.add(r.studentid || r.student_id || r.sid);
           }
@@ -115,24 +116,40 @@ export default function StudentOnboarding() {
 
         setStudents(parsed);
         setClientErrors(errs);
-        setSuccess("CSV parsed successfully. Preview below.");
-
+        
         if (errs.length === 0) {
-          setIsUploading(true);
+          // Check against database for existing students
           try {
-            const data = await api.uploadStudentsCsv(file);
-            setUploadResult(data);
-            setSuccess(`Upload successful! Processed ${data.count} rows`);
-            setUploadSuccess(true);
-          } catch (uploadErr) {
-            setError(uploadErr.message || 'Upload failed');
-            setUploadSuccess(false);
-          } finally {
-            setIsUploading(false);
+            const checkResult = await api.checkStudentsCsv(file);
+            setUploadResult(checkResult); // Set the check result
+            
+            const existingCount = checkResult.results?.filter(r => r.status === 'exists').length || 0;
+            const readyCount = checkResult.results?.filter(r => r.status === 'ready').length || 0;
+            
+            if (existingCount > 0 && readyCount === 0) {
+              setError(`All ${existingCount} student(s) already exist in the system. Upload is not needed.`);
+            } else if (existingCount > 0 && readyCount > 0) {
+              setSuccess(`${readyCount} new student(s) ready to upload. ${existingCount} student(s) already exist and will be skipped during upload.`);
+            } else {
+              setSuccess(`CSV file is valid. ${readyCount} student(s) ready to upload.`);
+            }
+          } catch (checkErr) {
+            const errorMsg = checkErr.message || '';
+            if (errorMsg.includes('Missing token') || errorMsg.includes('User not found') || errorMsg.includes('token')) {
+              setError('Your session has expired. Please log in again.');
+              setTimeout(() => {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+              }, 2000);
+            } else {
+              setError('Unable to verify students against the database. Please try again.');
+            }
           }
+        } else {
+          setError(`Found ${errs.length} error(s) in your CSV file. Please fix them and upload a new file.`);
         }
       } catch (err) {
-        setError(err.message || 'Error parsing CSV');
+        setError(err.message || 'Unable to read the CSV file. Please ensure it is a valid CSV format.');
         setStudents([]);
         setClientErrors([]);
         setUploadSuccess(false);
@@ -150,17 +167,48 @@ export default function StudentOnboarding() {
     setSuccess("");
     setUploadSuccess(false);
     if (clientErrors.length > 0) {
-      setError('Please fix CSV errors before uploading. See details below.');
+      setError('Please fix the errors in your CSV file before uploading. Download the errors CSV to see what needs to be corrected.');
       return;
     }
     setIsUploading(true);
     try {
       const data = await api.uploadStudentsCsv(csvFile);
       setUploadResult(data);
-      setSuccess(`Upload successful! Processed ${data.count} rows`);
-      setUploadSuccess(true);
+      
+      // Check for existing/duplicate users
+      const existingCount = data.results?.filter(r => r.status === 'exists').length || 0;
+      const createdCount = data.results?.filter(r => r.status === 'created').length || 0;
+      
+      if (existingCount > 0 && createdCount === 0) {
+        setError(`All ${existingCount} student(s) already exist in the system. No new students were added.`);
+        setUploadSuccess(true); // Still mark as complete even if all exist
+      } else if (existingCount > 0 && createdCount > 0) {
+        setSuccess(`Successfully added ${createdCount} new student(s). ${existingCount} student(s) already existed. Sending emails to newly added users. Wait till we complete.`);
+        setUploadSuccess(true);
+        // Change message after emails are sent
+        setTimeout(() => {
+          setSuccess(`Mails sent successfully - You can create events now`);
+        }, 3000);
+      } else {
+        setSuccess(`Successfully added ${createdCount} student(s) to the system! Sending emails to newly added users. Wait till we complete.`);
+        setUploadSuccess(true);
+        // Change message after emails are sent
+        setTimeout(() => {
+          setSuccess(`Mails sent successfully - You can create events now`);
+        }, 3000);
+      }
     } catch (err) {
-      setError(err.message || 'Upload failed');
+      const errorMessage = err.message || 'Upload failed';
+      // Make error messages user-friendly
+      if (errorMessage.includes('duplicate') || errorMessage.includes('exists')) {
+        setError('Some students already exist in the system. Please check the results below.');
+      } else if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
+        setError('The CSV file contains invalid data. Please check the format and try again.');
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        setError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        setError(errorMessage);
+      }
       setUploadSuccess(false);
     } finally {
       setIsUploading(false);
@@ -175,24 +223,34 @@ export default function StudentOnboarding() {
     const { name, email, studentid, branch } = singleForm;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!name || !email || !studentid || !branch) {
-      setSingleMsg('Please fill required fields: name, email, studentid, branch');
+      setSingleMsg('Please fill in all required fields: Name, Email, Student ID, and Branch');
       setSingleLoading(false);
       return;
     }
     if (!emailRegex.test(email)) {
-      setSingleMsg('Invalid email format');
+      setSingleMsg('Please enter a valid email address');
       setSingleLoading(false);
       return;
     }
     try {
       const data = await api.createStudent(singleForm);
-      setSingleMsg('Student created: ' + (data.email || data.studentid));
+      setSingleMsg(`Student ${data.name || data.email} has been successfully added!`);
       setTimeout(() => setSingleMsg(''), 4000);
       const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', password: singleForm.password || '', branch: singleForm.branch || '', college: singleForm.college || '', __row: 'N/A' };
       setStudents((s) => [newStudent, ...s]);
       setSingleForm({ name: '', email: '', studentid: '', password: '', branch: '', course: '', college: '' });
     } catch (err) {
-      setSingleMsg(err.message || 'Failed to create student');
+      const errorMessage = err.message || 'Failed to create student';
+      // Make error messages user-friendly
+      if (errorMessage.includes('duplicate') || errorMessage.includes('exists') || errorMessage.includes('already')) {
+        setSingleMsg('A student with this email or student ID already exists in the system');
+      } else if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
+        setSingleMsg('Please check that all fields are filled correctly');
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        setSingleMsg('Unable to connect to the server. Please check your internet connection');
+      } else {
+        setSingleMsg(errorMessage);
+      }
     } finally {
       setSingleLoading(false);
     }
@@ -203,13 +261,6 @@ export default function StudentOnboarding() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return name && email && studentid && branch && emailRegex.test(email);
   };
-
-  useEffect(() => {
-    if (uploadSuccess) {
-      const timer = setTimeout(() => setUploadSuccess(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [uploadSuccess]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-6 px-4">
@@ -491,9 +542,17 @@ export default function StudentOnboarding() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleUpload}
-                  disabled={clientErrors.length > 0 || isUploading || uploadSuccess}
+                  disabled={
+                    clientErrors.length > 0 || 
+                    isUploading || 
+                    uploadSuccess || 
+                    (uploadResult?.results && uploadResult.results.every(r => r.status === 'exists'))
+                  }
                   className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    clientErrors.length > 0 || isUploading || uploadSuccess
+                    clientErrors.length > 0 || 
+                    isUploading || 
+                    uploadSuccess || 
+                    (uploadResult?.results && uploadResult.results.every(r => r.status === 'exists'))
                       ? 'bg-slate-300 text-slate-600 cursor-not-allowed'
                       : 'bg-emerald-500 text-white hover:bg-emerald-600'
                   }`}
@@ -643,6 +702,16 @@ export default function StudentOnboarding() {
                           <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
                             <AlertCircle className="w-3 h-3 mr-1" />
                             {errorsByRow[student.__row].length} error(s)
+                          </span>
+                        ) : uploadResult?.results?.[idx]?.status === 'exists' ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Already exists
+                          </span>
+                        ) : uploadResult?.results?.[idx]?.status === 'ready' ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Ready to add
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-800">

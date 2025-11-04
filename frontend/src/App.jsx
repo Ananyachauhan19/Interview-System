@@ -6,6 +6,7 @@ import ChangePassword from "./student/ChangePassword";
 import PairingAndScheduling from "./student/PairingAndScheduling";
 import SessionAndFeedback from "./student/SessionAndFeedback";
 import StudentOnboarding from "./admin/StudentOnboarding";
+import StudentDirectory from "./admin/StudentDirectory";
 import EventManagement from "./admin/EventManagement";
 import EventDetail from "./admin/EventDetail";
 import FeedbackReview from "./admin/FeedbackReview";
@@ -35,6 +36,7 @@ function AppContent() {
           <Route path="/student/pairing" element={<PairingAndScheduling />} />
           <Route path="/student/session" element={<SessionAndFeedback />} />
           <Route path="/admin/onboarding" element={<StudentOnboarding />} />
+          <Route path="/admin/students" element={<StudentDirectory />} />
           <Route path="/admin/event" element={<EventManagement />} />
           <Route path="/admin/event/:id" element={<EventDetail />} />
           <Route path="/admin/feedback" element={<FeedbackReview />} />

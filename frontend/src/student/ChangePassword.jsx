@@ -26,12 +26,12 @@ export default function ChangePassword() {
       setError('New passwords do not match');
       return;
     }
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters');
       return;
     }
-    if (!/[#@]/.test(newPassword)) {
-      setError('New password must contain @ or #');
+    if (!/[*#]/.test(newPassword)) {
+      setError('New password must contain * or #');
       return;
     }
     try {
@@ -91,6 +91,9 @@ export default function ChangePassword() {
               {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
+          <p className="text-xs text-gray-600 mt-1">
+            Minimum 8 characters, must include * or #
+          </p>
         </div>
 
         {/* Confirm New Password */}
