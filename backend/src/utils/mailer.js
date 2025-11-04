@@ -30,7 +30,6 @@ export async function sendEventNotificationEmail({ to, event, interviewer, inter
       </p>
       <p>
         <strong>Your Interviewer Partner:</strong> {interviewer}<br/>
-        <strong>Your Interviewee Partner:</strong> {interviewee}
       </p>
       <p>Prepare well and check your dashboard for further instructions.</p>
       <p>Best regards,<br/>Interview System Team</p>
@@ -97,7 +96,6 @@ export async function sendInterviewScheduledEmail({ to, interviewer, interviewee
       </p>
       <p>
         <strong>Interviewer:</strong> {interviewer}<br/>
-        <strong>Interviewee:</strong> {interviewee}
       </p>
       <p>
         <strong>Interview Link:</strong> <a href="{link}">{link}</a>
