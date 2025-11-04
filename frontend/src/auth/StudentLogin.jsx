@@ -173,7 +173,17 @@ export default function StudentLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
+
+  // Load saved email on component mount
+  React.useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async () => {
     setError('');
@@ -181,6 +191,14 @@ export default function StudentLoginPage() {
       const res = await api.login(email, password);
       setToken(res.token);
       const role = res.user?.role;
+      
+      // Handle Remember Me functionality
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+      
       // Store student name and email in localStorage
       localStorage.setItem('studentName', res.user?.name || 'Student');
       localStorage.setItem('studentEmail', res.user?.email || email);
@@ -361,7 +379,9 @@ export default function StudentLoginPage() {
                     <div className="flex items-center justify-between text-xs">
                       <label className="flex items-center space-x-2">
                         <input 
-                          type="checkbox" 
+                          type="checkbox"
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
                           className="w-4 h-4 rounded border-2 border-sky-400 text-sky-600 focus:ring-2 focus:ring-sky-300/50 transition-all duration-300 bg-white/60" 
                         />
                         <span className="text-sky-700/90 font-medium">Remember me</span>
