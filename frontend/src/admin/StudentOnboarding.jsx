@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../utils/api";
-import { Upload, CheckCircle, AlertCircle, Plus, Loader2, FileText, Download, Users, BookOpen, Shield, ArrowRight } from "lucide-react";
+import { Upload, CheckCircle, AlertCircle, Plus, Loader2, FileText, Download, Users, BookOpen, Shield, ArrowRight, X } from "lucide-react";
 
 export default function StudentOnboarding() {
   const [csvFile, setCsvFile] = useState(null);
@@ -18,6 +18,8 @@ export default function StudentOnboarding() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [openTabs, setOpenTabs] = useState([]); // [{ key, label, data }]
+  const [activeTab, setActiveTab] = useState(null); // key
 
   const errorsByRow = clientErrors.reduce((acc, cur) => {
     const msg = cur.details ? (Array.isArray(cur.details) ? cur.details.join(', ') : cur.details) : cur.error;
@@ -156,6 +158,26 @@ export default function StudentOnboarding() {
       }
     };
     reader.readAsText(file);
+  };
+
+  const tabKeyFor = (student, idx) => `${student.email || student.studentid || idx}-${student.__row || idx}`;
+
+  const handleRowClick = (student, idx) => {
+    const key = tabKeyFor(student, idx);
+    if (!openTabs.find(t => t.key === key)) {
+      setOpenTabs(prev => [...prev, { key, label: student.name || student.email || `Row ${student.__row || idx+1}` , data: student }]);
+    }
+    setActiveTab(key);
+  };
+
+  const closeTab = (key) => {
+    setOpenTabs(prev => {
+      const remaining = prev.filter(t => t.key !== key);
+      if (activeTab === key) {
+        setActiveTab(remaining.length ? remaining[remaining.length - 1].key : null);
+      }
+      return remaining;
+    });
   };
 
   const handleUpload = async () => {
@@ -660,6 +682,56 @@ export default function StudentOnboarding() {
               </motion.div>
             )}
 
+            {/* Selected Student Tabs */}
+            {openTabs.length > 0 && (
+              <div className="mb-4 bg-white border border-slate-200 rounded-lg shadow-sm">
+                {/* Tab bar */}
+                <div className="flex items-center gap-2 overflow-x-auto px-3 pt-3">
+                  {openTabs.map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => setActiveTab(t.key)}
+                      className={`group inline-flex items-center gap-2 px-3 py-2 rounded-t-lg border-b-2 text-sm whitespace-nowrap ${
+                        activeTab === t.key ? 'border-sky-500 text-slate-900 bg-sky-50' : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      }`}
+                      title={t.label}
+                    >
+                      <span className="font-medium truncate max-w-[180px]">{t.label}</span>
+                      <X
+                        onClick={(e) => { e.stopPropagation(); closeTab(t.key); }}
+                        className="w-4 h-4 text-slate-400 hover:text-slate-700"
+                      />
+                    </button>
+                  ))}
+                </div>
+                {/* Active tab content */}
+                {activeTab && (
+                  <div className="px-4 pb-4 pt-3 border-t border-slate-200">
+                    {(() => {
+                      const t = openTabs.find(tt => tt.key === activeTab);
+                      const data = t?.data || {};
+                      const keys = Object.keys(data).filter(k => k !== '__row');
+                      return (
+                        <div>
+                          <h4 className="text-sm font-semibold text-slate-800 mb-3">Student Details</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {keys.map((k) => (
+                              <div key={k} className="p-3 rounded-lg border border-slate-200 bg-slate-50">
+                                <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1">{k}</div>
+                                <div className="text-sm text-slate-800 break-words font-mono">
+                                  {String(data[k] ?? '') || <span className="italic text-slate-400">empty</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Data Table */}
             <div className="overflow-auto rounded-lg border border-slate-200 bg-white shadow-sm">
               <table className="min-w-full">
@@ -685,7 +757,8 @@ export default function StudentOnboarding() {
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 + idx * 0.03 }}
-                      className="hover:bg-slate-50 transition-colors duration-150"
+                      className="hover:bg-slate-50 transition-colors duration-150 cursor-pointer"
+                      onClick={() => handleRowClick(student, idx)}
                     >
                       {Object.keys(students[0]).filter(k => k !== '__row').map((k) => (
                         <td

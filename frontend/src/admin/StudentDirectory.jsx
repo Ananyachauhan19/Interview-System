@@ -1,8 +1,8 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
 import { api } from "../utils/api";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, Mail, IdCard, BookOpen, GraduationCap, Building2, Calendar, Loader2, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { Search, Users, Loader2, X } from "lucide-react";
 
 export default function StudentDirectory() {
   const [students, setStudents] = useState([]);
@@ -176,74 +176,46 @@ export default function StudentDirectory() {
               </p>
             </div>
           ) : (
-            /* Students Grid */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <AnimatePresence>
-                {filteredStudents.map((student, idx) => (
-                  <motion.div
-                    key={student._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ delay: idx * 0.05 }}
-                    className="bg-white border border-slate-200 rounded-lg p-5 hover:shadow-lg hover:border-emerald-300 transition-all duration-200"
-                  >
-                    {/* Student Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                          {student.name?.charAt(0).toUpperCase() || "?"}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-slate-900 text-lg">
-                            {student.name || "Unknown"}
-                          </h3>
-                          <span className="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded mt-1">
-                            <IdCard className="w-3 h-3" />
-                            {student.studentId || "N/A"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Student Details */}
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Mail className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                        <span className="truncate">{student.email || "No email"}</span>
-                      </div>
-
-                      {student.branch && (
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <GraduationCap className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                          <span>{student.branch}</span>
-                        </div>
-                      )}
-
-                      {student.course && (
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <BookOpen className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                          <span>{student.course}</span>
-                        </div>
-                      )}
-
-                      {student.college && (
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Building2 className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                          <span className="truncate">{student.college}</span>
-                        </div>
-                      )}
-
-                      {student.createdAt && (
-                        <div className="flex items-center gap-2 text-xs text-slate-500 pt-2 border-t border-slate-100">
-                          <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span>Registered: {new Date(student.createdAt).toLocaleDateString()}</span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+            // Students Table (no tabs, clear and scannable)
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">Student</th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">Email</th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">Branch</th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">Course</th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">College</th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">Registered</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {filteredStudents.map((s) => {
+                    const initial = s.name?.charAt(0)?.toUpperCase() || "?";
+                    const registered = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "-";
+                    return (
+                      <tr key={s._id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 align-top">
+                          <div className="flex items-center gap-3 min-w-[220px]">
+                            <div className="w-9 h-9 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-semibold">
+                              {initial}
+                            </div>
+                            <div className="max-w-[280px]">
+                              <div className="font-medium text-slate-900 truncate">{s.name || "Unknown"}</div>
+                              <div className="text-xs text-slate-500 truncate">{s.studentId || "N/A"}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-700 align-top max-w-[260px]"><span className="truncate block">{s.email || "-"}</span></td>
+                        <td className="px-4 py-3 text-slate-700 align-top">{s.branch || "-"}</td>
+                        <td className="px-4 py-3 text-slate-700 align-top">{s.course || "-"}</td>
+                        <td className="px-4 py-3 text-slate-700 align-top max-w-[280px]"><span className="truncate block">{s.college || "-"}</span></td>
+                        <td className="px-4 py-3 text-slate-600 align-top whitespace-nowrap">{registered}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
