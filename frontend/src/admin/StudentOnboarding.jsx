@@ -322,7 +322,7 @@ export default function StudentOnboarding() {
                   <p><strong>Optional columns:</strong> Course, College, Password</p>
                 </div>
                 <div className="space-y-1">
-                  <p><strong>Password:</strong> If not provided, Student ID will be used as default password.</p>
+                  <p><strong>Password:</strong> If not provided, password will be automatically generated.</p>
                   <p><strong>Duplicates:</strong> Automatically detected and skipped.</p>
                 </div>
               </div>
