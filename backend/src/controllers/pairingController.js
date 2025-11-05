@@ -4,6 +4,20 @@ import Pair from '../models/Pair.js';
 import mongoose from 'mongoose';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
+
+// Helper function to format date as "6/11/2025, 12:16:00 PM"
+function formatDateTime(date) {
+  return new Date(date).toLocaleString('en-US', {
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
+}
+
 // meeting link is already hidden until 1 hour prior in listPairs
 
 // Internal helper: generate rotation pairs for an event (not exported)
@@ -102,13 +116,13 @@ export async function setMeetingLink(req, res) {
   await pair.save();
   // Email both parties with generated link
   const subject = 'Meeting link available';
-  const text = `Your interview at ${pair.scheduledAt.toISOString()} now has a meeting link: ${meetingLink}`;
+  const text = `Your interview at ${formatDateTime(pair.scheduledAt)} now has a meeting link: ${meetingLink}`;
   for (const to of [pair.interviewer?.email, pair.interviewee?.email].filter(Boolean)) {
     await sendInterviewScheduledEmail({
       to,
       interviewer: pair.interviewer?.name || pair.interviewer?.email,
       interviewee: pair.interviewee?.name || pair.interviewee?.email,
-      event: { title: 'Interview', date: pair.scheduledAt, details: 'Interview scheduled' },
+      event: { title: 'Interview', date: formatDateTime(pair.scheduledAt), details: 'Interview scheduled' },
       link: meetingLink,
     });
   }

@@ -1,9 +1,22 @@
 import Pair from '../models/Pair.js';
 import SlotProposal from '../models/SlotProposal.js';
 import Event from '../models/Event.js';
-import { sendMail, buildICS } from '../utils/mailer.js';
+import { sendMail, buildICS, sendSlotProposalEmail, sendSlotAcceptanceEmail, sendInterviewScheduledEmail } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
 import crypto from 'crypto';
+
+// Helper function to format date as "6/11/2025, 12:16:00 PM"
+function formatDateTime(date) {
+  return new Date(date).toLocaleString('en-US', {
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
+}
 
 export async function proposeSlots(req, res) {
   const pair = await Pair.findById(req.params.pairId);
@@ -50,6 +63,33 @@ export async function proposeSlots(req, res) {
     { slots: dates },
     { upsert: true, new: true }
   );
+
+  // Send email notification to the other party
+  await pair.populate('interviewer interviewee');
+  const isInterviewerProposing = req.user._id.equals(pair.interviewer._id);
+  
+  if (process.env.EMAIL_ON_PAIRING === 'true') {
+    if (isInterviewerProposing && pair.interviewee?.email) {
+      // Interviewer proposed slots -> notify interviewee
+      const slotsList = dates.map(d => formatDateTime(d)).join(', ');
+      await sendSlotProposalEmail({
+        to: pair.interviewee.email,
+        interviewer: pair.interviewer?.name || pair.interviewer?.email || 'Your interviewer',
+        slot: slotsList,
+      });
+      console.log(`[Email] Slot proposal sent to interviewee: ${pair.interviewee.email}`);
+    } else if (!isInterviewerProposing && pair.interviewer?.email) {
+      // Interviewee proposed alternative slots -> notify interviewer
+      const slotsList = dates.map(d => formatDateTime(d)).join(', ');
+      await sendSlotAcceptanceEmail({
+        to: pair.interviewer.email,
+        interviewee: pair.interviewee?.name || pair.interviewee?.email || 'The interviewee',
+        slot: slotsList,
+        accepted: false, // This is a new proposal, not acceptance
+      });
+      console.log(`[Email] New slot proposal sent to interviewer: ${pair.interviewer.email}`);
+    }
+  }
 
   // Return both proposals and intersection
   const mineDoc = doc;
@@ -99,6 +139,34 @@ export async function confirmSlot(req, res) {
   }
   pair.status = 'scheduled';
   await pair.save();
+  
+  // Send acceptance notification to the other party
+  await pair.populate('interviewer interviewee');
+  
+  if (process.env.EMAIL_ON_PAIRING === 'true') {
+    const confirmerIsInterviewee = req.user._id.equals(pair.interviewee._id);
+    
+    if (confirmerIsInterviewee && pair.interviewer?.email) {
+      // Interviewee accepted interviewer's proposed slot
+      await sendSlotAcceptanceEmail({
+        to: pair.interviewer.email,
+        interviewee: pair.interviewee?.name || pair.interviewee?.email || 'The interviewee',
+        slot: formatDateTime(scheduled),
+        accepted: true,
+      });
+      console.log(`[Email] Slot acceptance sent to interviewer: ${pair.interviewer.email}`);
+    } else if (!confirmerIsInterviewee && pair.interviewee?.email) {
+      // Interviewer confirmed interviewee's proposed slot
+      await sendSlotAcceptanceEmail({
+        to: pair.interviewee.email,
+        interviewee: pair.interviewer?.name || pair.interviewer?.email || 'Your interviewer',
+        slot: formatDateTime(scheduled),
+        accepted: true,
+      });
+      console.log(`[Email] Slot confirmation sent to interviewee: ${pair.interviewee.email}`);
+    }
+  }
+  
   // notify both
   await sendMailForPair(pair);
   res.json(pair);
@@ -144,13 +212,8 @@ async function sendMailForPair(pair) {
   await pair.populate('interviewer interviewee');
   const when = pair.scheduledAt?.toISOString();
   const subject = `Interview scheduled${when ? ` at ${when}` : ''}`;
-  const text = [
-    `Interviewer: ${pair.interviewer?.name || pair.interviewer?.email}`,
-    pair.interviewer?.email ? `Interviewer email: ${pair.interviewer.email}` : null,
-    `Interviewee: ${pair.interviewee?.name || pair.interviewee?.email}`,
-    pair.interviewee?.email ? `Interviewee email: ${pair.interviewee.email}` : null,
-    `Meeting link: ${pair.meetingLink || 'TBA'}`,
-  ].filter(Boolean).join('\n');
+  
+  // Build ICS calendar attachment if scheduled
   let icsAttachment;
   if (pair.scheduledAt) {
     const end = new Date(new Date(pair.scheduledAt).getTime() + 30 * 60 * 1000); // default 30 min
@@ -169,6 +232,34 @@ async function sendMailForPair(pair) {
     });
     icsAttachment = [{ filename: 'interview.ics', content: ics, contentType: 'text/calendar; charset=utf-8; method=REQUEST' }];
   }
+  
+  // Send professional scheduled email to both parties
   const emails = [pair.interviewer?.email, pair.interviewee?.email].filter(Boolean);
-  for (const to of emails) await sendMail({ to, subject, text, attachments: icsAttachment });
+  const event = {
+    title: 'Interview Session',
+    date: pair.scheduledAt ? formatDateTime(pair.scheduledAt) : 'TBA',
+    details: 'Your interview has been scheduled. Please join on time.',
+  };
+  
+  for (const to of emails) {
+    await sendInterviewScheduledEmail({
+      to,
+      interviewer: pair.interviewer?.name || pair.interviewer?.email || 'Interviewer',
+      interviewee: pair.interviewee?.name || pair.interviewee?.email || 'Interviewee',
+      event,
+      link: pair.meetingLink || 'Will be provided soon',
+    });
+    
+    // Also send calendar invite
+    if (icsAttachment) {
+      await sendMail({ 
+        to, 
+        subject: 'Calendar Invite - Interview Session', 
+        text: 'Please find the calendar invite attached.',
+        attachments: icsAttachment 
+      });
+    }
+  }
+  
+  console.log('[Email] Interview scheduled emails sent to both parties');
 }

@@ -8,6 +8,19 @@ import Feedback from '../models/Feedback.js';
 import { supabase } from '../utils/supabase.js';
 import { parse } from 'csv-parse/sync';
 
+// Helper function to format date as "6/11/2025, 12:16:00 PM"
+function formatDateTime(date) {
+  return new Date(date).toLocaleString('en-US', {
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
+}
+
 // PATCH /events/:id/join-disable
 export async function updateEventJoinDisable(req, res) {
   const event = await Event.findById(req.params.id);
@@ -91,7 +104,7 @@ export async function createEvent(req, res) {
             if (a?.email) {
               await sendEventNotificationEmail({
                 to: a.email,
-                event: { title: event.name, date: event.startDate, details: event.description },
+                event: { title: event.name, date: formatDateTime(event.startDate), details: event.description },
                 interviewer: a.name || a.email,
                 interviewee: b.name || b.email,
               });
@@ -99,7 +112,7 @@ export async function createEvent(req, res) {
             if (b?.email) {
               await sendEventNotificationEmail({
                 to: b.email,
-                event: { title: event.name, date: event.startDate, details: event.description },
+                event: { title: event.name, date: formatDateTime(event.startDate), details: event.description },
                 interviewer: a.name || a.email,
                 interviewee: b.name || b.email,
               });
@@ -115,8 +128,8 @@ export async function createEvent(req, res) {
             `Hello ${s.name || s.email},`,
             `A new event has been created: ${name}.`,
             description ? `Description: ${description}` : null,
-            startDate ? `Starts: ${new Date(startDate).toLocaleString()}` : null,
-            endDate ? `Ends: ${new Date(endDate).toLocaleString()}` : null,
+            startDate ? `Starts: ${formatDateTime(startDate)}` : null,
+            endDate ? `Ends: ${formatDateTime(endDate)}` : null,
             tpl.templateUrl ? `Template: ${tpl.templateUrl}` : null,
             `Join from your dashboard: ${joinUrl}`,
           ].filter(Boolean).join('\n');
@@ -206,8 +219,8 @@ export async function createSpecialEvent(req, res) {
             `Hello ${u.name || u.email},`,
             `You are invited to a special event: ${name}.`,
             description ? `Description: ${description}` : null,
-            startDate ? `Starts: ${new Date(startDate).toLocaleString()}` : null,
-            endDate ? `Ends: ${new Date(endDate).toLocaleString()}` : null,
+            startDate ? `Starts: ${formatDateTime(startDate)}` : null,
+            endDate ? `Ends: ${formatDateTime(endDate)}` : null,
             tpl.templateUrl ? `Template: ${tpl.templateUrl}` : null,
             `Access it from your dashboard: ${fe}/`,
           ].filter(Boolean).join('\n');

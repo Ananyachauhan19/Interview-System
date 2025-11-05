@@ -121,15 +121,119 @@ export default function DateTimePicker({
           background: #0ea5e9;
           color: white;
           border-radius: 8px 8px 0 0;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 10px;
+        }
+
+        .flatpickr-months .flatpickr-prev-month,
+        .flatpickr-months .flatpickr-next-month {
+          position: static;
+          height: 28px;
+          padding: 4px;
+        }
+
+        .flatpickr-current-month {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 0;
+          height: 28px;
         }
         
         .flatpickr-current-month .flatpickr-monthDropdown-months {
+          background: #0ea5e9;
+          color: white;
+          font-weight: 600;
+          border: none;
+          padding: 6px 10px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          height: 28px;
+        }
+
+        .flatpickr-current-month .flatpickr-monthDropdown-months:hover {
+          background: #0284c7;
+        }
+
+        .flatpickr-current-month .flatpickr-monthDropdown-months option {
+          background: #e0f2fe;
+          color: white;
+          padding: 8px;
+        }
+
+        .flatpickr-current-month .flatpickr-monthDropdown-months option:hover {
+          background: #bae6fd;
+        }
+
+        .flatpickr-current-month .flatpickr-monthDropdown-months option:checked {
           background: #0ea5e9;
           color: white;
         }
         
         .flatpickr-current-month .numInputWrapper {
           color: white;
+          height: 28px;
+          display: inline-flex;
+          align-items: center;
+          position: relative;
+        }
+
+        .flatpickr-current-month .numInputWrapper input {
+          color: white !important;
+          font-weight: 600;
+          background: transparent;
+          border: none;
+          padding: 5px 24px 5px 8px;
+          width: 70px;
+          text-align: left;
+          font-size: 14px;
+          height: 28px;
+          line-height: 18px;
+        }
+
+        .flatpickr-current-month .numInputWrapper input:hover {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 4px;
+        }
+
+        .flatpickr-current-month .numInputWrapper .arrowUp,
+        .flatpickr-current-month .numInputWrapper .arrowDown {
+          position: absolute;
+          right: 2px;
+          width: 16px;
+          height: 14px;
+          padding: 0 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+
+        .flatpickr-current-month .numInputWrapper .arrowUp {
+          top: 0;
+        }
+
+        .flatpickr-current-month .numInputWrapper .arrowDown {
+          bottom: 0;
+        }
+
+        .flatpickr-current-month .numInputWrapper .arrowUp:hover,
+        .flatpickr-current-month .numInputWrapper .arrowDown:hover {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 3px;
+        }
+
+        .flatpickr-current-month .numInputWrapper span.arrowUp:after {
+          border-bottom-color: white;
+        }
+
+        .flatpickr-current-month .numInputWrapper span.arrowDown:after {
+          border-top-color: white;
         }
         
         .flatpickr-weekday {
