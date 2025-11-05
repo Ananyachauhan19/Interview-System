@@ -144,6 +144,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   } : undefined,
+  pool: true, // Use pooled connections for faster sending
+  maxConnections: 5, // Allow up to 5 parallel connections
+  maxMessages: 100, // Reuse connections for multiple messages
 });
 
 export async function sendMail({ to, subject, html, text, attachments }) {
@@ -151,6 +154,26 @@ export async function sendMail({ to, subject, html, text, attachments }) {
   const info = await transporter.sendMail({ from, to, subject, html, text, attachments });
   console.log(`[MAIL] Sent to: ${to} | Subject: ${subject}`);
   return info;
+}
+
+// Send multiple emails in parallel (faster for bulk operations)
+export async function sendBulkMail(emails) {
+  if (!emails || emails.length === 0) return [];
+  
+  console.log(`[MAIL] Sending ${emails.length} emails in parallel...`);
+  const startTime = Date.now();
+  
+  const results = await Promise.allSettled(
+    emails.map(email => sendMail(email))
+  );
+  
+  const successful = results.filter(r => r.status === 'fulfilled').length;
+  const failed = results.filter(r => r.status === 'rejected').length;
+  const elapsed = Date.now() - startTime;
+  
+  console.log(`[MAIL] Bulk send complete: ${successful} sent, ${failed} failed in ${elapsed}ms`);
+  
+  return results;
 }
 
 export function renderTemplate(template, vars) {

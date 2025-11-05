@@ -10,17 +10,24 @@ cron.schedule('*/5 * * * *', async () => {
   const oneHour = new Date(now.getTime() + 60 * 60 * 1000);
   const oneDay = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const pairs = await Pair.find({ scheduledAt: { $gte: now, $lte: oneDay } }).populate('interviewer interviewee');
+  
+  // Collect all email promises for parallel sending
+  const emailPromises = [];
+  
   for (const p of pairs) {
     const diff = p.scheduledAt - now;
     const emails = [p.interviewer?.email, p.interviewee?.email].filter(Boolean);
+    
     // Auto-generate meeting link within 1 hour window if not already generated
     if (!p.meetingLink && diff <= 60 * 60 * 1000) {
       const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
       const token = crypto.randomUUID();
       p.meetingLink = `${base}/${token}`;
       await p.save();
+      
       const subjectLink = 'Meeting link available';
       const textLink = `Your interview at ${p.scheduledAt.toISOString()} now has a meeting link: ${p.meetingLink}`;
+      
       // Build ICS
       const end = new Date(p.scheduledAt.getTime() + 30 * 60 * 1000);
       const ics = buildICS({
@@ -36,19 +43,46 @@ cron.schedule('*/5 * * * *', async () => {
           { name: p.interviewee?.name || 'Interviewee', email: p.interviewee?.email },
         ].filter(a => a.email),
       });
+      
       const attachments = [{ filename: 'interview.ics', content: ics, contentType: 'text/calendar; charset=utf-8; method=REQUEST' }];
-      for (const to of emails) await sendInterviewScheduledEmail({
-        to,
-        interviewer: p.interviewer?.name || p.interviewer?.email,
-        interviewee: p.interviewee?.name || p.interviewee?.email,
-        event: { title: 'Interview', date: p.scheduledAt, details: 'Interview scheduled' },
-        link: p.meetingLink,
-      });
+      
+      // Add to parallel email batch
+      for (const to of emails) {
+        emailPromises.push(
+          sendInterviewScheduledEmail({
+            to,
+            interviewer: p.interviewer?.name || p.interviewer?.email,
+            interviewee: p.interviewee?.name || p.interviewee?.email,
+            event: { title: 'Interview', date: p.scheduledAt, details: 'Interview scheduled' },
+            link: p.meetingLink,
+          }).catch(err => {
+            console.error(`[reminders] Failed to send scheduled email to ${to}:`, err.message);
+            return null;
+          })
+        );
+      }
     }
+    
     let subject;
     if (diff <= 60 * 60 * 1000) subject = 'Interview in 1 hour';
     else subject = 'Interview in 1 day';
     const showLink = diff <= 60 * 60 * 1000 && p.meetingLink;
-    for (const to of emails) await sendMail({ to, subject, text: `Time: ${p.scheduledAt.toISOString()} | Link: ${showLink ? p.meetingLink : 'TBA'}` });
+    
+    // Add reminder emails to parallel batch
+    for (const to of emails) {
+      emailPromises.push(
+        sendMail({ to, subject, text: `Time: ${p.scheduledAt.toISOString()} | Link: ${showLink ? p.meetingLink : 'TBA'}` })
+          .catch(err => {
+            console.error(`[reminders] Failed to send reminder to ${to}:`, err.message);
+            return null;
+          })
+      );
+    }
+  }
+  
+  // Send all reminder emails in parallel
+  if (emailPromises.length > 0) {
+    await Promise.all(emailPromises);
+    console.log(`[reminders] Sent ${emailPromises.length} reminder emails in parallel`);
   }
 });

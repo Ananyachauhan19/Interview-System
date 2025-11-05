@@ -123,7 +123,9 @@ export async function createEvent(req, res) {
       if (process.env.EMAIL_ON_EVENT === 'true') {
         const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
         const joinUrl = `${fe}/`;
-        for (const s of students) {
+        
+        // Send all emails in parallel
+        const emailPromises = students.map(s => {
           const lines = [
             `Hello ${s.name || s.email},`,
             `A new event has been created: ${name}.`,
@@ -133,8 +135,15 @@ export async function createEvent(req, res) {
             tpl.templateUrl ? `Template: ${tpl.templateUrl}` : null,
             `Join from your dashboard: ${joinUrl}`,
           ].filter(Boolean).join('\n');
-          await sendMail({ to: s.email, subject: `New Event: ${name}`, text: lines });
-        }
+          
+          return sendMail({ to: s.email, subject: `New Event: ${name}`, text: lines })
+            .catch(err => {
+              console.error(`[createEvent] Failed to send email to ${s.email}:`, err.message);
+              return null;
+            });
+        });
+        
+        await Promise.all(emailPromises);
       }
       console.log(`[createEvent] Emails sent successfully for event: ${event._id}`);
     } catch (e) {
@@ -187,9 +196,14 @@ export async function createSpecialEvent(req, res) {
         if (process.env.EMAIL_ON_PAIRING === 'true') {
           const byId = new Map(users.map((s) => [s._id.toString(), s]));
           const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+          
+          // Collect all email tasks
+          const emailPromises = [];
+          
           for (const p of created) {
             const a = byId.get(p.interviewer.toString());
             const b = byId.get(p.interviewee.toString());
+            
             if (a?.email) {
               const text = [
                 `Hi ${a.name || a.email},`,
@@ -197,8 +211,16 @@ export async function createSpecialEvent(req, res) {
                 b?.email ? `Their email: ${b.email}` : null,
                 `Propose time slots from your dashboard: ${fe}/`,
               ].filter(Boolean).join('\n');
-              await sendMail({ to: a.email, subject: `Pairing info: You interview ${b?.name || b?.email || 'a peer'}`, text });
+              
+              emailPromises.push(
+                sendMail({ to: a.email, subject: `Pairing info: You interview ${b?.name || b?.email || 'a peer'}`, text })
+                  .catch(err => {
+                    console.error(`[createSpecialEvent] Failed to send email to ${a.email}:`, err.message);
+                    return null;
+                  })
+              );
             }
+            
             if (b?.email) {
               const text = [
                 `Hi ${b.name || b.email},`,
@@ -206,26 +228,46 @@ export async function createSpecialEvent(req, res) {
                 a?.email ? `Their email: ${a.email}` : null,
                 `Review and accept slots from your dashboard: ${fe}/`,
               ].filter(Boolean).join('\n');
-              await sendMail({ to: b.email, subject: `Pairing info: You are interviewed by ${a?.name || a?.email || 'a peer'}`, text });
+              
+              emailPromises.push(
+                sendMail({ to: b.email, subject: `Pairing info: You are interviewed by ${a?.name || a?.email || 'a peer'}`, text })
+                  .catch(err => {
+                    console.error(`[createSpecialEvent] Failed to send email to ${b.email}:`, err.message);
+                    return null;
+                  })
+              );
             }
           }
+          
+          // Send all pairing emails in parallel
+          await Promise.all(emailPromises);
         }
       }
       if (process.env.EMAIL_ON_EVENT === 'true') {
         const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
-        for (const u of users) {
-          if (!u.email) continue;
-          const lines = [
-            `Hello ${u.name || u.email},`,
-            `You are invited to a special event: ${name}.`,
-            description ? `Description: ${description}` : null,
-            startDate ? `Starts: ${formatDateTime(startDate)}` : null,
-            endDate ? `Ends: ${formatDateTime(endDate)}` : null,
-            tpl.templateUrl ? `Template: ${tpl.templateUrl}` : null,
-            `Access it from your dashboard: ${fe}/`,
-          ].filter(Boolean).join('\n');
-          await sendMail({ to: u.email, subject: `Special Event: ${name}`, text: lines });
-        }
+        
+        // Send all special event emails in parallel
+        const emailPromises = users
+          .filter(u => u.email)
+          .map(u => {
+            const lines = [
+              `Hello ${u.name || u.email},`,
+              `You are invited to a special event: ${name}.`,
+              description ? `Description: ${description}` : null,
+              startDate ? `Starts: ${formatDateTime(startDate)}` : null,
+              endDate ? `Ends: ${formatDateTime(endDate)}` : null,
+              tpl.templateUrl ? `Template: ${tpl.templateUrl}` : null,
+              `Access it from your dashboard: ${fe}/`,
+            ].filter(Boolean).join('\n');
+            
+            return sendMail({ to: u.email, subject: `Special Event: ${name}`, text: lines })
+              .catch(err => {
+                console.error(`[createSpecialEvent] Failed to send email to ${u.email}:`, err.message);
+                return null;
+              });
+          });
+        
+        await Promise.all(emailPromises);
       }
       console.log(`[createSpecialEvent] Emails sent successfully for event: ${event._id}`);
     } catch (e) {

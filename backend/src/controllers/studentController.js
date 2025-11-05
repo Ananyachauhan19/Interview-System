@@ -192,13 +192,19 @@ export async function uploadStudentsCsv(req, res) {
   if (newStudents.length > 0) {
     setImmediate(async () => {
       try {
-        for (const student of newStudents) {
-          await sendOnboardingEmail({
+        // Send all emails in parallel for faster delivery
+        const emailPromises = newStudents.map(student => 
+          sendOnboardingEmail({
             to: student.email,
             studentId: student.studentId,
             password: student.password,
-          });
-        }
+          }).catch(err => {
+            console.error(`[uploadStudentsCsv] Failed to send email to ${student.email}:`, err.message);
+            return null; // Continue with other emails even if one fails
+          })
+        );
+        
+        await Promise.all(emailPromises);
         console.log(`[uploadStudentsCsv] Sent onboarding emails to ${newStudents.length} new students`);
       } catch (err) {
         console.error('[uploadStudentsCsv] Error sending onboarding emails:', err.message);
