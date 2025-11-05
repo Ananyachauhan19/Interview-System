@@ -2,6 +2,7 @@ import Papa from 'papaparse';
 import User from '../models/User.js';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { sendOnboardingEmail } from '../utils/mailer.js';
+import SpecialStudent from '../models/SpecialStudent.js';
 
 export async function listAllStudents(req, res) {
   try {
@@ -90,13 +91,13 @@ export async function checkStudentsCsv(req, res) {
     seenEmails.add(lowerEmail);
     seenStudentIds.add(studentid);
 
-    // Check existing in DB
+    // Check existing in User DB (keep this check for regular students)
     if (existingEmails.has(lowerEmail) || existingStudentIds.has(studentid)) {
       results.push({ row: row.__row, email, studentid, status: 'exists' });
       continue;
     }
 
-    // Mark as ready to create
+    // Mark as ready to create (don't show SpecialStudent info to user)
     results.push({ row: row.__row, email, studentid, status: 'ready' });
   }
 
@@ -169,6 +170,38 @@ export async function uploadStudentsCsv(req, res) {
 
     // Create user
     try {
+      // Check if student exists in SpecialStudent collection
+      const existingSpecial = await SpecialStudent.findOne({
+        $or: [{ email: lowerEmail }, { studentId: studentid }]
+      });
+      
+      if (existingSpecial) {
+        // Create User with SpecialStudent's preserved password
+        const user = await User.create({
+          role: 'student',
+          course: course || existingSpecial.course,
+          name: name || existingSpecial.name,
+          email,
+          studentId: studentid,
+          passwordHash: existingSpecial.passwordHash, // Preserve password
+          branch: branch || existingSpecial.branch,
+          college: college || existingSpecial.college,
+          mustChangePassword: existingSpecial.mustChangePassword, // Preserve password change status
+        });
+        
+        results.push({ 
+          row: row.__row, 
+          id: user._id, 
+          email, 
+          studentid, 
+          status: 'linked_from_special',
+          message: 'Student exists in special events - linked with preserved password'
+        });
+        
+        // Don't send onboarding email - they already have credentials
+        continue;
+      }
+      
       // Use student ID as default password if not provided
       const defaultPassword = password || studentid;
       const passwordHash = await User.hashPassword(defaultPassword);
@@ -260,4 +293,55 @@ function normalizeRow(r) {
 
 function generateTempPassword() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+// List all special students across all special events
+export async function listAllSpecialStudents(req, res) {
+  try {
+    const { search } = req.query;
+    let query = {};
+    
+    // Add search filter if provided
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      query = {
+        $or: [
+          { name: searchRegex },
+          { email: searchRegex },
+          { studentId: searchRegex },
+          { branch: searchRegex },
+          { course: searchRegex },
+          { college: searchRegex }
+        ]
+      };
+    }
+    
+    const specialStudents = await SpecialStudent.find(query)
+      .populate('events', 'name isSpecial')
+      .select('name email studentId course branch college events createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    res.json({ count: specialStudents.length, students: specialStudents });
+  } catch (err) {
+    console.error('Error listing special students:', err);
+    res.status(500).json({ error: 'Failed to fetch special students' });
+  }
+}
+
+// List special students for a specific event
+export async function listSpecialStudentsByEvent(req, res) {
+  try {
+    const { eventId } = req.params;
+    
+    const specialStudents = await SpecialStudent.find({ events: eventId })
+      .select('name email studentId course branch college createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    res.json({ count: specialStudents.length, students: specialStudents });
+  } catch (err) {
+    console.error('Error listing special students by event:', err);
+    res.status(500).json({ error: 'Failed to fetch special students for event' });
+  }
 }

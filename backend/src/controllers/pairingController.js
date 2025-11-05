@@ -1,6 +1,8 @@
 import { sendSlotProposalEmail, sendSlotAcceptanceEmail, sendInterviewScheduledEmail } from '../utils/mailer.js';
 import Event from '../models/Event.js';
 import Pair from '../models/Pair.js';
+import User from '../models/User.js';
+import SpecialStudent from '../models/SpecialStudent.js';
 import mongoose from 'mongoose';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
@@ -76,19 +78,98 @@ export async function listPairs(req, res) {
     throw new HttpError(400, 'Invalid event id');
   }
 
-  // Optional existence check to provide clearer 404 vs empty result
-  const exists = await Event.exists({ _id: id });
-  if (!exists) throw new HttpError(404, 'Event not found');
+  // Check if event exists and if it's a special event
+  const event = await Event.findById(id).lean();
+  if (!event) throw new HttpError(404, 'Event not found');
 
   let query = { event: id };
+  
   // If not admin, restrict to pairs where user is interviewer or interviewee
   if (req.user?.role !== 'admin') {
-    query = { event: id, $or: [{ interviewer: req.user._id }, { interviewee: req.user._id }] };
+    const userIdToCheck = req.user._id;
+    
+    // If it's a special event and user is a regular User, check if they have a SpecialStudent record
+    let specialStudentId = null;
+    if (event.isSpecial && !req.user?.isSpecialStudent && req.user?.email) {
+      const specialStudent = await SpecialStudent.findOne({
+        $or: [
+          { email: req.user.email },
+          { studentId: req.user.studentId }
+        ]
+      });
+      if (specialStudent) {
+        specialStudentId = specialStudent._id;
+        console.log('[listPairs] User also exists as SpecialStudent:', specialStudentId.toString());
+      }
+    }
+    
+    // Build query to check both User ID and SpecialStudent ID (if exists)
+    if (specialStudentId) {
+      query = { 
+        event: id, 
+        $or: [
+          { interviewer: userIdToCheck }, 
+          { interviewee: userIdToCheck },
+          { interviewer: specialStudentId },
+          { interviewee: specialStudentId }
+        ] 
+      };
+    } else {
+      query = { 
+        event: id, 
+        $or: [
+          { interviewer: userIdToCheck }, 
+          { interviewee: userIdToCheck }
+        ] 
+      };
+    }
   }
 
   let pairs;
   try {
-    pairs = await Pair.find(query).populate('interviewer interviewee').lean();
+    // Get pairs without population first
+    pairs = await Pair.find(query).lean();
+    
+    console.log('[listPairs] Found pairs:', pairs.length, 'for event:', event.name);
+    
+    // Manually populate based on event type
+    if (event.isSpecial) {
+      // For special events, populate from SpecialStudent collection
+      const studentIds = [...new Set([
+        ...pairs.map(p => p.interviewer?.toString()),
+        ...pairs.map(p => p.interviewee?.toString())
+      ].filter(Boolean))];
+      
+      // Find SpecialStudents that are enrolled in this specific event
+      const students = await SpecialStudent.find({ 
+        _id: { $in: studentIds },
+        events: event._id // Must be enrolled in this event
+      }).lean();
+      const studentMap = new Map(students.map(s => [s._id.toString(), s]));
+      
+      // Attach populated data to pairs
+      pairs = pairs.map(p => ({
+        ...p,
+        interviewer: studentMap.get(p.interviewer?.toString()) || null,
+        interviewee: studentMap.get(p.interviewee?.toString()) || null
+      }));
+    } else {
+      // For regular events, populate from User collection
+      const userIds = [...new Set([
+        ...pairs.map(p => p.interviewer?.toString()),
+        ...pairs.map(p => p.interviewee?.toString())
+      ].filter(Boolean))];
+      
+      const users = await User.find({ _id: { $in: userIds } }).lean();
+      const userMap = new Map(users.map(u => [u._id.toString(), u]));
+      
+      // Attach populated data to pairs
+      pairs = pairs.map(p => ({
+        ...p,
+        interviewer: userMap.get(p.interviewer?.toString()) || null,
+        interviewee: userMap.get(p.interviewee?.toString()) || null
+      }));
+    }
   } catch (e) {
     // Add lightweight diagnostics (safe) to help track unexpected failures
     console.error('[listPairs] query failed', { eventId: id, user: req.user?._id?.toString(), error: e.message });

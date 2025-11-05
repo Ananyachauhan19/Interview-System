@@ -14,7 +14,9 @@ export default function StudentDashboard() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [joinMsg, setJoinMsg] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
+  // Unified selection across all 6 tabs: regular/special + all/active/upcoming, and past
+  // Allowed values: 'regular-all','regular-active','regular-upcoming','special-all','special-active','special-upcoming','past'
+  const [selectedKey, setSelectedKey] = useState("regular-all");
 
   useEffect(() => {
     api.listEvents().then(setEvents).catch(console.error);
@@ -49,24 +51,47 @@ export default function StudentDashboard() {
   const fmt = (d) => (d ? new Date(d).toLocaleString() : "TBD");
 
   const now = new Date();
+  // Derive current event type and status from unified key
+  const currentType = selectedKey === "past" ? "past" : (selectedKey.startsWith("special") ? "special" : "regular");
+  const currentStatus = selectedKey === "past" ? "all" : (selectedKey.endsWith("-active") ? "active" : selectedKey.endsWith("-upcoming") ? "upcoming" : "all");
+
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          event.description.toLowerCase().includes(searchTerm.toLowerCase());
     if (!matchesSearch) return false;
-    if (activeFilter === "all") return true;
-    if (activeFilter === "active") {
-      const started = event.startDate ? new Date(event.startDate) <= now : false;
-      const notEnded = !event.endDate || new Date(event.endDate) > now;
-      return started && notEnded;
+    
+    // Calculate event status
+    const isPast = event.endDate && new Date(event.endDate) < now;
+    const isUpcoming = event.startDate && new Date(event.startDate) > now;
+    const isActive = !isPast && !isUpcoming;
+    
+    // Filter by event type (regular/special/past)
+    if (currentType === "past") {
+      return isPast;
+    } else if (currentType === "special") {
+      if (!event.isSpecial || isPast) return false;
+    } else if (currentType === "regular") {
+      if (event.isSpecial || isPast) return false;
     }
-    if (activeFilter === "upcoming") return event.startDate ? new Date(event.startDate) > now : false;
+    
+    // Filter by status (all/active/upcoming) - only for non-past events
+    if (currentType !== "past" && currentStatus !== "all") {
+      if (currentStatus === "active") {
+        return isActive;
+      }
+      if (currentStatus === "upcoming") {
+        return isUpcoming;
+      }
+    }
+    
     return true;
   });
 
   const stats = {
     totalEvents: events.length,
     joinedEvents: events.filter(e => e.joined).length,
-    completedEvents: events.filter(e => new Date(e.endDate) < new Date()).length
+    completedEvents: events.filter(e => e.endDate && new Date(e.endDate) < new Date()).length,
+    specialEvents: events.filter(e => e.isSpecial).length
   };
 
   const StatsComponent = () => (
@@ -78,7 +103,7 @@ export default function StudentDashboard() {
       {[
         { label: "Total Events", value: stats.totalEvents, icon: BookOpen, color: "sky" },
         { label: "Joined", value: stats.joinedEvents, icon: CheckCircle, color: "emerald" },
-        { label: "Completed", value: stats.completedEvents, icon: Award, color: "amber" }
+        { label: "Special", value: stats.specialEvents, icon: Award, color: "purple" }
       ].map((stat, index) => (
         <motion.div
           key={stat.label}
@@ -113,22 +138,62 @@ export default function StudentDashboard() {
         </span>
       </div>
       
-      {/* Filters */}
+      {/* Helper copy for tabs */}
+      <div className="mb-2 text-xs text-slate-600">
+        Select event type (Regular/Special) and filter by status (All/Active/Upcoming)
+      </div>
+      
+      {/* Event Type Tabs (top row) - highlight only when on "All" for that type to avoid double selection */}
       <div className="flex space-x-1 mb-3 p-1 bg-slate-100 rounded">
-        {["all", "active", "upcoming"].map((filter) => (
+        {[
+          { id: "regular", label: "Regular" },
+          { id: "special", label: "Special" },
+          { id: "past", label: "Past" }
+        ].map((tab) => (
           <button
-            key={filter}
-            onClick={() => setActiveFilter(filter)}
-            className={`flex-1 py-1 px-2 rounded text-xs font-medium transition-colors ${
-              activeFilter === filter
+            key={tab.id}
+            onClick={() => {
+              if (tab.id === "past") {
+                setSelectedKey("past");
+              } else {
+                // Switch type and default to its "all" view
+                setSelectedKey(`${tab.id}-all`);
+              }
+            }}
+            className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${
+              // Highlight the type tab whenever any status of that type is selected; past highlights only when selected
+              (tab.id === "past" && selectedKey === "past") ||
+              (tab.id !== "past" && selectedKey.startsWith(tab.id))
                 ? "bg-white text-slate-800 shadow-sm"
                 : "text-slate-600 hover:text-slate-800"
             }`}
           >
-            {filter.charAt(0).toUpperCase() + filter.slice(1)}
+            {tab.label}
           </button>
         ))}
       </div>
+      
+      {/* Status Filters (bottom row) - only show for regular and special events */}
+      {currentType !== "past" && (
+        <div className="flex space-x-1 mb-3 p-1 bg-slate-100 rounded">
+          {["all", "active", "upcoming"].map((filter) => (
+            <button
+              key={filter}
+              onClick={() => {
+                const type = selectedKey.startsWith("special") ? "special" : "regular";
+                setSelectedKey(`${type}-${filter}`);
+              }}
+              className={`flex-1 py-1 px-2 rounded text-xs font-medium transition-colors ${
+                currentStatus === filter
+                  ? "bg-white text-slate-800 shadow-sm"
+                  : "text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              {filter.charAt(0).toUpperCase() + filter.slice(1)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative mb-3">
@@ -157,7 +222,9 @@ export default function StudentDashboard() {
           filteredEvents.map((event, index) => {
             const active = selectedEvent && selectedEvent._id === event._id;
             const isUpcoming = new Date(event.startDate) > now;
-            const isActive = !isUpcoming && new Date(event.endDate) > now;
+            const isActive = !isUpcoming && (!event.endDate || new Date(event.endDate) > now);
+            const isPast = event.endDate && new Date(event.endDate) < now;
+            const isSpecial = event.isSpecial;
             
             return (
               <motion.button
@@ -168,28 +235,52 @@ export default function StudentDashboard() {
                 onClick={() => handleEventClick(event)}
                 className={`w-full text-left p-3 rounded-lg transition-colors border ${
                   active
-                    ? "border-sky-300 bg-sky-50"
+                    ? isSpecial
+                      ? "border-purple-300 bg-purple-50"
+                      : "border-sky-300 bg-sky-50"
                     : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300"
-                } ${event.joined ? "ring-1 ring-emerald-200" : ""}`}
+                } ${event.joined 
+                    ? isSpecial 
+                      ? "ring-1 ring-purple-200" 
+                      : "ring-1 ring-emerald-200" 
+                    : ""
+                }`}
               >
                 <div className="flex items-start gap-2">
                   <div className={`p-1.5 rounded ${
                     event.joined
-                      ? isActive 
-                        ? "bg-emerald-100 text-emerald-600" // Green for active events
-                        : "bg-amber-100 text-amber-600"     // Orange for upcoming events
+                      ? isSpecial
+                        ? "bg-purple-100 text-purple-600"
+                        : isActive 
+                        ? "bg-emerald-100 text-emerald-600"
+                        : isPast
+                        ? "bg-slate-100 text-slate-600"
+                        : "bg-amber-100 text-amber-600"
                       : "bg-sky-100 text-sky-600"
                   }`}>
                     {event.joined ? <CheckCircle size={14} /> : <Calendar size={14} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-2">
                       <h3 className="font-medium text-slate-800 truncate text-sm">{event.name}</h3>
-                      {event.joined && (
-                        <CheckCircle size={12} className={`flex-shrink-0 mt-0.5 ${
-                          isActive ? "text-emerald-500" : "text-amber-500"
-                        }`} />
-                      )}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {event.joined && (
+                          <CheckCircle size={12} className={`${
+                            isSpecial 
+                              ? "text-purple-500" 
+                              : isActive 
+                              ? "text-emerald-500" 
+                              : isPast
+                              ? "text-slate-500"
+                              : "text-amber-500"
+                          }`} />
+                        )}
+                        {isSpecial && (
+                          <span className="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded font-medium">
+                            Special
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">{event.description}</p>
                     <div className="flex items-center justify-between mt-1.5">
@@ -198,11 +289,17 @@ export default function StudentDashboard() {
                       </span>
                       {event.joined && (
                         <span className={`text-xs px-1.5 py-0.5 rounded ${
-                          isActive 
+                          isSpecial
+                            ? isActive
+                              ? "bg-purple-100 text-purple-700"
+                              : "bg-purple-50 text-purple-600"
+                            : isActive 
                             ? "bg-emerald-100 text-emerald-700" 
+                            : isPast
+                            ? "bg-slate-100 text-slate-600"
                             : "bg-amber-100 text-amber-700"
                         }`}>
-                          {isActive ? "Active" : "Upcoming"}
+                          {isActive ? "Active" : isPast ? "Past" : "Upcoming"}
                         </span>
                       )}
                     </div>
@@ -238,21 +335,32 @@ export default function StudentDashboard() {
           <motion.div
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 mb-3"
+            className="flex items-center gap-2 mb-3 flex-wrap"
           >
+            {selectedEvent.isSpecial && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                <Award size={12} />
+                <span>Special Event</span>
+              </div>
+            )}
             {selectedEvent.joined && (
               <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
-                new Date(selectedEvent.startDate) > new Date()
-                  ? "bg-amber-100 text-amber-700" // Orange for upcoming
-                  : "bg-emerald-100 text-emerald-700" // Green for active
+                selectedEvent.isSpecial
+                  ? "bg-purple-100 text-purple-700"
+                  : new Date(selectedEvent.startDate) > new Date()
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-emerald-100 text-emerald-700"
               }`}>
                 <CheckCircle size={12} />
                 <span>Joined</span>
               </div>
             )}
-            <span className="px-2 py-0.5 bg-sky-100 text-sky-700 rounded text-xs font-medium">
-              {new Date(selectedEvent.startDate) > new Date() ? 'Upcoming' : 'Active'}
-            </span>
+            {!selectedEvent.isSpecial && (
+              <span className="px-2 py-0.5 bg-sky-100 text-sky-700 rounded text-xs font-medium">
+                {new Date(selectedEvent.startDate) > new Date() ? 'Upcoming' : 
+                 new Date(selectedEvent.endDate) < new Date() ? 'Past' : 'Active'}
+              </span>
+            )}
           </motion.div>
           
           <h2 className="hidden lg:block text-xl font-semibold text-slate-800 mb-3">
@@ -308,9 +416,11 @@ export default function StudentDashboard() {
             })()
           ) : (
             <div className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-white font-medium text-sm ${
-              new Date(selectedEvent.startDate) > new Date()
-                ? "bg-amber-500" // Orange for upcoming
-                : "bg-emerald-500" // Green for active
+              selectedEvent.isSpecial
+                ? "bg-purple-500"
+                : new Date(selectedEvent.startDate) > new Date()
+                ? "bg-amber-500"
+                : "bg-emerald-500"
             }`}>
               <CheckCircle size={16} />
               <span>Successfully Joined</span>

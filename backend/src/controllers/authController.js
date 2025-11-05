@@ -3,21 +3,36 @@ export async function changePassword(req, res) {
   const { currentPassword, newPassword, confirmPassword } = req.body;
   const user = req.user;
   if (!user) throw new HttpError(401, 'Unauthorized');
+  
   if (user.role !== 'student') throw new HttpError(403, 'Only students can change password here');
   if (!currentPassword || !newPassword || !confirmPassword) throw new HttpError(400, 'All fields required');
   if (newPassword !== confirmPassword) throw new HttpError(400, 'New passwords do not match');
   if (newPassword.length < 6) throw new HttpError(400, 'New password must be at least 6 characters');
   if (!/[#@]/.test(newPassword)) throw new HttpError(400, 'New password must contain @ or #');
+  
+  // Verify current password
   const ok = await user.verifyPassword(currentPassword);
   if (!ok) throw new HttpError(401, 'Current password incorrect');
-  user.passwordHash = await User.hashPassword(newPassword);
-  user.mustChangePassword = false;
-  await user.save();
+  
+  // Update password
+  if (user.isSpecialStudent) {
+    user.passwordHash = await SpecialStudent.hashPassword(newPassword);
+    user.mustChangePassword = false;
+    await user.save();
+  } else {
+    user.passwordHash = await User.hashPassword(newPassword);
+    user.mustChangePassword = false;
+    await user.save();
+  }
+  
   res.json({ message: 'Password changed' });
 }
 import User from '../models/User.js';
+import SpecialStudent from '../models/SpecialStudent.js';
 import { signToken } from '../utils/jwt.js';
 import { HttpError } from '../utils/errors.js';
+import crypto from 'crypto';
+import { sendPasswordResetEmail } from '../utils/mailer.js';
 
 export async function seedAdminIfNeeded() {
   const email = process.env.ADMIN_EMAIL;
@@ -48,20 +63,60 @@ export async function login(req, res) {
   if (admin) {
     const ok = await admin.verifyPassword(password);
     if (!ok) throw new HttpError(401, 'Invalid credentials');
-    const token = signToken({ sub: admin._id, role: admin.role });
+    const token = signToken({ sub: admin._id, role: admin.role, email: admin.email });
     return res.json({ token, user: { id: admin._id, email: admin.email, role: admin.role, name: admin.name } });
   }
 
-  // Else attempt student by email OR studentId
+  // Try regular student by email OR studentId
   const student = await User.findOne({
     role: 'student',
     $or: [{ email: id }, { studentId: id }],
   });
-  if (!student) throw new HttpError(401, 'Invalid credentials');
-  const ok = await student.verifyPassword(password);
-  if (!ok) throw new HttpError(401, 'Invalid credentials');
-  const token = signToken({ sub: student._id, role: student.role });
-  res.json({ token, user: sanitizeUser(student) });
+  if (student) {
+    const ok = await student.verifyPassword(password);
+    if (!ok) throw new HttpError(401, 'Invalid credentials');
+    const token = signToken({ 
+      sub: student._id, 
+      role: student.role,
+      email: student.email,
+      studentId: student.studentId
+    });
+    return res.json({ token, user: sanitizeUser(student) });
+  }
+
+  // Try special student by email OR studentId
+  const specialStudent = await SpecialStudent.findOne({
+    $or: [{ email: id }, { studentId: id }],
+  });
+  if (specialStudent) {
+    const ok = await specialStudent.verifyPassword(password);
+    if (!ok) throw new HttpError(401, 'Invalid credentials');
+    const token = signToken({ 
+      sub: specialStudent._id, 
+      role: 'student', 
+      isSpecial: true,
+      email: specialStudent.email,
+      studentId: specialStudent.studentId
+    });
+    return res.json({ 
+      token, 
+      user: {
+        id: specialStudent._id,
+        role: 'student',
+        name: specialStudent.name,
+        email: specialStudent.email,
+        studentId: specialStudent.studentId,
+        mustChangePassword: specialStudent.mustChangePassword,
+        course: specialStudent.course,
+        branch: specialStudent.branch,
+        college: specialStudent.college,
+        isSpecialStudent: true,
+      }
+    });
+  }
+
+  // No match found
+  throw new HttpError(401, 'Invalid credentials');
 }
 
 export async function forcePasswordChange(req, res) {
@@ -86,4 +141,101 @@ function sanitizeUser(u) {
     branch: u.branch,
     college: u.college,
   };
+}
+
+// Request password reset - generates token and sends email
+export async function requestPasswordReset(req, res) {
+  const { email } = req.body;
+  if (!email) throw new HttpError(400, 'Email or Student ID is required');
+
+  const identifier = email.trim().toLowerCase();
+  
+  // Search by email or studentId
+  const user = await User.findOne({
+    role: 'student',
+    $or: [
+      { email: identifier },
+      { studentId: identifier }
+    ]
+  });
+  
+  // Always return success to prevent email enumeration
+  if (!user) {
+    return res.json({ message: 'If an account exists with this email or student ID, a password reset link has been sent.' });
+  }
+
+  // Check if user has an email address
+  if (!user.email) {
+    return res.json({ message: 'If an account exists with this email or student ID, a password reset link has been sent.' });
+  }
+
+  // Generate reset token (valid for 1 hour)
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+  
+  user.passwordResetToken = resetTokenHash;
+  user.passwordResetExpires = Date.now() + 3600000; // 1 hour
+  await user.save();
+
+  // Send email with reset link - support multiple frontend ports
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+  
+  console.log('[Password Reset] Reset URL generated:', resetUrl);
+  
+  try {
+    await sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      resetUrl,
+    });
+    console.log('[Password Reset] Email sent successfully to:', user.email);
+  } catch (err) {
+    console.error('Failed to send password reset email:', err);
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    throw new HttpError(500, 'Failed to send reset email. Please try again later.');
+  }
+
+  res.json({ message: 'If an account exists with this email or student ID, a password reset link has been sent.' });
+}
+
+// Reset password using token
+export async function resetPassword(req, res) {
+  try {
+    const { token, newPassword } = req.body;
+    
+    console.log('[Password Reset] Attempting to reset password with token:', token ? token.substring(0, 10) + '...' : 'none');
+    
+    if (!token || !newPassword) throw new HttpError(400, 'Token and new password are required');
+    if (newPassword.length < 8) throw new HttpError(400, 'Password must be at least 8 characters');
+    if (!/[#*]/.test(newPassword)) throw new HttpError(400, 'Password must contain * or #');
+
+    const resetTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    const user = await User.findOne({
+      passwordResetToken: resetTokenHash,
+      passwordResetExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      console.log('[Password Reset] No user found with valid token');
+      throw new HttpError(400, 'Invalid or expired reset token');
+    }
+
+    console.log('[Password Reset] User found, updating password for:', user.email);
+
+    user.passwordHash = await User.hashPassword(newPassword);
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    user.mustChangePassword = false;
+    await user.save();
+
+    console.log('[Password Reset] Password reset successful for:', user.email);
+    res.json({ message: 'Password has been reset successfully' });
+  } catch (err) {
+    console.error('[Password Reset] Error:', err.message);
+    throw err;
+  }
 }

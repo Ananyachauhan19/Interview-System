@@ -2,7 +2,7 @@
 
 import { Router } from 'express';
 import multer from 'multer';
-import { createEvent, listEvents, joinEvent, exportJoinedCsv, eventAnalytics, replaceEventTemplate, getTemplateUrl, deleteEventTemplate, getEvent, createSpecialEvent} from '../controllers/eventController.js';
+import { createEvent, listEvents, joinEvent, exportJoinedCsv, eventAnalytics, replaceEventTemplate, getTemplateUrl, deleteEventTemplate, getEvent, createSpecialEvent, checkSpecialEventCsv} from '../controllers/eventController.js';
 import { supabase } from '../utils/supabase.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
@@ -15,6 +15,7 @@ const multi = upload.fields([
 
 router.get('/', requireAuth, listEvents);
 router.post('/', requireAuth, requireAdmin, upload.single('template'), createEvent);
+router.post('/special/check-csv', requireAuth, requireAdmin, upload.single('csv'), checkSpecialEventCsv);
 router.post('/special', requireAuth, requireAdmin, multi, createSpecialEvent);
 router.get('/:id', requireAuth, requireAdmin, getEvent);
 router.post('/:id/join', requireAuth, joinEvent);

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import StudentLogin from "./auth/StudentLogin";
+import ResetPassword from "./auth/ResetPassword";
 import LandingPage from "./pages/LandingPage";
 import StudentDashboard from "./student/StudentDashboard";
 import ChangePassword from "./student/ChangePassword";
@@ -20,9 +21,10 @@ function AppContent() {
   const location = useLocation();
   const isMain = location.pathname === "/";
   const isStudentLogin = location.pathname === "/student";
+  const isResetPassword = location.pathname === "/reset-password";
   const isStudentDashboard = location.pathname.startsWith("/student/") && !isStudentLogin;
   const isAdmin = location.pathname.startsWith("/admin/");
-  const isLoginPage = isMain || isStudentLogin;
+  const isLoginPage = isMain || isStudentLogin || isResetPassword;
 
   return (
     <div className={gradientBg + " min-h-screen w-full flex flex-col"}>
@@ -31,6 +33,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/student" element={<StudentLogin />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/student/change-password" element={<ChangePassword />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/pairing" element={<PairingAndScheduling />} />

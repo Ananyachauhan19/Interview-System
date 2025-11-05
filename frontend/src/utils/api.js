@@ -16,14 +16,25 @@ async function request(path, { method = 'GET', body, headers = {}, formData } = 
     opts.body = JSON.stringify(body);
   }
   if (token) opts.headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${path}`, opts);
-  if (!res.ok) {
-    let err;
-    try { const j = await res.json(); err = j.error || JSON.stringify(j); } catch { err = res.statusText; }
-    throw new Error(err);
+  
+  const url = `${API_BASE}${path}`;
+  console.log(`[API] ${method} ${url}`, body ? { body } : '');
+  
+  try {
+    const res = await fetch(url, opts);
+    console.log(`[API] Response status: ${res.status}`);
+    
+    if (!res.ok) {
+      let err;
+      try { const j = await res.json(); err = j.error || JSON.stringify(j); } catch { err = res.statusText; }
+      throw new Error(err);
+    }
+    const ct = res.headers.get('content-type') || '';
+    return ct.includes('application/json') ? res.json() : res.text();
+  } catch (err) {
+    console.error(`[API] Error:`, err);
+    throw err;
   }
-  const ct = res.headers.get('content-type') || '';
-  return ct.includes('application/json') ? res.json() : res.text();
 }
 
 export const api = {
@@ -31,9 +42,13 @@ export const api = {
   // Auth (unified)
   login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password } }),
   changeStudentPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
+  requestPasswordReset: (email) => request('/auth/password/request-reset', { method: 'POST', body: { email } }),
+  resetPassword: (token, newPassword) => request('/auth/password/reset', { method: 'POST', body: { token, newPassword } }),
 
   // Students
   listAllStudents: (search = '') => request(`/students/list${search ? '?search=' + encodeURIComponent(search) : ''}`),
+  listAllSpecialStudents: (search = '') => request(`/students/special${search ? '?search=' + encodeURIComponent(search) : ''}`),
+  listSpecialStudentsByEvent: (eventId) => request(`/students/special/${eventId}`),
   checkStudentsCsv: (file) => {
     const fd = new FormData();
     fd.append('file', file);
@@ -56,6 +71,11 @@ export const api = {
     if (endDate) fd.append('endDate', endDate);
     if (template) fd.append('template', template);
     return request('/events', { method: 'POST', formData: fd });
+  },
+  checkSpecialEventCsv: (file) => {
+    const fd = new FormData();
+    fd.append('csv', file);
+    return request('/events/special/check-csv', { method: 'POST', formData: fd });
   },
   createSpecialEvent: ({ name, description, startDate, endDate, template, csv }) => {
     const fd = new FormData();

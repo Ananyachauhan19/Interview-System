@@ -1,6 +1,7 @@
 import Pair from '../models/Pair.js';
 import SlotProposal from '../models/SlotProposal.js';
 import Event from '../models/Event.js';
+import SpecialStudent from '../models/SpecialStudent.js';
 import { sendMail, buildICS, sendSlotProposalEmail, sendSlotAcceptanceEmail, sendInterviewScheduledEmail } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
 import crypto from 'crypto';
@@ -18,13 +19,75 @@ function formatDateTime(date) {
   });
 }
 
+// Helper to check user's role in a pair (handles cross-collection matching for users in both User and SpecialStudent)
+async function getUserRoleInPair(pair, user) {
+  const userId = user._id.toString();
+  const interviewerId = pair.interviewer.toString();
+  const intervieweeId = pair.interviewee.toString();
+  
+  // Direct ID match
+  if (userId === interviewerId) {
+    return { isInPair: true, isInterviewer: true, effectiveUserId: userId };
+  }
+  if (userId === intervieweeId) {
+    return { isInPair: true, isInterviewer: false, effectiveUserId: userId };
+  }
+  
+  // If user is a regular User, check if they have a SpecialStudent record for special event pairs
+  if (!user.isSpecialStudent && user.email) {
+    const specialStudent = await SpecialStudent.findOne({
+      $or: [
+        { email: user.email },
+        { studentId: user.studentId }
+      ]
+    });
+    
+    if (specialStudent) {
+      const specialStudentId = specialStudent._id.toString();
+      if (specialStudentId === interviewerId) {
+        return { isInPair: true, isInterviewer: true, effectiveUserId: specialStudentId };
+      }
+      if (specialStudentId === intervieweeId) {
+        return { isInPair: true, isInterviewer: false, effectiveUserId: specialStudentId };
+      }
+    }
+  }
+  
+  // If user is a SpecialStudent, check if they have a User record for regular event pairs
+  if (user.isSpecialStudent && user.email) {
+    const regularUser = await User.findOne({
+      $or: [
+        { email: user.email },
+        { studentId: user.studentId }
+      ]
+    });
+    
+    if (regularUser) {
+      const regularUserId = regularUser._id.toString();
+      if (regularUserId === interviewerId) {
+        return { isInPair: true, isInterviewer: true, effectiveUserId: regularUserId };
+      }
+      if (regularUserId === intervieweeId) {
+        return { isInPair: true, isInterviewer: false, effectiveUserId: regularUserId };
+      }
+    }
+  }
+  
+  return { isInPair: false, isInterviewer: null, effectiveUserId: null };
+}
+
 export async function proposeSlots(req, res) {
   const pair = await Pair.findById(req.params.pairId);
   if (!pair) throw new HttpError(404, 'Pair not found');
-  if (![pair.interviewer.toString(), pair.interviewee.toString()].includes(req.user._id.toString())) throw new HttpError(403, 'Not your pair');
+  
+  // Check if user is part of this pair (handles cross-collection matching)
+  const userRole = await getUserRoleInPair(pair, req.user);
+  if (!userRole.isInPair) throw new HttpError(403, 'Not your pair');
+  
   const { slots } = req.body || {}; // array of ISO strings (optional)
-  const isInterviewer = req.user._id.equals(pair.interviewer);
-  const partnerId = pair.interviewer.equals(req.user._id) ? pair.interviewee : pair.interviewer;
+  const isInterviewer = userRole.isInterviewer;
+  const effectiveUserId = userRole.effectiveUserId;
+  const partnerId = isInterviewer ? pair.interviewee : pair.interviewer;
 
   // If already scheduled, disallow any further modifications to slots.
   if (pair.status === 'scheduled') {
@@ -34,7 +97,7 @@ export async function proposeSlots(req, res) {
 
   // If no slots provided, return current proposals (read-only for both roles)
   if (!slots || slots.length === 0) {
-    const mineDoc = await SlotProposal.findOne({ pair: pair._id, user: req.user._id, event: pair.event });
+    const mineDoc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
     const partnerDoc = await SlotProposal.findOne({ pair: pair._id, user: partnerId, event: pair.event });
     const mine = (mineDoc?.slots || []).map(d => new Date(d).toISOString());
     const partner = (partnerDoc?.slots || []).map(d => new Date(d).toISOString());
@@ -59,14 +122,14 @@ export async function proposeSlots(req, res) {
   }
 
   const doc = await SlotProposal.findOneAndUpdate(
-    { pair: pair._id, user: req.user._id, event: pair.event },
+    { pair: pair._id, user: effectiveUserId, event: pair.event },
     { slots: dates },
     { upsert: true, new: true }
   );
 
   // Send email notification to the other party
   await pair.populate('interviewer interviewee');
-  const isInterviewerProposing = req.user._id.equals(pair.interviewer._id);
+  const isInterviewerProposing = isInterviewer;
   
   if (process.env.EMAIL_ON_PAIRING === 'true') {
     if (isInterviewerProposing && pair.interviewee?.email) {
@@ -104,10 +167,14 @@ export async function proposeSlots(req, res) {
 export async function confirmSlot(req, res) {
   const pair = await Pair.findById(req.params.pairId);
   if (!pair) throw new HttpError(404, 'Pair not found');
-  if (![pair.interviewer.toString(), pair.interviewee.toString()].includes(req.user._id.toString())) throw new HttpError(403, 'Not your pair');
+  
+  // Check if user is part of this pair (handles cross-collection matching)
+  const userRole = await getUserRoleInPair(pair, req.user);
+  if (!userRole.isInPair) throw new HttpError(403, 'Not your pair');
+  
   // Rule: Either party may confirm, but the chosen time must exist in the OTHER party's proposals.
-  const confirmerIsInterviewee = req.user._id.equals(pair.interviewee);
-  const confirmerIsInterviewer = req.user._id.equals(pair.interviewer);
+  const confirmerIsInterviewee = !userRole.isInterviewer;
+  const confirmerIsInterviewer = userRole.isInterviewer;
   if (!confirmerIsInterviewee && !confirmerIsInterviewer) throw new HttpError(403, 'Only pair participants can confirm the meeting time');
 
   if (pair.status === 'scheduled') throw new HttpError(400, 'Pair already scheduled; confirmation cannot be changed');
@@ -144,8 +211,7 @@ export async function confirmSlot(req, res) {
   await pair.populate('interviewer interviewee');
   
   if (process.env.EMAIL_ON_PAIRING === 'true') {
-    const confirmerIsInterviewee = req.user._id.equals(pair.interviewee._id);
-    
+    // Use the role we already determined
     if (confirmerIsInterviewee && pair.interviewer?.email) {
       // Interviewee accepted interviewer's proposed slot
       await sendSlotAcceptanceEmail({
@@ -155,7 +221,7 @@ export async function confirmSlot(req, res) {
         accepted: true,
       });
       console.log(`[Email] Slot acceptance sent to interviewer: ${pair.interviewer.email}`);
-    } else if (!confirmerIsInterviewee && pair.interviewee?.email) {
+    } else if (confirmerIsInterviewer && pair.interviewee?.email) {
       // Interviewer confirmed interviewee's proposed slot
       await sendSlotAcceptanceEmail({
         to: pair.interviewee.email,

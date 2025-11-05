@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { api, setToken } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Book, Pen, Backpack, GraduationCap, Library, Notebook, Pencil, School, Scissors, Ruler, Brain, Globe, Code, Laptop, Calculator, Microscope, FlaskConical, Palette, Music, Headphones, Gamepad, Watch, Tablet, BookOpen, Highlighter, FileText, Clipboard, Award, Star, Lightbulb } from 'lucide-react';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 const FloatingIcon = ({ icon: IconComp, delay, duration, startX, startY, endX, endY, size = 24, opacity = 0.65 }) => {
   return (
@@ -174,6 +175,7 @@ export default function StudentLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
 
   // Load saved email on component mount
@@ -386,9 +388,13 @@ export default function StudentLoginPage() {
                         />
                         <span className="text-sky-700/90 font-medium">Remember me</span>
                       </label>
-                      <a href="#" className="font-medium text-sky-600 hover:text-sky-700 transition-colors duration-300 hover:underline">
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotPassword(true)}
+                        className="font-medium text-sky-600 hover:text-sky-700 transition-colors duration-300 hover:underline"
+                      >
                         Forgot password?
-                      </a>
+                      </button>
                     </div>
                     <button
                       type="button"
@@ -410,6 +416,12 @@ export default function StudentLoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal 
+        isOpen={showForgotPassword} 
+        onClose={() => setShowForgotPassword(false)} 
+      />
 
       {/* Styles */}
       <style>{`

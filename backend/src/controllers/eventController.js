@@ -1,12 +1,13 @@
 import Event from '../models/Event.js';
 import { sendEventNotificationEmail } from '../utils/mailer.js';
 import User from '../models/User.js';
-import { sendMail } from '../utils/mailer.js';
+import { sendMail, sendOnboardingEmail } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
 import Pair from '../models/Pair.js';
 import Feedback from '../models/Feedback.js';
 import { supabase } from '../utils/supabase.js';
 import { parse } from 'csv-parse/sync';
+import SpecialStudent from '../models/SpecialStudent.js';
 
 // Helper function to format date as "6/11/2025, 12:16:00 PM"
 function formatDateTime(date) {
@@ -152,58 +153,350 @@ export async function createEvent(req, res) {
   });
 }
 
+// Helper to normalize CSV row fields
+function normalizeSpecialEventRow(row) {
+  return {
+    name: row.name || row.Name || row.NAME || '',
+    email: (row.email || row.Email || row.EMAIL || '').trim().toLowerCase(),
+    studentid: (row.studentid || row.studentId || row.StudentId || row.STUDENTID || row.studentID || row.student_id || '').toString().trim(),
+    branch: row.branch || row.Branch || row.BRANCH || '',
+    course: row.course || row.Course || row.COURSE || '',
+    college: row.college || row.College || row.COLLEGE || '',
+    password: row.password || row.Password || row.PASSWORD || '',
+  };
+}
+
+// Validate special event CSV and return detailed results
+export async function checkSpecialEventCsv(req, res) {
+  if (!req.file) return res.status(400).json({ error: 'CSV file required' });
+  
+  const csvText = req.file.buffer.toString('utf8');
+  let rows;
+  try {
+    rows = parse(csvText, { columns: true, skip_empty_lines: true });
+  } catch (e) {
+    return res.status(400).json({ error: 'Invalid CSV: ' + (e.message || e) });
+  }
+
+  const results = [];
+  const requiredFields = ['name', 'email', 'studentid', 'branch'];
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  
+  // Track duplicates inside the CSV
+  const seenEmails = new Set();
+  const seenStudentIds = new Set();
+
+  const normalizedRows = rows.map((r, idx) => ({ ...normalizeSpecialEventRow(r), __row: idx + 2 }));
+
+  for (const row of normalizedRows) {
+    const { name, email, studentid, branch } = row;
+
+    // Skip completely empty rows
+    if (!email && !studentid && !name) continue;
+
+    // Check required fields
+    const missing = requiredFields.filter((f) => {
+      if (f === 'studentid') return !studentid;
+      if (f === 'name') return !name;
+      if (f === 'email') return !email;
+      if (f === 'branch') return !branch;
+      return false;
+    });
+    
+    if (missing.length > 0) {
+      results.push({ row: row.__row, email, studentid, status: 'missing_fields', missing });
+      continue;
+    }
+
+    // Validate email format
+    if (!emailRegex.test(email)) {
+      results.push({ row: row.__row, email, studentid, status: 'invalid_email' });
+      continue;
+    }
+
+    // Check duplicates inside the CSV file
+    if (seenEmails.has(email) || seenStudentIds.has(studentid)) {
+      results.push({ row: row.__row, email, studentid, status: 'duplicate_in_file' });
+      continue;
+    }
+    seenEmails.add(email);
+    seenStudentIds.add(studentid);
+
+    // Mark as ready to create (no database checks shown to user)
+    results.push({ row: row.__row, email, studentid, status: 'ready' });
+  }
+
+  res.json({ count: results.length, results });
+}
+
 export async function createSpecialEvent(req, res) {
   const { name, description, startDate, endDate } = req.body;
+  
   // Validate dates
   const start = startDate ? new Date(startDate) : null;
   const end = endDate ? new Date(endDate) : null;
   const now = Date.now();
+  
   if (start && start.getTime() < now) throw new HttpError(400, 'Start date cannot be in the past');
   if (start && end && end.getTime() < start.getTime()) throw new HttpError(400, 'End date must be the same or after start date');
   if (!req.files?.csv?.[0]) throw new HttpError(400, 'CSV file required');
+
+  // Parse CSV
   let rows;
-  try { rows = parse(req.files.csv[0].buffer.toString('utf8'), { columns: true, skip_empty_lines: true }); }
-  catch (e) { throw new HttpError(400, 'Invalid CSV: ' + (e.message || e)); }
-  const identifiers = [];
-  for (const r of rows) {
-    const email = r.email || r.Email || r.EMAIL;
-    const sid = r.studentId || r.StudentId || r.STUDENTID || r.studentID;
-    if (email) identifiers.push({ type: 'email', value: String(email).trim() });
-    else if (sid) identifiers.push({ type: 'studentId', value: String(sid).trim() });
+  try {
+    rows = parse(req.files.csv[0].buffer.toString('utf8'), { columns: true, skip_empty_lines: true });
+  } catch (e) {
+    throw new HttpError(400, 'Invalid CSV: ' + (e.message || e));
   }
-  if (!identifiers.length) throw new HttpError(400, 'No valid identifiers');
-  const seen = new Set();
-  const dedup = identifiers.filter(i => { const k = i.type + ':' + i.value.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
-  const or = dedup.map(i => i.type === 'email' ? { email: i.value } : { studentId: i.value });
-  const users = await User.find({ $or: or }, '_id email name studentId');
+
+  // Upload template first
   const tpl = await uploadTemplate(req.files?.template?.[0]);
-  const event = await Event.create({ name, description, startDate: start || undefined, endDate: end || undefined, ...tpl, isSpecial: true, allowedParticipants: users.map(u => u._id) });
   
-  // Send response immediately - emails will be sent asynchronously
-  res.status(201).json({ eventId: event._id, invited: users.length, name: event.name });
-  
+  // Create event
+  const event = await Event.create({
+    name,
+    description,
+    startDate: start || undefined,
+    endDate: end || undefined,
+    ...tpl,
+    isSpecial: true,
+    allowedParticipants: [], // Will be filled with SpecialStudent IDs
+    participants: [], // Will be filled with SpecialStudent IDs
+  });
+
+  // Process CSV and create SpecialStudent records
+  const results = [];
+  const requiredFields = ['name', 'email', 'studentid', 'branch'];
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const seenEmails = new Set();
+  const seenStudentIds = new Set();
+  const normalizedRows = rows.map((r, idx) => ({ ...normalizeSpecialEventRow(r), __row: idx + 2 }));
+  const createdStudents = []; // For async email sending
+
+  for (const row of normalizedRows) {
+    const { course, name, email, studentid, password, branch, college } = row;
+
+    // Skip completely empty rows
+    if (!email && !studentid && !name) continue;
+
+    // Check required fields
+    const missing = requiredFields.filter((f) => {
+      if (f === 'studentid') return !studentid;
+      if (f === 'name') return !name;
+      if (f === 'email') return !email;
+      if (f === 'branch') return !branch;
+      return false;
+    });
+    
+    if (missing.length > 0) {
+      results.push({ row: row.__row, email, studentid, status: 'missing_fields', missing });
+      continue;
+    }
+
+    // Validate email format
+    if (!emailRegex.test(email)) {
+      results.push({ row: row.__row, email, studentid, status: 'invalid_email' });
+      continue;
+    }
+
+    // Check duplicates inside the CSV
+    if (seenEmails.has(email) || seenStudentIds.has(studentid)) {
+      results.push({ row: row.__row, email, studentid, status: 'duplicate_in_file' });
+      continue;
+    }
+    seenEmails.add(email);
+    seenStudentIds.add(studentid);
+
+    // Create or update SpecialStudent
+    try {
+      const defaultPassword = password || studentid;
+      
+      // First check if student exists in User collection
+      const existingUser = await User.findOne({ 
+        $or: [{ email }, { studentId: studentid }] 
+      });
+      
+      if (existingUser) {
+        // Student exists in User collection - add event to SpecialStudent with preserved User password
+        let specialStudent = await SpecialStudent.findOne({
+          $or: [{ email }, { studentId: studentid }]
+        });
+        
+        if (specialStudent) {
+          // SpecialStudent record exists - just add event if not already added
+          if (!specialStudent.events.includes(event._id)) {
+            specialStudent.events.push(event._id);
+            await specialStudent.save();
+            results.push({ 
+              row: row.__row, 
+              id: specialStudent._id, 
+              email, 
+              studentid, 
+              status: 'added_event_to_existing',
+              message: 'Student already exists - added to this event'
+            });
+          } else {
+            results.push({ 
+              row: row.__row, 
+              id: specialStudent._id, 
+              email, 
+              studentid, 
+              status: 'already_enrolled',
+              message: 'Student already enrolled in this event'
+            });
+          }
+        } else {
+          // Create SpecialStudent with User's password
+          specialStudent = await SpecialStudent.create({
+            name: existingUser.name,
+            email: existingUser.email,
+            studentId: existingUser.studentId,
+            branch: existingUser.branch || branch,
+            course: existingUser.course || course,
+            college: existingUser.college || college,
+            events: [event._id],
+            passwordHash: existingUser.passwordHash,
+            mustChangePassword: existingUser.mustChangePassword,
+          });
+          
+          results.push({ 
+            row: row.__row, 
+            id: specialStudent._id, 
+            email, 
+            studentid, 
+            status: 'linked_from_users',
+            message: 'Student exists in main database - linked with preserved password'
+          });
+        }
+        
+        // Add to createdStudents but don't send onboarding email
+        createdStudents.push({
+          _id: specialStudent._id,
+          email: specialStudent.email,
+          name: specialStudent.name,
+          studentId: specialStudent.studentId,
+          password: defaultPassword,
+          shouldSendOnboarding: false, // Don't send - they already have credentials
+        });
+        continue;
+      }
+
+      // Check if student exists in SpecialStudent collection
+      let specialStudent = await SpecialStudent.findOne({
+        $or: [{ email }, { studentId: studentid }]
+      });
+
+      if (specialStudent) {
+        // SpecialStudent exists - add event if not already added
+        if (!specialStudent.events.includes(event._id)) {
+          specialStudent.events.push(event._id);
+          await specialStudent.save();
+          
+          results.push({ 
+            row: row.__row, 
+            id: specialStudent._id, 
+            email, 
+            studentid, 
+            status: 'added_event_to_existing',
+            message: 'Student already exists - added to this event with preserved password'
+          });
+        } else {
+          results.push({ 
+            row: row.__row, 
+            id: specialStudent._id, 
+            email, 
+            studentid, 
+            status: 'already_enrolled',
+            message: 'Student already enrolled in this event'
+          });
+        }
+        
+        // Add to createdStudents but don't send onboarding email
+        createdStudents.push({
+          _id: specialStudent._id,
+          email: specialStudent.email,
+          name: specialStudent.name,
+          studentId: specialStudent.studentId,
+          password: defaultPassword,
+          shouldSendOnboarding: false, // Don't send - they already have credentials
+        });
+      } else {
+        // New student - create SpecialStudent with CSV password
+        const passwordHash = await User.hashPassword(defaultPassword);
+        
+        specialStudent = await SpecialStudent.create({
+          name,
+          email,
+          studentId: studentid,
+          branch,
+          course: course || undefined,
+          college: college || undefined,
+          events: [event._id],
+          passwordHash,
+          mustChangePassword: true,
+        });
+        
+        results.push({ row: row.__row, id: specialStudent._id, email, studentid, status: 'created' });
+        
+        // Add to createdStudents and send onboarding email
+        createdStudents.push({
+          _id: specialStudent._id,
+          email: specialStudent.email,
+          name: specialStudent.name,
+          studentId: specialStudent.studentId,
+          password: defaultPassword,
+          shouldSendOnboarding: true, // Send onboarding email
+        });
+      }
+    } catch (err) {
+      results.push({ row: row.__row, email, studentid, status: 'error', message: err.message });
+    }
+  }
+
+  // Update event with created student IDs
+  event.allowedParticipants = createdStudents.map(s => s._id);
+  event.participants = createdStudents.map(s => s._id);
+  await event.save();
+
+  // Send response immediately
+  res.status(201).json({
+    eventId: event._id,
+    invited: createdStudents.length,
+    name: event.name,
+    results,
+  });
+
   // Send emails and generate pairs asynchronously (non-blocking)
   setImmediate(async () => {
     try {
-      const ids = users.map(u => u._id.toString());
-      // Always set participants to invited users so analytics reflect the invited/joined count
-      event.participants = users.map(u => u._id);
-      await event.save();
-      if (ids.length >= 2) {
+      console.log(`[createSpecialEvent] Processing ${createdStudents.length} special students for event: ${event._id}`);
+      
+      // Generate pairs if we have at least 2 students
+      if (createdStudents.length >= 2) {
+        const ids = createdStudents.map(s => s._id.toString());
         const pairs = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
+        
         await Pair.deleteMany({ event: event._id });
-        const created = await Pair.insertMany(pairs.map(([a, b]) => ({ event: event._id, interviewer: a, interviewee: b })));
+        const created = await Pair.insertMany(
+          pairs.map(([a, b]) => ({
+            event: event._id,
+            interviewer: a,
+            interviewee: b,
+          }))
+        );
+        
+        console.log(`[createSpecialEvent] Created ${created.length} pairs`);
+
+        // Send pairing emails in parallel
         if (process.env.EMAIL_ON_PAIRING === 'true') {
-          const byId = new Map(users.map((s) => [s._id.toString(), s]));
+          const byId = new Map(createdStudents.map((s) => [s._id.toString(), s]));
           const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
-          
-          // Collect all email tasks
           const emailPromises = [];
-          
+
           for (const p of created) {
             const a = byId.get(p.interviewer.toString());
             const b = byId.get(p.interviewee.toString());
-            
+
             if (a?.email) {
               const text = [
                 `Hi ${a.name || a.email},`,
@@ -211,16 +504,16 @@ export async function createSpecialEvent(req, res) {
                 b?.email ? `Their email: ${b.email}` : null,
                 `Propose time slots from your dashboard: ${fe}/`,
               ].filter(Boolean).join('\n');
-              
+
               emailPromises.push(
                 sendMail({ to: a.email, subject: `Pairing info: You interview ${b?.name || b?.email || 'a peer'}`, text })
                   .catch(err => {
-                    console.error(`[createSpecialEvent] Failed to send email to ${a.email}:`, err.message);
+                    console.error(`[createSpecialEvent] Failed to send pairing email to ${a.email}:`, err.message);
                     return null;
                   })
               );
             }
-            
+
             if (b?.email) {
               const text = [
                 `Hi ${b.name || b.email},`,
@@ -228,50 +521,73 @@ export async function createSpecialEvent(req, res) {
                 a?.email ? `Their email: ${a.email}` : null,
                 `Review and accept slots from your dashboard: ${fe}/`,
               ].filter(Boolean).join('\n');
-              
+
               emailPromises.push(
                 sendMail({ to: b.email, subject: `Pairing info: You are interviewed by ${a?.name || a?.email || 'a peer'}`, text })
                   .catch(err => {
-                    console.error(`[createSpecialEvent] Failed to send email to ${b.email}:`, err.message);
+                    console.error(`[createSpecialEvent] Failed to send pairing email to ${b.email}:`, err.message);
                     return null;
                   })
               );
             }
           }
-          
-          // Send all pairing emails in parallel
+
           await Promise.all(emailPromises);
+          console.log(`[createSpecialEvent] Sent ${emailPromises.length} pairing emails`);
         }
       }
+
+      // Send onboarding emails to special students in parallel (only for new students)
+      if (process.env.EMAIL_ON_ONBOARD === 'true' && createdStudents.length > 0) {
+        const studentsNeedingOnboarding = createdStudents.filter(s => s.shouldSendOnboarding);
+        
+        if (studentsNeedingOnboarding.length > 0) {
+          const emailPromises = studentsNeedingOnboarding.map(student =>
+            sendOnboardingEmail({
+              to: student.email,
+              studentId: student.studentId,
+              password: student.password,
+            }).catch(err => {
+              console.error(`[createSpecialEvent] Failed to send onboarding email to ${student.email}:`, err.message);
+              return null;
+            })
+          );
+
+          await Promise.all(emailPromises);
+          console.log(`[createSpecialEvent] Sent onboarding emails to ${studentsNeedingOnboarding.length} new special students (${createdStudents.length - studentsNeedingOnboarding.length} skipped for existing students)`);
+        } else {
+          console.log(`[createSpecialEvent] No new students requiring onboarding emails (all students exist from previous events)`);
+        }
+      }
+
+      // Send event invitation emails in parallel
       if (process.env.EMAIL_ON_EVENT === 'true') {
         const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
-        
-        // Send all special event emails in parallel
-        const emailPromises = users
-          .filter(u => u.email)
-          .map(u => {
-            const lines = [
-              `Hello ${u.name || u.email},`,
-              `You are invited to a special event: ${name}.`,
-              description ? `Description: ${description}` : null,
-              startDate ? `Starts: ${formatDateTime(startDate)}` : null,
-              endDate ? `Ends: ${formatDateTime(endDate)}` : null,
-              tpl.templateUrl ? `Template: ${tpl.templateUrl}` : null,
-              `Access it from your dashboard: ${fe}/`,
-            ].filter(Boolean).join('\n');
-            
-            return sendMail({ to: u.email, subject: `Special Event: ${name}`, text: lines })
-              .catch(err => {
-                console.error(`[createSpecialEvent] Failed to send email to ${u.email}:`, err.message);
-                return null;
-              });
-          });
-        
+        const emailPromises = createdStudents.map(s => {
+          const lines = [
+            `Hello ${s.name || s.email},`,
+            `You are invited to a special event: ${name}.`,
+            description ? `Description: ${description}` : null,
+            startDate ? `Starts: ${formatDateTime(startDate)}` : null,
+            endDate ? `Ends: ${formatDateTime(endDate)}` : null,
+            tpl.templateUrl ? `Template: ${tpl.templateUrl}` : null,
+            `Access it from your dashboard: ${fe}/`,
+          ].filter(Boolean).join('\n');
+
+          return sendMail({ to: s.email, subject: `Special Event: ${name}`, text: lines })
+            .catch(err => {
+              console.error(`[createSpecialEvent] Failed to send event email to ${s.email}:`, err.message);
+              return null;
+            });
+        });
+
         await Promise.all(emailPromises);
+        console.log(`[createSpecialEvent] Sent event invitation emails to ${createdStudents.length} special students`);
       }
-      console.log(`[createSpecialEvent] Emails sent successfully for event: ${event._id}`);
+
+      console.log(`[createSpecialEvent] Successfully processed event: ${event._id}`);
     } catch (e) {
-      console.error('[createSpecialEvent] Async email/pairing failed', e.message);
+      console.error('[createSpecialEvent] Async processing failed:', e.message);
     }
   });
 }
@@ -289,14 +605,92 @@ export async function getEvent(req, res) {
 export async function listEvents(req, res) {
   const userId = req.user?._id;
   const isAdmin = req.user?.role === 'admin';
+  const isSpecialStudent = req.user?.isSpecialStudent || false;
+  
+  // Debug logging
+  console.log('[listEvents] User info:', {
+    userId: userId?.toString(),
+    role: req.user?.role,
+    isSpecialStudent,
+    userType: isSpecialStudent ? 'SpecialStudent' : 'User'
+  });
+  
   const events = await Event.find().sort({ createdAt: -1 }).lean();
+  
+  console.log('[listEvents] Total events:', events.length);
+  console.log('[listEvents] Special events:', events.filter(e => e.isSpecial).map(e => ({
+    id: e._id.toString(),
+    name: e.name,
+    allowedParticipants: e.allowedParticipants?.map(p => p.toString())
+  })));
+  
+  // If user is a regular User, check if they also exist as SpecialStudent
+  let specialStudentId = null;
+  if (!isSpecialStudent && userId && req.user?.email) {
+    const specialStudent = await SpecialStudent.findOne({
+      $or: [
+        { email: req.user.email },
+        { studentId: req.user.studentId }
+      ]
+    });
+    if (specialStudent) {
+      specialStudentId = specialStudent._id;
+      console.log('[listEvents] User also exists as SpecialStudent:', specialStudentId.toString());
+    }
+  }
+  
   const visible = events.filter(e => {
+    // Non-special events are visible to everyone
     if (!e.isSpecial) return true;
+    
+    // Admins see all events
     if (isAdmin) return true;
+    
+    // Special students can only see events they're enrolled in
+    if (isSpecialStudent && userId) {
+      const canSee = e.allowedParticipants?.some?.(p => p.toString() === userId.toString());
+      console.log('[listEvents] Special event check:', {
+        eventName: e.name,
+        eventId: e._id.toString(),
+        userId: userId.toString(),
+        allowedParticipants: e.allowedParticipants?.map(p => p.toString()),
+        canSee
+      });
+      return canSee;
+    }
+    
+    // Regular students - check if they exist as SpecialStudent and are allowed
+    if (specialStudentId) {
+      const canSee = e.allowedParticipants?.some?.(p => p.toString() === specialStudentId.toString());
+      console.log('[listEvents] User as SpecialStudent check:', {
+        eventName: e.name,
+        specialStudentId: specialStudentId.toString(),
+        allowedParticipants: e.allowedParticipants?.map(p => p.toString()),
+        canSee
+      });
+      return canSee;
+    }
+    
+    // Regular students cannot see special events (unless enrolled - checked above)
     if (!userId) return false;
     return e.allowedParticipants?.some?.(p => p.toString() === userId.toString());
   });
-  const mapped = visible.map(e => ({ ...e, joined: userId ? (e.participants?.some?.(p => p.toString() === userId.toString()) || false) : false }));
+  
+  console.log('[listEvents] Visible events:', visible.length);
+  
+  // For joined status, check both User ID and SpecialStudent ID
+  const mapped = visible.map(e => {
+    let joined = false;
+    if (userId) {
+      joined = e.participants?.some?.(p => p.toString() === userId.toString());
+    }
+    // Also check SpecialStudent ID if exists
+    if (!joined && specialStudentId) {
+      joined = e.participants?.some?.(p => p.toString() === specialStudentId.toString());
+    }
+    return { ...e, joined };
+  });
+  
   res.json(mapped);
 }
 

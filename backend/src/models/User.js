@@ -11,6 +11,8 @@ const userSchema = new mongoose.Schema({
   course: String,
   branch: String,
   college: String,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
 }, { timestamps: true });
 
 userSchema.methods.verifyPassword = async function (pw) {

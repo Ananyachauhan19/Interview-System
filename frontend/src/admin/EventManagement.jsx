@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, AlertCircle, ToggleRight, ToggleLeft, Calendar, FileText, Upload } from "lucide-react";
+import { CheckCircle, AlertCircle, ToggleRight, ToggleLeft, Calendar, FileText, Upload, X, Download } from "lucide-react";
 import { toast } from 'react-toastify';
 import DateTimePicker from "../components/DateTimePicker";
 
@@ -16,6 +16,9 @@ export default function EventManagement() {
   const [msg, setMsg] = useState("");
   const [specialMode, setSpecialMode] = useState(false);
   const [csvFile, setCsvFile] = useState(null);
+  const [csvValidationResults, setCsvValidationResults] = useState(null);
+  const [showValidationPopup, setShowValidationPopup] = useState(false);
+  const [csvError, setCsvError] = useState("");
   const navigate = useNavigate();
 
   const resetForm = () => {
@@ -25,6 +28,86 @@ export default function EventManagement() {
     setEndDate("");
     setTemplate(null);
     setCsvFile(null);
+    setCsvValidationResults(null);
+    setShowValidationPopup(false);
+    setCsvError("");
+  };
+
+  // Handle CSV file selection and validate
+  const handleCsvChange = async (e) => {
+    const file = e.target.files?.[0] || null;
+    setCsvFile(file);
+    setCsvError("");
+    setCsvValidationResults(null);
+    
+    if (!file) {
+      setShowValidationPopup(false);
+      return;
+    }
+    
+    // Validate CSV
+    try {
+      const result = await api.checkSpecialEventCsv(file);
+      setCsvValidationResults(result);
+      
+      // Check for errors
+      const hasErrors = result.results?.some(r => 
+        r.status === 'missing_fields' || 
+        r.status === 'invalid_email' || 
+        r.status === 'duplicate_in_file' ||
+        r.status === 'error'
+      );
+      
+      if (hasErrors) {
+        setCsvError("CSV file has validation errors. Please review and fix them.");
+        setShowValidationPopup(true);
+      } else {
+        const readyCount = result.results?.filter(r => r.status === 'ready').length || 0;
+        if (readyCount > 0) {
+          toast.success(`CSV validated: ${readyCount} student(s) ready`);
+        } else {
+          setCsvError("No valid students found in CSV");
+          setShowValidationPopup(true);
+        }
+      }
+    } catch (err) {
+      setCsvError(err.message || 'Failed to validate CSV');
+      toast.error('Failed to validate CSV: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  const downloadCsvErrors = () => {
+    if (!csvValidationResults?.results) return;
+    
+    const errorRows = csvValidationResults.results.filter(r => 
+      r.status !== 'ready'
+    );
+    
+    if (errorRows.length === 0) return;
+    
+    const headers = ['Row', 'Email', 'Student ID', 'Status', 'Details'];
+    const rows = errorRows.map(r => [
+      r.row || '',
+      r.email || '',
+      r.studentid || '',
+      r.status || '',
+      r.missing ? r.missing.join(', ') : (r.message || '')
+    ]);
+    
+    const csv = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'special-event-csv-errors.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   function localDateTimeNow() {
@@ -78,6 +161,27 @@ export default function EventManagement() {
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     setMsg(""); // Clear previous messages
+    
+    // Check CSV validation for special events
+    if (specialMode && csvFile) {
+      if (!csvValidationResults) {
+        setMsg('Please wait for CSV validation to complete');
+        return;
+      }
+      
+      const hasErrors = csvValidationResults.results?.some(r => 
+        r.status === 'missing_fields' || 
+        r.status === 'invalid_email' || 
+        r.status === 'duplicate_in_file' ||
+        r.status === 'error'
+      );
+      
+      if (hasErrors) {
+        setMsg('Please fix CSV validation errors before creating the event');
+        setShowValidationPopup(true);
+        return;
+      }
+    }
     
     // client-side validation: ensure start >= now and end >= start
     if (startDate) {
@@ -351,19 +455,35 @@ export default function EventManagement() {
                     <input
                       type="file"
                       accept=".csv"
-                      onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                      onChange={handleCsvChange}
                       className="hidden"
                       required={specialMode}
                     />
                   </label>
                   {csvFile && (
-                    <div className="flex items-center gap-2 mt-2 p-2 bg-white rounded border border-sky-200">
-                      <FileText className="w-4 h-4 text-sky-600" />
-                      <span className="text-sky-800 text-sm">{csvFile.name}</span>
+                    <div className="mt-2 space-y-2">
+                      <div className="flex items-center gap-2 p-2 bg-white rounded border border-sky-200">
+                        <FileText className="w-4 h-4 text-sky-600" />
+                        <span className="text-sky-800 text-sm">{csvFile.name}</span>
+                      </div>
+                      {csvValidationResults && (
+                        <button
+                          type="button"
+                          onClick={() => setShowValidationPopup(true)}
+                          className="text-xs text-sky-600 hover:text-sky-700 underline"
+                        >
+                          View validation results ({csvValidationResults.count} rows)
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {csvError && (
+                    <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                      {csvError}
                     </div>
                   )}
                   <p className="text-xs text-slate-600 mt-2">
-                    CSV headers: email or studentId. Only listed users can join.
+                    CSV headers: name, email, studentid, branch (required). Optional: course, college, password.
                   </p>
                 </div>
               )}
@@ -413,6 +533,115 @@ export default function EventManagement() {
           </AnimatePresence>
         </div>
       </motion.div>
+
+      {/* CSV Validation Popup Modal */}
+      <AnimatePresence>
+        {showValidationPopup && csvValidationResults && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowValidationPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            >
+              {/* Header */}
+              <div className="bg-sky-500 text-white px-6 py-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold">CSV Validation Results</h2>
+                <button
+                  onClick={() => setShowValidationPopup(false)}
+                  className="text-white hover:text-sky-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                {/* Summary */}
+                <div className="mb-4 flex gap-4">
+                  <div className="flex-1 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-emerald-700">
+                      {csvValidationResults.results?.filter(r => r.status === 'ready').length || 0}
+                    </div>
+                    <div className="text-xs text-emerald-600">Ready to create</div>
+                  </div>
+                  <div className="flex-1 bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-red-700">
+                      {csvValidationResults.results?.filter(r => r.status !== 'ready').length || 0}
+                    </div>
+                    <div className="text-xs text-red-600">Errors</div>
+                  </div>
+                </div>
+
+                {/* Download Errors Button */}
+                {csvValidationResults.results?.some(r => r.status !== 'ready') && (
+                  <button
+                    onClick={downloadCsvErrors}
+                    className="mb-4 flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Errors CSV
+                  </button>
+                )}
+
+                {/* Results Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border border-slate-200 rounded-lg">
+                    <thead>
+                      <tr className="bg-slate-50 text-left text-slate-700">
+                        <th className="py-2 px-3 text-xs font-semibold w-16">Row</th>
+                        <th className="py-2 px-3 text-xs font-semibold min-w-[180px]">Email</th>
+                        <th className="py-2 px-3 text-xs font-semibold w-24">Student ID</th>
+                        <th className="py-2 px-3 text-xs font-semibold w-32">Status</th>
+                        <th className="py-2 px-3 text-xs font-semibold">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvValidationResults.results.map((r, i) => (
+                        <tr
+                          key={i}
+                          className={`border-t border-slate-100 ${
+                            r.status !== 'ready' ? 'bg-red-50' : 'hover:bg-slate-50'
+                          }`}
+                        >
+                          <td className="py-2 px-3 text-xs text-slate-600">{r.row || '-'}</td>
+                          <td className="py-2 px-3 text-xs text-slate-800">{r.email || '-'}</td>
+                          <td className="py-2 px-3 text-xs text-slate-800">{r.studentid || '-'}</td>
+                          <td className={`py-2 px-3 text-xs font-medium ${
+                            r.status === 'ready' ? 'text-emerald-600' : 'text-red-600'
+                          }`}>
+                            {r.status}
+                          </td>
+                          <td className="py-2 px-3 text-xs text-slate-600">
+                            {r.missing ? `Missing: ${r.missing.join(', ')}` : r.message || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-slate-50 px-6 py-4 flex justify-end gap-3 border-t border-slate-200">
+                <button
+                  onClick={() => setShowValidationPopup(false)}
+                  className="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* react-toastify handles toasts globally */}
     </div>

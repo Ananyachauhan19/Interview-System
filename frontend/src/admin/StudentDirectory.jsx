@@ -7,14 +7,18 @@ import Fuse from "fuse.js";
 
 export default function StudentDirectory() {
   const [students, setStudents] = useState([]);
+  const [specialStudents, setSpecialStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("students"); // "students" or "special"
 
   // Configure Fuse.js for optimized fuzzy search
+  const currentStudents = activeTab === "students" ? students : specialStudents;
+  
   const fuse = useMemo(() => {
-    return new Fuse(students, {
+    return new Fuse(currentStudents, {
       keys: [
         { name: 'name', weight: 2 },
         { name: 'studentId', weight: 2 },
@@ -38,16 +42,16 @@ export default function StudentDirectory() {
         return value;
       }
     });
-  }, [students]);
+  }, [currentStudents]);
 
   useEffect(() => {
-    loadStudents();
-  }, []);
+    loadData();
+  }, [activeTab]);
 
   useEffect(() => {
     // Use Fuse.js for optimized fuzzy search
     if (!searchQuery.trim()) {
-      setFilteredStudents(students);
+      setFilteredStudents(currentStudents);
     } else {
       // Normalize search query to match getFn normalization
       const normalizedQuery = searchQuery.toLowerCase().replace(/[.\s-]/g, '');
@@ -56,15 +60,22 @@ export default function StudentDirectory() {
       const filtered = results.map(result => result.item);
       setFilteredStudents(filtered);
     }
-  }, [searchQuery, students, fuse]);
+  }, [searchQuery, currentStudents, fuse]);
 
-  const loadStudents = async () => {
+  const loadData = async () => {
     setIsLoading(true);
     setError("");
+    setSearchQuery(""); // Clear search when switching tabs
     try {
-      const data = await api.listAllStudents();
-      setStudents(data.students || []);
-      setFilteredStudents(data.students || []);
+      if (activeTab === "students") {
+        const data = await api.listAllStudents();
+        setStudents(data.students || []);
+        setFilteredStudents(data.students || []);
+      } else {
+        const data = await api.listAllSpecialStudents();
+        setSpecialStudents(data.students || []);
+        setFilteredStudents(data.students || []);
+      }
     } catch (err) {
       setError(err.message || "Failed to load students");
     } finally {
@@ -80,7 +91,7 @@ export default function StudentDirectory() {
 
   const clearSearch = () => {
     setSearchQuery("");
-    loadStudents();
+    loadData();
   };
 
   return (
@@ -92,15 +103,49 @@ export default function StudentDirectory() {
         className="flex-1 w-full max-w-7xl mx-auto px-4 py-6"
       >
         <div className="bg-white rounded-lg border border-slate-200 p-6">
+          {/* Tabs */}
+          <div className="flex items-center gap-2 mb-6 border-b border-slate-200">
+            <button
+              onClick={() => setActiveTab("students")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "students"
+                  ? "border-emerald-500 text-emerald-600"
+                  : "border-transparent text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              Students
+            </button>
+            <button
+              onClick={() => setActiveTab("special")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "special"
+                  ? "border-indigo-500 text-indigo-600"
+                  : "border-transparent text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              Special Students
+            </button>
+          </div>
+          
           {/* Header Section with Search */}
           <div className="flex items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <Users className="text-emerald-600 w-6 h-6" />
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                activeTab === "students" ? "bg-emerald-100" : "bg-indigo-100"
+              }`}>
+                <Users className={`w-6 h-6 ${
+                  activeTab === "students" ? "text-emerald-600" : "text-indigo-600"
+                }`} />
               </div>
               <div>
-                <h2 className="text-2xl font-semibold text-slate-800">Student Directory</h2>
-                <p className="text-slate-600 text-sm">View and search all registered students</p>
+                <h2 className="text-2xl font-semibold text-slate-800">
+                  {activeTab === "students" ? "Student Directory" : "Special Event Students"}
+                </h2>
+                <p className="text-slate-600 text-sm">
+                  {activeTab === "students" 
+                    ? "View and search all registered students" 
+                    : "View students from special events"}
+                </p>
               </div>
             </div>
 
@@ -137,7 +182,9 @@ export default function StudentDirectory() {
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-slate-600" />
                 <span className="text-sm font-medium text-slate-700">
-                  Total Students: <span className="text-emerald-600 font-semibold">{students.length}</span>
+                  Total {activeTab === "students" ? "Students" : "Special Students"}: <span className={`font-semibold ${
+                    activeTab === "students" ? "text-emerald-600" : "text-indigo-600"
+                  }`}>{currentStudents.length}</span>
                 </span>
               </div>
               {searchQuery && (
@@ -188,6 +235,9 @@ export default function StudentDirectory() {
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Branch</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Course</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">College</th>
+                    {activeTab === "special" && (
+                      <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Events</th>
+                    )}
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Registered</th>
                   </tr>
                 </thead>
@@ -199,7 +249,9 @@ export default function StudentDirectory() {
                       <tr key={s._id} className="hover:bg-slate-50">
                         <td className="px-4 py-2">
                           <div className="flex items-center gap-3 min-w-[220px]">
-                            <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-semibold text-sm">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                              activeTab === "students" ? "bg-sky-100 text-sky-700" : "bg-indigo-100 text-indigo-700"
+                            }`}>
                               {initial}
                             </div>
                             <div className="max-w-[280px]">
@@ -210,9 +262,26 @@ export default function StudentDirectory() {
                         </td>
                         <td className="px-4 py-2 text-slate-700 max-w-[260px] text-sm"><span className="truncate block">{s.email || "-"}</span></td>
                         <td className="px-4 py-2 text-slate-700 text-sm">{s.branch || "-"}</td>
-                        <td className="px-4 py-2 text-slate-700 text-sm">{s.course || "-"}</td>
-                        <td className="px-4 py-2 text-slate-700 max-w-[280px] text-sm"><span className="truncate block">{s.college || "-"}</span></td>
-                        <td className="px-4 py-2 text-slate-600 whitespace-nowrap text-sm">{registered}</td>
+                        <td className="px-4 py-2 text-slate-600 text-sm">{s.course || "-"}</td>
+                        <td className="px-4 py-2 text-slate-600 text-sm max-w-[200px]"><span className="truncate block">{s.college || "-"}</span></td>
+                        {activeTab === "special" && (
+                          <td className="px-4 py-2 text-slate-700 text-sm">
+                            <div className="flex flex-wrap gap-1">
+                              {s.events && s.events.length > 0 ? (
+                                s.events.map((evt, idx) => (
+                                  <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                                    {evt?.name || "Unknown Event"}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                  No Events
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                        <td className="px-4 py-2 text-slate-600 text-sm">{registered}</td>
                       </tr>
                     );
                   })}
