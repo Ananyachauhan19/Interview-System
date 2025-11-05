@@ -16,13 +16,30 @@ export async function sendOnboardingEmail({ to, studentId, password }) {
   return sendMail({ to, subject, html: renderTemplate(html, { studentId, password }) });
 }
 
+// Password reset email
+export async function sendPasswordResetEmail({ to, name, resetUrl }) {
+  const subject = 'Password Reset Request - Interview System';
+  const html = `
+    <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;">
+      <p>Dear {name},</p>
+      <p>We received a request to reset your password for the Interview System.</p>
+      <p>Click the link below to reset your password (valid for 1 hour):</p>
+      <p><a href="{resetUrl}" style="display:inline-block;padding:12px 24px;background:#0ea5e9;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">Reset Password</a></p>
+      <p>Or copy and paste this link in your browser:<br/>{resetUrl}</p>
+      <p>If you didn't request this password reset, please ignore this email.</p>
+      <p>Best regards,<br/>Interview System Team</p>
+    </div>
+  `;
+  return sendMail({ to, subject, html: renderTemplate(html, { name, resetUrl }) });
+}
+
 // Event notification email
 export async function sendEventNotificationEmail({ to, event, interviewer, interviewee }) {
   const subject = `Interview Event Scheduled: ${event.title}`;
   const html = `
     <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;">
       <p>Dear Student,</p>
-      <p>A new interview event has been scheduled for you. Please find the details below:</p>
+      <p>An interview event has been scheduled for you. Please find the details below:</p>
       <p>
         <strong>Event:</strong> {title}<br/>
         <strong>Date:</strong> {date}<br/>
