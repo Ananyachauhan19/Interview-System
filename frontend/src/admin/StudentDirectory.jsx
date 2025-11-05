@@ -1,8 +1,9 @@
 /* eslint-disable no-unused-vars */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { api } from "../utils/api";
 import { motion } from "framer-motion";
 import { Search, Users, Loader2, X } from "lucide-react";
+import Fuse from "fuse.js";
 
 export default function StudentDirectory() {
   const [students, setStudents] = useState([]);
@@ -11,27 +12,51 @@ export default function StudentDirectory() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Configure Fuse.js for optimized fuzzy search
+  const fuse = useMemo(() => {
+    return new Fuse(students, {
+      keys: [
+        { name: 'name', weight: 2 },
+        { name: 'studentId', weight: 2 },
+        { name: 'email', weight: 1.5 },
+        { name: 'branch', weight: 1 },
+        { name: 'course', weight: 1 },
+        { name: 'college', weight: 0.8 }
+      ],
+      threshold: 0.4, // More forgiving for variations like B.Tech vs btech
+      includeScore: true,
+      ignoreLocation: true,
+      minMatchCharLength: 2,
+      useExtendedSearch: true,
+      // Case insensitive and removes special characters for matching
+      getFn: (obj, path) => {
+        const value = Fuse.config.getFn(obj, path);
+        if (typeof value === 'string') {
+          // Normalize: lowercase, remove dots, spaces, and special chars
+          return value.toLowerCase().replace(/[.\s-]/g, '');
+        }
+        return value;
+      }
+    });
+  }, [students]);
+
   useEffect(() => {
     loadStudents();
   }, []);
 
   useEffect(() => {
-    // Client-side filtering for instant feedback
+    // Use Fuse.js for optimized fuzzy search
     if (!searchQuery.trim()) {
       setFilteredStudents(students);
     } else {
-      const query = searchQuery.toLowerCase().trim();
-      const filtered = students.filter(
-        (s) =>
-          s.name?.toLowerCase().includes(query) ||
-          s.email?.toLowerCase().includes(query) ||
-          s.studentId?.toLowerCase().includes(query) ||
-          s.branch?.toLowerCase().includes(query) ||
-          s.course?.toLowerCase().includes(query)
-      );
+      // Normalize search query to match getFn normalization
+      const normalizedQuery = searchQuery.toLowerCase().replace(/[.\s-]/g, '');
+      const results = fuse.search(normalizedQuery);
+      // Extract the items from Fuse results
+      const filtered = results.map(result => result.item);
       setFilteredStudents(filtered);
     }
-  }, [searchQuery, students]);
+  }, [searchQuery, students, fuse]);
 
   const loadStudents = async () => {
     setIsLoading(true);
@@ -49,17 +74,8 @@ export default function StudentDirectory() {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
-    try {
-      const data = await api.listAllStudents(searchQuery);
-      setStudents(data.students || []);
-      setFilteredStudents(data.students || []);
-    } catch (err) {
-      setError(err.message || "Failed to search students");
-    } finally {
-      setIsLoading(false);
-    }
+    // Search is now handled by the useEffect with Fuse.js
+    // No need for server-side search since we have all students loaded
   };
 
   const clearSearch = () => {
@@ -76,58 +92,44 @@ export default function StudentDirectory() {
         className="flex-1 w-full max-w-7xl mx-auto px-4 py-6"
       >
         <div className="bg-white rounded-lg border border-slate-200 p-6">
-          {/* Header Section */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-              <Users className="text-emerald-600 w-6 h-6" />
+          {/* Header Section with Search */}
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <Users className="text-emerald-600 w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-800">Student Directory</h2>
+                <p className="text-slate-600 text-sm">View and search all registered students</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-semibold text-slate-800">Student Directory</h2>
-              <p className="text-slate-600 text-sm">View and search all registered students</p>
-            </div>
-          </div>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="mb-6">
-            <div className="flex gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            {/* Compact Search Bar */}
+            <form onSubmit={handleSearch} className="w-80">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search by name, email, or student ID..."
+                  placeholder="Search students..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-700"
+                  className="w-full pl-9 pr-9 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-700"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={clearSearch}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
                   >
-                    <X className="w-4 h-4 text-slate-500" />
+                    <X className="w-3 h-3 text-slate-500" />
                   </button>
                 )}
               </div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-6 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-5 h-5" />
-                    Search
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+              <p className="text-xs text-slate-500 mt-1 ml-1">
+                Search by name, ID, email, branch, course, or college
+              </p>
+            </form>
+          </div>
 
           {/* Stats */}
           <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -181,12 +183,12 @@ export default function StudentDirectory() {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">Student</th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">Email</th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">Branch</th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">Course</th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">College</th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-600">Registered</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Student</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Email</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Branch</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Course</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">College</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Registered</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
@@ -195,22 +197,22 @@ export default function StudentDirectory() {
                     const registered = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "-";
                     return (
                       <tr key={s._id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 align-top">
+                        <td className="px-4 py-2">
                           <div className="flex items-center gap-3 min-w-[220px]">
-                            <div className="w-9 h-9 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-semibold">
+                            <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-semibold text-sm">
                               {initial}
                             </div>
                             <div className="max-w-[280px]">
-                              <div className="font-medium text-slate-900 truncate">{s.name || "Unknown"}</div>
+                              <div className="font-medium text-slate-900 truncate text-sm">{s.name || "Unknown"}</div>
                               <div className="text-xs text-slate-500 truncate">{s.studentId || "N/A"}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-slate-700 align-top max-w-[260px]"><span className="truncate block">{s.email || "-"}</span></td>
-                        <td className="px-4 py-3 text-slate-700 align-top">{s.branch || "-"}</td>
-                        <td className="px-4 py-3 text-slate-700 align-top">{s.course || "-"}</td>
-                        <td className="px-4 py-3 text-slate-700 align-top max-w-[280px]"><span className="truncate block">{s.college || "-"}</span></td>
-                        <td className="px-4 py-3 text-slate-600 align-top whitespace-nowrap">{registered}</td>
+                        <td className="px-4 py-2 text-slate-700 max-w-[260px] text-sm"><span className="truncate block">{s.email || "-"}</span></td>
+                        <td className="px-4 py-2 text-slate-700 text-sm">{s.branch || "-"}</td>
+                        <td className="px-4 py-2 text-slate-700 text-sm">{s.course || "-"}</td>
+                        <td className="px-4 py-2 text-slate-700 max-w-[280px] text-sm"><span className="truncate block">{s.college || "-"}</span></td>
+                        <td className="px-4 py-2 text-slate-600 whitespace-nowrap text-sm">{registered}</td>
                       </tr>
                     );
                   })}
