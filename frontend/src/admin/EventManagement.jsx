@@ -5,6 +5,7 @@ import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, AlertCircle, ToggleRight, ToggleLeft, Calendar, FileText, Upload } from "lucide-react";
 import { toast } from 'react-toastify';
+import DateTimePicker from "../components/DateTimePicker";
 
 export default function EventManagement() {
   const [title, setTitle] = useState("");
@@ -242,111 +243,65 @@ export default function EventManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-800 mb-1">Start Date & Time</label>
-                  <input
-                    type="datetime-local"
-                    value={toLocalInputValue(startDate)}
-                    onBlur={(e) => {
-                      // Validate on blur (when user finishes selecting)
-                      const v = e.target.value;
-                      if (!v) return;
-                      
-                      const selectedTime = parseLocalDateTime(v);
-                      const currentTime = Date.now();
-                      
-                      if (!isNaN(selectedTime) && selectedTime < currentTime) {
-                        setMsg('Start date and time cannot be in the past. Please select a future time.');
-                        setStartDate(''); // Clear invalid selection
-                        e.target.value = ''; // Clear input display
-                      }
-                    }}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      
-                      // Only update if valid value provided
-                      if (!v) {
+                  <DateTimePicker
+                    value={startDate}
+                    onChange={(isoDateTime) => {
+                      if (!isoDateTime) {
                         setStartDate('');
                         setMsg("");
                         return;
                       }
                       
-                      const selectedTime = parseLocalDateTime(v);
+                      const selectedTime = new Date(isoDateTime).getTime();
                       const currentTime = Date.now();
                       
-                      // Prevent selecting past times (extra validation layer)
                       if (!isNaN(selectedTime) && selectedTime < currentTime) {
-                        setMsg('Start date and time cannot be in the past');
+                        setMsg('Start date and time cannot be in the past. Please select a future time.');
+                        setStartDate('');
                         return;
                       }
                       
-                      setStartDate(v);
-                      setMsg(""); // Clear error messages when user makes changes
+                      setStartDate(isoDateTime);
+                      setMsg("");
                       
                       // If end date exists and is now before new start date, clear it
-                      if (endDate) {
-                        const newStart = parseLocalDateTime(v);
-                        const currentEnd = parseLocalDateTime(endDate);
-                        if (!isNaN(newStart) && !isNaN(currentEnd) && currentEnd < newStart) {
-                          setEndDate(''); // Clear end date so user selects a valid one
-                        }
+                      if (endDate && parseLocalDateTime(isoDateTime) > parseLocalDateTime(endDate)) {
+                        setEndDate('');
                       }
                     }}
-                    min={nowLocal}
-                    step="60"
-                    className="w-full bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
-                    required
+                    min={localDateTimeNow()}
+                    placeholder="Select start date and time"
+                    className="text-sm"
                   />
                   <p className="text-xs text-slate-500 mt-1">Past dates are disabled. Select current or future time only.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-800 mb-1">End Date & Time</label>
-                  <input
-                    type="datetime-local"
-                    value={toLocalInputValue(endDate)}
-                    onBlur={(e) => {
-                      // Validate on blur (when user finishes selecting)
-                      const v = e.target.value;
-                      if (!v || !startDate) return;
-                      
-                      const selectedEnd = parseLocalDateTime(v);
-                      const selectedStart = parseLocalDateTime(startDate);
-                      
-                      if (!isNaN(selectedStart) && !isNaN(selectedEnd) && selectedEnd < selectedStart) {
-                        setMsg('End date and time must be after or equal to start date and time');
-                        setEndDate(''); // Clear invalid selection
-                        e.target.value = ''; // Clear input display
-                      }
-                    }}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      
-                      // Only update if valid value provided
-                      if (!v) {
+                  <DateTimePicker
+                    value={endDate}
+                    onChange={(isoDateTime) => {
+                      if (!isoDateTime) {
                         setEndDate('');
                         setMsg("");
                         return;
                       }
                       
-                      const selectedEnd = parseLocalDateTime(v);
-                      const selectedStart = parseLocalDateTime(startDate);
+                      const selectedEnd = new Date(isoDateTime).getTime();
+                      const selectedStart = startDate ? new Date(startDate).getTime() : null;
                       
-                      // Prevent selecting end time before start time (extra validation layer)
-                      if (!isNaN(selectedStart) && !isNaN(selectedEnd) && selectedEnd < selectedStart) {
+                      if (selectedStart && !isNaN(selectedStart) && !isNaN(selectedEnd) && selectedEnd < selectedStart) {
                         setMsg('End date and time must be after or equal to start date and time');
+                        setEndDate('');
                         return;
                       }
                       
-                      setEndDate(v);
-                      setMsg(""); // Clear error messages when user makes changes
+                      setEndDate(isoDateTime);
+                      setMsg("");
                     }}
-                    min={startDate ? toLocalInputValue(startDate) : nowLocal}
-                    step="60"
+                    min={startDate || localDateTimeNow()}
                     disabled={!startDate}
-                    className={`w-full border p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm transition-colors ${
-                      !startDate 
-                        ? 'bg-slate-100 border-slate-200 cursor-not-allowed text-slate-400' 
-                        : 'bg-white border-slate-300'
-                    }`}
-                    required
+                    placeholder="Select end date and time"
+                    className="text-sm"
                   />
                   <p className="text-xs text-slate-500 mt-1">
                     {!startDate ? 'Select start date first' : 'Must be after or equal to start time'}

@@ -12,6 +12,7 @@ import {
   User,
   UserCheck,
 } from "lucide-react";
+import DateTimePicker from "../components/DateTimePicker";
 
 export default function PairingAndScheduling() {
   const [events, setEvents] = useState([]);
@@ -666,11 +667,10 @@ export default function PairingAndScheduling() {
                       </h3>
                       {slots.map((s, idx) => (
                         <div key={idx} className="flex items-center gap-2">
-                          <input
-                            type="datetime-local"
+                          <DateTimePicker
                             value={s}
-                            onChange={(e) => {
-                              const v = e.target.value;
+                            onChange={(isoDateTime) => {
+                              const v = isoDateTime;
                               // clamp to event window if available
                               const ev = selectedPair?.event || {};
                               const toLocal = (val) => {
@@ -718,35 +718,10 @@ export default function PairingAndScheduling() {
                                 prev.map((v2, i) => (i === idx ? v : v2))
                               );
                             }}
-                            min={
-                              selectedPair?.event?.startDate
-                                ? (function (ev) {
-                                    const d = new Date(ev);
-                                    const pad = (n) => String(n).padStart(2, "0");
-                                    const yyyy = d.getFullYear();
-                                    const mm = pad(d.getMonth() + 1);
-                                    const dd = pad(d.getDate());
-                                    const hh = pad(d.getHours());
-                                    const mi = pad(d.getMinutes());
-                                    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-                                  })(selectedPair.event.startDate)
-                                : undefined
-                            }
-                            max={
-                              selectedPair?.event?.endDate
-                                ? (function (ev) {
-                                    const d = new Date(ev);
-                                    const pad = (n) => String(n).padStart(2, "0");
-                                    const yyyy = d.getFullYear();
-                                    const mm = pad(d.getMonth() + 1);
-                                    const dd = pad(d.getDate());
-                                    const hh = pad(d.getHours());
-                                    const mi = pad(d.getMinutes());
-                                    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-                                  })(selectedPair.event.endDate)
-                                : undefined
-                            }
-                            className="flex-1 bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-800 text-sm w-full"
+                            min={selectedPair?.event?.startDate}
+                            max={selectedPair?.event?.endDate}
+                            placeholder="Select interview time"
+                            className="flex-1 text-sm"
                             disabled={isLocked}
                           />
                           {!isLocked && slots.length > 1 && (
