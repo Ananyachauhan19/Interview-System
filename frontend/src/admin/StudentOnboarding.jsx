@@ -322,7 +322,7 @@ export default function StudentOnboarding() {
                   <p><strong>Optional columns:</strong> Course, College, Password</p>
                 </div>
                 <div className="space-y-1">
-                  <p><strong>Password:</strong> Optional — auto-generated if not provided.</p>
+                  <p><strong>Password:</strong> If not provided, Student ID will be used as default password.</p>
                   <p><strong>Duplicates:</strong> Automatically detected and skipped.</p>
                 </div>
               </div>
@@ -370,7 +370,7 @@ export default function StudentOnboarding() {
                 { key: 'branch', label: 'Branch *', placeholder: 'Computer Science' },
                 { key: 'course', label: 'Course', placeholder: 'B.Tech' },
                 { key: 'college', label: 'College', placeholder: 'University Name' },
-                { key: 'password', label: 'Password (optional)', placeholder: '••••••••', type: 'password' },
+                { key: 'password', label: 'Password (defaults to Student ID)', placeholder: '••••••••', type: 'password' },
               ].map(({ key, label, placeholder, type }) => (
                 <div key={key} className="flex flex-col">
                   <label className="text-xs font-medium text-slate-700 mb-1">{label}</label>

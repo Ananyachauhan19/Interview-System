@@ -169,7 +169,9 @@ export async function uploadStudentsCsv(req, res) {
 
     // Create user
     try {
-      const passwordHash = await User.hashPassword(password || generateTempPassword());
+      // Use student ID as default password if not provided
+      const defaultPassword = password || studentid;
+      const passwordHash = await User.hashPassword(defaultPassword);
       const user = await User.create({
         role: 'student', course, name, email, studentId: studentid, passwordHash, branch, college,
         mustChangePassword: true,
@@ -178,7 +180,7 @@ export async function uploadStudentsCsv(req, res) {
       
       // Store for async email sending
       if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
-        newStudents.push({ email, studentId: studentid, password: password || 'Set via password reset' });
+        newStudents.push({ email, studentId: studentid, password: password || studentid });
       }
     } catch (err) {
       results.push({ row: row.__row, email, studentid, status: 'error', message: err.message });
@@ -223,14 +225,16 @@ export async function createStudent(req, res) {
     const exists = await User.findOne({ $or: [{ email }, { studentId: studentid }] });
     if (exists) return res.status(409).json({ error: 'Student with email or studentId already exists' });
 
-    const passwordHash = await User.hashPassword(password || generateTempPassword());
+    // Use student ID as default password if not provided
+    const defaultPassword = password || studentid;
+    const passwordHash = await User.hashPassword(defaultPassword);
     const user = await User.create({ role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, mustChangePassword: true });
 
     if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
       await sendOnboardingEmail({
         to: email,
         studentId: studentid,
-        password: password || 'Set via password reset',
+        password: defaultPassword,
       });
     }
 
