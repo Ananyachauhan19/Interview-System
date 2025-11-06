@@ -90,63 +90,37 @@ export async function createEvent(req, res) {
       // Always set participants to all students in DB (so analytics show joined count)
       event.participants = students.map(s => s._id);
       await event.save();
+      
+      // Generate pairs but don't send pairing emails
       if (ids.length >= 2) {
-        // Rotation pairing
         const pairs = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
         await Pair.deleteMany({ event: event._id });
-        const created = await Pair.insertMany(pairs.map(([a, b]) => ({ event: event._id, interviewer: a, interviewee: b })));
-        // Notify students if enabled
-        if (process.env.EMAIL_ON_PAIRING === 'true') {
-          const byId = new Map(students.map((s) => [s._id.toString(), s]));
-          const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
-          for (const p of created) {
-            const a = byId.get(p.interviewer.toString());
-            const b = byId.get(p.interviewee.toString());
-            if (a?.email) {
-              await sendEventNotificationEmail({
-                to: a.email,
-                event: { title: event.name, date: formatDateTime(event.startDate), details: event.description },
-                interviewer: a.name || a.email,
-                interviewee: b.name || b.email,
-              });
-            }
-            if (b?.email) {
-              await sendEventNotificationEmail({
-                to: b.email,
-                event: { title: event.name, date: formatDateTime(event.startDate), details: event.description },
-                interviewer: a.name || a.email,
-                interviewee: b.name || b.email,
-              });
-            }
-          }
-        }
+        await Pair.insertMany(pairs.map(([a, b]) => ({ event: event._id, interviewer: a, interviewee: b })));
+        console.log(`[createEvent] Created ${pairs.length} pairs`);
       }
+      
+      // Send event notification emails using unified mailer.js function
       if (process.env.EMAIL_ON_EVENT === 'true') {
-        const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
-        const joinUrl = `${fe}/`;
-        
-        // Send all emails in parallel
         const emailPromises = students.map(s => {
-          const lines = [
-            `Hello ${s.name || s.email},`,
-            `A new event has been created: ${name}.`,
-            description ? `Description: ${description}` : null,
-            startDate ? `Starts: ${formatDateTime(startDate)}` : null,
-            endDate ? `Ends: ${formatDateTime(endDate)}` : null,
-            tpl.templateUrl ? `Template: ${tpl.templateUrl}` : null,
-            `Join from your dashboard: ${joinUrl}`,
-          ].filter(Boolean).join('\n');
-          
-          return sendMail({ to: s.email, subject: `New Event: ${name}`, text: lines })
-            .catch(err => {
-              console.error(`[createEvent] Failed to send email to ${s.email}:`, err.message);
-              return null;
-            });
+          return sendEventNotificationEmail({
+            to: s.email,
+            event: {
+              title: name,
+              date: formatDateTime(startDate),
+              details: description,
+              templateUrl: tpl.templateUrl
+            },
+            interviewer: s.name || s.email,
+            interviewee: ''
+          }).catch(err => {
+            console.error(`[createEvent] Failed to send email to ${s.email}:`, err.message);
+            return null;
+          });
         });
         
         await Promise.all(emailPromises);
+        console.log(`[createEvent] Sent ${students.length} event notification emails`);
       }
-      console.log(`[createEvent] Emails sent successfully for event: ${event._id}`);
     } catch (e) {
       console.error('[createEvent] Async email/pairing failed', e.message);
     }
@@ -471,13 +445,13 @@ export async function createSpecialEvent(req, res) {
     try {
       console.log(`[createSpecialEvent] Processing ${createdStudents.length} special students for event: ${event._id}`);
       
-      // Generate pairs if we have at least 2 students
+      // Generate pairs but don't send pairing emails at creation
       if (createdStudents.length >= 2) {
         const ids = createdStudents.map(s => s._id.toString());
         const pairs = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
         
         await Pair.deleteMany({ event: event._id });
-        const created = await Pair.insertMany(
+        await Pair.insertMany(
           pairs.map(([a, b]) => ({
             event: event._id,
             interviewer: a,
@@ -485,56 +459,7 @@ export async function createSpecialEvent(req, res) {
           }))
         );
         
-        console.log(`[createSpecialEvent] Created ${created.length} pairs`);
-
-        // Send pairing emails in parallel
-        if (process.env.EMAIL_ON_PAIRING === 'true') {
-          const byId = new Map(createdStudents.map((s) => [s._id.toString(), s]));
-          const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
-          const emailPromises = [];
-
-          for (const p of created) {
-            const a = byId.get(p.interviewer.toString());
-            const b = byId.get(p.interviewee.toString());
-
-            if (a?.email) {
-              const text = [
-                `Hi ${a.name || a.email},`,
-                `You are the interviewer for: ${b?.name || b?.email}.`,
-                b?.email ? `Their email: ${b.email}` : null,
-                `Propose time slots from your dashboard: ${fe}/`,
-              ].filter(Boolean).join('\n');
-
-              emailPromises.push(
-                sendMail({ to: a.email, subject: `Pairing info: You interview ${b?.name || b?.email || 'a peer'}`, text })
-                  .catch(err => {
-                    console.error(`[createSpecialEvent] Failed to send pairing email to ${a.email}:`, err.message);
-                    return null;
-                  })
-              );
-            }
-
-            if (b?.email) {
-              const text = [
-                `Hi ${b.name || b.email},`,
-                `You will be interviewed by: ${a?.name || a?.email}.`,
-                a?.email ? `Their email: ${a.email}` : null,
-                `Review and accept slots from your dashboard: ${fe}/`,
-              ].filter(Boolean).join('\n');
-
-              emailPromises.push(
-                sendMail({ to: b.email, subject: `Pairing info: You are interviewed by ${a?.name || a?.email || 'a peer'}`, text })
-                  .catch(err => {
-                    console.error(`[createSpecialEvent] Failed to send pairing email to ${b.email}:`, err.message);
-                    return null;
-                  })
-              );
-            }
-          }
-
-          await Promise.all(emailPromises);
-          console.log(`[createSpecialEvent] Sent ${emailPromises.length} pairing emails`);
-        }
+        console.log(`[createSpecialEvent] Created ${pairs.length} pairs`);
       }
 
       // Send onboarding emails to special students in parallel (only for new students)
@@ -554,35 +479,33 @@ export async function createSpecialEvent(req, res) {
           );
 
           await Promise.all(emailPromises);
-          console.log(`[createSpecialEvent] Sent onboarding emails to ${studentsNeedingOnboarding.length} new special students (${createdStudents.length - studentsNeedingOnboarding.length} skipped for existing students)`);
+          console.log(`[createSpecialEvent] Sent onboarding emails to ${studentsNeedingOnboarding.length} new special students`);
         } else {
-          console.log(`[createSpecialEvent] No new students requiring onboarding emails (all students exist from previous events)`);
+          console.log(`[createSpecialEvent] No new students requiring onboarding emails`);
         }
       }
 
-      // Send event invitation emails in parallel
+      // Send event notification emails using unified mailer.js function
       if (process.env.EMAIL_ON_EVENT === 'true') {
-        const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
         const emailPromises = createdStudents.map(s => {
-          const lines = [
-            `Hello ${s.name || s.email},`,
-            `You are invited to a special event: ${name}.`,
-            description ? `Description: ${description}` : null,
-            startDate ? `Starts: ${formatDateTime(startDate)}` : null,
-            endDate ? `Ends: ${formatDateTime(endDate)}` : null,
-            tpl.templateUrl ? `Template: ${tpl.templateUrl}` : null,
-            `Access it from your dashboard: ${fe}/`,
-          ].filter(Boolean).join('\n');
-
-          return sendMail({ to: s.email, subject: `Special Event: ${name}`, text: lines })
-            .catch(err => {
-              console.error(`[createSpecialEvent] Failed to send event email to ${s.email}:`, err.message);
-              return null;
-            });
+          return sendEventNotificationEmail({
+            to: s.email,
+            event: {
+              title: event.name,
+              date: formatDateTime(startDate),
+              details: description,
+              templateUrl: event.templateUrl
+            },
+            interviewer: s.name || s.email,
+            interviewee: ''
+          }).catch(err => {
+            console.error(`[createSpecialEvent] Failed to send event email to ${s.email}:`, err.message);
+            return null;
+          });
         });
 
         await Promise.all(emailPromises);
-        console.log(`[createSpecialEvent] Sent event invitation emails to ${createdStudents.length} special students`);
+        console.log(`[createSpecialEvent] Sent ${createdStudents.length} event notification emails`);
       }
 
       console.log(`[createSpecialEvent] Successfully processed event: ${event._id}`);

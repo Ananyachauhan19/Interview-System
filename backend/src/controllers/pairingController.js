@@ -22,52 +22,28 @@ function formatDateTime(date) {
 
 // meeting link is already hidden until 1 hour prior in listPairs
 
-// Internal helper: generate rotation pairs for an event (not exported)
-// This is intentionally internal because pairs are auto-generated on event creation.
 async function generateRotationPairsForEvent(event) {
   const participants = event.participants || [];
   const ids = participants.map((s) => (s._id ? s._id.toString() : String(s)));
   if (ids.length < 2) return [];
   const pairs = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
   await Pair.deleteMany({ event: event._id });
-  const created = await Pair.insertMany(pairs.map(([a, b]) => ({ event: event._id, interviewer: a, interviewee: b })));
+  
+  // Determine model type based on whether event is special
+  const modelType = event.isSpecial ? 'SpecialStudent' : 'User';
+  
+  const created = await Pair.insertMany(
+    pairs.map(([a, b]) => ({ 
+      event: event._id, 
+      interviewer: a, 
+      interviewee: b,
+      interviewerModel: modelType,
+      intervieweeModel: modelType
+    }))
+  );
 
-  // Optionally notify participants when enabled
-  if (process.env.EMAIL_ON_PAIRING === 'true' && participants.length) {
-    const byId = new Map(participants.map((s) => [s._id?.toString?.() || String(s), s]));
-    const fe = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
-    for (const p of created) {
-      const a = byId.get(p.interviewer.toString());
-      const b = byId.get(p.interviewee.toString());
-      if (a?.email) {
-        const text = [
-          `Hi ${a.name || a.email},`,
-          `You are the interviewer for: ${b?.name || b?.email}.`,
-          b?.email ? `Their email: ${b.email}` : null,
-          `Propose time slots from your dashboard: ${fe}/`,
-        ].filter(Boolean).join('\n');
-        await sendSlotProposalEmail({
-          to: a.email,
-          interviewer: a.name || a.email,
-          slot: 'Please propose a slot from dashboard.',
-        });
-      }
-      if (b?.email) {
-        const text = [
-          `Hi ${b.name || b.email},`,
-          `You will be interviewed by: ${a?.name || a?.email}.`,
-          a?.email ? `Their email: ${a.email}` : null,
-          `Review and accept slots from your dashboard: ${fe}/`,
-        ].filter(Boolean).join('\n');
-        await sendSlotAcceptanceEmail({
-          to: b.email,
-          interviewee: b.name || b.email,
-          slot: 'Please review and accept slot from dashboard.',
-          accepted: false,
-        });
-      }
-    }
-  }
+  // Pairing emails removed - only send when slots are proposed
+  console.log(`[generateRotationPairs] Created ${created.length} pairs for event ${event._id} with model type: ${modelType}`);
 
   return created;
 }
@@ -88,9 +64,11 @@ export async function listPairs(req, res) {
   if (req.user?.role !== 'admin') {
     const userIdToCheck = req.user._id;
     
-    // If it's a special event and user is a regular User, check if they have a SpecialStudent record
-    let specialStudentId = null;
+    // Check for cross-collection IDs based on event type
+    let alternateId = null;
+    
     if (event.isSpecial && !req.user?.isSpecialStudent && req.user?.email) {
+      // Special event + regular User login -> check for SpecialStudent record
       const specialStudent = await SpecialStudent.findOne({
         $or: [
           { email: req.user.email },
@@ -98,20 +76,32 @@ export async function listPairs(req, res) {
         ]
       });
       if (specialStudent) {
-        specialStudentId = specialStudent._id;
-        console.log('[listPairs] User also exists as SpecialStudent:', specialStudentId.toString());
+        alternateId = specialStudent._id;
+        console.log('[listPairs] User also exists as SpecialStudent:', alternateId.toString());
+      }
+    } else if (!event.isSpecial && req.user?.isSpecialStudent && req.user?.email) {
+      // Regular event + SpecialStudent login -> check for User record
+      const regularUser = await User.findOne({
+        $or: [
+          { email: req.user.email },
+          { studentId: req.user.studentId }
+        ]
+      });
+      if (regularUser) {
+        alternateId = regularUser._id;
+        console.log('[listPairs] SpecialStudent also exists as User:', alternateId.toString());
       }
     }
     
-    // Build query to check both User ID and SpecialStudent ID (if exists)
-    if (specialStudentId) {
+    // Build query to check both primary ID and alternate ID (if exists)
+    if (alternateId) {
       query = { 
         event: id, 
         $or: [
           { interviewer: userIdToCheck }, 
           { interviewee: userIdToCheck },
-          { interviewer: specialStudentId },
-          { interviewee: specialStudentId }
+          { interviewer: alternateId },
+          { interviewee: alternateId }
         ] 
       };
     } else {
@@ -187,7 +177,9 @@ export async function setMeetingLink(req, res) {
   if (req.user?.role !== 'admin') throw new HttpError(403, 'Admin only');
   const { pairId } = req.params;
   const { meetingLink } = req.body;
-  const pair = await Pair.findById(pairId).populate('interviewer interviewee');
+  const pair = await Pair.findById(pairId)
+    .populate('interviewer')
+    .populate('interviewee');
   if (!pair) throw new HttpError(404, 'Pair not found');
   if (!pair.scheduledAt) throw new HttpError(400, 'Pair not scheduled yet');
   const now = Date.now();

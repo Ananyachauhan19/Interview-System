@@ -1,88 +1,28 @@
 import cron from 'node-cron';
 import crypto from 'crypto';
 import Pair from '../models/Pair.js';
-import { sendMail, buildICS } from '../utils/mailer.js';
-import { sendInterviewScheduledEmail } from '../utils/mailer.js';
 
-// Run every 5 minutes to send reminders
+// Run every 5 minutes to auto-generate meeting links for upcoming interviews
+// No reminder emails are sent - only meeting link generation
 cron.schedule('*/5 * * * *', async () => {
   const now = new Date();
   const oneHour = new Date(now.getTime() + 60 * 60 * 1000);
-  const oneDay = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  const pairs = await Pair.find({ scheduledAt: { $gte: now, $lte: oneDay } }).populate('interviewer interviewee');
-  
-  // Collect all email promises for parallel sending
-  const emailPromises = [];
+  const pairs = await Pair.find({ 
+    scheduledAt: { $gte: now, $lte: oneHour },
+    meetingLink: { $exists: false } // Only pairs without a link
+  });
   
   for (const p of pairs) {
-    const diff = p.scheduledAt - now;
-    const emails = [p.interviewer?.email, p.interviewee?.email].filter(Boolean);
-    
     // Auto-generate meeting link within 1 hour window if not already generated
-    if (!p.meetingLink && diff <= 60 * 60 * 1000) {
-      const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
-      const token = crypto.randomUUID();
-      p.meetingLink = `${base}/${token}`;
-      await p.save();
-      
-      const subjectLink = 'Meeting link available';
-      const textLink = `Your interview at ${p.scheduledAt.toISOString()} now has a meeting link: ${p.meetingLink}`;
-      
-      // Build ICS
-      const end = new Date(p.scheduledAt.getTime() + 30 * 60 * 1000);
-      const ics = buildICS({
-        uid: `${p._id}@interview-system`,
-        start: p.scheduledAt,
-        end,
-        summary: 'Interview Session',
-        description: 'Scheduled interview session',
-        url: p.meetingLink,
-        organizer: { name: p.interviewer?.name || 'Interviewer', email: p.interviewer?.email },
-        attendees: [
-          { name: p.interviewer?.name || 'Interviewer', email: p.interviewer?.email },
-          { name: p.interviewee?.name || 'Interviewee', email: p.interviewee?.email },
-        ].filter(a => a.email),
-      });
-      
-      const attachments = [{ filename: 'interview.ics', content: ics, contentType: 'text/calendar; charset=utf-8; method=REQUEST' }];
-      
-      // Add to parallel email batch
-      for (const to of emails) {
-        emailPromises.push(
-          sendInterviewScheduledEmail({
-            to,
-            interviewer: p.interviewer?.name || p.interviewer?.email,
-            interviewee: p.interviewee?.name || p.interviewee?.email,
-            event: { title: 'Interview', date: p.scheduledAt, details: 'Interview scheduled' },
-            link: p.meetingLink,
-          }).catch(err => {
-            console.error(`[reminders] Failed to send scheduled email to ${to}:`, err.message);
-            return null;
-          })
-        );
-      }
-    }
-    
-    let subject;
-    if (diff <= 60 * 60 * 1000) subject = 'Interview in 1 hour';
-    else subject = 'Interview in 1 day';
-    const showLink = diff <= 60 * 60 * 1000 && p.meetingLink;
-    
-    // Add reminder emails to parallel batch
-    for (const to of emails) {
-      emailPromises.push(
-        sendMail({ to, subject, text: `Time: ${p.scheduledAt.toISOString()} | Link: ${showLink ? p.meetingLink : 'TBA'}` })
-          .catch(err => {
-            console.error(`[reminders] Failed to send reminder to ${to}:`, err.message);
-            return null;
-          })
-      );
-    }
+    const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
+    const token = crypto.randomUUID();
+    p.meetingLink = `${base}/${token}`;
+    await p.save();
+    console.log(`[reminders] Auto-generated meeting link for pair ${p._id}: ${p.meetingLink}`);
   }
   
-  // Send all reminder emails in parallel
-  if (emailPromises.length > 0) {
-    await Promise.all(emailPromises);
-    console.log(`[reminders] Sent ${emailPromises.length} reminder emails in parallel`);
+  if (pairs.length > 0) {
+    console.log(`[reminders] Generated ${pairs.length} meeting links`);
   }
 });
+

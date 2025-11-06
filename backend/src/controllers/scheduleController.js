@@ -1,6 +1,7 @@
 import Pair from '../models/Pair.js';
 import SlotProposal from '../models/SlotProposal.js';
 import Event from '../models/Event.js';
+import User from '../models/User.js';
 import SpecialStudent from '../models/SpecialStudent.js';
 import { sendMail, buildICS, sendSlotProposalEmail, sendSlotAcceptanceEmail, sendInterviewScheduledEmail } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
@@ -22,8 +23,19 @@ function formatDateTime(date) {
 // Helper to check user's role in a pair (handles cross-collection matching for users in both User and SpecialStudent)
 async function getUserRoleInPair(pair, user) {
   const userId = user._id.toString();
-  const interviewerId = pair.interviewer.toString();
-  const intervieweeId = pair.interviewee.toString();
+  
+  // Handle both populated objects and ObjectId references
+  const interviewerId = pair.interviewer?._id ? pair.interviewer._id.toString() : pair.interviewer?.toString();
+  const intervieweeId = pair.interviewee?._id ? pair.interviewee._id.toString() : pair.interviewee?.toString();
+  
+  if (!interviewerId || !intervieweeId) {
+    console.error('[getUserRoleInPair] Pair missing interviewer or interviewee:', { 
+      pairId: pair._id, 
+      hasInterviewer: !!pair.interviewer, 
+      hasInterviewee: !!pair.interviewee 
+    });
+    return { isInPair: false, isInterviewer: null, effectiveUserId: null };
+  }
   
   // Direct ID match
   if (userId === interviewerId) {
@@ -77,8 +89,41 @@ async function getUserRoleInPair(pair, user) {
 }
 
 export async function proposeSlots(req, res) {
-  const pair = await Pair.findById(req.params.pairId);
+  let pair = await Pair.findById(req.params.pairId);
   if (!pair) throw new HttpError(404, 'Pair not found');
+  
+  // Get event to determine type
+  const event = await Event.findById(pair.event);
+  const isSpecialEvent = event?.isSpecial;
+  
+  // Set model types if missing (backward compatibility)
+  if (!pair.interviewerModel || !pair.intervieweeModel) {
+    const modelType = isSpecialEvent ? 'SpecialStudent' : 'User';
+    pair.interviewerModel = modelType;
+    pair.intervieweeModel = modelType;
+    await pair.save();
+  }
+  
+  // Store the raw IDs before population attempt
+  const rawInterviewerId = pair.interviewer;
+  const rawIntervieweeId = pair.interviewee;
+  
+  // Try to populate
+  pair = await Pair.findById(req.params.pairId)
+    .populate('interviewer')
+    .populate('interviewee');
+  
+  // If population failed (still an ObjectId, not an object with _id), manually fetch
+  const Model = isSpecialEvent ? SpecialStudent : User;
+  
+  if (!pair.interviewer || !pair.interviewer._id) {
+    console.log(`[proposeSlots] Manually fetching interviewer from ${Model.modelName}`);
+    pair.interviewer = await Model.findById(rawInterviewerId);
+  }
+  if (!pair.interviewee || !pair.interviewee._id) {
+    console.log(`[proposeSlots] Manually fetching interviewee from ${Model.modelName}`);
+    pair.interviewee = await Model.findById(rawIntervieweeId);
+  }
   
   // Check if user is part of this pair (handles cross-collection matching)
   const userRole = await getUserRoleInPair(pair, req.user);
@@ -87,7 +132,7 @@ export async function proposeSlots(req, res) {
   const { slots } = req.body || {}; // array of ISO strings (optional)
   const isInterviewer = userRole.isInterviewer;
   const effectiveUserId = userRole.effectiveUserId;
-  const partnerId = isInterviewer ? pair.interviewee : pair.interviewer;
+  const partnerId = isInterviewer ? pair.interviewee?._id : pair.interviewer?._id;
 
   // If already scheduled, disallow any further modifications to slots.
   if (pair.status === 'scheduled') {
@@ -108,7 +153,6 @@ export async function proposeSlots(req, res) {
   }
 
   // Validate slots within event window
-  const event = await Event.findById(pair.event);
   let startBoundary = event?.startDate ? new Date(event.startDate).getTime() : null;
   let endBoundary = event?.endDate ? new Date(event.endDate).getTime() : null;
   const dates = (slots || []).map((s) => new Date(s));
@@ -128,30 +172,28 @@ export async function proposeSlots(req, res) {
   );
 
   // Send email notification to the other party
-  await pair.populate('interviewer interviewee');
   const isInterviewerProposing = isInterviewer;
   
-  if (process.env.EMAIL_ON_PAIRING === 'true') {
-    if (isInterviewerProposing && pair.interviewee?.email) {
-      // Interviewer proposed slots -> notify interviewee
-      const slotsList = dates.map(d => formatDateTime(d)).join(', ');
-      await sendSlotProposalEmail({
-        to: pair.interviewee.email,
-        interviewer: pair.interviewer?.name || pair.interviewer?.email || 'Your interviewer',
-        slot: slotsList,
-      });
-      console.log(`[Email] Slot proposal sent to interviewee: ${pair.interviewee.email}`);
-    } else if (!isInterviewerProposing && pair.interviewer?.email) {
-      // Interviewee proposed alternative slots -> notify interviewer
-      const slotsList = dates.map(d => formatDateTime(d)).join(', ');
-      await sendSlotAcceptanceEmail({
-        to: pair.interviewer.email,
-        interviewee: pair.interviewee?.name || pair.interviewee?.email || 'The interviewee',
-        slot: slotsList,
-        accepted: false, // This is a new proposal, not acceptance
-      });
-      console.log(`[Email] New slot proposal sent to interviewer: ${pair.interviewer.email}`);
-    }
+  // Always send slot proposal/acceptance emails (part of the 4-email flow)
+  if (isInterviewerProposing && pair.interviewee?.email) {
+    // Interviewer proposed slots -> notify interviewee
+    const slotsList = dates.map(d => formatDateTime(d)).join(' | '); // Use | as separator to avoid comma conflict
+    await sendSlotProposalEmail({
+      to: pair.interviewee.email,
+      interviewer: pair.interviewer?.name || pair.interviewer?.email || 'Your interviewer',
+      slot: slotsList,
+    });
+    console.log(`[Email] Slot proposal sent to interviewee: ${pair.interviewee.email}`);
+  } else if (!isInterviewerProposing && pair.interviewer?.email) {
+    // Interviewee proposed alternative slots -> notify interviewer
+    const slotsList = dates.map(d => formatDateTime(d)).join(' | '); // Use | as separator to avoid comma conflict
+    await sendSlotAcceptanceEmail({
+      to: pair.interviewer.email,
+      interviewee: pair.interviewee?.name || pair.interviewee?.email || 'The interviewee',
+      slot: slotsList,
+      accepted: false, // This is a new proposal, not acceptance
+    });
+    console.log(`[Email] New slot proposal sent to interviewer: ${pair.interviewer.email}`);
   }
 
   // Return both proposals and intersection
@@ -165,8 +207,39 @@ export async function proposeSlots(req, res) {
 }
 
 export async function confirmSlot(req, res) {
-  const pair = await Pair.findById(req.params.pairId);
+  let pair = await Pair.findById(req.params.pairId);
   if (!pair) throw new HttpError(404, 'Pair not found');
+  
+  // Get event to determine type
+  const event = await Event.findById(pair.event);
+  const isSpecialEvent = event?.isSpecial;
+  
+  // Set model types if missing (backward compatibility)
+  if (!pair.interviewerModel || !pair.intervieweeModel) {
+    const modelType = isSpecialEvent ? 'SpecialStudent' : 'User';
+    pair.interviewerModel = modelType;
+    pair.intervieweeModel = modelType;
+    await pair.save();
+  }
+  
+  // Store the raw IDs before population attempt
+  const rawInterviewerId = pair.interviewer;
+  const rawIntervieweeId = pair.interviewee;
+  
+  // Try to populate
+  pair = await Pair.findById(req.params.pairId)
+    .populate('interviewer')
+    .populate('interviewee');
+  
+  // If population failed, manually fetch
+  const Model = isSpecialEvent ? SpecialStudent : User;
+  
+  if (!pair.interviewer || !pair.interviewer._id) {
+    pair.interviewer = await Model.findById(rawInterviewerId);
+  }
+  if (!pair.interviewee || !pair.interviewee._id) {
+    pair.interviewee = await Model.findById(rawIntervieweeId);
+  }
   
   // Check if user is part of this pair (handles cross-collection matching)
   const userRole = await getUserRoleInPair(pair, req.user);
@@ -184,14 +257,13 @@ export async function confirmSlot(req, res) {
   if (isNaN(scheduled.getTime())) throw new HttpError(400, 'Invalid scheduledAt');
 
   // Validate the selected time is among the OTHER party's proposed slots
-  const otherUserId = confirmerIsInterviewer ? pair.interviewee : pair.interviewer;
+  const otherUserId = confirmerIsInterviewer ? pair.interviewee?._id : pair.interviewer?._id;
   const otherProposal = await SlotProposal.findOne({ pair: pair._id, user: otherUserId, event: pair.event });
   if (!otherProposal || !otherProposal.slots?.length) throw new HttpError(400, 'No slots proposed by the other party to confirm');
   const proposedSet = new Set((otherProposal.slots || []).map((d) => new Date(d).getTime()));
   if (!proposedSet.has(scheduled.getTime())) throw new HttpError(400, 'Selected time is not one of the other party proposed slots');
 
   // Enforce event window on confirmation too
-  const event = await Event.findById(pair.event);
   if (event?.startDate && scheduled.getTime() < new Date(event.startDate).getTime()) throw new HttpError(400, 'Scheduled time before event start');
   if (event?.endDate && scheduled.getTime() > new Date(event.endDate).getTime()) throw new HttpError(400, 'Scheduled time after event end');
 
@@ -208,40 +280,68 @@ export async function confirmSlot(req, res) {
   await pair.save();
   
   // Send acceptance notification to the other party
-  await pair.populate('interviewer interviewee');
-  
-  if (process.env.EMAIL_ON_PAIRING === 'true') {
-    // Use the role we already determined
-    if (confirmerIsInterviewee && pair.interviewer?.email) {
-      // Interviewee accepted interviewer's proposed slot
-      await sendSlotAcceptanceEmail({
-        to: pair.interviewer.email,
-        interviewee: pair.interviewee?.name || pair.interviewee?.email || 'The interviewee',
-        slot: formatDateTime(scheduled),
-        accepted: true,
-      });
-      console.log(`[Email] Slot acceptance sent to interviewer: ${pair.interviewer.email}`);
-    } else if (confirmerIsInterviewer && pair.interviewee?.email) {
-      // Interviewer confirmed interviewee's proposed slot
-      await sendSlotAcceptanceEmail({
-        to: pair.interviewee.email,
-        interviewee: pair.interviewer?.name || pair.interviewer?.email || 'Your interviewer',
-        slot: formatDateTime(scheduled),
-        accepted: true,
-      });
-      console.log(`[Email] Slot confirmation sent to interviewee: ${pair.interviewee.email}`);
-    }
+  // Always send slot acceptance emails (part of the 4-email flow)
+  if (confirmerIsInterviewee && pair.interviewer?.email) {
+    // Interviewee accepted interviewer's proposed slot
+    await sendSlotAcceptanceEmail({
+      to: pair.interviewer.email,
+      interviewee: pair.interviewee?.name || pair.interviewee?.email || 'The interviewee',
+      slot: formatDateTime(scheduled),
+      accepted: true,
+    });
+    console.log(`[Email] Slot acceptance sent to interviewer: ${pair.interviewer.email}`);
+  } else if (confirmerIsInterviewer && pair.interviewee?.email) {
+    // Interviewer confirmed interviewee's proposed slot
+    await sendSlotAcceptanceEmail({
+      to: pair.interviewee.email,
+      interviewee: pair.interviewer?.name || pair.interviewer?.email || 'Your interviewer',
+      slot: formatDateTime(scheduled),
+      accepted: true,
+    });
+    console.log(`[Email] Slot confirmation sent to interviewee: ${pair.interviewee.email}`);
   }
   
-  // notify both
+  // notify both with interview scheduled email
   await sendMailForPair(pair);
   res.json(pair);
 }
 
 export async function rejectSlots(req, res) {
-  const pair = await Pair.findById(req.params.pairId);
+  let pair = await Pair.findById(req.params.pairId);
   if (!pair) throw new HttpError(404, 'Pair not found');
-  if (!req.user._id.equals(pair.interviewee)) throw new HttpError(403, 'Only interviewee can reject');
+  
+  // Get event to determine type
+  const event = await Event.findById(pair.event);
+  const isSpecialEvent = event?.isSpecial;
+  
+  // Set model types if missing (backward compatibility)
+  if (!pair.interviewerModel || !pair.intervieweeModel) {
+    const modelType = isSpecialEvent ? 'SpecialStudent' : 'User';
+    pair.interviewerModel = modelType;
+    pair.intervieweeModel = modelType;
+    await pair.save();
+  }
+  
+  // Store the raw IDs before population attempt
+  const rawInterviewerId = pair.interviewer;
+  const rawIntervieweeId = pair.interviewee;
+  
+  // Try to populate
+  pair = await Pair.findById(req.params.pairId)
+    .populate('interviewer')
+    .populate('interviewee');
+  
+  // If population failed, manually fetch
+  const Model = isSpecialEvent ? SpecialStudent : User;
+  
+  if (!pair.interviewer || !pair.interviewer._id) {
+    pair.interviewer = await Model.findById(rawInterviewerId);
+  }
+  if (!pair.interviewee || !pair.interviewee._id) {
+    pair.interviewee = await Model.findById(rawIntervieweeId);
+  }
+    
+  if (!req.user._id.equals(pair.interviewee?._id)) throw new HttpError(403, 'Only interviewee can reject');
   if (pair.status === 'scheduled') throw new HttpError(400, 'Pair already scheduled; cannot reject now');
   const { reason } = req.body || {};
   // Cooldown: max 2 rejections per 2 hours
@@ -263,7 +363,6 @@ export async function rejectSlots(req, res) {
   pair.rejectionHistory.push({ at: new Date(), reason: reason || '' });
   await pair.save();
   // Notify interviewer
-  await pair.populate('interviewer interviewee');
   if (pair.interviewer?.email) {
     await sendMail({
       to: pair.interviewer.email,
@@ -275,57 +374,69 @@ export async function rejectSlots(req, res) {
 }
 
 async function sendMailForPair(pair) {
-  await pair.populate('interviewer interviewee');
-  const when = pair.scheduledAt?.toISOString();
-  const subject = `Interview scheduled${when ? ` at ${when}` : ''}`;
+  if (!pair || !pair.scheduledAt) return;
   
   // Build ICS calendar attachment if scheduled
   let icsAttachment;
-  if (pair.scheduledAt) {
-    const end = new Date(new Date(pair.scheduledAt).getTime() + 30 * 60 * 1000); // default 30 min
-    const ics = buildICS({
-      uid: `${pair._id}@interview-system`,
-      start: pair.scheduledAt,
-      end,
-      summary: 'Interview Session',
-      description: 'Scheduled interview session',
-      url: pair.meetingLink,
-      organizer: { name: pair.interviewer?.name || 'Interviewer', email: pair.interviewer?.email },
-      attendees: [
-        { name: pair.interviewer?.name || 'Interviewer', email: pair.interviewer?.email },
-        { name: pair.interviewee?.name || 'Interviewee', email: pair.interviewee?.email },
-      ].filter(a => a.email),
-    });
-    icsAttachment = [{ filename: 'interview.ics', content: ics, contentType: 'text/calendar; charset=utf-8; method=REQUEST' }];
-  }
+  const end = new Date(new Date(pair.scheduledAt).getTime() + 30 * 60 * 1000); // default 30 min
+  const ics = buildICS({
+    uid: `${pair._id}@interview-system`,
+    start: pair.scheduledAt,
+    end,
+    summary: 'Interview Session',
+    description: 'Scheduled interview session',
+    url: pair.meetingLink,
+    organizer: { name: pair.interviewer?.name || 'Interviewer', email: pair.interviewer?.email },
+    attendees: [
+      { name: pair.interviewer?.name || 'Interviewer', email: pair.interviewer?.email },
+      { name: pair.interviewee?.name || 'Interviewee', email: pair.interviewee?.email },
+    ].filter(a => a.email),
+  });
+  icsAttachment = [{ filename: 'interview.ics', content: ics, contentType: 'text/calendar; charset=utf-8; method=REQUEST' }];
   
-  // Send professional scheduled email to both parties
-  const emails = [pair.interviewer?.email, pair.interviewee?.email].filter(Boolean);
+  // Prepare event details
   const event = {
     title: 'Interview Session',
-    date: pair.scheduledAt ? formatDateTime(pair.scheduledAt) : 'TBA',
+    date: formatDateTime(pair.scheduledAt),
     details: 'Your interview has been scheduled. Please join on time.',
   };
   
-  for (const to of emails) {
-    await sendInterviewScheduledEmail({
-      to,
-      interviewer: pair.interviewer?.name || pair.interviewer?.email || 'Interviewer',
-      interviewee: pair.interviewee?.name || pair.interviewee?.email || 'Interviewee',
-      event,
-      link: pair.meetingLink || 'Will be provided soon',
-    });
+  // Create email promises for both parties
+  const emailPromises = [];
+  
+  // Add scheduled interview email promises
+  [pair.interviewer, pair.interviewee].forEach(participant => {
+    if (!participant?.email) return;
     
-    // Also send calendar invite
-    if (icsAttachment) {
-      await sendMail({ 
-        to, 
+    // Add interview details email
+    emailPromises.push(
+      sendInterviewScheduledEmail({
+        to: participant.email,
+        interviewer: pair.interviewer?.name || pair.interviewer?.email || 'Interviewer',
+        interviewee: pair.interviewee?.name || pair.interviewee?.email || 'Interviewee',
+        event,
+        link: pair.meetingLink || 'Will be provided soon',
+      }).catch(err => {
+        console.error(`[sendMailForPair] Failed to send interview details to ${participant.email}:`, err.message);
+        return null;
+      })
+    );
+    
+    // Add calendar invite
+    emailPromises.push(
+      sendMail({ 
+        to: participant.email, 
         subject: 'Calendar Invite - Interview Session', 
         text: 'Please find the calendar invite attached.',
         attachments: icsAttachment 
-      });
-    }
-  }
+      }).catch(err => {
+        console.error(`[sendMailForPair] Failed to send calendar invite to ${participant.email}:`, err.message);
+        return null;
+      })
+    );
+  });
   
-  console.log('[Email] Interview scheduled emails sent to both parties');
+  // Send all emails in parallel
+  await Promise.all(emailPromises);
+  console.log('[Email] Interview scheduled emails and calendar invites sent to both parties');
 }

@@ -8,7 +8,6 @@ const PORT = process.env.PORT || 4000;
 
 await connectDb();
 await seedAdminIfNeeded();
-
 app.listen(PORT, () => {
   console.log(`API listening on port ${PORT}`);
 });

@@ -156,6 +156,11 @@ export default function PairingAndScheduling() {
 
   const handlePropose = async () => {
     setMessage("");
+    
+    // Prevent double submission
+    if (isLoading) return;
+    setIsLoading(true);
+    
     function parseLocalDateTime(value) {
       if (!value) return NaN;
       const [datePart, timePart] = String(value).split("T");
@@ -178,6 +183,7 @@ export default function PairingAndScheduling() {
     });
     if (!selectedPair || isoSlots.length === 0) {
       setMessage("Please select a pair and add at least one slot.");
+      setIsLoading(false);
       return;
     }
     // Validate slots against event boundaries
@@ -190,14 +196,17 @@ export default function PairingAndScheduling() {
       const parsed = isoSlots.map((s) => new Date(s));
       if (parsed.some((d) => isNaN(d.getTime()))) {
         setMessage("One or more slots are invalid");
+        setIsLoading(false);
         return;
       }
       if (startBoundary && parsed.some((d) => d.getTime() < startBoundary)) {
         setMessage("One or more slots are before the event start");
+        setIsLoading(false);
         return;
       }
       if (endBoundary && parsed.some((d) => d.getTime() > endBoundary)) {
         setMessage("One or more slots are after the event end");
+        setIsLoading(false);
         return;
       }
     } catch (e) {
@@ -205,6 +214,7 @@ export default function PairingAndScheduling() {
     }
     if (!isInterviewer && isoSlots.length > 3) {
       setMessage("You may propose up to 3 alternative slots");
+      setIsLoading(false);
       return;
     }
     try {
@@ -218,6 +228,8 @@ export default function PairingAndScheduling() {
       setCurrentProposals(ro);
     } catch (err) {
       setMessage(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
