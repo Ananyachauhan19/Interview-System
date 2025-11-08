@@ -242,9 +242,9 @@ export function AdminNavbar() {
             className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 transition-colors duration-200 border border-white/30"
           >
             {isMenuOpen ? (
-              <X className="text-white w-5 h-5" />
+              <X className="text-slate-700 w-5 h-5" />
             ) : (
-              <Menu className="text-white w-5 h-5" />
+              <Menu className="text-slate-700 w-5 h-5" />
             )}
           </motion.button>
         </div>

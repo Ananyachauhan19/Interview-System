@@ -38,11 +38,20 @@ export async function seedAdminIfNeeded() {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
   if (!email || !password) return;
-  const existing = await User.findOne({ email });
-  if (existing) return;
+  const emailLower = String(email).trim().toLowerCase();
+  const existing = await User.findOne({ role: 'admin', email: emailLower });
+  if (existing) {
+    if (String(process.env.ADMIN_FORCE_RESET).toLowerCase() === 'true') {
+      existing.passwordHash = await User.hashPassword(password);
+      existing.mustChangePassword = false;
+      await existing.save();
+      console.log('[Admin Seed] Existing admin password reset from ENV for', emailLower);
+    }
+    return;
+  }
   const passwordHash = await User.hashPassword(password);
-  await User.create({ role: 'admin', email, name: 'Admin', passwordHash, mustChangePassword: false });
-  console.log('Admin user seeded');
+  await User.create({ role: 'admin', email: emailLower, name: 'Admin', passwordHash, mustChangePassword: false });
+  console.log('[Admin Seed] Admin user seeded for', emailLower);
 }
 
 export function me(req, res) {
@@ -59,7 +68,8 @@ export async function login(req, res) {
   if (!id || !password) throw new HttpError(400, 'Missing credentials');
 
   // Try admin first (by email only)
-  const admin = await User.findOne({ role: 'admin', email: id });
+  const idLower = id.toLowerCase();
+  const admin = await User.findOne({ role: 'admin', email: idLower });
   if (admin) {
     const ok = await admin.verifyPassword(password);
     if (!ok) throw new HttpError(401, 'Invalid credentials');
@@ -70,7 +80,7 @@ export async function login(req, res) {
   // Try regular student by email OR studentId
   const student = await User.findOne({
     role: 'student',
-    $or: [{ email: id }, { studentId: id }],
+    $or: [{ email: idLower }, { studentId: id }],
   });
   if (student) {
     const ok = await student.verifyPassword(password);
@@ -86,7 +96,7 @@ export async function login(req, res) {
 
   // Try special student by email OR studentId
   const specialStudent = await SpecialStudent.findOne({
-    $or: [{ email: id }, { studentId: id }],
+    $or: [{ email: idLower }, { studentId: id }],
   });
   if (specialStudent) {
     const ok = await specialStudent.verifyPassword(password);
