@@ -215,7 +215,7 @@ export default function EventManagement() {
       const payloadEnd = endDate ? new Date(parseLocalDateTime(endDate)).toISOString() : undefined;
 
       // Show an immediate loading toast so user sees feedback instantly
-      toastId = toast.loading('Creating your event...');
+      toastId = toast.loading('Creating your mock interview...');
 
       if (specialMode) {
         const res = await api.createSpecialEvent({ name: title, description, startDate: payloadStart, endDate: payloadEnd, template, csv: csvFile });
@@ -223,7 +223,7 @@ export default function EventManagement() {
         const newId = res._id || res.eventId;
         
         // Update toast to success and navigate immediately
-        toast.update(toastId, { render: `Event "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
+        toast.update(toastId, { render: `Mock Interview "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
         setMsg(''); // Clear any error messages
         resetForm();
         
@@ -240,7 +240,7 @@ export default function EventManagement() {
         const eventName = ev.name || title;
         
         // Update toast to success and navigate immediately
-        toast.update(toastId, { render: `Event "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
+        toast.update(toastId, { render: `Mock Interview "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
         setMsg(''); // Clear any error messages
         resetForm();
         
@@ -253,7 +253,7 @@ export default function EventManagement() {
         }, 2000);
       }
     } catch (err) {
-      const errorMessage = err?.message || 'Failed to create event';
+      const errorMessage = err?.message || 'Failed to create mock interview';
       let userFriendlyError = errorMessage;
       
       // Make error messages user-friendly
@@ -294,8 +294,8 @@ export default function EventManagement() {
               <Calendar className="text-white w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-slate-800">Event Management</h2>
-              <p className="text-slate-600 text-sm">Create interview practice events</p>
+              <h2 className="text-xl font-semibold text-slate-800">Create Mock Interview</h2>
+              <p className="text-slate-600 text-sm">Set up a new interview practice session</p>
             </div>
           </div>
 
@@ -311,7 +311,7 @@ export default function EventManagement() {
               }`}
             >
               {specialMode ? <ToggleRight className="w-3 h-3" /> : <ToggleLeft className="w-3 h-3" />}
-              {specialMode ? 'Special Event' : 'Normal Event'}
+              {specialMode ? 'Special Interview' : 'Regular Interview'}
             </button>
           </div>
 
@@ -319,10 +319,10 @@ export default function EventManagement() {
             <div className="space-y-3">
               {/* Event Title */}
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">Event Title</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1">Interview Title</label>
                 <input
                   type="text"
-                  placeholder="Enter event title..."
+                  placeholder="Enter interview title..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
@@ -332,9 +332,9 @@ export default function EventManagement() {
 
               {/* Event Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">Event Description</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1">Interview Description</label>
                 <textarea
-                  placeholder="Describe the event purpose and format..."
+                  placeholder="Describe the interview purpose and format..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
@@ -497,7 +497,7 @@ export default function EventManagement() {
                     : 'bg-sky-500 hover:bg-sky-600'
                 }`}
               >
-                {specialMode ? 'Create Special Event' : 'Create Event'}
+                {specialMode ? 'Create Special Interview' : 'Create Mock Interview'}
               </button>
 
               {/* Help Text */}

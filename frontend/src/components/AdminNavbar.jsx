@@ -45,8 +45,8 @@ export function AdminNavbar() {
   const navItems = [
     { path: "/admin/onboarding", label: "Student Onboarding", Icon: Users },
     { path: "/admin/students", label: "Student Directory", Icon: User },
-    { path: "/admin/event", label: "Event Management", Icon: CalendarDays },
-    { path: "/admin/event/:id", label: "Event Details", Icon: BookOpen },
+    { path: "/admin/event", label: "Mock Interviews", Icon: CalendarDays },
+    { path: "/admin/event/:id", label: "Interview Details", Icon: BookOpen },
     { path: "/admin/feedback", label: "Feedback Review", Icon: GraduationCap },
   ];
 

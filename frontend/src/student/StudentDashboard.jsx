@@ -41,11 +41,11 @@ export default function StudentDashboard() {
     if (!selectedEvent) return;
     try {
       const res = await api.joinEvent(selectedEvent._id);
-      setJoinMsg(res?.message || "Successfully joined the event!");
+      setJoinMsg(res?.message || "Successfully joined the mock interview!");
       setSelectedEvent((prev) => (prev ? { ...prev, joined: true } : prev));
       setEvents((prev) => prev.map((e) => (e._id === selectedEvent._id ? { ...e, joined: true } : e)));
     } catch (err) {
-      const msg = err?.message || "Failed to join the event.";
+      const msg = err?.message || "Failed to join the mock interview.";
       // If backend restriction triggers, show popup modal with required copy
       if (msg.includes('created before your registration')) {
         setShowJoinRestriction(true);
@@ -109,7 +109,7 @@ export default function StudentDashboard() {
       className="grid grid-cols-3 gap-3 mb-4"
     >
       {[
-        { label: "Total Events", value: stats.totalEvents, icon: BookOpen, color: "sky" },
+        { label: "Total", value: stats.totalEvents, icon: BookOpen, color: "sky" },
         { label: "Joined", value: stats.joinedEvents, icon: CheckCircle, color: "emerald" },
         { label: "Special", value: stats.specialEvents, icon: Award, color: "purple" }
       ].map((stat, index) => (
@@ -140,7 +140,7 @@ export default function StudentDashboard() {
         <StatsComponent />
       </div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-slate-800">Events</h2>
+        <h2 className="text-lg font-semibold text-slate-800">Mock Interviews</h2>
         <span className="px-2 py-0.5 bg-sky-500 text-white rounded text-xs font-medium">
           {filteredEvents.length}
         </span>
@@ -148,7 +148,7 @@ export default function StudentDashboard() {
       
       {/* Helper copy for tabs */}
       <div className="mb-2 text-xs text-slate-600">
-        Select event type (Regular/Special) and filter by status (All/Active/Upcoming)
+        Select type (Regular/Special) and filter by status (All/Active/Upcoming)
       </div>
       
       {/* Event Type Tabs (top row) - highlight only when on "All" for that type to avoid double selection */}
@@ -208,7 +208,7 @@ export default function StudentDashboard() {
         <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500" />
         <input
           type="text"
-          placeholder="Search events..."
+          placeholder="Search mock interviews..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-7 pr-3 py-1.5 bg-slate-50 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
@@ -224,7 +224,7 @@ export default function StudentDashboard() {
             className="text-center text-slate-500 py-6"
           >
             <Calendar className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-            <p className="text-sm">No events found</p>
+            <p className="text-sm">No mock interviews found</p>
           </motion.div>
         ) : (
           filteredEvents.map((event, index) => {
@@ -348,7 +348,7 @@ export default function StudentDashboard() {
             {selectedEvent.isSpecial && (
               <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
                 <Award size={12} />
-                <span>Special Event</span>
+                <span>Special Interview</span>
               </div>
             )}
             {selectedEvent.joined && (
@@ -418,7 +418,7 @@ export default function StudentDashboard() {
                     joinDisabled ? "bg-slate-400 cursor-not-allowed" : "bg-sky-500 hover:bg-sky-600"
                   }`}
                 >
-                  {joinDisabled ? "Participation Closed" : "Join Event"}
+                  {joinDisabled ? "Participation Closed" : "Join Interview"}
                 </button>
               );
             })()
@@ -448,10 +448,10 @@ export default function StudentDashboard() {
             <div className="p-1.5 bg-sky-500 rounded">
               <Info className="w-3 h-3 text-white" />
             </div>
-            <h3 className="font-medium text-slate-800 text-sm">Event Preparation</h3>
+            <h3 className="font-medium text-slate-800 text-sm">Interview Preparation</h3>
           </div>
           <p className="text-slate-700 text-xs mb-2">
-            Review the event template to prepare for this session.
+            Review the template to prepare for this session.
           </p>
           <div className="flex justify-end">
             <button
@@ -517,7 +517,7 @@ export default function StudentDashboard() {
                 <div className="flex-1">
                   <h3 className="text-sm font-semibold text-slate-800 mb-1">Action not allowed</h3>
                   <p className="text-sm text-slate-600">
-                    You cannot join this event because it was created before your registration.
+                    You cannot join this mock interview because it was created before your registration.
                   </p>
                 </div>
               </div>
@@ -551,10 +551,10 @@ export default function StudentDashboard() {
           <BookOpen className="w-6 h-6 text-white" />
         </motion.div>
         <h1 className="text-xl font-semibold text-slate-800 mb-2">
-          Explore Learning Events
+          Mock Interview Sessions
         </h1>
         <p className="text-slate-600 text-sm mb-4">
-          Select an event to dive into exciting learning opportunities.
+          Select a mock interview to view details and join.
         </p>
         <StatsComponent />
       </motion.div>
