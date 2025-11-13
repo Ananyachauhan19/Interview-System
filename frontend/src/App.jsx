@@ -4,7 +4,6 @@ import ResetPassword from "./auth/ResetPassword";
 import LandingPage from "./pages/LandingPage";
 import StudentDashboard from "./student/StudentDashboard";
 import ChangePassword from "./student/ChangePassword";
-import PairingAndScheduling from "./student/PairingAndScheduling";
 import SessionAndFeedback from "./student/SessionAndFeedback";
 import StudentOnboarding from "./admin/StudentOnboarding";
 import StudentDirectory from "./admin/StudentDirectory";
@@ -36,7 +35,6 @@ function AppContent() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/student/change-password" element={<ChangePassword />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="/student/pairing" element={<PairingAndScheduling />} />
           <Route path="/student/session" element={<SessionAndFeedback />} />
           <Route path="/admin/onboarding" element={<StudentOnboarding />} />
           <Route path="/admin/students" element={<StudentDirectory />} />
