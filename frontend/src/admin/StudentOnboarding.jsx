@@ -419,8 +419,8 @@ export default function StudentOnboarding() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className={`mt-3 p-2 rounded text-xs font-medium ${
-                  singleMsg.toLowerCase().includes('created') 
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                  /success|added|created/i.test(singleMsg)
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                     : 'bg-red-50 text-red-700 border border-red-200'
                 }`}
               >

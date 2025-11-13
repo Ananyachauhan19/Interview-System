@@ -30,8 +30,8 @@ export default function ChangePassword() {
       setError('New password must be at least 8 characters');
       return;
     }
-    if (!/[*#]/.test(newPassword)) {
-      setError('New password must contain * or #');
+    if (!/[@]/.test(newPassword)) {
+      setError('New password must contain @');
       return;
     }
     try {
@@ -92,7 +92,7 @@ export default function ChangePassword() {
             </button>
           </div>
           <p className="text-xs text-gray-600 mt-1">
-            Minimum 8 characters, must include * or #
+            Minimum 8 characters, must include @
           </p>
         </div>
 

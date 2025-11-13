@@ -621,6 +621,18 @@ export async function joinEvent(req, res) {
   const event = await Event.findById(req.params.id);
   if (!event) throw new HttpError(404, 'Event not found');
   const userId = req.user._id;
+  // Restrict joining events that were created before the student's registration time
+  // Applies to both regular User and SpecialStudent (both have timestamps)
+  try {
+    const userCreatedAt = req.user?.createdAt ? new Date(req.user.createdAt) : null;
+    const eventCreatedAt = event.createdAt ? new Date(event.createdAt) : null;
+    if (userCreatedAt && eventCreatedAt && eventCreatedAt < userCreatedAt) {
+      throw new HttpError(403, 'You cannot join this event because it was created before your registration.');
+    }
+  } catch (e) {
+    if (e instanceof HttpError) throw e;
+    // Fallback: if timestamps are missing, allow normal flow
+  }
   if (event.isSpecial && !event.allowedParticipants?.some?.(p => p.equals(userId))) throw new HttpError(403, 'Not allowed for this special event');
   if (event.participants.some(p => p.equals(userId))) return res.json({ message: 'Already joined' });
   // capacity removed - no limit enforced

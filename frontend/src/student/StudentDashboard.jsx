@@ -13,6 +13,7 @@ export default function StudentDashboard() {
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [joinMsg, setJoinMsg] = useState("");
+  const [showJoinRestriction, setShowJoinRestriction] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   // Unified selection across all 6 tabs: regular/special + all/active/upcoming, and past
   // Allowed values: 'regular-all','regular-active','regular-upcoming','special-all','special-active','special-upcoming','past'
@@ -44,7 +45,14 @@ export default function StudentDashboard() {
       setSelectedEvent((prev) => (prev ? { ...prev, joined: true } : prev));
       setEvents((prev) => prev.map((e) => (e._id === selectedEvent._id ? { ...e, joined: true } : e)));
     } catch (err) {
-      setJoinMsg(err.message || "Failed to join the event.");
+      const msg = err?.message || "Failed to join the event.";
+      // If backend restriction triggers, show popup modal with required copy
+      if (msg.includes('created before your registration')) {
+        setShowJoinRestriction(true);
+        setJoinMsg("");
+      } else {
+        setJoinMsg(msg);
+      }
     }
   };
 
@@ -483,6 +491,45 @@ export default function StudentDashboard() {
               )}
               <span>{joinMsg}</span>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Join restriction modal */}
+      <AnimatePresence>
+        {showJoinRestriction && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white w-[90%] max-w-sm rounded-xl shadow-xl border border-slate-200 p-4"
+            >
+              <div className="flex items-start gap-2">
+                <div className="p-2 rounded bg-amber-100 text-amber-700">
+                  <Info className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-slate-800 mb-1">Action not allowed</h3>
+                  <p className="text-sm text-slate-600">
+                    You cannot join this event because it was created before your registration.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => setShowJoinRestriction(false)}
+                  className="px-3 py-1.5 text-sm rounded-lg bg-slate-800 text-white hover:bg-slate-700"
+                >
+                  OK
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
