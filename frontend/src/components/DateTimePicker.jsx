@@ -79,18 +79,21 @@ export default function DateTimePicker({
         }
       },
       onReady: (selectedDates, dateStr, instance) => {
-        // Add custom styling to the calendar
-        instance.calendarContainer.classList.add('flatpickr-custom');
+        // Add custom styling to the calendar - check if container exists
+        if (instance.calendarContainer) {
+          instance.calendarContainer.classList.add('flatpickr-custom');
+        }
       },
     };
 
     flatpickrRef.current = flatpickr(inputRef.current, options);
 
     return () => {
-      if (flatpickrRef.current) {
+      if (flatpickrRef.current && typeof flatpickrRef.current.destroy === 'function') {
         flatpickrRef.current.destroy();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [min, max, enableTime]);
 
   // Update value when prop changes

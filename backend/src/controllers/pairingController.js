@@ -7,6 +7,16 @@ import mongoose from 'mongoose';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
 
+// Fisher-Yates shuffle algorithm for random array shuffling
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 // Helper function to format date as "6/11/2025, 12:16:00 PM"
 function formatDateTime(date) {
   return new Date(date).toLocaleString('en-US', {
@@ -26,7 +36,10 @@ async function generateRotationPairsForEvent(event) {
   const participants = event.participants || [];
   const ids = participants.map((s) => (s._id ? s._id.toString() : String(s)));
   if (ids.length < 2) return [];
-  const pairs = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
+  
+  // Shuffle IDs to create randomized pairings for each event
+  const shuffledIds = shuffleArray(ids);
+  const pairs = shuffledIds.map((id, i) => [id, shuffledIds[(i + 1) % shuffledIds.length]]);
   await Pair.deleteMany({ event: event._id });
   
   // Determine model type based on whether event is special
@@ -43,7 +56,7 @@ async function generateRotationPairsForEvent(event) {
   );
 
   // Pairing emails removed - only send when slots are proposed
-  console.log(`[generateRotationPairs] Created ${created.length} pairs for event ${event._id} with model type: ${modelType}`);
+  console.log(`[generateRotationPairs] Created ${created.length} randomized pairs for event ${event._id} with model type: ${modelType}`);
 
   return created;
 }

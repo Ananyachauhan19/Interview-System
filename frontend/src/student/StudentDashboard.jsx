@@ -38,7 +38,32 @@ export default function StudentDashboard() {
   const [isLoadingPairs, setIsLoadingPairs] = useState(false);
 
   useEffect(() => {
-    api.listEvents().then(setEvents).catch(console.error);
+    const loadData = async () => {
+      try {
+        const eventsData = await api.listEvents();
+        setEvents(eventsData);
+        
+        // Fetch pairs for all joined events
+        const joinedEvents = eventsData.filter(e => e.joined);
+        if (joinedEvents.length > 0) {
+          const allPairs = [];
+          for (const event of joinedEvents) {
+            try {
+              const pairsData = await api.listPairs(event._id);
+              const pairsWithEvent = pairsData.map((p) => ({ ...p, event }));
+              allPairs.push(...pairsWithEvent);
+            } catch (err) {
+              console.error(`Failed to load pairs for event ${event._id}:`, err);
+            }
+          }
+          setPairs(allPairs);
+        }
+      } catch (err) {
+        console.error("Failed to load events:", err);
+      }
+    };
+    
+    loadData();
     api.me && api.me().then(setUser).catch(() => {});
     
     // Decode token for pairing functionality
@@ -69,18 +94,25 @@ export default function StudentDashboard() {
     setSelectedPairRole(null); // Reset pair role selection
     setSelectedPair(null); // Reset pair selection
     setMessage(""); // Reset pairing messages
+    setSearchTerm(""); // Clear search when event is selected
     
-    // Fetch pairs for this event
-    setIsLoadingPairs(true);
-    try {
-      const pairsData = await api.listPairs(event._id);
-      const pairsWithEvent = pairsData.map((p) => ({ ...p, event }));
-      setPairs(pairsWithEvent);
-    } catch (err) {
-      console.error("Failed to load pairs:", err);
-      setPairs([]);
-    } finally {
-      setIsLoadingPairs(false);
+    // Refresh pairs for this event if it's joined
+    if (event.joined) {
+      setIsLoadingPairs(true);
+      try {
+        const pairsData = await api.listPairs(event._id);
+        const pairsWithEvent = pairsData.map((p) => ({ ...p, event }));
+        
+        // Update pairs state by removing old pairs for this event and adding new ones
+        setPairs(prevPairs => {
+          const filteredPairs = prevPairs.filter(p => p.event._id !== event._id);
+          return [...filteredPairs, ...pairsWithEvent];
+        });
+      } catch (err) {
+        console.error("Failed to load pairs:", err);
+      } finally {
+        setIsLoadingPairs(false);
+      }
     }
     
     try {
@@ -93,6 +125,13 @@ export default function StudentDashboard() {
     }
   }, []);
 
+  const handleCloseEvent = useCallback(() => {
+    setSelectedEvent(null);
+    setSelectedPairRole(null);
+    setSelectedPair(null);
+    setMessage("");
+  }, []);
+
   const handleJoinEvent = async () => {
     if (!selectedEvent) return;
     try {
@@ -100,6 +139,18 @@ export default function StudentDashboard() {
       setJoinMsg(res?.message || "Successfully joined the mock interview!");
       setSelectedEvent((prev) => (prev ? { ...prev, joined: true } : prev));
       setEvents((prev) => prev.map((e) => (e._id === selectedEvent._id ? { ...e, joined: true } : e)));
+      
+      // Fetch pairs for the newly joined event
+      try {
+        const pairsData = await api.listPairs(selectedEvent._id);
+        const pairsWithEvent = pairsData.map((p) => ({ ...p, event: selectedEvent }));
+        setPairs(prevPairs => {
+          const filteredPairs = prevPairs.filter(p => p.event._id !== selectedEvent._id);
+          return [...filteredPairs, ...pairsWithEvent];
+        });
+      } catch (pairErr) {
+        console.error("Failed to load pairs after joining:", pairErr);
+      }
     } catch (err) {
       const msg = err?.message || "Failed to join the mock interview.";
       // If backend restriction triggers, show popup modal with required copy
@@ -154,6 +205,80 @@ export default function StudentDashboard() {
     if (me.email && pair.interviewee?.email === me.email) return "interviewee";
 
     return null;
+  };
+
+  // Helper function to get message styling based on content
+  const getMessageStyle = (msg) => {
+    const lowerMsg = msg.toLowerCase();
+    
+    // Success messages
+    if (lowerMsg.includes("success") || 
+        lowerMsg.includes("proposed") || 
+        lowerMsg.includes("accepted") ||
+        lowerMsg.includes("confirmed") ||
+        lowerMsg.includes("scheduled") ||
+        lowerMsg.includes("copied")) {
+      return {
+        bg: "bg-emerald-50",
+        text: "text-emerald-800",
+        border: "border-emerald-200",
+        icon: CheckCircle,
+        iconColor: "text-emerald-600"
+      };
+    }
+    
+    // Info/Waiting messages
+    if (lowerMsg.includes("waiting") || 
+        lowerMsg.includes("pending") ||
+        lowerMsg.includes("slot") ||
+        lowerMsg.includes("partner") ||
+        lowerMsg.includes("propose")) {
+      return {
+        bg: "bg-blue-50",
+        text: "text-blue-800",
+        border: "border-blue-200",
+        icon: Info,
+        iconColor: "text-blue-600"
+      };
+    }
+    
+    // Warning messages
+    if (lowerMsg.includes("adjusted") || 
+        lowerMsg.includes("changed") ||
+        lowerMsg.includes("before") ||
+        lowerMsg.includes("after")) {
+      return {
+        bg: "bg-amber-50",
+        text: "text-amber-800",
+        border: "border-amber-200",
+        icon: AlertCircle,
+        iconColor: "text-amber-600"
+      };
+    }
+    
+    // Error/Rejection messages
+    if (lowerMsg.includes("error") || 
+        lowerMsg.includes("failed") ||
+        lowerMsg.includes("reject") ||
+        lowerMsg.includes("cannot") ||
+        lowerMsg.includes("unable")) {
+      return {
+        bg: "bg-red-50",
+        text: "text-red-800",
+        border: "border-red-200",
+        icon: AlertCircle,
+        iconColor: "text-red-600"
+      };
+    }
+    
+    // Default to info style
+    return {
+      bg: "bg-slate-50",
+      text: "text-slate-800",
+      border: "border-slate-200",
+      icon: Info,
+      iconColor: "text-slate-600"
+    };
   };
 
   // Fetch proposals when a pair is selected
@@ -230,7 +355,7 @@ export default function StudentDashboard() {
       return s;
     });
     if (!selectedPair || isoSlots.length === 0) {
-      setMessage("Please select a pair and add at least one slot.");
+      setMessage("⚠️ Please select a pairing partner and add at least one time slot to continue.");
       setIsLoadingPairs(false);
       return;
     }
@@ -243,17 +368,17 @@ export default function StudentDashboard() {
       const endBoundary = ev.endDate ? new Date(ev.endDate).getTime() : null;
       const parsed = isoSlots.map((s) => new Date(s));
       if (parsed.some((d) => isNaN(d.getTime()))) {
-        setMessage("One or more slots are invalid");
+        setMessage("⚠️ One or more selected time slots are invalid. Please check and try again.");
         setIsLoadingPairs(false);
         return;
       }
       if (startBoundary && parsed.some((d) => d.getTime() < startBoundary)) {
-        setMessage("One or more slots are before the event start");
+        setMessage("⚠️ Some time slots are before the event start time. Please adjust your selection.");
         setIsLoadingPairs(false);
         return;
       }
       if (endBoundary && parsed.some((d) => d.getTime() > endBoundary)) {
-        setMessage("One or more slots are after the event end");
+        setMessage("⚠️ Some time slots are after the event end time. Please adjust your selection.");
         setIsLoadingPairs(false);
         return;
       }
@@ -261,7 +386,7 @@ export default function StudentDashboard() {
       // ignore parsing errors handled above
     }
     if (!isInterviewer && isoSlots.length > 3) {
-      setMessage("You may propose up to 3 alternative slots");
+      setMessage("ℹ️ As an interviewee, you can suggest up to 3 alternative time slots.");
       setIsLoadingPairs(false);
       return;
     }
@@ -269,9 +394,9 @@ export default function StudentDashboard() {
       const res = await api.proposeSlots(selectedPair._id, isoSlots);
       if (res.common)
         setMessage(
-          `Common slot found: ${new Date(res.common).toLocaleString()}`
+          `✅ Great! A common time slot was found: ${new Date(res.common).toLocaleString()}`
         );
-      else setMessage("Slots proposed. Waiting for partner.");
+      else setMessage("✅ Time slots proposed successfully! Waiting for your partner's response.");
       const ro = await api.proposeSlots(selectedPair._id, []);
       setCurrentProposals(ro);
     } catch (err) {
@@ -283,7 +408,7 @@ export default function StudentDashboard() {
 
   const addSlot = () => {
     if (!isInterviewer && slots.filter(Boolean).length >= 3) {
-      setMessage("You may propose up to 3 alternative slots");
+      setMessage("ℹ️ As an interviewee, you can suggest up to 3 alternative time slots.");
       return;
     }
     setSlots((s) => [...s, ""]);
@@ -298,11 +423,21 @@ export default function StudentDashboard() {
     try {
       const iso = dt && dt.includes("T") ? new Date(dt).toISOString() : dt;
       await api.confirmSlot(selectedPair._id, iso, link);
-      setMessage("Scheduled successfully!");
+      setMessage("✅ Interview scheduled successfully! Check your meeting details below.");
       
+      // Refresh pairs for this event
       const pairsData = await api.listPairs(selectedEvent._id);
       const pairsWithEvent = pairsData.map((p) => ({ ...p, event: selectedEvent }));
-      setPairs(pairsWithEvent);
+      setPairs(prevPairs => {
+        const filteredPairs = prevPairs.filter(p => p.event._id !== selectedEvent._id);
+        return [...filteredPairs, ...pairsWithEvent];
+      });
+      
+      // Update the selected pair with the new data
+      const updatedPair = pairsWithEvent.find(p => p._id === selectedPair._id);
+      if (updatedPair) {
+        setSelectedPair(updatedPair);
+      }
     } catch (err) {
       setMessage(err.message);
     }
@@ -312,12 +447,23 @@ export default function StudentDashboard() {
     if (!selectedPair || !selectedEvent) return;
     try {
       await api.rejectSlots(selectedPair._id);
-      setMessage("Rejected slots. Waiting for new proposal from interviewer.");
+      setMessage("ℹ️ Time slots rejected. Your interviewer will propose new times shortly.");
       
+      // Refresh pairs for this event
       const pairsData = await api.listPairs(selectedEvent._id);
       const pairsWithEvent = pairsData.map((p) => ({ ...p, event: selectedEvent }));
-      setPairs(pairsWithEvent);
+      setPairs(prevPairs => {
+        const filteredPairs = prevPairs.filter(p => p.event._id !== selectedEvent._id);
+        return [...filteredPairs, ...pairsWithEvent];
+      });
+      
       setCurrentProposals({ mine: [], partner: [], common: null });
+      
+      // Update the selected pair with the new data
+      const updatedPair = pairsWithEvent.find(p => p._id === selectedPair._id);
+      if (updatedPair) {
+        setSelectedPair(updatedPair);
+      }
     } catch (err) {
       setMessage(err.message);
     }
@@ -400,54 +546,76 @@ export default function StudentDashboard() {
   );
 
   const EventList = () => (
-    <div className="bg-white rounded-lg border border-slate-200 p-4 h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
-      <div className="lg:hidden mb-4">
-        <StatsComponent />
-      </div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-slate-800">Mock Interviews</h2>
-        <span className="px-2 py-0.5 bg-sky-500 text-white rounded text-xs font-medium">
-          {filteredEvents.length}
-        </span>
-      </div>
+    <div className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 h-[calc(100vh-5rem)] sm:h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+      {/* Show stats only when no event is selected on mobile */}
+      {!selectedEvent && (
+        <div className="lg:hidden mb-3 sm:mb-4">
+          <StatsComponent />
+        </div>
+      )}
       
-      {/* Helper copy for tabs */}
-      <div className="mb-2 text-xs text-slate-600">
-        Select type (Regular/Special) and filter by status (All/Active/Upcoming)
-      </div>
-      
-      {/* Event Type Tabs (top row) - highlight only when on "All" for that type to avoid double selection */}
-      <div className="flex space-x-1 mb-3 p-1 bg-slate-100 rounded">
-        {[
-          { id: "regular", label: "Regular" },
-          { id: "special", label: "Special" },
-          { id: "past", label: "Past" }
-        ].map((tab) => (
+      {/* Header with close button when event is selected */}
+      {selectedEvent ? (
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-lg font-semibold text-slate-800">Selected Interview</h2>
           <button
-            key={tab.id}
-            onClick={() => {
-              if (tab.id === "past") {
-                setSelectedKey("past");
-              } else {
-                // Switch type and default to its "all" view
-                setSelectedKey(`${tab.id}-all`);
-              }
-            }}
-            className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${
-              // Highlight the type tab whenever any status of that type is selected; past highlights only when selected
-              (tab.id === "past" && selectedKey === "past") ||
-              (tab.id !== "past" && selectedKey.startsWith(tab.id))
-                ? "bg-white text-slate-800 shadow-sm"
-                : "text-slate-600 hover:text-slate-800"
-            }`}
+            onClick={handleCloseEvent}
+            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors"
+            title="Close and show all events"
           >
-            {tab.label}
+            <X className="w-4 h-4" />
           </button>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-lg font-semibold text-slate-800">Mock Interviews</h2>
+            <span className="px-2 py-0.5 bg-sky-500 text-white rounded text-xs font-medium">
+              {filteredEvents.length}
+            </span>
+          </div>
+          
+          {/* Helper copy for tabs */}
+          <div className="mb-2 text-xs text-slate-600">
+            Select type (Regular/Special) and filter by status (All/Active/Upcoming)
+          </div>
+        </>
+      )}
       
-      {/* Status Filters (bottom row) - only show for regular and special events */}
-      {currentType !== "past" && (
+      {/* Event Type Tabs - Hide when event is selected */}
+      {!selectedEvent && (
+        <div className="flex space-x-1 mb-3 p-1 bg-slate-100 rounded">
+          {[
+            { id: "regular", label: "Regular" },
+            { id: "special", label: "Special" },
+            { id: "past", label: "Past" }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                if (tab.id === "past") {
+                  setSelectedKey("past");
+                } else {
+                  // Switch type and default to its "all" view
+                  setSelectedKey(`${tab.id}-all`);
+                }
+              }}
+              className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${
+                // Highlight the type tab whenever any status of that type is selected; past highlights only when selected
+                (tab.id === "past" && selectedKey === "past") ||
+                (tab.id !== "past" && selectedKey.startsWith(tab.id))
+                  ? "bg-white text-slate-800 shadow-sm"
+                  : "text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+      
+      {/* Status Filters - Hide when event is selected */}
+      {!selectedEvent && currentType !== "past" && (
         <div className="flex space-x-1 mb-3 p-1 bg-slate-100 rounded">
           {["all", "active", "upcoming"].map((filter) => (
             <button
@@ -468,21 +636,203 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {/* Search */}
-      <div className="relative mb-3">
-        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500" />
-        <input
-          type="text"
-          placeholder="Search mock interviews..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-7 pr-3 py-1.5 bg-slate-50 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
-        />
-      </div>
+      {/* Search - Hide when event is selected */}
+      {!selectedEvent && (
+        <div className="relative mb-3">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Search mock interviews..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-7 pr-3 py-1.5 bg-slate-50 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
+          />
+        </div>
+      )}
 
       {/* Event List */}
       <div className="space-y-2 flex-1 overflow-y-auto pr-1">
-        {filteredEvents.length === 0 ? (
+        {selectedEvent ? (
+          // Show only the selected event
+          (() => {
+            const event = selectedEvent;
+            const active = true;
+            const isUpcoming = new Date(event.startDate) > now;
+            const isActive = !isUpcoming && (!event.endDate || new Date(event.endDate) > now);
+            const isPast = event.endDate && new Date(event.endDate) < now;
+            const isSpecial = event.isSpecial;
+            
+            // Get pairing info for this event
+            const eventPairs = pairs.filter(p => p.event._id === event._id);
+            const interviewerPair = eventPairs.find(p => getUserRoleInPair(p) === "interviewer");
+            const intervieweePair = eventPairs.find(p => getUserRoleInPair(p) === "interviewee");
+            
+            return (
+              <div key={event._id} className="space-y-1">
+                <button
+                  onClick={() => handleEventClick(event)}
+                  className={`w-full text-left p-3 rounded-lg transition-colors border ${
+                    active
+                      ? isSpecial
+                        ? "border-purple-300 bg-purple-50"
+                        : "border-sky-300 bg-sky-50"
+                      : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300"
+                  } ${event.joined 
+                      ? isSpecial 
+                        ? "ring-1 ring-purple-200" 
+                        : "ring-1 ring-emerald-200" 
+                      : ""
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className={`p-1.5 rounded ${
+                      event.joined
+                        ? isSpecial
+                          ? "bg-purple-100 text-purple-600"
+                          : isActive 
+                          ? "bg-emerald-100 text-emerald-600"
+                          : isPast
+                          ? "bg-slate-100 text-slate-600"
+                          : "bg-amber-100 text-amber-600"
+                        : "bg-sky-100 text-sky-600"
+                    }`}>
+                      {event.joined ? <CheckCircle size={14} /> : <Calendar size={14} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-medium text-slate-800 truncate text-sm">{event.name}</h3>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {isSpecial && (
+                            <span className="px-1.5 py-0.5 text-xs rounded bg-purple-100 text-purple-700 font-medium">
+                              Special
+                            </span>
+                          )}
+                          {!isSpecial && (
+                            <span className={`px-1.5 py-0.5 text-xs rounded font-medium ${
+                              event.joined
+                                ? isSpecial
+                                  ? "bg-purple-50 text-purple-600"
+                                  : isActive 
+                                  ? "bg-emerald-100 text-emerald-700" 
+                                  : isPast
+                                  ? "bg-slate-100 text-slate-600"
+                                  : "bg-amber-100 text-amber-700"
+                              : isActive 
+                              ? "bg-emerald-100 text-emerald-700" 
+                              : isPast
+                              ? "bg-slate-100 text-slate-600"
+                              : "bg-amber-100 text-amber-700"
+                            }`}>
+                              {isActive ? "Active" : isPast ? "Past" : "Upcoming"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-600 flex-wrap">
+                        <div className="flex items-center gap-1">
+                          <Clock size={12} />
+                          <span>{fmt(event.startDate)}</span>
+                        </div>
+                        {event.joined && (
+                          <span className="flex items-center gap-1 text-emerald-600 font-medium">
+                            <UserCheck size={12} />
+                            Joined
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+                
+                {/* Pairing Tabs - Show when event is selected and joined */}
+                {active && event.joined && (interviewerPair || intervieweePair) && (
+                  <div className="ml-6 space-y-1">
+                    {interviewerPair && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (selectedPairRole !== "interviewer" || selectedPair?._id !== interviewerPair._id) {
+                            setSelectedPairRole("interviewer");
+                            setSelectedPair(interviewerPair);
+                          }
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ${
+                          selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
+                            ? "bg-indigo-100 border-indigo-300 text-indigo-900"
+                            : "bg-white border-slate-200 hover:border-indigo-200 text-slate-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <User className="w-3 h-3 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium">Interviewer</div>
+                            <div className="text-xs text-slate-600 mt-0.5 truncate">
+                              {event.name}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                interviewerPair.status === "scheduled"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : interviewerPair.status === "rejected"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-amber-100 text-amber-700"
+                              }`}>
+                                {interviewerPair.status === "scheduled" ? "Scheduled" : interviewerPair.status === "rejected" ? "Rejected" : "Pending"}
+                              </span>
+                              <span className="text-xs text-slate-500 truncate">
+                                {interviewerPair.interviewer?.name || interviewerPair.interviewer?.email || "N/A"} ➜ {interviewerPair.interviewee?.name || interviewerPair.interviewee?.email || "N/A"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    )}
+                    {intervieweePair && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (selectedPairRole !== "interviewee" || selectedPair?._id !== intervieweePair._id) {
+                            setSelectedPairRole("interviewee");
+                            setSelectedPair(intervieweePair);
+                          }
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ${
+                          selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
+                            ? "bg-indigo-100 border-indigo-300 text-indigo-900"
+                            : "bg-white border-slate-200 hover:border-indigo-200 text-slate-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <User className="w-3 h-3 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium">Interviewee</div>
+                            <div className="text-xs text-slate-600 mt-0.5 truncate">
+                              {event.name}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                intervieweePair.status === "scheduled"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : intervieweePair.status === "rejected"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-amber-100 text-amber-700"
+                              }`}>
+                                {intervieweePair.status === "scheduled" ? "Scheduled" : intervieweePair.status === "rejected" ? "Rejected" : "Pending"}
+                              </span>
+                              <span className="text-xs text-slate-500 truncate">
+                                {intervieweePair.interviewer?.name || intervieweePair.interviewer?.email || "N/A"} ➜ {intervieweePair.interviewee?.name || intervieweePair.interviewee?.email || "N/A"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()
+        ) : filteredEvents.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -504,12 +854,20 @@ export default function StudentDashboard() {
             const interviewerPair = eventPairs.find(p => getUserRoleInPair(p) === "interviewer");
             const intervieweePair = eventPairs.find(p => getUserRoleInPair(p) === "interviewee");
             
+            // Debug logging (can be removed in production)
+            if (eventPairs.length > 0) {
+              console.log(`Event ${event.name} pairs:`, eventPairs.map(p => ({
+                id: p._id,
+                interviewer: p.interviewer?.name || p.interviewer?.email,
+                interviewee: p.interviewee?.name || p.interviewee?.email,
+                status: p.status,
+                userRole: getUserRoleInPair(p)
+              })));
+            }
+            
             return (
               <div key={event._id} className="space-y-1">
-                <motion.button
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                <button
                   onClick={() => handleEventClick(event)}
                   className={`w-full text-left p-3 rounded-lg transition-colors border ${
                     active
@@ -583,7 +941,7 @@ export default function StudentDashboard() {
                       </div>
                     </div>
                   </div>
-                </motion.button>
+                </button>
                 
                 {/* Pairing Tabs - Show when event is selected and joined */}
                 {active && event.joined && (interviewerPair || intervieweePair) && (
@@ -610,14 +968,18 @@ export default function StudentDashboard() {
                             <div className="text-xs text-slate-600 mt-0.5">
                               {event.name}
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                isActive ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                                interviewerPair.status === "scheduled"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : interviewerPair.status === "rejected"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-amber-100 text-amber-700"
                               }`}>
-                                {isActive ? "Active" : "Pending"}
+                                {interviewerPair.status === "scheduled" ? "Scheduled" : interviewerPair.status === "rejected" ? "Rejected" : "Pending"}
                               </span>
                               <span className="text-xs text-slate-500 truncate">
-                                {interviewerPair.interviewer?.name} ➜ {interviewerPair.interviewee?.name}
+                                {interviewerPair.interviewer?.name || interviewerPair.interviewer?.email || "N/A"} ➜ {interviewerPair.interviewee?.name || interviewerPair.interviewee?.email || "N/A"}
                               </span>
                             </div>
                           </div>
@@ -646,14 +1008,18 @@ export default function StudentDashboard() {
                             <div className="text-xs text-slate-600 mt-0.5">
                               {event.name}
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                isActive ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                                intervieweePair.status === "scheduled"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : intervieweePair.status === "rejected"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-amber-100 text-amber-700"
                               }`}>
-                                {isActive ? "Active" : "Pending"}
+                                {intervieweePair.status === "scheduled" ? "Scheduled" : intervieweePair.status === "rejected" ? "Rejected" : "Pending"}
                               </span>
                               <span className="text-xs text-slate-500 truncate">
-                                {intervieweePair.interviewer?.name} ➜ {intervieweePair.interviewee?.name}
+                                {intervieweePair.interviewer?.name || intervieweePair.interviewer?.email || "N/A"} ➜ {intervieweePair.interviewee?.name || intervieweePair.interviewee?.email || "N/A"}
                               </span>
                             </div>
                           </div>
@@ -671,10 +1037,29 @@ export default function StudentDashboard() {
   );
 
   const PairingDetails = () => (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="space-y-3 sm:space-y-4 md:space-y-6">
+      {/* Mobile Back Button */}
+      <div className="lg:hidden flex items-center gap-2 -mt-2 mb-3 sm:mb-4 pb-3 border-b border-slate-200 sticky top-0 bg-white z-10">
+        <button
+          onClick={() => {
+            setSelectedPairRole(null);
+            setSelectedPair(null);
+          }}
+          className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 transition-colors touch-manipulation"
+        >
+          <ChevronLeft className="w-5 h-5 text-slate-700" />
+        </button>
         <div className="flex-1">
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">
+          <div className="text-xs text-slate-500">Back to event details</div>
+          <div className="font-medium text-slate-800 text-sm">
+            {isInterviewer ? "Interviewer" : "Interviewee"} View
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900 mb-2 break-words">
             {selectedPair.interviewer?.name ||
               selectedPair.interviewer?.email}{" "}
             ➜{" "}
@@ -713,7 +1098,7 @@ export default function StudentDashboard() {
             setSelectedPairRole(null);
             setSelectedPair(null);
           }}
-          className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 lg:hidden"
+          className="hidden lg:block p-1.5 rounded bg-slate-100 hover:bg-slate-200 flex-shrink-0 touch-manipulation"
         >
           <X className="w-4 h-4 text-slate-600" />
         </button>
@@ -772,7 +1157,7 @@ export default function StudentDashboard() {
                     : null;
                   if (startLocal && v < startLocal) {
                     setMessage(
-                      "Selected time is before event start - adjusted to event start time"
+                      "⚠️ Selected time was before the event start. It has been adjusted to the event start time."
                     );
                     setSlots((prev) =>
                       prev.map((val, i) =>
@@ -783,7 +1168,7 @@ export default function StudentDashboard() {
                   }
                   if (endLocal && v > endLocal) {
                     setMessage(
-                      "Selected time is after event end - adjusted to event end time"
+                      "⚠️ Selected time was after the event end. It has been adjusted to the event end time."
                     );
                     setSlots((prev) =>
                       prev.map((val, i) =>
@@ -805,7 +1190,7 @@ export default function StudentDashboard() {
               {!isLocked && slots.length > 1 && (
                 <button
                   onClick={() => removeSlot(idx)}
-                  className="p-2 rounded bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                  className="p-2 rounded bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200 transition-colors touch-manipulation"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -815,18 +1200,18 @@ export default function StudentDashboard() {
         </div>
 
         {!isLocked && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <button
               onClick={addSlot}
               disabled={
                 !isInterviewer && slots.filter(Boolean).length >= 3
               }
-              className="inline-flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 text-sm font-medium transition-colors disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-lg text-slate-700 text-sm font-medium transition-colors disabled:opacity-50 touch-manipulation"
             >
               <PlusCircle className="w-4 h-4" />
               Add Time Slot
             </button>
-            <div className="text-xs text-slate-600">
+            <div className="text-xs text-slate-600 text-center sm:text-left">
               {isInterviewer 
                 ? "Add multiple available time slots" 
                 : "You may propose up to 3 alternative time slots"
@@ -837,12 +1222,12 @@ export default function StudentDashboard() {
 
         {/* Proposed Slots Grid */}
         {!isLocked && (
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-slate-50 rounded-lg p-4">
-              <h4 className="font-semibold text-slate-900 mb-3 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div className="bg-slate-50 rounded-lg p-3 sm:p-4">
+              <h4 className="font-semibold text-slate-900 mb-2 sm:mb-3 text-sm">
                 Interviewer Proposed Times
               </h4>
-              <div className="text-xs text-slate-600 mb-3">
+              <div className="text-xs text-slate-600 mb-2 sm:mb-3">
                 Time slots suggested by interviewer for the interview
               </div>
               <ul className="space-y-2">
@@ -850,7 +1235,7 @@ export default function StudentDashboard() {
                   interviewerSlots.map((s, i) => (
                     <li
                       key={i}
-                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                      className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-colors ${
                         selectedToAccept === s
                           ? "bg-indigo-50 border-indigo-200"
                           : "bg-white border-slate-200 hover:bg-slate-50"
@@ -886,11 +1271,11 @@ export default function StudentDashboard() {
               </ul>
             </div>
 
-            <div className="bg-slate-50 rounded-lg p-4">
-              <h4 className="font-semibold text-slate-900 mb-3 text-sm">
+            <div className="bg-slate-50 rounded-lg p-3 sm:p-4">
+              <h4 className="font-semibold text-slate-900 mb-2 sm:mb-3 text-sm">
                 Interviewee Proposed Times
               </h4>
-              <div className="text-xs text-slate-600 mb-3">
+              <div className="text-xs text-slate-600 mb-2 sm:mb-3">
                 Alternative time slots suggested by interviewee
               </div>
               <ul className="space-y-2">
@@ -898,7 +1283,7 @@ export default function StudentDashboard() {
                   intervieweeSlots.map((s, i) => (
                     <li
                       key={i}
-                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                      className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-colors ${
                         selectedToAccept === s
                           ? "bg-indigo-50 border-indigo-200"
                           : "bg-white border-slate-200 hover:bg-slate-50"
@@ -947,45 +1332,44 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+      {/* Action Buttons - Clean Row Layout */}
+      <div className="flex flex-col lg:flex-row gap-3 pt-2">
         <button
           disabled={isLocked}
           onClick={handlePropose}
-          className="px-5 py-2.5 bg-sky-600 text-white rounded-lg font-medium text-sm hover:bg-sky-700 transition-colors disabled:opacity-50"
+          className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium text-sm hover:from-blue-600 hover:to-blue-700 active:from-blue-700 active:to-blue-800 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
         >
           {isInterviewer ? "Propose Time Slots" : "Suggest Alternatives"}
         </button>
 
-        <div className="flex gap-2">
-          <button
-            disabled={!selectedToAccept || isLocked}
-            onClick={() => handleConfirm(selectedToAccept, "")}
-            className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50"
-          >
-            Accept Selected Time
-          </button>
+        <button
+          disabled={!selectedToAccept || isLocked}
+          onClick={() => handleConfirm(selectedToAccept, "")}
+          className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 active:from-emerald-700 active:to-emerald-800 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+        >
+          Accept Selected Time
+        </button>
 
-          <button
-            disabled={isLocked}
-            onClick={handleReject}
-            className="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-50"
-          >
-            Reject All
-          </button>
-        </div>
+        <button
+          disabled={isLocked}
+          onClick={handleReject}
+          className="flex-1 px-6 py-3 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg font-medium text-sm hover:from-slate-600 hover:to-slate-700 active:from-slate-700 active:to-slate-800 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+        >
+          Reject All
+        </button>
       </div>
 
       {isLocked && selectedPair.meetingLink && (
-        <div className="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-          <div className="flex items-center justify-between mb-3">
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <span className="font-semibold text-indigo-900 text-sm">
               Meeting Details
             </span>
-            <span className="text-xs text-slate-600 bg-white px-2 py-1 rounded border">
+            <span className="text-xs text-slate-600 bg-white px-2 py-1 rounded border w-fit">
               Jitsi Meet
             </span>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col gap-2">
             <input
               type="text"
               readOnly
@@ -997,21 +1381,21 @@ export default function StudentDashboard() {
                         30 * 60 * 1000
                     ).toLocaleString()}`
               }
-              className={`flex-1 border rounded-lg px-3 py-2 text-sm font-medium ${
+              className={`w-full border rounded-lg px-3 py-2 text-sm font-medium break-all ${
                 meetingLinkEnabled
                   ? "bg-white border-indigo-300 text-slate-900"
                   : "bg-slate-100 border-slate-300 text-slate-500"
               }`}
             />
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={() => {
                   if (!meetingLinkEnabled) return;
                   window.open(selectedPair.meetingLink, "_blank");
                 }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation ${
                   meetingLinkEnabled
-                    ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                    ? "bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white"
                     : "bg-slate-300 text-slate-500 cursor-not-allowed"
                 }`}
                 disabled={!meetingLinkEnabled}
@@ -1024,11 +1408,11 @@ export default function StudentDashboard() {
                   navigator.clipboard.writeText(
                     selectedPair.meetingLink
                   );
-                  setMessage("Meeting link copied to clipboard");
+                  setMessage("✅ Meeting link copied to clipboard successfully!");
                 }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation ${
                   meetingLinkEnabled
-                    ? "bg-white border border-indigo-300 hover:bg-indigo-50 text-indigo-700"
+                    ? "bg-white border border-indigo-300 hover:bg-indigo-50 active:bg-indigo-100 text-indigo-700"
                     : "bg-slate-100 border border-slate-300 text-slate-400 cursor-not-allowed"
                 }`}
                 disabled={!meetingLinkEnabled}
@@ -1046,20 +1430,13 @@ export default function StudentDashboard() {
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 5 }}
-            className={`flex items-center text-sm p-3 rounded-lg ${
-              message.toLowerCase().includes("success") || 
-              message.toLowerCase().includes("copied")
-                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                : "bg-red-50 text-red-800 border border-red-200"
-            }`}
+            className={`flex items-start gap-2 text-sm p-3 rounded-lg ${getMessageStyle(message).bg} ${getMessageStyle(message).text} border ${getMessageStyle(message).border}`}
           >
-            {message.toLowerCase().includes("success") || 
-             message.toLowerCase().includes("copied") ? (
-              <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
-            )}
-            {message}
+            {(() => {
+              const Icon = getMessageStyle(message).icon;
+              return <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${getMessageStyle(message).iconColor}`} />;
+            })()}
+            <span className="flex-1">{message}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1082,27 +1459,23 @@ export default function StudentDashboard() {
       ) : (
         <>
           {/* Mobile Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="lg:hidden flex items-center gap-2 mb-4 p-3 bg-white border-b border-slate-200 sticky top-0"
-          >
+          <div className="lg:hidden flex items-center gap-2 mb-3 sm:mb-4 p-2.5 sm:p-3 bg-white border-b border-slate-200 sticky top-0 z-10">
             <button
-              onClick={() => setSelectedEvent(null)}
-              className="p-1.5 rounded bg-slate-100 hover:bg-slate-200"
+              onClick={() => {
+                setSelectedEvent(null);
+                setSelectedPairRole(null);
+                setSelectedPair(null);
+              }}
+              className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 active:bg-slate-300 transition-colors"
             >
-              <ChevronLeft size={16} className="text-slate-700" />
+              <ChevronLeft size={18} className="text-slate-700" />
             </button>
-            <h2 className="text-lg font-semibold text-slate-800 truncate">{selectedEvent.name}</h2>
-          </motion.div>
+            <h2 className="text-base sm:text-lg font-semibold text-slate-800 truncate">{selectedEvent.name}</h2>
+          </div>
 
-      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
         <div className="flex-1">
-          <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 mb-3 flex-wrap"
-          >
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             {selectedEvent.isSpecial && (
               <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
                 <Award size={12} />
@@ -1127,43 +1500,35 @@ export default function StudentDashboard() {
                  new Date(selectedEvent.endDate) < new Date() ? 'Past' : 'Active'}
               </span>
             )}
-          </motion.div>
+          </div>
           
-          <h2 className="hidden lg:block text-xl font-semibold text-slate-800 mb-3">
+          <h2 className="hidden lg:block text-lg sm:text-xl font-semibold text-slate-800 mb-2 sm:mb-3">
             {selectedEvent.name}
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2 sm:mb-3">
             <div className="flex items-center gap-2 p-2 bg-slate-50 rounded">
-              <Clock className="w-4 h-4 text-sky-500" />
-              <div>
+              <Clock className="w-4 h-4 text-sky-500 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
                 <div className="text-xs text-slate-500">Start Time</div>
-                <div className="font-medium text-slate-800 text-sm">{fmt(selectedEvent.startDate)}</div>
+                <div className="font-medium text-slate-800 text-sm truncate">{fmt(selectedEvent.startDate)}</div>
               </div>
             </div>
             <div className="flex items-center gap-2 p-2 bg-slate-50 rounded">
-              <Clock className="w-4 h-4 text-indigo-500" />
-              <div>
+              <Clock className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
                 <div className="text-xs text-slate-500">End Time</div>
-                <div className="font-medium text-slate-800 text-sm">{fmt(selectedEvent.endDate)}</div>
+                <div className="font-medium text-slate-800 text-sm truncate">{fmt(selectedEvent.endDate)}</div>
               </div>
             </div>
           </div>
           
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-slate-700 text-sm bg-slate-50 p-3 rounded"
-          >
+          <p className="text-slate-700 text-sm bg-slate-50 p-3 rounded">
             {selectedEvent.description}
-          </motion.p>
+          </p>
         </div>
         
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-end gap-2"
-        >
+        <div className="flex flex-col sm:items-end gap-2 w-full sm:w-auto">
           {!selectedEvent.joined ? (
             (() => {
               const now = new Date();
@@ -1172,8 +1537,8 @@ export default function StudentDashboard() {
                 <button
                   onClick={handleJoinEvent}
                   disabled={joinDisabled}
-                  className={`px-4 py-2 rounded-lg font-medium text-white text-sm transition-colors ${
-                    joinDisabled ? "bg-slate-400 cursor-not-allowed" : "bg-sky-500 hover:bg-sky-600"
+                  className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg font-medium text-white text-sm transition-colors ${
+                    joinDisabled ? "bg-slate-400 cursor-not-allowed" : "bg-sky-500 hover:bg-sky-600 active:bg-sky-700"
                   }`}
                 >
                   {joinDisabled ? "Participation Closed" : "Join Interview"}
@@ -1181,7 +1546,7 @@ export default function StudentDashboard() {
               );
             })()
           ) : (
-            <div className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-white font-medium text-sm ${
+            <div className={`flex items-center justify-center sm:justify-start gap-1.5 px-4 py-2.5 sm:py-2 rounded-lg text-white font-medium text-sm ${
               selectedEvent.isSpecial
                 ? "bg-purple-500"
                 : new Date(selectedEvent.startDate) > new Date()
@@ -1192,16 +1557,12 @@ export default function StudentDashboard() {
               <span>Successfully Joined</span>
             </div>
           )}
-        </motion.div>
+        </div>
       </div>
 
       {/* Template Section */}
       {selectedEvent && (
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-sky-50 rounded-lg p-3 border border-sky-200 mb-3"
-        >
+        <div className="bg-sky-50 rounded-lg p-3 border border-sky-200 mb-3">
           <div className="flex items-center gap-2 mb-2">
             <div className="p-1.5 bg-sky-500 rounded">
               <Info className="w-3 h-3 text-white" />
@@ -1225,7 +1586,132 @@ export default function StudentDashboard() {
               <span>View Template</span>
             </button>
           </div>
-        </motion.div>
+        </div>
+      )}
+
+      {/* Mobile Pairing Section - Show Interviewer/Interviewee tabs on mobile only */}
+      {selectedEvent && selectedEvent.joined && (
+        (() => {
+          // Get pairing info for this event
+          const eventPairs = pairs.filter(p => p.event._id === selectedEvent._id);
+          const interviewerPair = eventPairs.find(p => getUserRoleInPair(p) === "interviewer");
+          const intervieweePair = eventPairs.find(p => getUserRoleInPair(p) === "interviewee");
+          
+          // Only show if there are pairs
+          if (!interviewerPair && !intervieweePair) return null;
+          
+          return (
+            <div className="lg:hidden bg-indigo-50 rounded-lg p-3 border border-indigo-200 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 bg-indigo-500 rounded">
+                  <Users className="w-3 h-3 text-white" />
+                </div>
+                <h3 className="font-medium text-slate-800 text-sm">Your Pairing Details</h3>
+              </div>
+              <p className="text-slate-700 text-xs mb-3">
+                View your role as Interviewer or Interviewee and manage scheduling.
+              </p>
+              
+              {/* Interviewer/Interviewee Tabs for Mobile */}
+              <div className="space-y-2">
+                {interviewerPair && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (selectedPairRole !== "interviewer" || selectedPair?._id !== interviewerPair._id) {
+                        setSelectedPairRole("interviewer");
+                        setSelectedPair(interviewerPair);
+                      }
+                    }}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border-2 touch-manipulation ${
+                      selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
+                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg"
+                        : "bg-white border-indigo-200 hover:border-indigo-400 text-slate-700 hover:bg-indigo-50 active:bg-indigo-100"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <User className={`w-4 h-4 ${selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id ? 'text-white' : 'text-indigo-600'}`} />
+                      <div className="flex-1">
+                        <div className="font-semibold">Interviewer Role</div>
+                        <div className="text-xs mt-1 opacity-90">
+                          {interviewerPair.interviewer?.name || interviewerPair.interviewer?.email || "N/A"} ➜ {interviewerPair.interviewee?.name || interviewerPair.interviewee?.email || "N/A"}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            interviewerPair.status === "scheduled"
+                              ? selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
+                                ? "bg-white/20 text-white"
+                                : "bg-emerald-100 text-emerald-700"
+                              : interviewerPair.status === "rejected"
+                              ? selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
+                                ? "bg-white/20 text-white"
+                                : "bg-red-100 text-red-700"
+                              : selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
+                                ? "bg-white/20 text-white"
+                                : "bg-amber-100 text-amber-700"
+                          }`}>
+                            {interviewerPair.status === "scheduled" ? "Scheduled" : interviewerPair.status === "rejected" ? "Rejected" : "Pending"}
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronLeft className={`w-5 h-5 rotate-180 ${selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id ? 'text-white' : 'text-slate-400'}`} />
+                    </div>
+                  </button>
+                )}
+                
+                {intervieweePair && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (selectedPairRole !== "interviewee" || selectedPair?._id !== intervieweePair._id) {
+                        setSelectedPairRole("interviewee");
+                        setSelectedPair(intervieweePair);
+                      }
+                    }}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border-2 touch-manipulation ${
+                      selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
+                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg"
+                        : "bg-white border-indigo-200 hover:border-indigo-400 text-slate-700 hover:bg-indigo-50 active:bg-indigo-100"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <User className={`w-4 h-4 ${selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id ? 'text-white' : 'text-indigo-600'}`} />
+                      <div className="flex-1">
+                        <div className="font-semibold">Interviewee Role</div>
+                        <div className="text-xs mt-1 opacity-90">
+                          {intervieweePair.interviewer?.name || intervieweePair.interviewer?.email || "N/A"} ➜ {intervieweePair.interviewee?.name || intervieweePair.interviewee?.email || "N/A"}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            intervieweePair.status === "scheduled"
+                              ? selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
+                                ? "bg-white/20 text-white"
+                                : "bg-emerald-100 text-emerald-700"
+                              : intervieweePair.status === "rejected"
+                              ? selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
+                                ? "bg-white/20 text-white"
+                                : "bg-red-100 text-red-700"
+                              : selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
+                                ? "bg-white/20 text-white"
+                                : "bg-amber-100 text-amber-700"
+                          }`}>
+                            {intervieweePair.status === "scheduled" ? "Scheduled" : intervieweePair.status === "rejected" ? "Rejected" : "Pending"}
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronLeft className={`w-5 h-5 rotate-180 ${selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id ? 'text-white' : 'text-slate-400'}`} />
+                    </div>
+                  </button>
+                )}
+              </div>
+              
+              <p className="text-xs text-slate-600 mt-3 p-2 bg-white rounded border border-indigo-100">
+                <Info className="w-3 h-3 inline mr-1" />
+                Tap a role to view scheduling details and propose time slots.
+              </p>
+            </div>
+          );
+        })()
       )}
 
       {/* Join Message */}
@@ -1235,18 +1721,13 @@ export default function StudentDashboard() {
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 5 }}
-            className={`p-2 rounded text-xs text-center font-medium ${
-              joinMsg.toLowerCase().includes("fail") || joinMsg.toLowerCase().includes("error")
-                ? "bg-red-50 text-red-700 border border-red-200"
-                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-            }`}
+            className={`p-3 rounded-lg text-sm font-medium ${getMessageStyle(joinMsg).bg} ${getMessageStyle(joinMsg).text} border ${getMessageStyle(joinMsg).border}`}
           >
-            <div className="flex items-center justify-center gap-1">
-              {joinMsg.toLowerCase().includes("fail") || joinMsg.toLowerCase().includes("error") ? (
-                <X className="w-3 h-3" />
-              ) : (
-                <CheckCircle className="w-3 h-3" />
-              )}
+            <div className="flex items-center justify-center gap-2">
+              {(() => {
+                const Icon = getMessageStyle(joinMsg).icon;
+                return <Icon className={`w-4 h-4 ${getMessageStyle(joinMsg).iconColor}`} />;
+              })()}
               <span>{joinMsg}</span>
             </div>
           </motion.div>
@@ -1324,8 +1805,8 @@ export default function StudentDashboard() {
   return (
     <RequirePasswordChange user={user}>
       <div className="min-h-screen w-full bg-slate-50 flex flex-col pt-16">
-        <div className="flex-1 w-full mx-auto px-4 py-4">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+        <div className="flex-1 w-full mx-auto px-2 sm:px-4 py-2 sm:py-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-3">
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -1338,7 +1819,7 @@ export default function StudentDashboard() {
               animate={{ opacity: 1, x: 0 }}
               className={`${selectedEvent ? 'block' : 'hidden'} lg:block lg:col-span-3`}
             >
-              <div className="bg-white rounded-lg border border-slate-200 p-4 h-[calc(100vh-4rem)] flex flex-col overflow-auto">
+              <div className="bg-white rounded-lg border border-slate-200 p-2 sm:p-4 h-[calc(100vh-5rem)] sm:h-[calc(100vh-4rem)] flex flex-col overflow-auto">
                 {selectedEvent ? <EventDetails /> : <Placeholder />}
               </div>
             </motion.div>

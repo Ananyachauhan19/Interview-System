@@ -1,15 +1,27 @@
+import { sendSlotProposalEmail, sendSlotAcceptanceEmail, sendInterviewScheduledEmail, sendMail, renderTemplate, sendEventNotificationEmail, sendOnboardingEmail } from '../utils/mailer.js';
 import Event from '../models/Event.js';
-import SlotProposal from '../models/SlotProposal.js';
-import Pair from '../models/Pair.js';
-import { sendEventNotificationEmail } from '../utils/mailer.js';
 import User from '../models/User.js';
-import { sendMail, sendOnboardingEmail } from '../utils/mailer.js';
-import { HttpError } from '../utils/errors.js';
-// Pair already imported above
-import Feedback from '../models/Feedback.js';
-import { supabase } from '../utils/supabase.js';
-import { parse } from 'csv-parse/sync';
+import Pair from '../models/Pair.js';
+import SlotProposal from '../models/SlotProposal.js';
 import SpecialStudent from '../models/SpecialStudent.js';
+import bcrypt from 'bcrypt';
+import fs from 'fs';
+import path from 'path';
+import { Readable } from 'stream';
+import { HttpError } from '../utils/errors.js';
+import { supabase } from '../utils/supabase.js';
+
+// Fisher-Yates shuffle algorithm for random array shuffling
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+import Feedback from '../models/Feedback.js';
+import { parse } from 'csv-parse/sync';
 
 // Helper function to format date as "6/11/2025, 12:16:00 PM"
 function formatDateTime(date) {
@@ -132,12 +144,14 @@ export async function createEvent(req, res) {
       event.participants = students.map(s => s._id);
       await event.save();
       
-      // Generate pairs but don't send pairing emails
+      // Generate pairs with randomized shuffling for unique pairings each event
       if (ids.length >= 2) {
-        const pairsRaw = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
+        // Shuffle the student IDs to create different pairings for each event
+        const shuffledIds = shuffleArray(ids);
+        const pairsRaw = shuffledIds.map((id, i) => [id, shuffledIds[(i + 1) % shuffledIds.length]]);
         await Pair.deleteMany({ event: event._id });
         const insertedPairs = await Pair.insertMany(pairsRaw.map(([a, b]) => ({ event: event._id, interviewer: a, interviewee: b })));
-        console.log(`[createEvent] Created ${insertedPairs.length} pairs`);
+        console.log(`[createEvent] Created ${insertedPairs.length} randomized pairs for event ${event._id}`);
         // For each pair, auto-generate a random slot inside allowed window and create SlotProposal docs for both parties
         const baseDay = start || new Date();
         const proposalsToInsert = [];
@@ -498,10 +512,12 @@ export async function createSpecialEvent(req, res) {
     try {
       console.log(`[createSpecialEvent] Processing ${createdStudents.length} special students for event: ${event._id}`);
       
-      // Generate pairs but don't send pairing emails at creation
+      // Generate pairs with randomized shuffling for unique pairings each event
       if (createdStudents.length >= 2) {
         const ids = createdStudents.map(s => s._id.toString());
-        const pairsRaw = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
+        // Shuffle the student IDs to create different pairings for each event
+        const shuffledIds = shuffleArray(ids);
+        const pairsRaw = shuffledIds.map((id, i) => [id, shuffledIds[(i + 1) % shuffledIds.length]]);
         await Pair.deleteMany({ event: event._id });
         const insertedPairs = await Pair.insertMany(
           pairsRaw.map(([a, b]) => ({
@@ -510,7 +526,7 @@ export async function createSpecialEvent(req, res) {
             interviewee: b,
           }))
         );
-        console.log(`[createSpecialEvent] Created ${insertedPairs.length} pairs`);
+        console.log(`[createSpecialEvent] Created ${insertedPairs.length} randomized pairs for event ${event._id}`);
         // Auto-assign initial random slot proposals for special event pairs
         const baseDay = start || new Date();
         const proposalsToInsert = [];
