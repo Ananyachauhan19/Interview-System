@@ -20,6 +20,24 @@ function formatDateTime(date) {
   });
 }
 
+// Time window restrictions
+const ALLOWED_START_HOUR = 10; // inclusive
+const ALLOWED_END_HOUR = 22;  // exclusive
+
+function isWithinAllowedHours(d) {
+  if (!d) return false;
+  const h = d.getHours();
+  return h >= ALLOWED_START_HOUR && h < ALLOWED_END_HOUR;
+}
+
+function validateSlots(dates) {
+  const now = Date.now();
+  for (const d of dates) {
+    if (d.getTime() <= now) throw new HttpError(400, 'Cannot use past time slot');
+    if (!isWithinAllowedHours(d)) throw new HttpError(400, 'Slot must be between 10:00 and 22:00');
+  }
+}
+
 // Helper to check user's role in a pair (handles cross-collection matching for users in both User and SpecialStudent)
 async function getUserRoleInPair(pair, user) {
   const userId = user._id.toString();
@@ -157,12 +175,18 @@ export async function proposeSlots(req, res) {
   let endBoundary = event?.endDate ? new Date(event.endDate).getTime() : null;
   const dates = (slots || []).map((s) => new Date(s));
   if (dates.some(d => isNaN(d.getTime()))) throw new HttpError(400, 'Invalid slot date');
+  // Time-of-day + future validation
+  if (dates.length) validateSlots(dates);
   if (startBoundary && dates.some(d => d.getTime() < startBoundary)) throw new HttpError(400, 'Slot before event start');
   if (endBoundary && dates.some(d => d.getTime() > endBoundary)) throw new HttpError(400, 'Slot after event end');
 
-  // Business rules: interviewer can propose any number; interviewee can propose up to 3 alternatives when requesting change
-  if (!isInterviewer && dates.length > 3) {
-    throw new HttpError(400, 'Interviewee may propose up to 3 alternative slots');
+  // Business rule: BOTH parties may have at most 3 proposed slots.
+  if (dates.length > 3) throw new HttpError(400, 'May propose at most 3 slots');
+
+  // Enforce no further proposals after reaching 3 previously
+  const existingDoc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
+  if (existingDoc && existingDoc.slots?.length >= 3 && dates.length) {
+    throw new HttpError(400, 'Maximum number of proposals (3) already reached');
   }
 
   const doc = await SlotProposal.findOneAndUpdate(
@@ -199,11 +223,17 @@ export async function proposeSlots(req, res) {
   // Return both proposals and intersection
   const mineDoc = doc;
   const partnerDoc = await SlotProposal.findOne({ pair: pair._id, user: partnerId, event: pair.event });
-  const mine = (mineDoc?.slots || []).map(d => new Date(d).toISOString());
-  const partner = (partnerDoc?.slots || []).map(d => new Date(d).toISOString());
+  // Mark expired slots
+  const nowTs = Date.now();
+  const mineSlotsRaw = (mineDoc?.slots || []).map(d => new Date(d));
+  const partnerSlotsRaw = (partnerDoc?.slots || []).map(d => new Date(d));
+  const mine = mineSlotsRaw.map(d => d.toISOString());
+  const partner = partnerSlotsRaw.map(d => d.toISOString());
+  const mineMeta = mineSlotsRaw.map(d => ({ slot: d.toISOString(), expired: d.getTime() <= nowTs }));
+  const partnerMeta = partnerSlotsRaw.map(d => ({ slot: d.toISOString(), expired: d.getTime() <= nowTs }));
   const partnerSet = new Set(partner.map(d => new Date(d).getTime()));
-  const common = mine.map(d => new Date(d).getTime()).find(t => partnerSet.has(t));
-  res.json({ mine, partner, common: common ? new Date(common).toISOString() : null });
+  const common = mine.map(d => new Date(d).getTime()).find(t => partnerSet.has(t) && t > nowTs);
+  res.json({ mine, partner, common: common ? new Date(common).toISOString() : null, mineMeta, partnerMeta });
 }
 
 export async function confirmSlot(req, res) {
@@ -255,6 +285,8 @@ export async function confirmSlot(req, res) {
   const { scheduledAt, meetingLink } = req.body;
   const scheduled = new Date(scheduledAt);
   if (isNaN(scheduled.getTime())) throw new HttpError(400, 'Invalid scheduledAt');
+  if (scheduled.getTime() <= Date.now()) throw new HttpError(400, 'Cannot confirm past time');
+  if (!isWithinAllowedHours(scheduled)) throw new HttpError(400, 'Scheduled time must be between 10:00 and 22:00');
 
   // Validate the selected time is among the OTHER party's proposed slots
   const otherUserId = confirmerIsInterviewer ? pair.interviewee?._id : pair.interviewer?._id;

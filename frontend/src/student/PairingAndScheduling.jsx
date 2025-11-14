@@ -212,10 +212,27 @@ export default function PairingAndScheduling() {
     } catch (e) {
       // ignore parsing errors handled above
     }
-    if (!isInterviewer && isoSlots.length > 3) {
-      setMessage("You may propose up to 3 alternative slots");
+    // Unified max 3 slots rule for both roles
+    if (isoSlots.length > 3) {
+      setMessage("May propose at most 3 slots");
       setIsLoading(false);
       return;
+    }
+    // Time window + future validation (defensive; server enforces too)
+    const nowTs = Date.now();
+    for (const iso of isoSlots) {
+      const d = new Date(iso);
+      if (d.getTime() <= nowTs) {
+        setMessage("Cannot propose past slot");
+        setIsLoading(false);
+        return;
+      }
+      const h = d.getHours();
+      if (h < 10 || h >= 22) {
+        setMessage("Slots must be between 10:00 and 22:00");
+        setIsLoading(false);
+        return;
+      }
     }
     try {
       const res = await api.proposeSlots(selectedPair._id, isoSlots);
@@ -234,8 +251,8 @@ export default function PairingAndScheduling() {
   };
 
   const addSlot = () => {
-    if (!isInterviewer && slots.filter(Boolean).length >= 3) {
-      setMessage("You may propose up to 3 alternative slots");
+    if (slots.filter(Boolean).length >= 3) {
+      setMessage("Maximum of 3 slots reached");
       return;
     }
     setSlots((s) => [...s, ""]);
@@ -781,37 +798,44 @@ export default function PairingAndScheduling() {
                           </div>
                           <ul className="space-y-2">
                             {interviewerSlots.length > 0 ? (
-                              interviewerSlots.map((s, i) => (
-                                <li
-                                  key={i}
-                                  className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-                                    selectedToAccept === s
-                                      ? "bg-indigo-50 border-indigo-200"
-                                      : "bg-white border-slate-200 hover:bg-slate-50"
-                                  }`}
-                                >
-                                  {!isInterviewer && (
-                                    <input
-                                      type="radio"
-                                      name="acceptSlot"
-                                      value={s}
-                                      checked={selectedToAccept === s}
-                                      onChange={() => setSelectedToAccept(s)}
-                                      className="mt-1 text-indigo-600 focus:ring-indigo-500"
-                                    />
-                                  )}
-                                  <div className="flex-1">
-                                    <div className="text-sm font-medium text-slate-900">
-                                      {new Date(s).toLocaleString()}
+                              interviewerSlots.map((s, i) => {
+                                const expired = new Date(s).getTime() <= Date.now();
+                                return (
+                                  <li
+                                    key={i}
+                                    className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                                      selectedToAccept === s
+                                        ? "bg-indigo-50 border-indigo-200"
+                                        : "bg-white border-slate-200 hover:bg-slate-50"
+                                    }`}
+                                  >
+                                    {!isInterviewer && (
+                                      <input
+                                        type="radio"
+                                        name="acceptSlot"
+                                        value={s}
+                                        checked={selectedToAccept === s}
+                                        onChange={() => setSelectedToAccept(s)}
+                                        className="mt-1 text-indigo-600 focus:ring-indigo-500"
+                                        disabled={expired}
+                                      />
+                                    )}
+                                    <div className="flex-1">
+                                      <div className="text-sm font-medium text-slate-900">
+                                        {new Date(s).toLocaleString()}
+                                      </div>
+                                      <div className="text-xs text-slate-500 mt-1">
+                                        Proposed by:{" "}
+                                        {selectedPair?.interviewer?.name ||
+                                          selectedPair?.interviewer?.email}
+                                      </div>
+                                      {expired && (
+                                        <div className="text-xs font-semibold text-red-600 mt-1">Expired</div>
+                                      )}
                                     </div>
-                                    <div className="text-xs text-slate-500 mt-1">
-                                      Proposed by:{" "}
-                                      {selectedPair?.interviewer?.name ||
-                                        selectedPair?.interviewer?.email}
-                                    </div>
-                                  </div>
-                                </li>
-                              ))
+                                  </li>
+                                );
+                              })
                             ) : (
                               <li className="text-slate-500 text-sm text-center py-4">
                                 No time slots proposed yet
@@ -829,37 +853,44 @@ export default function PairingAndScheduling() {
                           </div>
                           <ul className="space-y-2">
                             {intervieweeSlots.length > 0 ? (
-                              intervieweeSlots.map((s, i) => (
-                                <li
-                                  key={i}
-                                  className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-                                    selectedToAccept === s
-                                      ? "bg-indigo-50 border-indigo-200"
-                                      : "bg-white border-slate-200 hover:bg-slate-50"
-                                  }`}
-                                >
-                                  {isInterviewer && (
-                                    <input
-                                      type="radio"
-                                      name="acceptSlot"
-                                      value={s}
-                                      checked={selectedToAccept === s}
-                                      onChange={() => setSelectedToAccept(s)}
-                                      className="mt-1 text-indigo-600 focus:ring-indigo-500"
-                                    />
-                                  )}
-                                  <div className="flex-1">
-                                    <div className="text-sm font-medium text-slate-900">
-                                      {new Date(s).toLocaleString()}
+                              intervieweeSlots.map((s, i) => {
+                                const expired = new Date(s).getTime() <= Date.now();
+                                return (
+                                  <li
+                                    key={i}
+                                    className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                                      selectedToAccept === s
+                                        ? "bg-indigo-50 border-indigo-200"
+                                        : "bg-white border-slate-200 hover:bg-slate-50"
+                                    }`}
+                                  >
+                                    {isInterviewer && (
+                                      <input
+                                        type="radio"
+                                        name="acceptSlot"
+                                        value={s}
+                                        checked={selectedToAccept === s}
+                                        onChange={() => setSelectedToAccept(s)}
+                                        className="mt-1 text-indigo-600 focus:ring-indigo-500"
+                                        disabled={expired}
+                                      />
+                                    )}
+                                    <div className="flex-1">
+                                      <div className="text-sm font-medium text-slate-900">
+                                        {new Date(s).toLocaleString()}
+                                      </div>
+                                      <div className="text-xs text-slate-500 mt-1">
+                                        Proposed by:{" "}
+                                        {selectedPair?.interviewee?.name ||
+                                          selectedPair?.interviewee?.email}
+                                      </div>
+                                      {expired && (
+                                        <div className="text-xs font-semibold text-red-600 mt-1">Expired</div>
+                                      )}
                                     </div>
-                                    <div className="text-xs text-slate-500 mt-1">
-                                      Proposed by:{" "}
-                                      {selectedPair?.interviewee?.name ||
-                                        selectedPair?.interviewee?.email}
-                                    </div>
-                                  </div>
-                                </li>
-                              ))
+                                  </li>
+                                );
+                              })
                             ) : (
                               <li className="text-slate-500 text-sm text-center py-4">
                                 No alternative slots proposed

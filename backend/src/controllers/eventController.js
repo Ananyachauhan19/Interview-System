@@ -1,9 +1,11 @@
 import Event from '../models/Event.js';
+import SlotProposal from '../models/SlotProposal.js';
+import Pair from '../models/Pair.js';
 import { sendEventNotificationEmail } from '../utils/mailer.js';
 import User from '../models/User.js';
 import { sendMail, sendOnboardingEmail } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
-import Pair from '../models/Pair.js';
+// Pair already imported above
 import Feedback from '../models/Feedback.js';
 import { supabase } from '../utils/supabase.js';
 import { parse } from 'csv-parse/sync';
@@ -20,6 +22,45 @@ function formatDateTime(date) {
     second: '2-digit',
     hour12: true
   });
+}
+
+// Allowed interview window (local server time) 10:00 - 22:00
+const ALLOWED_START_HOUR = 10; // inclusive
+const ALLOWED_END_HOUR = 22;  // exclusive (i.e. last valid hour starts at 21:59)
+
+function isWithinAllowedHours(d) {
+  if (!d) return false;
+  const h = d.getHours();
+  return h >= ALLOWED_START_HOUR && h < ALLOWED_END_HOUR;
+}
+
+// Generate a random future slot inside allowed window for a given base date
+function generateRandomSlot(baseDate) {
+  const now = new Date();
+  let day = baseDate ? new Date(baseDate) : new Date();
+  // Ensure day has time zeroed before adding random time
+  day.setHours(0,0,0,0);
+
+  // If base day already fully past allowed window today, move to next day
+  if (day.toDateString() === now.toDateString() && now.getHours() >= ALLOWED_END_HOUR) {
+    day = new Date(day.getTime() + 24*60*60*1000);
+  }
+
+  // Pick random hour within allowed window
+  // Keep picking until we get a future time
+  for (let i = 0; i < 10; i++) {
+    const hour = Math.floor(Math.random() * (ALLOWED_END_HOUR - ALLOWED_START_HOUR)) + ALLOWED_START_HOUR;
+    const minute = Math.floor(Math.random() * 60);
+    const slot = new Date(day.getTime());
+    slot.setHours(hour, minute, 0, 0);
+    if (slot.getTime() > now.getTime() && isWithinAllowedHours(slot)) {
+      return slot;
+    }
+  }
+  // Fallback: next day at start of window
+  const next = new Date(day.getTime() + 24*60*60*1000);
+  next.setHours(ALLOWED_START_HOUR, 0, 0, 0);
+  return next;
 }
 
 // PATCH /events/:id/join-disable
@@ -93,10 +134,22 @@ export async function createEvent(req, res) {
       
       // Generate pairs but don't send pairing emails
       if (ids.length >= 2) {
-        const pairs = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
+        const pairsRaw = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
         await Pair.deleteMany({ event: event._id });
-        await Pair.insertMany(pairs.map(([a, b]) => ({ event: event._id, interviewer: a, interviewee: b })));
-        console.log(`[createEvent] Created ${pairs.length} pairs`);
+        const insertedPairs = await Pair.insertMany(pairsRaw.map(([a, b]) => ({ event: event._id, interviewer: a, interviewee: b })));
+        console.log(`[createEvent] Created ${insertedPairs.length} pairs`);
+        // For each pair, auto-generate a random slot inside allowed window and create SlotProposal docs for both parties
+        const baseDay = start || new Date();
+        const proposalsToInsert = [];
+        for (const p of insertedPairs) {
+          const slot = generateRandomSlot(baseDay);
+          proposalsToInsert.push({ event: event._id, pair: p._id, user: p.interviewer, slots: [slot] });
+          proposalsToInsert.push({ event: event._id, pair: p._id, user: p.interviewee, slots: [slot] });
+        }
+        if (proposalsToInsert.length) {
+          await SlotProposal.insertMany(proposalsToInsert);
+          console.log(`[createEvent] Auto-assigned initial random slot for ${insertedPairs.length} pairs`);
+        }
       }
       
       // Send event notification emails using unified mailer.js function
@@ -448,18 +501,28 @@ export async function createSpecialEvent(req, res) {
       // Generate pairs but don't send pairing emails at creation
       if (createdStudents.length >= 2) {
         const ids = createdStudents.map(s => s._id.toString());
-        const pairs = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
-        
+        const pairsRaw = ids.map((id, i) => [id, ids[(i + 1) % ids.length]]);
         await Pair.deleteMany({ event: event._id });
-        await Pair.insertMany(
-          pairs.map(([a, b]) => ({
+        const insertedPairs = await Pair.insertMany(
+          pairsRaw.map(([a, b]) => ({
             event: event._id,
             interviewer: a,
             interviewee: b,
           }))
         );
-        
-        console.log(`[createSpecialEvent] Created ${pairs.length} pairs`);
+        console.log(`[createSpecialEvent] Created ${insertedPairs.length} pairs`);
+        // Auto-assign initial random slot proposals for special event pairs
+        const baseDay = start || new Date();
+        const proposalsToInsert = [];
+        for (const p of insertedPairs) {
+          const slot = generateRandomSlot(baseDay);
+          proposalsToInsert.push({ event: event._id, pair: p._id, user: p.interviewer, slots: [slot] });
+          proposalsToInsert.push({ event: event._id, pair: p._id, user: p.interviewee, slots: [slot] });
+        }
+        if (proposalsToInsert.length) {
+          await SlotProposal.insertMany(proposalsToInsert);
+          console.log(`[createSpecialEvent] Auto-assigned initial random slot for ${insertedPairs.length} pairs`);
+        }
       }
 
       // Send onboarding emails to special students in parallel (only for new students)

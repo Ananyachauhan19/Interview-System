@@ -41,6 +41,29 @@ export default function DateTimePicker({
       onChange: (selectedDates) => {
         if (selectedDates.length > 0) {
           const date = selectedDates[0];
+          // Enforce allowed hours (10:00 - 22:00) and future time
+          const now = new Date();
+          const hour = date.getHours();
+          if (hour < 10 || hour >= 22) {
+            // Auto-adjust to nearest valid hour inside window
+            const adjusted = new Date(date.getTime());
+            if (hour < 10) adjusted.setHours(10, 0, 0, 0);
+            else adjusted.setHours(21, 59, 0, 0);
+            flatpickrRef.current.setDate(adjusted, true);
+            return;
+          }
+          if (date.getTime() <= now.getTime()) {
+            // Move to next allowable future minute within window
+            const future = new Date(now.getTime() + 60 * 1000);
+            if (future.getHours() < 10) future.setHours(10, 0, 0, 0);
+            if (future.getHours() >= 22) {
+              // move to next day 10:00
+              future.setDate(future.getDate() + 1);
+              future.setHours(10, 0, 0, 0);
+            }
+            flatpickrRef.current.setDate(future, true);
+            return;
+          }
           // Convert to ISO format (YYYY-MM-DDTHH:mm)
           const year = date.getFullYear();
           const month = String(date.getMonth() + 1).padStart(2, '0');
