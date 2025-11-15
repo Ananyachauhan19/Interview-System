@@ -180,18 +180,32 @@ export async function proposeSlots(req, res) {
   if (startBoundary && dates.some(d => d.getTime() < startBoundary)) throw new HttpError(400, 'Slot before event start');
   if (endBoundary && dates.some(d => d.getTime() > endBoundary)) throw new HttpError(400, 'Slot after event end');
 
-  // Business rule: BOTH parties may have at most 3 proposed slots.
+  // Business rule: BOTH parties may have at most 3 proposed slots in total.
   if (dates.length > 3) throw new HttpError(400, 'May propose at most 3 slots');
 
-  // Enforce no further proposals after reaching 3 previously
+  // Append unique slots to existing list without overriding; cap at 3 total
   const existingDoc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
-  if (existingDoc && existingDoc.slots?.length >= 3 && dates.length) {
+  let existing = (existingDoc?.slots || []).map(d => new Date(d));
+  // Build a set of timestamps for uniqueness
+  const existingSet = new Set(existing.map(d => d.getTime()));
+  const additions = [];
+  for (const d of dates) {
+    const ts = d.getTime();
+    if (!existingSet.has(ts)) {
+      additions.push(d);
+      existingSet.add(ts);
+    }
+  }
+  const combined = [...existing, ...additions];
+  if (combined.length > 3) {
     throw new HttpError(400, 'Maximum number of proposals (3) already reached');
   }
+  // Sort ascending for consistency
+  combined.sort((a, b) => a.getTime() - b.getTime());
 
   const doc = await SlotProposal.findOneAndUpdate(
     { pair: pair._id, user: effectiveUserId, event: pair.event },
-    { slots: dates },
+    { slots: combined },
     { upsert: true, new: true }
   );
 

@@ -7,7 +7,6 @@ import {
   AlertCircle,
   Clock,
   Users,
-  PlusCircle,
   X,
   User,
   UserCheck,
@@ -19,7 +18,8 @@ export default function PairingAndScheduling() {
   const [pairs, setPairs] = useState([]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [selectedPair, setSelectedPair] = useState(null);
-  const [slots, setSlots] = useState([""]);
+  // Single input field for proposing one slot at a time
+  const [slotInput, setSlotInput] = useState("");
   const [message, setMessage] = useState("");
   const [me, setMe] = useState(null);
   const [currentProposals, setCurrentProposals] = useState({
@@ -171,18 +171,20 @@ export default function PairingAndScheduling() {
       return new Date(y, m - 1, d, hh, mm).getTime();
     }
 
-    const isoSlots = slots.filter(Boolean).map((s) => {
-      // If value looks like an ISO (ends with Z or includes timezone), try Date parse
-      if (String(s).endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(String(s))) {
-        const d = new Date(s);
-        if (!isNaN(d.getTime())) return d.toISOString();
+    // Prepare a single ISO slot from the input
+    const value = slotInput;
+    const isoSlots = [];
+    if (value) {
+      if (String(value).endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(String(value))) {
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) isoSlots.push(d.toISOString());
+      } else {
+        const t = parseLocalDateTime(value);
+        if (!isNaN(t)) isoSlots.push(new Date(t).toISOString());
       }
-      const t = parseLocalDateTime(s);
-      if (!isNaN(t)) return new Date(t).toISOString();
-      return s;
-    });
+    }
     if (!selectedPair || isoSlots.length === 0) {
-      setMessage("Please select a pair and add at least one slot.");
+      setMessage("Please select a pair and input a valid time.");
       setIsLoading(false);
       return;
     }
@@ -213,11 +215,7 @@ export default function PairingAndScheduling() {
       // ignore parsing errors handled above
     }
     // Unified max 3 slots rule for both roles
-    if (isoSlots.length > 3) {
-      setMessage("May propose at most 3 slots");
-      setIsLoading(false);
-      return;
-    }
+    // One at a time input; backend caps total to 3 across submissions
     // Time window + future validation (defensive; server enforces too)
     const nowTs = Date.now();
     for (const iso of isoSlots) {
@@ -241,8 +239,10 @@ export default function PairingAndScheduling() {
           `Common slot found: ${new Date(res.common).toLocaleString()}`
         );
       else setMessage("Slots proposed. Waiting for partner.");
+      // Refresh proposals and clear input
       const ro = await api.proposeSlots(selectedPair._id, []);
       setCurrentProposals(ro);
+      setSlotInput("");
     } catch (err) {
       setMessage(err.message);
     } finally {
@@ -250,13 +250,7 @@ export default function PairingAndScheduling() {
     }
   };
 
-  const addSlot = () => {
-    if (slots.filter(Boolean).length >= 3) {
-      setMessage("Maximum of 3 slots reached");
-      return;
-    }
-    setSlots((s) => [...s, ""]);
-  };
+  // Removed Add Slot: single input field approach
 
   const removeSlot = (idx) => {
     setSlots((s) => s.filter((_, i) => i !== idx));
@@ -689,102 +683,50 @@ export default function PairingAndScheduling() {
                   )}
 
                   <div className="space-y-4">
-                    {/* Date Input Section - Reduced Width */}
+                    {/* Single Date Input Section */}
                     <div className="max-w-md space-y-3">
                       <h3 className="font-medium text-slate-900 text-sm">
-                        Proposed Time Slots
+                        Propose a Time
                       </h3>
-                      {slots.map((s, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <DateTimePicker
-                            value={s}
-                            onChange={(isoDateTime) => {
-                              const v = isoDateTime;
-                              // clamp to event window if available
-                              const ev = selectedPair?.event || {};
-                              const toLocal = (val) => {
-                                if (!val) return "";
-                                if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(val))
-                                  return val;
-                                const d = new Date(val);
-                                if (isNaN(d.getTime())) return "";
-                                const pad = (n) => String(n).padStart(2, "0");
-                                return `${d.getFullYear()}-${pad(
-                                  d.getMonth() + 1
-                                )}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
-                                  d.getMinutes()
-                                )}`;
-                              };
-                              const startLocal = ev.startDate
-                                ? toLocal(ev.startDate)
-                                : null;
-                              const endLocal = ev.endDate
-                                ? toLocal(ev.endDate)
-                                : null;
-                              if (startLocal && v < startLocal) {
-                                setMessage(
-                                  "Selected time is before event start - adjusted to event start time"
-                                );
-                                setSlots((prev) =>
-                                  prev.map((val, i) =>
-                                    i === idx ? startLocal : val
-                                  )
-                                );
-                                return;
-                              }
-                              if (endLocal && v > endLocal) {
-                                setMessage(
-                                  "Selected time is after event end - adjusted to event end time"
-                                );
-                                setSlots((prev) =>
-                                  prev.map((val, i) =>
-                                    i === idx ? endLocal : val
-                                  )
-                                );
-                                return;
-                              }
-                              setSlots((prev) =>
-                                prev.map((v2, i) => (i === idx ? v : v2))
-                              );
-                            }}
-                            min={selectedPair?.event?.startDate}
-                            max={selectedPair?.event?.endDate}
-                            placeholder="Select interview time"
-                            className="flex-1 text-sm"
-                            disabled={isLocked}
-                          />
-                          {!isLocked && slots.length > 1 && (
-                            <button
-                              onClick={() => removeSlot(idx)}
-                              className="p-2 rounded bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                      <div className="flex items-center gap-2">
+                        <DateTimePicker
+                          value={slotInput}
+                          onChange={(isoDateTime) => {
+                            const v = isoDateTime;
+                            const ev = selectedPair?.event || {};
+                            const toLocal = (val) => {
+                              if (!val) return "";
+                              if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(val))
+                                return val;
+                              const d = new Date(val);
+                              if (isNaN(d.getTime())) return "";
+                              const pad = (n) => String(n).padStart(2, "0");
+                              return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                            };
+                            const startLocal = ev.startDate ? toLocal(ev.startDate) : null;
+                            const endLocal = ev.endDate ? toLocal(ev.endDate) : null;
+                            if (startLocal && v < startLocal) {
+                              setMessage("Selected time is before event start - adjusted to event start time");
+                              setSlotInput(startLocal);
+                              return;
+                            }
+                            if (endLocal && v > endLocal) {
+                              setMessage("Selected time is after event end - adjusted to event end time");
+                              setSlotInput(endLocal);
+                              return;
+                            }
+                            setSlotInput(v);
+                          }}
+                          min={selectedPair?.event?.startDate}
+                          max={selectedPair?.event?.endDate}
+                          placeholder="Select interview time"
+                          className="flex-1 text-sm"
+                          disabled={isLocked}
+                        />
+                      </div>
                     </div>
 
-                    {!isLocked && (
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={addSlot}
-                          disabled={
-                            !isInterviewer && slots.filter(Boolean).length >= 3
-                          }
-                          className="inline-flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 text-sm font-medium transition-colors disabled:opacity-50"
-                        >
-                          <PlusCircle className="w-4 h-4" />
-                          Add Time Slot
-                        </button>
-                        <div className="text-xs text-slate-600">
-                          {isInterviewer 
-                            ? "Add multiple available time slots" 
-                            : "You may propose up to 3 alternative time slots"
-                          }
-                        </div>
-                      </div>
-                    )}
+                    {/* Add Slot button removed */}
 
                     {/* Proposed Slots Grid */}
                     {!isLocked && (
@@ -914,11 +856,15 @@ export default function PairingAndScheduling() {
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <button
-                      disabled={isLocked}
+                      disabled={
+                        isLocked ||
+                        !slotInput ||
+                        (Array.isArray(currentProposals?.mine) && currentProposals.mine.length >= 3)
+                      }
                       onClick={handlePropose}
                       className="px-5 py-2.5 bg-sky-600 text-white rounded-lg font-medium text-sm hover:bg-sky-700 transition-colors disabled:opacity-50"
                     >
-                      {isInterviewer ? "Propose Time Slots" : "Suggest Alternatives"}
+                      Propose Slot
                     </button>
 
                     <div className="flex gap-2">
