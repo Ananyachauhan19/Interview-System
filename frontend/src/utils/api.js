@@ -40,6 +40,7 @@ async function request(path, { method = 'GET', body, headers = {}, formData } = 
 export const api = {
   updateEventJoinDisable: (eventId, joinDisabled, joinDisableTime) => request(`/events/${eventId}/join-disable`, { method: 'PATCH', body: { joinDisabled, joinDisableTime } }),
   // Auth (unified)
+  me: () => request('/auth/me'),
   login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password } }),
   changeStudentPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
   requestPasswordReset: (email) => request('/auth/password/request-reset', { method: 'POST', body: { email } }),

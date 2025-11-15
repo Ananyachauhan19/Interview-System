@@ -64,7 +64,14 @@ export default function StudentDashboard() {
     };
     
     loadData();
-    api.me && api.me().then(setUser).catch(() => {});
+    
+    // Fetch user profile from backend
+    api.me().then((userData) => {
+      console.log('[Dashboard] User data fetched:', userData);
+      setUser(userData);
+    }).catch((err) => {
+      console.error('[Dashboard] Failed to fetch user data:', err);
+    });
     
     // Decode token for pairing functionality
     try {
@@ -407,10 +414,25 @@ export default function StudentDashboard() {
   };
 
   const addSlot = () => {
+    // Check if there are any empty slots
+    const hasEmptySlot = slots.some(slot => !slot || slot.trim() === "");
+    if (hasEmptySlot) {
+      setMessage("⚠️ Please complete the previous slot before adding a new one.");
+      return;
+    }
+
+    // Check maximum slots limit (3 slots total)
+    if (slots.length >= 3) {
+      setMessage("ℹ️ You can add a maximum of 3 proposed time slots.");
+      return;
+    }
+
+    // Additional check for interviewees (they can suggest up to 3 alternative slots)
     if (!isInterviewer && slots.filter(Boolean).length >= 3) {
       setMessage("ℹ️ As an interviewee, you can suggest up to 3 alternative time slots.");
       return;
     }
+
     setSlots((s) => [...s, ""]);
   };
 
@@ -574,65 +596,75 @@ export default function StudentDashboard() {
               {filteredEvents.length}
             </span>
           </div>
-          
-          {/* Helper copy for tabs */}
-          <div className="mb-2 text-xs text-slate-600">
-            Select type (Regular/Special) and filter by status (All/Active/Upcoming)
-          </div>
         </>
       )}
       
-      {/* Event Type Tabs - Hide when event is selected */}
+      {/* Filters - Hide when event is selected */}
       {!selectedEvent && (
-        <div className="flex space-x-1 mb-3 p-1 bg-slate-100 rounded">
-          {[
-            { id: "regular", label: "Regular" },
-            { id: "special", label: "Special" },
-            { id: "past", label: "Past" }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                if (tab.id === "past") {
-                  setSelectedKey("past");
-                } else {
-                  // Switch type and default to its "all" view
-                  setSelectedKey(`${tab.id}-all`);
-                }
-              }}
-              className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${
-                // Highlight the type tab whenever any status of that type is selected; past highlights only when selected
-                (tab.id === "past" && selectedKey === "past") ||
-                (tab.id !== "past" && selectedKey.startsWith(tab.id))
-                  ? "bg-white text-slate-800 shadow-sm"
-                  : "text-slate-600 hover:text-slate-800"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
-      
-      {/* Status Filters - Hide when event is selected */}
-      {!selectedEvent && currentType !== "past" && (
-        <div className="flex space-x-1 mb-3 p-1 bg-slate-100 rounded">
-          {["all", "active", "upcoming"].map((filter) => (
-            <button
-              key={filter}
-              onClick={() => {
-                const type = selectedKey.startsWith("special") ? "special" : "regular";
-                setSelectedKey(`${type}-${filter}`);
-              }}
-              className={`flex-1 py-1 px-2 rounded text-xs font-medium transition-colors ${
-                currentStatus === filter
-                  ? "bg-white text-slate-800 shadow-sm"
-                  : "text-slate-600 hover:text-slate-800"
-              }`}
-            >
-              {filter.charAt(0).toUpperCase() + filter.slice(1)}
-            </button>
-          ))}
+        <div className="mb-3 space-y-2">
+          {/* Event Type Filter */}
+          <div className="flex gap-1.5">
+            {[
+              { id: "regular", label: "Regular", color: "sky" },
+              { id: "special", label: "Special", color: "purple" },
+              { id: "past", label: "Past", color: "slate" }
+            ].map((tab) => {
+              const isActive = (tab.id === "past" && selectedKey === "past") ||
+                               (tab.id !== "past" && selectedKey.startsWith(tab.id));
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    if (tab.id === "past") {
+                      setSelectedKey("past");
+                    } else {
+                      setSelectedKey(`${tab.id}-all`);
+                    }
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                    isActive
+                      ? tab.id === "regular"
+                        ? "bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-md"
+                        : tab.id === "special"
+                        ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-md"
+                        : "bg-gradient-to-br from-slate-500 to-slate-600 text-white shadow-md"
+                      : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:shadow-sm"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Status Filter - Only show for Regular/Special, not Past */}
+          {currentType !== "past" && (
+            <div className="flex gap-1.5">
+              {[
+                { id: "all", label: "All", icon: "●" },
+                { id: "active", label: "Active", icon: "●" },
+                { id: "upcoming", label: "Upcoming", icon: "●" }
+              ].map((filter) => {
+                const isActive = currentStatus === filter.id;
+                return (
+                  <button
+                    key={filter.id}
+                    onClick={() => {
+                      const type = selectedKey.startsWith("special") ? "special" : "regular";
+                      setSelectedKey(`${type}-${filter.id}`);
+                    }}
+                    className={`flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all ${
+                      isActive
+                        ? "bg-slate-800 text-white shadow-sm"
+                        : "bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -1204,18 +1236,23 @@ export default function StudentDashboard() {
             <button
               onClick={addSlot}
               disabled={
-                !isInterviewer && slots.filter(Boolean).length >= 3
+                slots.length >= 3 || slots.some(slot => !slot || slot.trim() === "")
               }
-              className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-lg text-slate-700 text-sm font-medium transition-colors disabled:opacity-50 touch-manipulation"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-lg text-slate-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             >
               <PlusCircle className="w-4 h-4" />
               Add Time Slot
             </button>
             <div className="text-xs text-slate-600 text-center sm:text-left">
-              {isInterviewer 
-                ? "Add multiple available time slots" 
-                : "You may propose up to 3 alternative time slots"
-              }
+              {slots.some(slot => !slot || slot.trim() === "") ? (
+                <span className="text-amber-600">Complete the current slot to add more</span>
+              ) : slots.length >= 3 ? (
+                <span className="text-slate-500">Maximum 3 slots reached</span>
+              ) : isInterviewer ? (
+                "Add multiple available time slots (max 3)"
+              ) : (
+                `You may propose up to 3 alternative time slots (${slots.length}/3)`
+              )}
             </div>
           </div>
         )}
@@ -1529,34 +1566,21 @@ export default function StudentDashboard() {
         </div>
         
         <div className="flex flex-col sm:items-end gap-2 w-full sm:w-auto">
-          {!selectedEvent.joined ? (
-            (() => {
-              const now = new Date();
-              const joinDisabled = selectedEvent.joinDisabled || (selectedEvent.joinDisableTime && now > new Date(selectedEvent.joinDisableTime));
-              return (
-                <button
-                  onClick={handleJoinEvent}
-                  disabled={joinDisabled}
-                  className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg font-medium text-white text-sm transition-colors ${
-                    joinDisabled ? "bg-slate-400 cursor-not-allowed" : "bg-sky-500 hover:bg-sky-600 active:bg-sky-700"
-                  }`}
-                >
-                  {joinDisabled ? "Participation Closed" : "Join Interview"}
-                </button>
-              );
-            })()
-          ) : (
-            <div className={`flex items-center justify-center sm:justify-start gap-1.5 px-4 py-2.5 sm:py-2 rounded-lg text-white font-medium text-sm ${
-              selectedEvent.isSpecial
-                ? "bg-purple-500"
-                : new Date(selectedEvent.startDate) > new Date()
-                ? "bg-amber-500"
-                : "bg-emerald-500"
-            }`}>
-              <CheckCircle size={16} />
-              <span>Successfully Joined</span>
-            </div>
-          )}
+          {!selectedEvent.joined && (() => {
+            const now = new Date();
+            const joinDisabled = selectedEvent.joinDisabled || (selectedEvent.joinDisableTime && now > new Date(selectedEvent.joinDisableTime));
+            return (
+              <button
+                onClick={handleJoinEvent}
+                disabled={joinDisabled}
+                className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg font-medium text-white text-sm transition-colors ${
+                  joinDisabled ? "bg-slate-400 cursor-not-allowed" : "bg-sky-500 hover:bg-sky-600 active:bg-sky-700"
+                }`}
+              >
+                {joinDisabled ? "Participation Closed" : "Join Interview"}
+              </button>
+            );
+          })()}
         </div>
       </div>
 
@@ -1777,47 +1801,111 @@ export default function StudentDashboard() {
     </div>
   );
 
-  const Placeholder = () => (
-    <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md"
-      >
+  const Placeholder = () => {
+    const [currentTipIndex, setCurrentTipIndex] = useState(0);
+    
+    const interviewTips = [
+      "Mock interviews help you practice answering questions confidently and clearly.",
+      "Regular practice builds muscle memory for technical problem-solving under pressure.",
+      "Get comfortable with the interview format before the real opportunity comes.",
+      "Receive constructive feedback to identify and improve your weak areas.",
+      "Build confidence by experiencing interview scenarios in a safe environment.",
+      "Learn to manage interview anxiety through repeated exposure and practice.",
+      "Develop better communication skills by explaining your thought process clearly.",
+      "Practice makes perfect - each mock interview brings you closer to success.",
+      "Understand common interview patterns and how to approach different question types.",
+      "Improve your ability to think aloud and collaborate with interviewers.",
+      "Master the art of asking clarifying questions and handling ambiguity.",
+      "Transform interview stress into excitement through consistent preparation."
+    ];
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setCurrentTipIndex((prev) => (prev + 1) % interviewTips.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }, [interviewTips.length]);
+
+    return (
+      <div className="flex-1 flex flex-col p-6 sm:p-8">
+        {/* Welcome Message */}
         <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="w-16 h-16 mx-auto mb-4 bg-indigo-800 rounded-lg flex items-center justify-center"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
         >
-          <BookOpen className="w-6 h-6 text-white" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">
+            Welcome back, {user?.name || me?.name || "Student"}! 👋
+          </h1>
+          <p className="text-slate-600 text-sm sm:text-base">
+            Ready to ace your next interview? Select a mock interview from the left to get started.
+          </p>
         </motion.div>
-        <h1 className="text-xl font-semibold text-slate-800 mb-2">
-          Mock Interview Sessions
-        </h1>
-        <p className="text-slate-600 text-sm mb-4">
-          Select a mock interview to view details and join.
-        </p>
-        <StatsComponent />
-      </motion.div>
-    </div>
-  );
+
+        {/* Animated Tips Section */}
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="w-20 h-20 mb-6 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg"
+          >
+            <BookOpen className="w-10 h-10 text-white" />
+          </motion.div>
+          
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-8 text-center">
+            Mock Interview Sessions
+          </h2>
+
+          {/* Rotating Tips */}
+          <div className="w-full max-w-2xl min-h-[80px] flex items-center justify-center mb-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentTipIndex}
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.5 }}
+                className="w-full"
+              >
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-500 p-4 sm:p-6 rounded-r-lg shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">💡</span>
+                    </div>
+                    <p className="text-slate-700 text-sm sm:text-base leading-relaxed flex-1">
+                      {interviewTips[currentTipIndex]}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Stats */}
+          <div className="w-full max-w-2xl">
+            <StatsComponent />
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <RequirePasswordChange user={user}>
       <div className="min-h-screen w-full bg-slate-50 flex flex-col pt-16">
         <div className="flex-1 w-full mx-auto px-2 sm:px-4 py-2 sm:py-4">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3">
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className={`${selectedEvent ? 'hidden' : 'block'} lg:block lg:col-span-1`}
+              className={`${selectedEvent ? 'hidden' : 'block'} lg:block lg:col-span-3`}
             >
               <EventList />
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
-              className={`${selectedEvent ? 'block' : 'hidden'} lg:block lg:col-span-3`}
+              className={`${selectedEvent ? 'block' : 'hidden'} lg:block lg:col-span-9`}
             >
               <div className="bg-white rounded-lg border border-slate-200 p-2 sm:p-4 h-[calc(100vh-5rem)] sm:h-[calc(100vh-4rem)] flex flex-col overflow-auto">
                 {selectedEvent ? <EventDetails /> : <Placeholder />}

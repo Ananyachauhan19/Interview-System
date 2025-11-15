@@ -608,13 +608,15 @@ export async function listEvents(req, res) {
   const userId = req.user?._id;
   const isAdmin = req.user?.role === 'admin';
   const isSpecialStudent = req.user?.isSpecialStudent || false;
+  const userCreatedAt = req.user?.createdAt;
   
   // Debug logging
   console.log('[listEvents] User info:', {
     userId: userId?.toString(),
     role: req.user?.role,
     isSpecialStudent,
-    userType: isSpecialStudent ? 'SpecialStudent' : 'User'
+    userType: isSpecialStudent ? 'SpecialStudent' : 'User',
+    userCreatedAt: userCreatedAt
   });
   
   const events = await Event.find().sort({ createdAt: -1 }).lean();
@@ -642,11 +644,37 @@ export async function listEvents(req, res) {
   }
   
   const visible = events.filter(e => {
-    // Non-special events are visible to everyone
-    if (!e.isSpecial) return true;
-    
     // Admins see all events
     if (isAdmin) return true;
+    
+    // Students should only see events created after their registration
+    // Filter out events created before the student was registered
+    if (userCreatedAt && e.createdAt) {
+      const eventCreated = new Date(e.createdAt);
+      const userRegistered = new Date(userCreatedAt);
+      
+      // Compare timestamps (event must be created AFTER user registration)
+      if (eventCreated <= userRegistered) {
+        console.log('[listEvents] ❌ Filtering out event created before/at registration:', {
+          eventName: e.name,
+          eventId: e._id.toString(),
+          eventCreatedAt: eventCreated.toISOString(),
+          userRegisteredAt: userRegistered.toISOString(),
+          difference: `${((eventCreated - userRegistered) / 1000 / 60 / 60).toFixed(2)} hours`
+        });
+        return false;
+      } else {
+        console.log('[listEvents] ✅ Showing event created after registration:', {
+          eventName: e.name,
+          eventCreatedAt: eventCreated.toISOString(),
+          userRegisteredAt: userRegistered.toISOString(),
+          difference: `${((eventCreated - userRegistered) / 1000 / 60 / 60).toFixed(2)} hours`
+        });
+      }
+    }
+    
+    // Non-special events are visible to everyone (if created after registration)
+    if (!e.isSpecial) return true;
     
     // Special students can only see events they're enrolled in
     if (isSpecialStudent && userId) {
