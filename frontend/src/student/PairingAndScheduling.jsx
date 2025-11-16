@@ -659,8 +659,8 @@ export default function PairingAndScheduling() {
                   </div>
 
                   <p className="text-sm text-slate-700 leading-relaxed">
-                    Interviewer proposes available time slots. Interviewee can accept a proposed slot 
-                    or suggest up to 3 alternative time slots for consideration.
+                    The interviewer proposes available time slots, and the interviewee can either accept one or suggest up to three alternatives. 
+                    All mock interview scheduling and joining must take place between 10:00 AM and 10:00 PM.
                   </p>
 
                   {isLocked && (

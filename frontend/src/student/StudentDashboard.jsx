@@ -1482,7 +1482,7 @@ export default function StudentDashboard() {
       <div className="mt-4 pt-4 border-t border-slate-200">
         <p className="text-xs text-slate-500 text-center italic">
           <Info className="w-3 h-3 inline mr-1" />
-          Interviewer proposes available time slots. Interviewee can accept a proposed slot or suggest up to 3 alternative time slots for consideration.
+          Interviewer proposes available time slots. Interviewee can accept a proposed slot or suggest up to 3 alternative time slots for consideration. All mock interview scheduling and joining must take place between 10:00 AM and 10:00 PM.
         </p>
       </div>
     </div>
