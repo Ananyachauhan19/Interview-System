@@ -1,7 +1,8 @@
 /* eslint-disable no-unused-vars */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { api } from "../utils/api";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCircle,
   AlertCircle,
@@ -14,6 +15,8 @@ import {
 import DateTimePicker from "../components/DateTimePicker";
 
 export default function PairingAndScheduling() {
+  const DISABLE_MOTION = true;
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [pairs, setPairs] = useState([]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -31,6 +34,44 @@ export default function PairingAndScheduling() {
   const [meetingLinkEnabled, setMeetingLinkEnabled] = useState(false);
   const [timeUntilEnable, setTimeUntilEnable] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const startFeedbackCountdown = useCallback((pair) => {
+    if (!pair) {
+      console.log('[Feedback] No pair provided');
+      return;
+    }
+    const myId = (typeof window !== 'undefined') ? localStorage.getItem('userId') : null;
+    const interviewerId = pair?.interviewer?._id || pair?.interviewer;
+    const isInterviewer = myId && String(interviewerId) === String(myId);
+    
+    console.log('[Feedback] User check:', { myId, interviewerId, isInterviewer });
+    
+    if (!isInterviewer) {
+      console.log('[Feedback] User is not interviewer, skipping countdown');
+      return;
+    }
+    
+    const key = `feedbackTimer:${pair._id}`;
+    const now = Date.now();
+    // Changed from 2 minutes to 10 seconds for testing
+    const dueAt = now + 10 * 1000; // 10 seconds
+    const payload = { pairId: pair._id, startAt: now, dueAt };
+    
+    try {
+      localStorage.setItem(key, JSON.stringify(payload));
+      console.log('[Feedback] Timer started:', { pairId: pair._id, delay: '10 seconds' });
+    } catch (e) {
+      console.error('[Feedback] Failed to save timer:', e);
+    }
+    
+    const delay = Math.max(0, dueAt - Date.now());
+    console.log('[Feedback] Will navigate in', delay, 'ms');
+    
+    setTimeout(() => {
+      console.log('[Feedback] Navigating to feedback form:', `/student/feedback/${pair._id}`);
+      navigate(`/student/feedback/${pair._id}`);
+    }, delay);
+  }, [navigate]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -79,7 +120,22 @@ export default function PairingAndScheduling() {
         setIsLoading(false);
       }
     };
+    
     loadData();
+    
+    // Add event listener to refresh data when window regains focus
+    // This ensures both interviewer and interviewee see updated status
+    const handleFocus = () => {
+      console.log('[PairingAndScheduling] Window focused, refreshing data...');
+      loadData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    // Cleanup listener on unmount
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const isInterviewer = useMemo(() => {
@@ -94,6 +150,7 @@ export default function PairingAndScheduling() {
   }, [selectedPair, me]);
 
   const isLocked = selectedPair?.status === "scheduled";
+  const isCompleted = selectedPair?.status === "completed";
 
   const interviewerSlots = useMemo(() => {
     if (!currentProposals) return [];
@@ -406,14 +463,16 @@ export default function PairingAndScheduling() {
                                 </span>
                                 <span
                                   className={`text-xs px-2 py-0.5 rounded ${
-                                    p.status === "scheduled"
+                                    p.status === "completed"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : p.status === "scheduled"
                                       ? "bg-emerald-100 text-emerald-800"
                                       : p.status === "rejected"
                                       ? "bg-red-100 text-red-700"
                                       : "bg-slate-100 text-slate-700"
                                   }`}
                                 >
-                                  {p.status || "Pending"}
+                                  {p.status === "completed" ? "Finished" : p.status || "Pending"}
                                 </span>
                               </div>
                             </div>
@@ -546,14 +605,16 @@ export default function PairingAndScheduling() {
                                   </span>
                                   <span
                                     className={`text-xs px-2 py-0.5 rounded ${
-                                      p.status === "scheduled"
+                                      p.status === "completed"
+                                        ? "bg-blue-100 text-blue-700"
+                                        : p.status === "scheduled"
                                         ? "bg-emerald-100 text-emerald-800"
                                         : p.status === "rejected"
                                         ? "bg-red-100 text-red-700"
                                         : "bg-slate-100 text-slate-700"
                                     }`}
                                   >
-                                    {p.status || "Pending"}
+                                    {p.status === "completed" ? "Finished" : p.status || "Pending"}
                                   </span>
                                 </div>
                               </div>
@@ -638,14 +699,16 @@ export default function PairingAndScheduling() {
 
                         <span
                           className={`text-xs px-2 py-1 rounded font-medium ${
-                            selectedPair.status === "scheduled"
+                            selectedPair.status === "completed"
+                              ? "bg-blue-100 text-blue-700"
+                              : selectedPair.status === "scheduled"
                               ? "bg-emerald-100 text-emerald-800"
                               : selectedPair.status === "rejected"
                               ? "bg-red-100 text-red-700"
                               : "bg-slate-100 text-slate-700"
                           }`}
                         >
-                          {selectedPair.status || "Pending"}
+                          {selectedPair.status === "completed" ? "Finished" : selectedPair.status || "Pending"}
                         </span>
                       </div>
                     </div>
@@ -896,7 +959,19 @@ export default function PairingAndScheduling() {
                           Jitsi Meet
                         </span>
                       </div>
-                      <div className="flex flex-col sm:flex-row gap-3">
+                      
+                      {isCompleted ? (
+                        <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 text-center">
+                          <div className="flex items-center justify-center gap-2 text-blue-800 mb-2">
+                            <CheckCircle className="w-5 h-5" />
+                            <span className="font-semibold">Session Completed</span>
+                          </div>
+                          <p className="text-sm text-blue-700">
+                            This interview session has been finished. Feedback has been submitted.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col sm:flex-row gap-3">
                         <input
                           type="text"
                           readOnly
@@ -919,6 +994,7 @@ export default function PairingAndScheduling() {
                             onClick={() => {
                               if (!meetingLinkEnabled) return;
                               window.open(selectedPair.meetingLink, "_blank");
+                              startFeedbackCountdown(selectedPair);
                             }}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                               meetingLinkEnabled
@@ -936,6 +1012,7 @@ export default function PairingAndScheduling() {
                                 selectedPair.meetingLink
                               );
                               setMessage("Meeting link copied to clipboard");
+                              startFeedbackCountdown(selectedPair);
                             }}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                               meetingLinkEnabled
@@ -948,6 +1025,7 @@ export default function PairingAndScheduling() {
                           </button>
                         </div>
                       </div>
+                      )}
                     </div>
                   )}
 

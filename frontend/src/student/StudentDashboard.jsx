@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import RequirePasswordChange from "./RequirePasswordChange";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../utils/api";
@@ -10,6 +11,7 @@ import {
 import DateTimePicker from "../components/DateTimePicker";
 
 export default function StudentDashboard() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -37,6 +39,44 @@ export default function StudentDashboard() {
   const [timeUntilEnable, setTimeUntilEnable] = useState(null);
   const [isLoadingPairs, setIsLoadingPairs] = useState(false);
 
+  const startFeedbackCountdown = useCallback((pair) => {
+    if (!pair) {
+      console.log('[Feedback] No pair provided');
+      return;
+    }
+    const myId = (typeof window !== 'undefined') ? localStorage.getItem('userId') : null;
+    const interviewerId = pair?.interviewer?._id || pair?.interviewer;
+    const isInterviewer = myId && String(interviewerId) === String(myId);
+    
+    console.log('[Feedback] User check:', { myId, interviewerId, isInterviewer });
+    
+    if (!isInterviewer) {
+      console.log('[Feedback] User is not interviewer, skipping countdown');
+      return;
+    }
+    
+    const key = `feedbackTimer:${pair._id}`;
+    const now = Date.now();
+    // Changed from 2 minutes to 10 seconds for testing
+    const dueAt = now + 10 * 1000; // 10 seconds
+    const payload = { pairId: pair._id, startAt: now, dueAt };
+    
+    try {
+      localStorage.setItem(key, JSON.stringify(payload));
+      console.log('[Feedback] Timer started:', { pairId: pair._id, delay: '10 seconds' });
+    } catch (e) {
+      console.error('[Feedback] Failed to save timer:', e);
+    }
+    
+    const delay = Math.max(0, dueAt - Date.now());
+    console.log('[Feedback] Will navigate in', delay, 'ms');
+    
+    setTimeout(() => {
+      console.log('[Feedback] Navigating to feedback form:', `/student/feedback/${pair._id}`);
+      navigate(`/student/feedback/${pair._id}`);
+    }, delay);
+  }, [navigate]);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -63,6 +103,13 @@ export default function StudentDashboard() {
       }
     };
     
+    // Check if feedback was just submitted
+    const feedbackFlag = localStorage.getItem('feedbackJustSubmitted');
+    if (feedbackFlag === 'true') {
+      console.log('[Dashboard] Feedback just submitted, forcing immediate refresh...');
+      localStorage.removeItem('feedbackJustSubmitted');
+    }
+    
     loadData();
     
     // Fetch user profile from backend
@@ -72,6 +119,20 @@ export default function StudentDashboard() {
     }).catch((err) => {
       console.error('[Dashboard] Failed to fetch user data:', err);
     });
+    
+    // Add event listener to refresh data when window regains focus
+    // This ensures both interviewer and interviewee see updated status
+    const handleFocus = () => {
+      console.log('[Dashboard] Window focused, refreshing data...');
+      loadData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    // Cleanup listener on unmount
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
     
     // Decode token for pairing functionality
     try {
@@ -185,6 +246,7 @@ export default function StudentDashboard() {
   }, [selectedPair, me]);
 
   const isLocked = selectedPair?.status === "scheduled";
+  const isCompleted = selectedPair?.status === "completed";
 
   const interviewerSlots = useMemo(() => {
     if (!currentProposals) return [];
@@ -803,13 +865,15 @@ export default function StudentDashboard() {
                             </div>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                interviewerPair.status === "scheduled"
+                                interviewerPair.status === "completed"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : interviewerPair.status === "scheduled"
                                   ? "bg-emerald-100 text-emerald-700"
                                   : interviewerPair.status === "rejected"
                                   ? "bg-red-100 text-red-700"
                                   : "bg-amber-100 text-amber-700"
                               }`}>
-                                {interviewerPair.status === "scheduled" ? "Scheduled" : interviewerPair.status === "rejected" ? "Rejected" : "Pending"}
+                                {interviewerPair.status === "completed" ? "Finished" : interviewerPair.status === "scheduled" ? "Scheduled" : interviewerPair.status === "rejected" ? "Rejected" : "Pending"}
                               </span>
                               <span className="text-xs text-slate-500 truncate">
                                 {interviewerPair.interviewer?.name || interviewerPair.interviewer?.email || "N/A"} ➜ {interviewerPair.interviewee?.name || interviewerPair.interviewee?.email || "N/A"}
@@ -843,13 +907,15 @@ export default function StudentDashboard() {
                             </div>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                intervieweePair.status === "scheduled"
+                                intervieweePair.status === "completed"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : intervieweePair.status === "scheduled"
                                   ? "bg-emerald-100 text-emerald-700"
                                   : intervieweePair.status === "rejected"
                                   ? "bg-red-100 text-red-700"
                                   : "bg-amber-100 text-amber-700"
                               }`}>
-                                {intervieweePair.status === "scheduled" ? "Scheduled" : intervieweePair.status === "rejected" ? "Rejected" : "Pending"}
+                                {intervieweePair.status === "completed" ? "Finished" : intervieweePair.status === "scheduled" ? "Scheduled" : intervieweePair.status === "rejected" ? "Rejected" : "Pending"}
                               </span>
                               <span className="text-xs text-slate-500 truncate">
                                 {intervieweePair.interviewer?.name || intervieweePair.interviewer?.email || "N/A"} ➜ {intervieweePair.interviewee?.name || intervieweePair.interviewee?.email || "N/A"}
@@ -1406,58 +1472,75 @@ export default function StudentDashboard() {
               Jitsi Meet
             </span>
           </div>
-          <div className="flex flex-col gap-2">
-            <input
-              type="text"
-              readOnly
-              value={
-                meetingLinkEnabled
-                  ? selectedPair.meetingLink
-                  : `Meeting link will be available ${new Date(
-                      new Date(selectedPair.scheduledAt).getTime() -
-                        30 * 60 * 1000
-                    ).toLocaleString()}`
-              }
-              className={`w-full border rounded-lg px-3 py-2 text-sm font-medium break-all ${
-                meetingLinkEnabled
-                  ? "bg-white border-indigo-300 text-slate-900"
-                  : "bg-slate-100 border-slate-300 text-slate-500"
-              }`}
-            />
-            <div className="flex flex-col sm:flex-row gap-2">
-              <button
-                onClick={() => {
-                  if (!meetingLinkEnabled) return;
-                  window.open(selectedPair.meetingLink, "_blank");
-                }}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation ${
-                  meetingLinkEnabled
-                    ? "bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white"
-                    : "bg-slate-300 text-slate-500 cursor-not-allowed"
-                }`}
-                disabled={!meetingLinkEnabled}
-              >
-                Join Meeting
-              </button>
-              <button
-                onClick={() => {
-                  if (!meetingLinkEnabled) return;
-                  navigator.clipboard.writeText(
-                    selectedPair.meetingLink
-                  );
-                  setMessage("✅ Meeting link copied to clipboard successfully!");
-                }}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation ${
-                  meetingLinkEnabled
-                    ? "bg-white border border-indigo-300 hover:bg-indigo-50 active:bg-indigo-100 text-indigo-700"
-                    : "bg-slate-100 border border-slate-300 text-slate-400 cursor-not-allowed"
-                }`}
-                disabled={!meetingLinkEnabled}
-              >
-                Copy Link
-              </button>
+          
+          {isCompleted ? (
+            <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center gap-2 text-blue-800 mb-2">
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-semibold">Session Completed</span>
+              </div>
+              <p className="text-sm text-blue-700">
+                This interview session has been finished. Feedback has been submitted.
+              </p>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={
+                    meetingLinkEnabled
+                      ? selectedPair.meetingLink
+                      : `Meeting link will be available ${new Date(
+                          new Date(selectedPair.scheduledAt).getTime() -
+                            30 * 60 * 1000
+                        ).toLocaleString()}`
+                  }
+                  className={`w-full border rounded-lg px-3 py-2 text-sm font-medium break-all ${
+                    meetingLinkEnabled
+                      ? "bg-white border-indigo-300 text-slate-900"
+                      : "bg-slate-100 border-slate-300 text-slate-500"
+                  }`}
+                />
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={() => {
+                      if (!meetingLinkEnabled) return;
+                      window.open(selectedPair.meetingLink, "_blank");
+                      startFeedbackCountdown(selectedPair);
+                    }}
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation ${
+                      meetingLinkEnabled
+                        ? "bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white"
+                        : "bg-slate-300 text-slate-500 cursor-not-allowed"
+                    }`}
+                    disabled={!meetingLinkEnabled}
+                  >
+                    Join Meeting
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!meetingLinkEnabled) return;
+                      navigator.clipboard.writeText(
+                        selectedPair.meetingLink
+                      );
+                      setMessage("✅ Meeting link copied to clipboard successfully!");
+                      startFeedbackCountdown(selectedPair);
+                    }}
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation ${
+                      meetingLinkEnabled
+                        ? "bg-white border border-indigo-300 hover:bg-indigo-50 active:bg-indigo-100 text-indigo-700"
+                        : "bg-slate-100 border border-slate-300 text-slate-400 cursor-not-allowed"
+                    }`}
+                    disabled={!meetingLinkEnabled}
+                  >
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 

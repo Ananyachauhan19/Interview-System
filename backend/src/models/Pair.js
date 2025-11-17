@@ -8,7 +8,7 @@ const pairSchema = new mongoose.Schema({
   intervieweeModel: { type: String, enum: ['User', 'SpecialStudent'], default: 'User' },
   scheduledAt: Date,
   meetingLink: String,
-  status: { type: String, enum: ['pending', 'rejected', 'scheduled'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'rejected', 'scheduled', 'completed'], default: 'pending' },
   rejectionCount: { type: Number, default: 0 },
   rejectionHistory: [{
     at: { type: Date, default: Date.now },

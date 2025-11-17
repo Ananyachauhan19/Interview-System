@@ -7,8 +7,35 @@ import { HttpError } from '../utils/errors.js';
 // Only interviewer can submit feedback about the interviewee.
 // Feedback allowed only after the meeting END (scheduledAt + duration) OR after event end.
 export async function submitFeedback(req, res) {
-  const { pairId, marks, comments } = req.body;
-  if (marks == null || isNaN(marks)) throw new HttpError(400, 'Marks required');
+  const { pairId, marks, comments, ratings, suggestions } = req.body;
+  
+  // Support both old format (marks) and new format (ratings)
+  let finalMarks = marks;
+  let feedbackData = { marks: finalMarks, comments };
+  
+  if (ratings) {
+    // New format with detailed ratings
+    const { integrity, communication, preparedness, problemSolving, attitude } = ratings;
+    if (!integrity || !communication || !preparedness || !problemSolving || !attitude) {
+      throw new HttpError(400, 'All rating criteria required');
+    }
+    const totalMarks = integrity + communication + preparedness + problemSolving + attitude;
+    finalMarks = (totalMarks / 25) * 100; // Convert 25-point scale to 100-point scale
+    feedbackData = {
+      marks: finalMarks,
+      comments: suggestions || comments,
+      integrity,
+      communication,
+      preparedness,
+      problemSolving,
+      attitude,
+      totalMarks,
+      suggestions
+    };
+  } else if (marks == null || isNaN(marks)) {
+    throw new HttpError(400, 'Marks required');
+  }
+  
   const pair = await Pair.findById(pairId);
   if (!pair) throw new HttpError(404, 'Pair not found');
   // Enforce interviewer role
@@ -31,9 +58,13 @@ export async function submitFeedback(req, res) {
   if (existing) throw new HttpError(400, 'Feedback already submitted for this session');
   const fb = await Feedback.findOneAndUpdate(
     { event: pair.event, pair: pair._id, from: req.user._id, to },
-    { marks, comments },
+    feedbackData,
     { upsert: true, new: true }
   );
+  
+  // Mark pair as completed after feedback submission
+  await Pair.findByIdAndUpdate(pairId, { status: 'completed' });
+  
   res.json(fb);
 }
 
@@ -124,12 +155,29 @@ export async function listFeedbackForMe(req, res) {
   const { eventId } = req.query;
   const filter = { to: req.user._id };
   if (eventId) filter.event = eventId;
-  const list = await Feedback.find(filter).populate('from pair').lean();
+  const list = await Feedback.find(filter).populate('from pair event').lean();
   res.json(list.map(f => ({
     pair: f.pair?._id || f.pair,
+    event: {
+      _id: f.event?._id,
+      name: f.event?.name,
+      title: f.event?.title,
+      dateTime: f.event?.dateTime,
+      startDate: f.event?.startDate,
+      endDate: f.event?.endDate,
+    },
     from: f.from?.name || f.from?.email,
+    fromEmail: f.from?.email,
     marks: f.marks,
     comments: f.comments,
+    // Include detailed ratings
+    integrity: f.integrity,
+    communication: f.communication,
+    preparedness: f.preparedness,
+    problemSolving: f.problemSolving,
+    attitude: f.attitude,
+    totalMarks: f.totalMarks,
+    suggestions: f.suggestions,
     submittedAt: f.createdAt,
   })));
 }

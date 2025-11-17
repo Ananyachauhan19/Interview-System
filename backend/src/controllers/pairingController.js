@@ -185,6 +185,53 @@ export async function listPairs(req, res) {
   res.json(sanitized);
 }
 
+export async function getPairDetails(req, res) {
+  const { pairId } = req.params;
+  console.log('[getPairDetails] Request for pairId:', pairId);
+  
+  if (!mongoose.Types.ObjectId.isValid(pairId)) {
+    console.log('[getPairDetails] Invalid pair id format');
+    throw new HttpError(400, 'Invalid pair id');
+  }
+
+  const pair = await Pair.findById(pairId).lean();
+  if (!pair) {
+    console.log('[getPairDetails] Pair not found');
+    throw new HttpError(404, 'Pair not found');
+  }
+  console.log('[getPairDetails] Pair found:', pair._id);
+
+  // Fetch event
+  const event = await Event.findById(pair.event).lean();
+  if (!event) {
+    console.log('[getPairDetails] Event not found');
+    throw new HttpError(404, 'Event not found');
+  }
+  console.log('[getPairDetails] Event found:', event.name);
+
+  // Populate interviewer and interviewee based on event type
+  let interviewer = null;
+  let interviewee = null;
+
+  if (event.isSpecial) {
+    console.log('[getPairDetails] Loading SpecialStudent data');
+    interviewer = await SpecialStudent.findById(pair.interviewer).lean();
+    interviewee = await SpecialStudent.findById(pair.interviewee).lean();
+  } else {
+    console.log('[getPairDetails] Loading User data');
+    interviewer = await User.findById(pair.interviewer).lean();
+    interviewee = await User.findById(pair.interviewee).lean();
+  }
+
+  console.log('[getPairDetails] Returning pair details with event and participants');
+  return res.json({
+    ...pair,
+    event,
+    interviewer,
+    interviewee
+  });
+}
+
 export async function setMeetingLink(req, res) {
   // Admin sets or updates meeting link; only allowed within 1 hour before start
   if (req.user?.role !== 'admin') throw new HttpError(403, 'Admin only');

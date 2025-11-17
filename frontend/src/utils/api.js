@@ -103,6 +103,7 @@ export const api = {
   // Pairing
 
   listPairs: (eventId) => request(`/pairing/${eventId}`),
+  getPairDetails: (pairId) => request(`/pairing/pair/${pairId}`),
   setPairMeetingLink: (pairId, meetingLink) => request(`/pairing/pair/${pairId}/link`, { method: 'POST', body: { meetingLink } }),
 
   // Scheduling
@@ -111,7 +112,7 @@ export const api = {
   rejectSlots: (pairId) => request(`/schedule/${pairId}/reject`, { method: 'POST' }),
 
   // Feedback
-  submitFeedback: (pairId, marks, comments) => request('/feedback/submit', { method: 'POST', body: { pairId, marks, comments } }),
+  submitFeedback: (pairId, ratings, suggestions) => request('/feedback/submit', { method: 'POST', body: { pairId, ratings, suggestions } }),
   exportFeedbackCsv: (eventId) => request(`/feedback/event/${eventId}.csv`),
   listFeedback: (qs='') => request(`/feedback/admin/list${qs ? '?' + qs : ''}`),
   exportFilteredFeedbackCsv: (qs='') => request(`/feedback/admin/export.csv${qs ? '?' + qs : ''}`),
