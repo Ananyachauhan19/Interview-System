@@ -139,7 +139,7 @@ export default function StudentDirectory() {
               </div>
               <div>
                 <h2 className="text-2xl font-semibold text-slate-800">
-                  {activeTab === "students" ? "Student Directory" : "Special Event Students"}
+                  {activeTab === "students" ? "Student Database" : "Special Event Students"}
                 </h2>
                 <p className="text-slate-600 text-sm">
                   {activeTab === "students" 
