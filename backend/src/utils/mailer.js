@@ -71,17 +71,17 @@ export function buildICS({ uid, start, end, summary, description, url, organizer
 
 // Onboarding email: StudentId & Password
 export async function sendOnboardingEmail({ to, studentId, password }) {
-  const subject = 'Welcome to the Interview System';
+  const subject = 'Welcome to PeerPrep - Your Mock Interview System';
   const html = `
     <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;">
       <p>Dear Student,</p>
-      <p>Welcome to the Interview System! Your account has been successfully created.</p>
+      <p>Welcome to PeerPrep - Your Mock Interview System! Your account has been successfully created.</p>
       <p>
         <strong>Student ID:</strong> {studentId}<br/>
         <strong>Password:</strong> {password}
       </p>
       <p>Please log in and change your password after your first login for security reasons.</p>
-      <p>Best regards,<br/>Interview System Team</p>
+      <p>Best regards,<br/>PeerPrep Team</p>
     </div>
   `;
   return sendMail({ to, subject, html: renderTemplate(html, { studentId, password }) });
@@ -89,16 +89,16 @@ export async function sendOnboardingEmail({ to, studentId, password }) {
 
 // Password reset email
 export async function sendPasswordResetEmail({ to, name, resetUrl }) {
-  const subject = 'Password Reset Request - Interview System';
+  const subject = 'Password Reset Request - PeerPrep';
   const html = `
     <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;">
       <p>Dear {name},</p>
-      <p>We received a request to reset your password for the Interview System.</p>
+      <p>We received a request to reset your password for PeerPrep.</p>
       <p>Click the link below to reset your password (valid for 1 hour):</p>
       <p><a href="{resetUrl}" style="display:inline-block;padding:12px 24px;background:#0ea5e9;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">Reset Password</a></p>
       <p>Or copy and paste this link in your browser:<br/>{resetUrl}</p>
       <p>If you didn't request this password reset, please ignore this email.</p>
-      <p>Best regards,<br/>Interview System Team</p>
+      <p>Best regards,<br/>PeerPrep Team</p>
     </div>
   `;
   return sendMail({ to, subject, html: renderTemplate(html, { name, resetUrl }) });
@@ -106,19 +106,19 @@ export async function sendPasswordResetEmail({ to, name, resetUrl }) {
 
 // Event notification email (unified for both regular and special events)
 export async function sendEventNotificationEmail({ to, event, interviewer, interviewee }) {
-  const subject = `Interview Event: ${event.title}`;
+  const subject = `Mock Interview: ${event.title}`;
   const html = `
     <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;">
       <p>Dear Student,</p>
-      <p>An interview event has been scheduled for you. Please find the details below:</p>
+      <p>A mock interview has been scheduled for you. Please find the details below:</p>
       <p>
-        <strong>Event:</strong> {title}<br/>
+        <strong>Mock Interview:</strong> {title}<br/>
         <strong>Date:</strong> {date}<br/>
         <strong>Details:</strong> {details}
         ${event.templateUrl ? `<br/><strong>Template:</strong> <a href="${event.templateUrl}">Download Template</a>` : ''}
       </p>
       <p>Please check your dashboard for pairing information and to propose interview slots.</p>
-      <p>Best regards,<br/>Interview System Team</p>
+      <p>Best regards,<br/>PeerPrep Team</p>
     </div>
   `;
   return sendMail({
@@ -134,7 +134,7 @@ export async function sendEventNotificationEmail({ to, event, interviewer, inter
 
 // Slot proposal email (to interviewee)
 export async function sendSlotProposalEmail({ to, interviewer, slot }) {
-  const subject = 'Interview Slot Proposal';
+  const subject = 'Mock Interview Slot Proposal';
   
   // Check if multiple slots (pipe-separated to avoid conflict with comma in datetime)
   const slots = String(slot).split('|').map(s => s.trim()).filter(Boolean);
@@ -145,7 +145,7 @@ export async function sendSlotProposalEmail({ to, interviewer, slot }) {
   const html = slots.length > 1
     ? `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
         <p style="margin-bottom:20px;">Dear Student,</p>
-        <p style="margin-bottom:16px;">Your interviewer <strong style="color:#0ea5e9;">${interviewer}</strong> has proposed the following time slots for your upcoming interview:</p>
+        <p style="margin-bottom:16px;">Your interviewer <strong style="color:#0ea5e9;">${interviewer}</strong> has proposed the following time slots for your upcoming mockinterview:</p>
         <ul style="background:#f8fafc;padding:20px 24px;border-radius:8px;border-left:4px solid #0ea5e9;list-style:none;margin:20px 0;">
           ${slotsList}
         </ul>
@@ -158,7 +158,7 @@ export async function sendSlotProposalEmail({ to, interviewer, slot }) {
       </div>`
     : `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
         <p style="margin-bottom:20px;">Dear Student,</p>
-        <p style="margin-bottom:16px;">Your interviewer <strong style="color:#0ea5e9;">${interviewer}</strong> has proposed the following time slot for your upcoming interview:</p>
+        <p style="margin-bottom:16px;">Your interviewer <strong style="color:#0ea5e9;">${interviewer}</strong> has proposed the following time slot for your upcoming mock interview:</p>
         <div style="background:#f8fafc;padding:20px;border-radius:8px;border-left:4px solid #0ea5e9;margin:20px 0;">
           <p style="margin:0;font-size:16px;font-weight:600;color:#334155;">📅 ${slot}</p>
         </div>
@@ -167,7 +167,7 @@ export async function sendSlotProposalEmail({ to, interviewer, slot }) {
           <p style="margin:8px 0 0 0;font-size:14px;color:#0c4a6e;">• Log in to your dashboard to review the proposed slot<br/>• Accept the proposed slot, or<br/>• Suggest up to 3 alternative time slots if this doesn't work for you</p>
         </div>
         <p style="margin-top:24px;color:#64748b;font-size:14px;">If you have any questions or concerns, please contact your program coordinator.</p>
-        <p style="margin-top:24px;">Best regards,<br/><strong>Interview System Team</strong></p>
+        <p style="margin-top:24px;">Best regards,<br/><strong>PeerPrep Team</strong></p>
       </div>`;
   
   return sendMail({ to, subject, html: renderTemplate(html, { interviewer, slot, slotsList }) });
@@ -175,7 +175,7 @@ export async function sendSlotProposalEmail({ to, interviewer, slot }) {
 
 // Slot acceptance/notification email (to interviewer)
 export async function sendSlotAcceptanceEmail({ to, interviewee, slot, accepted }) {
-  const subject = accepted ? 'Interview Slot Accepted ✓' : 'New Slot Proposal from Interviewee';
+  const subject = accepted ? 'Mock Interview Slot Accepted ✓' : 'New Slot Proposal from Interviewee';
   
   // Check if multiple slots (pipe-separated to avoid conflict with comma in datetime)
   const slots = String(slot).split('|').map(s => s.trim()).filter(Boolean);
@@ -192,55 +192,55 @@ export async function sendSlotAcceptanceEmail({ to, interviewee, slot, accepted 
         </div>
         <div style="background:#dcfce7;padding:16px;border-radius:6px;margin:20px 0;border-left:3px solid #16a34a;">
           <p style="margin:0;font-size:14px;color:#14532d;"><strong>📝 Next Steps:</strong></p>
-          <p style="margin:8px 0 0 0;font-size:14px;color:#14532d;">• The interview is now scheduled and confirmed<br/>• Check your dashboard for the meeting link and details<br/>• The meeting link will be available 30 minutes before the scheduled time</p>
+          <p style="margin:8px 0 0 0;font-size:14px;color:#14532d;">• The mock interview is now scheduled and confirmed<br/>• Check your dashboard for the meeting link and details<br/>• The meeting link will be available 30 minutes before the scheduled time</p>
         </div>
         <p style="margin-top:24px;color:#64748b;font-size:14px;">Please ensure you're prepared and available at the scheduled time.</p>
-        <p style="margin-top:24px;">Best regards,<br/><strong>Interview System Team</strong></p>
+        <p style="margin-top:24px;">Best regards,<br/><strong>PeerPrep Team</strong></p>
       </div>`
     : (slots.length > 1
       ? `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
           <p style="margin-bottom:20px;">Dear Interviewer,</p>
-          <p style="margin-bottom:16px;"><strong style="color:#f59e0b;">${interviewee}</strong> has proposed the following alternative time slots for the interview:</p>
+          <p style="margin-bottom:16px;"><strong style="color:#f59e0b;">${interviewee}</strong> has proposed the following alternative time slots for the mock interview:</p>
           <ul style="background:#fef3c7;padding:20px 24px;border-radius:8px;border-left:4px solid #f59e0b;list-style:none;margin:20px 0;">
             ${slotsList}
           </ul>
           <div style="background:#fef9c3;padding:16px;border-radius:6px;margin:20px 0;border-left:3px solid #eab308;">
             <p style="margin:0;font-size:14px;color:#713f12;"><strong>📝 Next Steps:</strong></p>
-            <p style="margin:8px 0 0 0;font-size:14px;color:#713f12;">• Log in to your dashboard to review the proposed slots<br/>• Accept one of the proposed slots to schedule the interview<br/>• Or propose new times if none of these work for you</p>
+            <p style="margin:8px 0 0 0;font-size:14px;color:#713f12;">• Log in to your dashboard to review the proposed slots<br/>• Accept one of the proposed slots to schedule the mock interview<br/>• Or propose new times if none of these work for you</p>
           </div>
-          <p style="margin-top:24px;color:#64748b;font-size:14px;">Please respond at your earliest convenience to finalize the interview schedule.</p>
-          <p style="margin-top:24px;">Best regards,<br/><strong>Interview System Team</strong></p>
+          <p style="margin-top:24px;color:#64748b;font-size:14px;">Please respond at your earliest convenience to finalize the mock interview schedule.</p>
+          <p style="margin-top:24px;">Best regards,<br/><strong>PeerPrep Team</strong></p>
         </div>`
       : `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
           <p style="margin-bottom:20px;">Dear Interviewer,</p>
-          <p style="margin-bottom:16px;"><strong style="color:#f59e0b;">${interviewee}</strong> has proposed an alternative time slot for the interview:</p>
+          <p style="margin-bottom:16px;"><strong style="color:#f59e0b;">${interviewee}</strong> has proposed an alternative time slot for the mock interview:</p>
           <div style="background:#fef3c7;padding:20px;border-radius:8px;border-left:4px solid #f59e0b;margin:20px 0;">
             <p style="margin:0;font-size:16px;font-weight:600;color:#78350f;">📅 ${slot}</p>
           </div>
           <div style="background:#fef9c3;padding:16px;border-radius:6px;margin:20px 0;border-left:3px solid #eab308;">
             <p style="margin:0;font-size:14px;color:#713f12;"><strong>📝 Next Steps:</strong></p>
-            <p style="margin:8px 0 0 0;font-size:14px;color:#713f12;">• Log in to your dashboard to review the proposed slot<br/>• Accept the proposed slot to schedule the interview<br/>• Or propose a new time if this doesn't work for you</p>
+            <p style="margin:8px 0 0 0;font-size:14px;color:#713f12;">• Log in to your dashboard to review the proposed slot<br/>• Accept the proposed slot to schedule the mock interview<br/>• Or propose a new time if this doesn't work for you</p>
           </div>
-          <p style="margin-top:24px;color:#64748b;font-size:14px;">Please respond at your earliest convenience to finalize the interview schedule.</p>
-          <p style="margin-top:24px;">Best regards,<br/><strong>Interview System Team</strong></p>
+          <p style="margin-top:24px;color:#64748b;font-size:14px;">Please respond at your earliest convenience to finalize the mock interview schedule.</p>
+          <p style="margin-top:24px;">Best regards,<br/><strong>PeerPrep Team</strong></p>
         </div>`);
         
   return sendMail({ to, subject, html: renderTemplate(html, { interviewee, slot, slotsList }) });
 }
 
-// Interview scheduled email (to both, with link)
+// Interview scheduled email 
 export async function sendInterviewScheduledEmail({ to, interviewer, interviewee, event, link }) {
-  const subject = 'Interview Scheduled - Confirmation & Details';
+  const subject = 'Mock Interview Scheduled - Confirmation & Details';
   const html = `
     <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
       <p style="margin-bottom:20px;">Dear Participant,</p>
-      <p style="margin-bottom:16px;">Your interview has been successfully scheduled! Here are the confirmed details:</p>
+      <p style="margin-bottom:16px;">Your mock interview has been successfully scheduled! Here are the confirmed details:</p>
       
       <div style="background:#f0f9ff;padding:24px;border-radius:8px;border-left:4px solid #0ea5e9;margin:24px 0;">
-        <p style="margin:0 0 12px 0;font-size:17px;font-weight:700;color:#0c4a6e;">Interview Confirmation</p>
+        <p style="margin:0 0 12px 0;font-size:17px;font-weight:700;color:#0c4a6e;">Mock Interview Confirmation</p>
         <table style="width:100%;font-size:15px;">
           <tr>
-            <td style="padding:8px 0;color:#475569;width:40%;"><strong>📋 Event:</strong></td>
+            <td style="padding:8px 0;color:#475569;width:40%;"><strong>📋 Mock Interview:</strong></td>
             <td style="padding:8px 0;color:#0f172a;font-weight:600;">{title}</td>
           </tr>
           <tr>
@@ -251,17 +251,7 @@ export async function sendInterviewScheduledEmail({ to, interviewer, interviewee
             <td style="padding:8px 0;color:#475569;"><strong>👤 Interviewer:</strong></td>
             <td style="padding:8px 0;color:#0f172a;">{interviewer}</td>
           </tr>
-          <tr>
-            <td style="padding:8px 0;color:#475569;"><strong>🎯 Interviewee:</strong></td>
-            <td style="padding:8px 0;color:#0f172a;">{interviewee}</td>
-          </tr>
         </table>
-      </div>
-      
-      <div style="background:#ecfdf5;padding:20px;border-radius:6px;margin:24px 0;border-left:3px solid #10b981;">
-        <p style="margin:0 0 12px 0;font-size:15px;color:#064e3b;"><strong>🔗 Meeting Link:</strong></p>
-        <a href="{link}" style="color:#0891b2;font-weight:600;text-decoration:underline;word-break:break-all;">{link}</a>
-        <p style="margin:12px 0 0 0;font-size:13px;color:#065f46;"><em>This link will become active 30 minutes before the scheduled time.</em></p>
       </div>
       
       <div style="background:#dbeafe;padding:16px;border-radius:6px;margin:24px 0;border-left:3px solid #3b82f6;">
@@ -276,8 +266,8 @@ export async function sendInterviewScheduledEmail({ to, interviewer, interviewee
       
       {details}
       
-      <p style="margin-top:28px;color:#64748b;font-size:14px;">We look forward to a successful interview session!</p>
-      <p style="margin-top:24px;">Best regards,<br/><strong>Interview System Team</strong></p>
+      <p style="margin-top:28px;color:#64748b;font-size:14px;">We look forward to a successful mock interview session!</p>
+      <p style="margin-top:24px;">Best regards,<br/><strong>PeerPrep Team</strong></p>
     </div>
   `;
   return sendMail({

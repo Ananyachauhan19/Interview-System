@@ -28,6 +28,7 @@ export default function DateTimePicker({
   const inputRef = useRef(null);
   const flatpickrRef = useRef(null);
   const lastSelectedDateRef = useRef(null);
+  const lastInsideClickRef = useRef(false);
 
   useEffect(() => {
     if (!inputRef.current) return;
@@ -36,11 +37,23 @@ export default function DateTimePicker({
       enableTime,
       dateFormat: enableTime ? 'Y-m-d H:i' : 'Y-m-d',
       time_24hr: false,
+      closeOnSelect: false,
       minuteIncrement: 1,
       // Do not fill input on open; only show today's month
       defaultDate: value || null,
       minDate: min || null,
       maxDate: max || null,
+      // Keep calendar open unless user clicks outside
+      onClose: (selectedDates, dateStr, instance) => {
+        try {
+          if (lastInsideClickRef.current) {
+            // Reopen immediately if the close was triggered by an inside click
+            setTimeout(() => {
+              if (instance && typeof instance.open === 'function') instance.open();
+            }, 0);
+          }
+        } catch {}
+      },
       onOpen: (selectedDates, dateStr, instance) => {
         // If no selection yet, just jump calendar view to today without selecting
         if (!instance.selectedDates || instance.selectedDates.length === 0) {
@@ -56,7 +69,7 @@ export default function DateTimePicker({
           }
         }
       },
-      onChange: (selectedDates) => {
+      onChange: (selectedDates, dateStr, instance) => {
         if (selectedDates.length > 0) {
           const date = selectedDates[0];
           // Remember last selected date (with current time)
@@ -69,12 +82,27 @@ export default function DateTimePicker({
             const picked = new Date(date);
             const now = new Date();
             const sameDayAsNow = picked.getFullYear() === now.getFullYear() && picked.getMonth() === now.getMonth() && picked.getDate() === now.getDate();
+            // Respect event min/max boundaries for defaulting
+            const parseDateStr = (s) => {
+              if (!s) return null;
+              const d = new Date(s);
+              return isNaN(d.getTime()) ? null : d;
+            };
+            const minDateTime = parseDateStr(min);
+            const maxDateTime = parseDateStr(max);
+            const sameAsMinDay = !!(minDateTime && picked.getFullYear() === minDateTime.getFullYear() && picked.getMonth() === minDateTime.getMonth() && picked.getDate() === minDateTime.getDate());
+            const sameAsMaxDay = !!(maxDateTime && picked.getFullYear() === maxDateTime.getFullYear() && picked.getMonth() === maxDateTime.getMonth() && picked.getDate() === maxDateTime.getDate());
 
             // If this picker is used for end-time, set 22:00 by default for picked day
             if (isEnd) {
               // End time default 22:00 of picked day
               picked.setHours(22, 0, 0, 0);
-              flatpickrRef.current.setDate(picked, true);
+              // If max boundary is earlier within the day, cap to it
+              if (sameAsMaxDay && maxDateTime && picked.getTime() > maxDateTime.getTime()) {
+                picked.setHours(maxDateTime.getHours(), maxDateTime.getMinutes(), 0, 0);
+              }
+              instance.setDate(picked, true);
+              try { if (instance.updateTimeDisabledStates) instance.updateTimeDisabledStates(); } catch {}
               return;
             }
 
@@ -87,7 +115,20 @@ export default function DateTimePicker({
             } else {
               picked.setHours(10, 0, 0, 0);
             }
-            flatpickrRef.current.setDate(picked, true);
+            // If selected date is the min boundary day, ensure default is not before event start
+            if (sameAsMinDay && minDateTime) {
+              if (picked.getTime() < minDateTime.getTime()) {
+                picked.setHours(minDateTime.getHours(), minDateTime.getMinutes(), 0, 0);
+              }
+            }
+            // If selected date is the max boundary day, ensure default is not after event end
+            if (sameAsMaxDay && maxDateTime) {
+              if (picked.getTime() > maxDateTime.getTime()) {
+                picked.setHours(maxDateTime.getHours(), maxDateTime.getMinutes(), 0, 0);
+              }
+            }
+            instance.setDate(picked, true);
+            try { if (instance.updateTimeDisabledStates) instance.updateTimeDisabledStates(); } catch {}
             return;
           }
 
@@ -98,7 +139,8 @@ export default function DateTimePicker({
             const adjusted = new Date(date.getTime());
             if (hour < 10) adjusted.setHours(10, 0, 0, 0);
             else adjusted.setHours(22, 0, 0, 0);
-            flatpickrRef.current.setDate(adjusted, true);
+            instance.setDate(adjusted, true);
+            try { if (instance.updateTimeDisabledStates) instance.updateTimeDisabledStates(); } catch {}
             return;
           }
 
@@ -112,7 +154,8 @@ export default function DateTimePicker({
               future.setDate(future.getDate() + 1);
               future.setHours(10, 0, 0, 0);
             }
-            flatpickrRef.current.setDate(future, true);
+            instance.setDate(future, true);
+            try { if (instance.updateTimeDisabledStates) instance.updateTimeDisabledStates(); } catch {}
             return;
           }
           // Convert to ISO format (YYYY-MM-DDTHH:mm)
@@ -126,18 +169,31 @@ export default function DateTimePicker({
             ? `${year}-${month}-${day}T${hours}:${minutes}`
             : `${year}-${month}-${day}`;
           
-          onChange(isoString);
+          // Avoid redundant parent updates when value hasn't changed
+          if (!value || value !== isoString) {
+            onChange(isoString);
+          }
           // Update stored last selected date again after potential external updates
           try { lastSelectedDateRef.current = new Date(date.getTime()); } catch {}
           // Refresh hour/minute disabled states if helper present
           try {
-            if (flatpickrRef.current && flatpickrRef.current.updateTimeDisabledStates) {
-              flatpickrRef.current.updateTimeDisabledStates();
+            if (instance && instance.updateTimeDisabledStates) {
+              instance.updateTimeDisabledStates();
             }
           } catch {}
         }
       },
       onReady: (selectedDates, dateStr, instance) => {
+        // Track inside vs outside clicks to guard closing
+        try {
+          const onDocMouseDown = (e) => {
+            const container = instance.calendarContainer;
+            lastInsideClickRef.current = !!(container && container.contains(e.target));
+          };
+          document.addEventListener('mousedown', onDocMouseDown, true);
+          // Store for cleanup
+          instance.__onDocMouseDown = onDocMouseDown;
+        } catch {}
         // Add custom styling to the calendar - check if container exists
         if (instance.calendarContainer) {
           instance.calendarContainer.classList.add('flatpickr-custom');
@@ -409,17 +465,19 @@ export default function DateTimePicker({
                 if (!base) return; // No prior date to apply time to
                 const h24 = to24h(h12, (period || 'AM').toUpperCase());
                 base.setHours(h24, m || 0, 0, 0);
-                if (flatpickrRef.current) {
-                  flatpickrRef.current.setDate(base, true);
-                }
+                instance.setDate(base, true);
               };
               // AM/PM selection handlers (apply via setDate)
               const selectPeriod = (period) => {
+                const currentPeriod = (amPm.value || 'AM').toUpperCase();
+                // Update visuals regardless
                 amPm.value = period;
                 setActive(amOption, period === 'AM');
                 setActive(pmOption, period === 'PM');
                 amOption.classList.toggle('active', period === 'AM');
                 pmOption.classList.toggle('active', period === 'PM');
+                // Avoid re-applying the same period to prevent recursion
+                if (currentPeriod === period) return;
                 const currentHour = parseInt(hourInput.value || '12', 10);
                 const currentMinute = parseInt(minuteInput.value || '0', 10);
                 applyTime(currentHour, currentMinute, period);
@@ -440,6 +498,7 @@ export default function DateTimePicker({
                 return isNaN(d.getTime()) ? null : d;
               };
               const minDateTime = parseDateStr(min);
+              const maxDateTime = parseDateStr(max);
               const isTodaySelected = () => {
                 const d = instance.selectedDates && instance.selectedDates[0];
                 if (!d) return false;
@@ -450,6 +509,11 @@ export default function DateTimePicker({
                 const d = instance.selectedDates && instance.selectedDates[0];
                 if (!d || !minDateTime) return false;
                 return d.getFullYear() === minDateTime.getFullYear() && d.getMonth() === minDateTime.getMonth() && d.getDate() === minDateTime.getDate();
+              };
+              const isMaxDaySelected = () => {
+                const d = instance.selectedDates && instance.selectedDates[0];
+                if (!d || !maxDateTime) return false;
+                return d.getFullYear() === maxDateTime.getFullYear() && d.getMonth() === maxDateTime.getMonth() && d.getDate() === maxDateTime.getDate();
               };
               const comparePeriod = (a, b) => (a === b ? 0 : a === 'AM' ? -1 : 1);
               const isHourAllowedByWindow = (period, h12) => {
@@ -464,6 +528,7 @@ export default function DateTimePicker({
                 const selPeriod = (amPm.value || 'AM').toUpperCase();
                 const selHour = parseInt(hourInput.value || '12', 10);
                 const minDay = isMinDaySelected();
+                const maxDay = isMaxDaySelected();
                 const refPeriod = minDay && minDateTime
                   ? (minDateTime.getHours() >= 12 ? 'PM' : 'AM')
                   : nowInfo.period;
@@ -476,6 +541,17 @@ export default function DateTimePicker({
                 }
                 const refMinute = minDay && minDateTime ? minDateTime.getMinutes() : nowInfo.minute;
 
+                // Upper bound reference for max day
+                let maxRefPeriod = null;
+                let maxRefHour12 = null;
+                let maxRefMinute = null;
+                if (maxDay && maxDateTime) {
+                  maxRefPeriod = maxDateTime.getHours() >= 12 ? 'PM' : 'AM';
+                  const h24 = maxDateTime.getHours();
+                  maxRefHour12 = h24 % 12; if (maxRefHour12 === 0) maxRefHour12 = 12;
+                  maxRefMinute = maxDateTime.getMinutes();
+                }
+
                 // Hours
                 hourOptions.forEach((opt, i) => {
                   const hourVal = i + 1; // 1..12
@@ -487,6 +563,12 @@ export default function DateTimePicker({
                     const rel = comparePeriod(selPeriod, refPeriod);
                     if (rel < 0) hide = true; // Entire earlier period
                     else if (rel === 0 && hourVal < refHour12) hide = true; // Earlier hour in same period
+                  }
+                  // Upper bound when same as max day
+                  if (!hide && maxDay && maxRefPeriod) {
+                    const relMax = comparePeriod(selPeriod, maxRefPeriod);
+                    if (relMax > 0) hide = true; // Entire later period beyond max
+                    else if (relMax === 0 && hourVal > maxRefHour12) hide = true; // Later hour in same period
                   }
                   setHiddenOption(opt, hide);
                 });
@@ -502,6 +584,12 @@ export default function DateTimePicker({
                     if (rel < 0) hide = true;
                     else if (rel === 0 && selHour === refHour12 && i < refMinute) hide = true;
                   }
+                  // Upper bound minutes when on max day
+                  if (!hide && maxDay && maxRefPeriod) {
+                    const relMax = comparePeriod(selPeriod, maxRefPeriod);
+                    if (relMax > 0) hide = true;
+                    else if (relMax === 0 && selHour === maxRefHour12 && i > maxRefMinute) hide = true;
+                  }
                   setHiddenOption(opt, hide);
                 });
 
@@ -510,18 +598,26 @@ export default function DateTimePicker({
                 const allowedPM = isHourAllowedByWindow('PM', 12) || isHourAllowedByWindow('PM', 1);
                 let disableAM = !allowedAM;
                 let disablePM = !allowedPM;
-                if (today || minDay) {
+                // Force-disable AM if on min boundary day and boundary time is PM
+                if (minDay && minDateTime && minDateTime.getHours() >= 12) {
+                  disableAM = true;
+                } else if (today || minDay) {
                   // If reference period is PM and same day, AM becomes invalid
                   if (refPeriod === 'PM') disableAM = true;
                 }
+                if (maxDay && maxDateTime) {
+                  // If maximum period is AM on same day, PM becomes invalid
+                  if (maxRefPeriod === 'AM') disablePM = true;
+                }
                 setAmPmDisabled(amOption, disableAM);
                 setAmPmDisabled(pmOption, disablePM);
+                // Only switch if the currently selected period is now disabled
                 if (disableAM && selPeriod === 'AM') selectPeriod('PM');
+                if (disablePM && selPeriod === 'PM') selectPeriod('AM');
               };
 
               // Expose updater to instance for external calls (onChange)
               instance.updateTimeDisabledStates = updateDisabledStates;
-              flatpickrRef.current.updateTimeDisabledStates = updateDisabledStates;
 
               // Initialize selected AM/PM from input value
               selectPeriod((amPm.value || 'AM').toUpperCase());
@@ -536,6 +632,11 @@ export default function DateTimePicker({
 
     return () => {
       if (flatpickrRef.current && typeof flatpickrRef.current.destroy === 'function') {
+        try {
+          if (flatpickrRef.current.__onDocMouseDown) {
+            document.removeEventListener('mousedown', flatpickrRef.current.__onDocMouseDown, true);
+          }
+        } catch {}
         flatpickrRef.current.destroy();
       }
     };
@@ -544,8 +645,11 @@ export default function DateTimePicker({
 
   // Update value when prop changes
   useEffect(() => {
-    if (flatpickrRef.current && value) {
-      flatpickrRef.current.setDate(value);
+    if (flatpickrRef.current && typeof flatpickrRef.current.setDate === 'function' && value) {
+      // Sync external value without triggering onChange to avoid loops
+      try {
+        flatpickrRef.current.setDate(value, false);
+      } catch {}
     }
   }, [value]);
 
