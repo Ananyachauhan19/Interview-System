@@ -41,7 +41,7 @@ const FeedbackCard = ({ feedback }) => (
       <div className="flex items-center gap-1.5">
         <User className="w-3 h-3 text-emerald-500" />
         <div>
-          <div className="text-xs text-slate-500">Interviewer</div>
+          <div className="text-xs text-slate-500">Mentor</div>
           <div className="font-medium text-slate-800 text-sm">{feedback.interviewer}</div>
         </div>
       </div>
@@ -49,7 +49,7 @@ const FeedbackCard = ({ feedback }) => (
       <div className="flex items-center gap-1.5">
         <Users className="w-3 h-3 text-indigo-500" />
         <div>
-          <div className="text-xs text-slate-500">Interviewee</div>
+          <div className="text-xs text-slate-500">Candidate</div>
           <div className="font-medium text-slate-800 text-sm">{feedback.interviewee}</div>
         </div>
       </div>
@@ -135,7 +135,7 @@ const FilterSection = ({
 
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">
-              Interviewee College
+              Candidate College
             </label>
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500" />
@@ -396,10 +396,10 @@ export default function FeedbackReview() {
                             Event
                           </th>
                           <th className="py-2 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                            Interviewer
+                            Mentor
                           </th>
-                          <th className="py-2 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                            Interviewee
+                          <th className="p-2.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            Candidate
                           </th>
                           <th className="py-2 px-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                             College

@@ -119,7 +119,7 @@ export default function LandingPage() {
                             </div>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm font-semibold text-slate-800">Interviewer</p>
+                            <p className="text-sm font-semibold text-slate-800">Mentor</p>
                             <p className="text-xs text-slate-600">Sarah Chen</p>
                           </div>
                         </div>

@@ -120,6 +120,29 @@ export default function StudentDashboard() {
       console.error('[Dashboard] Failed to fetch user data:', err);
     });
     
+    // Decode token for pairing functionality
+    try {
+      const t = localStorage.getItem("token");
+      if (t) {
+        const raw = t.split(".")?.[1];
+        if (raw) {
+          const payload = JSON.parse(atob(raw));
+          const id = payload.sub || payload.id || payload.userId || null;
+          const fallbackId = localStorage.getItem("userId") || null;
+          const meData = {
+            id: id || fallbackId,
+            role: payload.role,
+            email: payload.email,
+            name: payload.name,
+          };
+          setMe(meData);
+          console.log('[Dashboard] User identity set for pairing:', meData);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to decode token payload", e);
+    }
+    
     // Add event listener to refresh data when window regains focus
     // This ensures both interviewer and interviewee see updated status
     const handleFocus = () => {
@@ -133,27 +156,6 @@ export default function StudentDashboard() {
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-    
-    // Decode token for pairing functionality
-    try {
-      const t = localStorage.getItem("token");
-      if (t) {
-        const raw = t.split(".")?.[1];
-        if (raw) {
-          const payload = JSON.parse(atob(raw));
-          const id = payload.sub || payload.id || payload.userId || null;
-          const fallbackId = localStorage.getItem("userId") || null;
-          setMe({
-            id: id || fallbackId,
-            role: payload.role,
-            email: payload.email,
-            name: payload.name,
-          });
-        }
-      }
-    } catch (e) {
-      console.warn("Failed to decode token payload", e);
-    }
   }, []);
 
   const handleEventClick = useCallback(async (event) => {
@@ -204,7 +206,7 @@ export default function StudentDashboard() {
     if (!selectedEvent) return;
     try {
       const res = await api.joinEvent(selectedEvent._id);
-      setJoinMsg(res?.message || "Successfully joined the mock interview!");
+      setJoinMsg(res?.message || "Successfully joined the interview!");
       setSelectedEvent((prev) => (prev ? { ...prev, joined: true } : prev));
       setEvents((prev) => prev.map((e) => (e._id === selectedEvent._id ? { ...e, joined: true } : e)));
       
@@ -220,7 +222,7 @@ export default function StudentDashboard() {
         console.error("Failed to load pairs after joining:", pairErr);
       }
     } catch (err) {
-      const msg = err?.message || "Failed to join the mock interview.";
+      const msg = err?.message || "Failed to join the interview.";
       // If backend restriction triggers, show popup modal with required copy
       if (msg.includes('created before your registration')) {
         setShowJoinRestriction(true);
@@ -263,16 +265,39 @@ export default function StudentDashboard() {
   }, [currentProposals, isInterviewer]);
 
   const getUserRoleInPair = (pair) => {
-    if (!me || !pair) return null;
+    if (!me || !pair) {
+      console.log('[Dashboard] getUserRoleInPair: Missing me or pair', { me, pair: !!pair });
+      return null;
+    }
 
     const interviewerId = pair.interviewer?._id || pair.interviewer;
     const intervieweeId = pair.interviewee?._id || pair.interviewee;
 
-    if (me.id && String(interviewerId) === String(me.id)) return "interviewer";
-    if (me.id && String(intervieweeId) === String(me.id)) return "interviewee";
-    if (me.email && pair.interviewer?.email === me.email) return "interviewer";
-    if (me.email && pair.interviewee?.email === me.email) return "interviewee";
+    if (me.id && String(interviewerId) === String(me.id)) {
+      console.log('[Dashboard] User is interviewer in pair', { userId: me.id, interviewerId });
+      return "interviewer";
+    }
+    if (me.id && String(intervieweeId) === String(me.id)) {
+      console.log('[Dashboard] User is interviewee in pair', { userId: me.id, intervieweeId });
+      return "interviewee";
+    }
+    if (me.email && pair.interviewer?.email === me.email) {
+      console.log('[Dashboard] User is interviewer by email', { email: me.email });
+      return "interviewer";
+    }
+    if (me.email && pair.interviewee?.email === me.email) {
+      console.log('[Dashboard] User is interviewee by email', { email: me.email });
+      return "interviewee";
+    }
 
+    console.log('[Dashboard] User not found in pair', { 
+      userId: me.id, 
+      userEmail: me.email, 
+      interviewerId, 
+      intervieweeId,
+      interviewerEmail: pair.interviewer?.email,
+      intervieweeEmail: pair.interviewee?.email
+    });
     return null;
   };
 
@@ -653,7 +678,7 @@ export default function StudentDashboard() {
       ) : (
         <>
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h2 className="text-base sm:text-lg font-semibold text-slate-800">Mock Interviews</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-slate-800">Interviews</h2>
             <span className="px-2 py-0.5 bg-sky-500 text-white rounded text-xs font-medium">
               {filteredEvents.length}
             </span>
@@ -736,7 +761,7 @@ export default function StudentDashboard() {
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500" />
           <input
             type="text"
-            placeholder="Search mock interviews..."
+            placeholder="Search interviews..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-7 pr-3 py-1.5 bg-slate-50 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
@@ -760,6 +785,18 @@ export default function StudentDashboard() {
             const eventPairs = pairs.filter(p => p.event._id === event._id);
             const interviewerPair = eventPairs.find(p => getUserRoleInPair(p) === "interviewer");
             const intervieweePair = eventPairs.find(p => getUserRoleInPair(p) === "interviewee");
+            
+            console.log('[Dashboard] Event pair check (selected view):', { 
+              eventId: event._id, 
+              eventName: event.name,
+              joined: event.joined,
+              active,
+              totalPairs: pairs.length,
+              eventPairs: eventPairs.length,
+              hasInterviewerPair: !!interviewerPair,
+              hasIntervieweePair: !!intervieweePair,
+              meId: me?.id
+            });
             
             return (
               <div key={event._id} className="space-y-1">
@@ -859,7 +896,7 @@ export default function StudentDashboard() {
                         <div className="flex items-center gap-2">
                           <User className="w-3 h-3 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium">Interviewer</div>
+                            <div className="font-medium">Mentor</div>
                             <div className="text-xs text-slate-600 mt-0.5 truncate">
                               {event.name}
                             </div>
@@ -901,7 +938,7 @@ export default function StudentDashboard() {
                         <div className="flex items-center gap-2">
                           <User className="w-3 h-3 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium">Interviewee</div>
+                            <div className="font-medium">Candidate</div>
                             <div className="text-xs text-slate-600 mt-0.5 truncate">
                               {event.name}
                             </div>
@@ -937,7 +974,7 @@ export default function StudentDashboard() {
             className="text-center text-slate-500 py-6"
           >
             <Calendar className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-            <p className="text-sm">No mock interviews found</p>
+            <p className="text-sm">No interviews found</p>
           </motion.div>
         ) : (
           filteredEvents.map((event, index) => {
@@ -1062,7 +1099,7 @@ export default function StudentDashboard() {
                         <div className="flex items-center gap-2">
                           <User className="w-3 h-3" />
                           <div className="flex-1">
-                            <div className="font-medium">Interviewer</div>
+                            <div className="font-medium">Mentor</div>
                             <div className="text-xs text-slate-600 mt-0.5">
                               {event.name}
                             </div>
@@ -1102,7 +1139,7 @@ export default function StudentDashboard() {
                         <div className="flex items-center gap-2">
                           <UserCheck className="w-3 h-3" />
                           <div className="flex-1">
-                            <div className="font-medium">Interviewee</div>
+                            <div className="font-medium">Candidate</div>
                             <div className="text-xs text-slate-600 mt-0.5">
                               {event.name}
                             </div>
@@ -1565,7 +1602,7 @@ export default function StudentDashboard() {
       <div className="mt-4 pt-4 border-t border-slate-200">
         <p className="text-xs text-slate-500 text-center italic">
           <Info className="w-3 h-3 inline mr-1" />
-          Interviewer proposes available time slots. Interviewee can accept a proposed slot or suggest up to 3 alternative time slots for consideration. All mock interview scheduling and joining must take place between 10:00 AM and 10:00 PM.
+          Mentor proposes available time slots. Candidate can accept a proposed slot or suggest up to 3 alternative time slots for consideration. All interview scheduling and joining must take place between 10:00 AM and 10:00 PM.
         </p>
       </div>
     </div>
@@ -1716,7 +1753,7 @@ export default function StudentDashboard() {
                 <h3 className="font-medium text-slate-800 text-sm">Your Pairing Details</h3>
               </div>
               <p className="text-slate-700 text-xs mb-3">
-                View your role as Interviewer or Interviewee and manage scheduling.
+                View your role as Mentor or Candidate and manage scheduling.
               </p>
               
               {/* Interviewer/Interviewee Tabs for Mobile */}
@@ -1739,7 +1776,7 @@ export default function StudentDashboard() {
                     <div className="flex items-center gap-2">
                       <User className={`w-4 h-4 ${selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id ? 'text-white' : 'text-indigo-600'}`} />
                       <div className="flex-1">
-                        <div className="font-semibold">Interviewer Role</div>
+                        <div className="font-semibold">Mentor Role</div>
                         <div className="text-xs mt-1 opacity-90">
                           {interviewerPair.interviewer?.name || interviewerPair.interviewer?.email || "N/A"} ➜ {interviewerPair.interviewee?.name || interviewerPair.interviewee?.email || "N/A"}
                         </div>
@@ -1784,7 +1821,7 @@ export default function StudentDashboard() {
                     <div className="flex items-center gap-2">
                       <User className={`w-4 h-4 ${selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id ? 'text-white' : 'text-indigo-600'}`} />
                       <div className="flex-1">
-                        <div className="font-semibold">Interviewee Role</div>
+                        <div className="font-semibold">Candidate Role</div>
                         <div className="text-xs mt-1 opacity-90">
                           {intervieweePair.interviewer?.name || intervieweePair.interviewer?.email || "N/A"} ➜ {intervieweePair.interviewee?.name || intervieweePair.interviewee?.email || "N/A"}
                         </div>
@@ -1863,7 +1900,7 @@ export default function StudentDashboard() {
                 <div className="flex-1">
                   <h3 className="text-sm font-semibold text-slate-800 mb-1">Action not allowed</h3>
                   <p className="text-sm text-slate-600">
-                    You cannot join this mock interview because it was created before your registration.
+                    You cannot join this interview because it was created before your registration.
                   </p>
                 </div>
               </div>
@@ -1888,14 +1925,14 @@ export default function StudentDashboard() {
     const [currentTipIndex, setCurrentTipIndex] = useState(0);
     
     const interviewTips = [
-      "Mock interviews help you practice answering questions confidently and clearly.",
+      "Practice interviews help you answer questions confidently and clearly.",
       "Regular practice builds muscle memory for technical problem-solving under pressure.",
       "Get comfortable with the interview format before the real opportunity comes.",
       "Receive constructive feedback to identify and improve your weak areas.",
       "Build confidence by experiencing interview scenarios in a safe environment.",
       "Learn to manage interview anxiety through repeated exposure and practice.",
       "Develop better communication skills by explaining your thought process clearly.",
-      "Practice makes perfect - each mock interview brings you closer to success.",
+      "Practice makes perfect - each practice interview brings you closer to success.",
       "Understand common interview patterns and how to approach different question types.",
       "Improve your ability to think aloud and collaborate with interviewers.",
       "Master the art of asking clarifying questions and handling ambiguity.",
@@ -1921,7 +1958,7 @@ export default function StudentDashboard() {
             Welcome back, {user?.name || me?.name || "Student"}! 👋
           </h1>
           <p className="text-slate-600 text-sm sm:text-base">
-            Ready to ace your next interview? Select a mock interview from the left to get started.
+            Ready to ace your next interview? Select an interview from the left to get started.
           </p>
         </motion.div>
 
@@ -1936,7 +1973,7 @@ export default function StudentDashboard() {
           </motion.div>
           
           <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-8 text-center">
-            Mock Interview Sessions
+            Interview Sessions
           </h2>
 
           {/* Rotating Tips */}

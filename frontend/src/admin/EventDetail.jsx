@@ -82,7 +82,7 @@ const PairCard = ({ pair, index }) => (
             <div className="font-medium text-indigo-700 text-sm truncate">
               {pair.interviewer?.name || pair.interviewer?.email}
             </div>
-            <div className="text-xs text-slate-500">Interviewer</div>
+            <div className="text-xs text-slate-500">Mentor</div>
           </div>
           
           <div className="text-slate-400 flex-shrink-0 text-xs">→</div>
@@ -91,7 +91,7 @@ const PairCard = ({ pair, index }) => (
             <div className="font-medium text-sky-700 text-sm truncate">
               {pair.interviewee?.name || pair.interviewee?.email}
             </div>
-            <div className="text-xs text-slate-500">Interviewee</div>
+            <div className="text-xs text-slate-500">Candidate</div>
           </div>
         </div>
       </div>
@@ -137,7 +137,7 @@ const EventSearchFilter = ({ searchQuery, setSearchQuery, eventTab, setEventTab 
         type="text"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Search mock interviews..."
+        placeholder="Search scheduled interviews..."
         className="w-full bg-slate-50 border border-slate-300 pl-7 pr-7 py-2 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
       />
       {searchQuery && (
@@ -217,7 +217,7 @@ export default function EventDetail() {
         setEvent(null);
         setAnalytics(null);
         setPairs([]);
-        setMsg('No mock interviews available. Please create one first.');
+                setMsg('No scheduled interviews available. Please create one first.');
       }
     } catch (e) {
       setMsg(e.message || 'Failed to load event data');
@@ -231,7 +231,7 @@ export default function EventDetail() {
 
   useEffect(() => {
     if (window.history.state && window.history.state.usr && window.history.state.usr.eventCreated) {
-      setEventCreatedMsg("Mock Interview created successfully!");
+      setEventCreatedMsg("Interview created successfully!");
       setTimeout(() => setEventCreatedMsg(""), 4000);
     }
     load(activeEventId);
@@ -290,7 +290,7 @@ export default function EventDetail() {
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Mobile Header */}
           <div className="lg:hidden flex items-center justify-between bg-white rounded-lg p-3 border border-slate-200">
-            <h1 className="text-lg font-semibold text-slate-800">Mock Interviews</h1>
+                        <h1 className="text-lg font-semibold text-slate-800">Scheduled Interviews</h1>
             <button
               onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
               className="p-1.5 rounded bg-slate-100 hover:bg-slate-200"
@@ -313,7 +313,7 @@ export default function EventDetail() {
                 }`}
               >
                 <div className="bg-white rounded-lg border border-slate-200 p-4 h-full overflow-y-auto">
-                  <h2 className="text-lg font-semibold text-slate-800 mb-3">Mock Interviews</h2>
+                                    <h2 className="text-lg font-semibold text-slate-800 mb-3">Scheduled Interviews</h2>
                   
                   <EventSearchFilter 
                     searchQuery={searchQuery}
@@ -427,13 +427,13 @@ export default function EventDetail() {
                   <Calendar className="w-12 h-12 text-indigo-600 mb-3" />
                   <h3 className="text-lg font-semibold text-slate-800 mb-1">No Interview Selected</h3>
                   <p className="text-slate-600 text-sm max-w-md mb-3">
-                    {msg || 'Select a mock interview from the sidebar or create a new one to get started.'}
+                    {msg || 'Select an interview from the sidebar or create a new one to get started.'}
                   </p>
                   <Link
                     to="/admin/event"
                     className="px-4 py-2 bg-sky-500 text-white rounded-lg font-medium hover:bg-sky-600 transition-colors text-sm"
                   >
-                    Create New Mock Interview
+                    Create New Interview
                   </Link>
                 </div>
               )}

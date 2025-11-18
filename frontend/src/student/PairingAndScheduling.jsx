@@ -723,7 +723,7 @@ export default function PairingAndScheduling() {
 
                   <p className="text-sm text-slate-700 leading-relaxed">
                     The interviewer proposes available time slots, and the interviewee can either accept one or suggest up to three alternatives. 
-                    All mock interview scheduling and joining must take place between 10:00 AM and 10:00 PM.
+                    All interview scheduling and joining must take place between 10:00 AM and 10:00 PM.
                   </p>
 
                   {isLocked && (

@@ -215,7 +215,7 @@ export default function EventManagement() {
       const payloadEnd = endDate ? new Date(parseLocalDateTime(endDate)).toISOString() : undefined;
 
       // Show an immediate loading toast so user sees feedback instantly
-      toastId = toast.loading('Creating your mock interview...');
+      toastId = toast.loading('Creating your interview...');
 
       if (specialMode) {
         const res = await api.createSpecialEvent({ name: title, description, startDate: payloadStart, endDate: payloadEnd, template, csv: csvFile });
@@ -223,7 +223,7 @@ export default function EventManagement() {
         const newId = res._id || res.eventId;
         
         // Update toast to success and navigate immediately
-        toast.update(toastId, { render: `Mock Interview "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
+        toast.update(toastId, { render: `Interview "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
         setMsg(''); // Clear any error messages
         resetForm();
         
@@ -240,7 +240,7 @@ export default function EventManagement() {
         const eventName = ev.name || title;
         
         // Update toast to success and navigate immediately
-        toast.update(toastId, { render: `Mock Interview "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
+        toast.update(toastId, { render: `Interview "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
         setMsg(''); // Clear any error messages
         resetForm();
         
@@ -253,7 +253,7 @@ export default function EventManagement() {
         }, 2000);
       }
     } catch (err) {
-      const errorMessage = err?.message || 'Failed to create mock interview';
+      const errorMessage = err?.message || 'Failed to create interview';
       let userFriendlyError = errorMessage;
       
       // Make error messages user-friendly
@@ -294,25 +294,44 @@ export default function EventManagement() {
               <Calendar className="text-white w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-slate-800">Create Mock Interview</h2>
+              <h2 className="text-xl font-semibold text-slate-800">Create Interview</h2>
               <p className="text-slate-600 text-sm">Set up a new interview practice session</p>
             </div>
           </div>
 
-          {/* Mode Toggle */}
-          <div className="flex justify-end mb-4">
-            <button
-              type="button"
-              onClick={() => { setSpecialMode(!specialMode); setMsg(""); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                specialMode
-                  ? 'bg-indigo-800 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              {specialMode ? <ToggleRight className="w-3 h-3" /> : <ToggleLeft className="w-3 h-3" />}
-              {specialMode ? 'Special Interview' : 'Regular Interview'}
-            </button>
+          {/* Modern Sliding Switch for Interview Type */}
+          <div className="flex justify-center mb-6">
+            <div className="relative inline-flex items-center bg-slate-200 rounded-full p-1.5 w-80">
+              <div
+                className={`absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] bg-gradient-to-r transition-all duration-300 ease-in-out rounded-full shadow-lg ${
+                  specialMode
+                    ? 'left-[calc(50%+0.375rem)] from-purple-500 to-purple-600'
+                    : 'left-1.5 from-sky-500 to-sky-600'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => { setSpecialMode(false); setMsg(""); }}
+                className={`relative z-10 flex-1 px-6 py-3 text-base font-semibold rounded-full transition-colors duration-300 ${
+                  !specialMode
+                    ? 'text-white'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Regular Interview
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSpecialMode(true); setMsg(""); }}
+                className={`relative z-10 flex-1 px-6 py-3 text-base font-semibold rounded-full transition-colors duration-300 ${
+                  specialMode
+                    ? 'text-white'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Special Interview
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleCreateEvent}>
@@ -349,7 +368,6 @@ export default function EventManagement() {
                   <label className="block text-sm font-medium text-slate-800 mb-1">Start Date & Time</label>
                   <DateTimePicker
                     value={startDate}
-                    isEnd={false}
                     onChange={(isoDateTime) => {
                       if (!isoDateTime) {
                         setStartDate('');
@@ -384,7 +402,6 @@ export default function EventManagement() {
                   <label className="block text-sm font-medium text-slate-800 mb-1">End Date & Time</label>
                   <DateTimePicker
                     value={endDate}
-                    isEnd={true}
                     onChange={(isoDateTime) => {
                       if (!isoDateTime) {
                         setEndDate('');
@@ -499,7 +516,7 @@ export default function EventManagement() {
                     : 'bg-sky-500 hover:bg-sky-600'
                 }`}
               >
-                {specialMode ? 'Create Special Interview' : 'Create Mock Interview'}
+                {specialMode ? 'Create Special Interview' : 'Create Interview'}
               </button>
 
               {/* Help Text */}
