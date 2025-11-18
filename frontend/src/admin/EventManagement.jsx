@@ -349,6 +349,7 @@ export default function EventManagement() {
                   <label className="block text-sm font-medium text-slate-800 mb-1">Start Date & Time</label>
                   <DateTimePicker
                     value={startDate}
+                    isEnd={false}
                     onChange={(isoDateTime) => {
                       if (!isoDateTime) {
                         setStartDate('');
@@ -383,6 +384,7 @@ export default function EventManagement() {
                   <label className="block text-sm font-medium text-slate-800 mb-1">End Date & Time</label>
                   <DateTimePicker
                     value={endDate}
+                    isEnd={true}
                     onChange={(isoDateTime) => {
                       if (!isoDateTime) {
                         setEndDate('');

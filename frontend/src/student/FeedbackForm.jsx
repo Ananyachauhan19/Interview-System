@@ -57,7 +57,7 @@ export default function FeedbackForm() {
         
         if (!userId || String(interviewerId) !== String(userId)) {
           console.log('[FeedbackForm] User is not the interviewer');
-          setError("Only the interviewer can submit feedback for this session.");
+          setError("Only the mentor can submit feedback for this session.");
           return;
         }
 
@@ -247,7 +247,7 @@ export default function FeedbackForm() {
                 </span>
               </div>
               <div>
-                <span className="font-semibold text-slate-600">Interviewee:</span>
+                <span className="font-semibold text-slate-600">Candidate:</span>
                 <span className="ml-1 text-slate-900">
                   {pair.interviewee?.name || pair.interviewee?.email || "N/A"}
                 </span>
