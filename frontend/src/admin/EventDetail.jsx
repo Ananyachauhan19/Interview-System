@@ -137,7 +137,7 @@ const EventSearchFilter = ({ searchQuery, setSearchQuery, eventTab, setEventTab 
         type="text"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Search scheduled interviews..."
+        placeholder="Search mock interviews..."
         className="w-full bg-slate-50 border border-slate-300 pl-7 pr-7 py-2 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
       />
       {searchQuery && (
@@ -217,7 +217,7 @@ export default function EventDetail() {
         setEvent(null);
         setAnalytics(null);
         setPairs([]);
-                setMsg('No scheduled interviews available. Please create one first.');
+        setMsg('No mock interviews available. Please create one first.');
       }
     } catch (e) {
       setMsg(e.message || 'Failed to load event data');
@@ -290,7 +290,7 @@ export default function EventDetail() {
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Mobile Header */}
           <div className="lg:hidden flex items-center justify-between bg-white rounded-lg p-3 border border-slate-200">
-                        <h1 className="text-lg font-semibold text-slate-800">Scheduled Interviews</h1>
+            <h1 className="text-lg font-semibold text-slate-800">Mock Interviews</h1>
             <button
               onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
               className="p-1.5 rounded bg-slate-100 hover:bg-slate-200"
@@ -313,7 +313,7 @@ export default function EventDetail() {
                 }`}
               >
                 <div className="bg-white rounded-lg border border-slate-200 p-4 h-full overflow-y-auto">
-                                    <h2 className="text-lg font-semibold text-slate-800 mb-3">Scheduled Interviews</h2>
+                  <h2 className="text-lg font-semibold text-slate-800 mb-3">Mock Interviews</h2>
                   
                   <EventSearchFilter 
                     searchQuery={searchQuery}

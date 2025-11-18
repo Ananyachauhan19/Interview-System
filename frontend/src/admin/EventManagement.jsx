@@ -294,50 +294,25 @@ export default function EventManagement() {
               <Calendar className="text-white w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-slate-800">Create Interview</h2>
+              <h2 className="text-xl font-semibold text-slate-800">Create Mock Interview</h2>
               <p className="text-slate-600 text-sm">Set up a new interview practice session</p>
             </div>
           </div>
 
-          {/* Mode Toggle - Modern Sliding Switch */}
-          <div className="flex justify-center mb-6">
-            <div className="relative inline-flex items-center bg-slate-200 rounded-full p-1 w-80 h-14">
-              {/* Sliding Background */}
-              <motion.div
-                className="absolute top-1 h-12 bg-white rounded-full shadow-md"
-                animate={{
-                  left: specialMode ? "50%" : "4px",
-                  width: specialMode ? "calc(50% - 4px)" : "calc(50% - 4px)"
-                }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              />
-              
-              {/* Regular Button */}
-              <button
-                type="button"
-                onClick={() => { setSpecialMode(false); setMsg(""); resetForm(); }}
-                className={`relative z-10 flex-1 h-12 rounded-full font-semibold text-base transition-colors ${
-                  !specialMode
-                    ? 'text-indigo-800'
-                    : 'text-slate-600 hover:text-slate-800'
-                }`}
-              >
-                Regular
-              </button>
-              
-              {/* Special Button */}
-              <button
-                type="button"
-                onClick={() => { setSpecialMode(true); setMsg(""); }}
-                className={`relative z-10 flex-1 h-12 rounded-full font-semibold text-base transition-colors ${
-                  specialMode
-                    ? 'text-indigo-800'
-                    : 'text-slate-600 hover:text-slate-800'
-                }`}
-              >
-                Special
-              </button>
-            </div>
+          {/* Mode Toggle */}
+          <div className="flex justify-end mb-4">
+            <button
+              type="button"
+              onClick={() => { setSpecialMode(!specialMode); setMsg(""); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                specialMode
+                  ? 'bg-indigo-800 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              {specialMode ? <ToggleRight className="w-3 h-3" /> : <ToggleLeft className="w-3 h-3" />}
+              {specialMode ? 'Special Interview' : 'Regular Interview'}
+            </button>
           </div>
 
           <form onSubmit={handleCreateEvent}>

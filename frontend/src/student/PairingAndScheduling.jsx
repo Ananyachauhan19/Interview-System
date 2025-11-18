@@ -487,8 +487,8 @@ export default function PairingAndScheduling() {
                               >
                                 You are{" "}
                                 {userRole === "interviewer"
-                                  ? "Mentor"
-                                  : "Candidate"}
+                                  ? "Interviewer"
+                                  : "Interviewee"}
                               </span>
                             </div>
 
@@ -629,8 +629,8 @@ export default function PairingAndScheduling() {
                                 >
                                   You are{" "}
                                   {userRole === "interviewer"
-                                    ? "Mentor"
-                                    : "Candidate"}
+                                    ? "Interviewer"
+                                    : "Interviewee"}
                                 </span>
                               </div>
 
@@ -677,7 +677,7 @@ export default function PairingAndScheduling() {
                           }`}
                         >
                           You are the{" "}
-                          {isInterviewer ? "Mentor" : "Candidate"}
+                          {isInterviewer ? "Interviewer" : "Interviewee"}
                         </span>
 
                         <span

@@ -298,7 +298,7 @@ export default function StudentOnboarding() {
             <Users className="text-white w-6 h-6" />
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-slate-900">Add Students</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">Student Onboarding</h1>
             <p className="text-slate-600 text-sm mt-1">
               Efficiently onboard students via bulk CSV upload or individual entry with real-time validation.
             </p>

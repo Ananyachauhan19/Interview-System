@@ -43,10 +43,10 @@ export function AdminNavbar() {
   };
 
   const navItems = [
-    { path: "/admin/onboarding", label: "Add Students", Icon: Users },
-    { path: "/admin/students", label: "Student Database", Icon: User },
-    { path: "/admin/event", label: "Create Interview", Icon: CalendarDays },
-    { path: "/admin/event/:id", label: "Scheduled Interviews", Icon: BookOpen },
+    { path: "/admin/onboarding", label: "Student Onboarding", Icon: Users },
+    { path: "/admin/students", label: "Student Directory", Icon: User },
+    { path: "/admin/event", label: "Mock Interviews", Icon: CalendarDays },
+    { path: "/admin/event/:id", label: "Interview Details", Icon: BookOpen },
     { path: "/admin/feedback", label: "Feedback Review", Icon: GraduationCap },
   ];
 

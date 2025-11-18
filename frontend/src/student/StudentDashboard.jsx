@@ -491,7 +491,7 @@ export default function StudentDashboard() {
 
     // Additional check for interviewees (they can suggest up to 3 alternative slots)
     if (!isInterviewer && slots.filter(Boolean).length >= 3) {
-      setMessage("ℹ️ As a candidate, you can suggest up to 3 alternative time slots.");
+      setMessage("ℹ️ As an interviewee, you can suggest up to 3 alternative time slots.");
       return;
     }
 
@@ -531,7 +531,7 @@ export default function StudentDashboard() {
     if (!selectedPair || !selectedEvent) return;
     try {
       await api.rejectSlots(selectedPair._id);
-      setMessage("ℹ️ Time slots rejected. Your mentor will propose new times shortly.");
+      setMessage("ℹ️ Time slots rejected. Your interviewer will propose new times shortly.");
       
       // Refresh pairs for this event
       const pairsData = await api.listPairs(selectedEvent._id);
@@ -653,7 +653,7 @@ export default function StudentDashboard() {
       ) : (
         <>
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h2 className="text-base sm:text-lg font-semibold text-slate-800">Scheduled Interviews</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-slate-800">Mock Interviews</h2>
             <span className="px-2 py-0.5 bg-sky-500 text-white rounded text-xs font-medium">
               {filteredEvents.length}
             </span>
@@ -736,7 +736,7 @@ export default function StudentDashboard() {
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500" />
           <input
             type="text"
-            placeholder="Search scheduled interviews..."
+            placeholder="Search mock interviews..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-7 pr-3 py-1.5 bg-slate-50 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
@@ -937,7 +937,7 @@ export default function StudentDashboard() {
             className="text-center text-slate-500 py-6"
           >
             <Calendar className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-            <p className="text-sm">No scheduled interviews found</p>
+            <p className="text-sm">No mock interviews found</p>
           </motion.div>
         ) : (
           filteredEvents.map((event, index) => {
@@ -1150,7 +1150,7 @@ export default function StudentDashboard() {
         <div className="flex-1">
           <div className="text-xs text-slate-500">Back to event details</div>
           <div className="font-medium text-slate-800 text-sm">
-            {isInterviewer ? "Mentor" : "Candidate"} View
+            {isInterviewer ? "Interviewer" : "Interviewee"} View
           </div>
         </div>
       </div>
@@ -1174,7 +1174,7 @@ export default function StudentDashboard() {
               }`}
             >
               You are the{" "}
-              {isInterviewer ? "Mentor" : "Candidate"}
+              {isInterviewer ? "Interviewer" : "Interviewee"}
             </span>
 
             <span
@@ -1888,7 +1888,7 @@ export default function StudentDashboard() {
     const [currentTipIndex, setCurrentTipIndex] = useState(0);
     
     const interviewTips = [
-      "Scheduled interviews help you practice answering questions confidently and clearly.",
+      "Mock interviews help you practice answering questions confidently and clearly.",
       "Regular practice builds muscle memory for technical problem-solving under pressure.",
       "Get comfortable with the interview format before the real opportunity comes.",
       "Receive constructive feedback to identify and improve your weak areas.",
