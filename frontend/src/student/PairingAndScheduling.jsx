@@ -1,8 +1,7 @@
 /* eslint-disable no-unused-vars */
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { api } from "../utils/api";
-import { motion, AnimatePresence, MotionConfig } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle,
   AlertCircle,
@@ -15,8 +14,6 @@ import {
 import DateTimePicker from "../components/DateTimePicker";
 
 export default function PairingAndScheduling() {
-  const DISABLE_MOTION = true;
-  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [pairs, setPairs] = useState([]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -28,50 +25,31 @@ export default function PairingAndScheduling() {
   const [currentProposals, setCurrentProposals] = useState({
     mine: [],
     partner: [],
+    minePast: [],
+    partnerPast: [],
     common: null,
   });
   const [selectedToAccept, setSelectedToAccept] = useState("");
   const [meetingLinkEnabled, setMeetingLinkEnabled] = useState(false);
   const [timeUntilEnable, setTimeUntilEnable] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showPastDropdown, setShowPastDropdown] = useState(false);
+  const pastDropdownRef = useRef(null);
 
-  const startFeedbackCountdown = useCallback((pair) => {
-    if (!pair) {
-      console.log('[Feedback] No pair provided');
-      return;
-    }
-    const myId = (typeof window !== 'undefined') ? localStorage.getItem('userId') : null;
-    const interviewerId = pair?.interviewer?._id || pair?.interviewer;
-    const isInterviewer = myId && String(interviewerId) === String(myId);
-    
-    console.log('[Feedback] User check:', { myId, interviewerId, isInterviewer });
-    
-    if (!isInterviewer) {
-      console.log('[Feedback] User is not interviewer, skipping countdown');
-      return;
-    }
-    
-    const key = `feedbackTimer:${pair._id}`;
-    const now = Date.now();
-    // Changed from 2 minutes to 10 seconds for testing
-    const dueAt = now + 10 * 1000; // 10 seconds
-    const payload = { pairId: pair._id, startAt: now, dueAt };
-    
-    try {
-      localStorage.setItem(key, JSON.stringify(payload));
-      console.log('[Feedback] Timer started:', { pairId: pair._id, delay: '10 seconds' });
-    } catch (e) {
-      console.error('[Feedback] Failed to save timer:', e);
-    }
-    
-    const delay = Math.max(0, dueAt - Date.now());
-    console.log('[Feedback] Will navigate in', delay, 'ms');
-    
-    setTimeout(() => {
-      console.log('[Feedback] Navigating to feedback form:', `/student/feedback/${pair._id}`);
-      navigate(`/student/feedback/${pair._id}`);
-    }, delay);
-  }, [navigate]);
+  // Derive propose button disabled reason for small UI hint
+  const proposeDisabledReason = useMemo(() => {
+    if (!selectedPair) return 'Select a pair to propose a time.';
+    if (isLocked) return 'Interview already scheduled.';
+    const myActiveCount = Array.isArray(currentProposals?.mine) ? currentProposals.mine.length : 0;
+    const partnerActiveCount = Array.isArray(currentProposals?.partner) ? currentProposals.partner.length : 0;
+    const myPastCount = Array.isArray(currentProposals?.minePast) ? currentProposals.minePast.length : 0;
+    const attempts = myActiveCount + myPastCount;
+    if (!slotInput) return 'Select a time to propose.';
+    if (attempts >= 3) return 'You’ve reached the maximum of 3 proposals.';
+    if (myActiveCount > 0) return 'You already have a pending proposal; wait for a response.';
+    if (partnerActiveCount > 0) return 'Your partner has a pending proposal; accept or reject it first.';
+    return null;
+  }, [selectedPair, isLocked, slotInput, currentProposals]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -120,22 +98,7 @@ export default function PairingAndScheduling() {
         setIsLoading(false);
       }
     };
-    
     loadData();
-    
-    // Add event listener to refresh data when window regains focus
-    // This ensures both interviewer and interviewee see updated status
-    const handleFocus = () => {
-      console.log('[PairingAndScheduling] Window focused, refreshing data...');
-      loadData();
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    
-    // Cleanup listener on unmount
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
   }, []);
 
   const isInterviewer = useMemo(() => {
@@ -150,7 +113,6 @@ export default function PairingAndScheduling() {
   }, [selectedPair, me]);
 
   const isLocked = selectedPair?.status === "scheduled";
-  const isCompleted = selectedPair?.status === "completed";
 
   const interviewerSlots = useMemo(() => {
     if (!currentProposals) return [];
@@ -168,8 +130,9 @@ export default function PairingAndScheduling() {
 
   useEffect(() => {
     const fetch = async () => {
-      setCurrentProposals({ mine: [], partner: [], common: null });
+      setCurrentProposals({ mine: [], partner: [], minePast: [], partnerPast: [], common: null });
       setSelectedToAccept("");
+      setShowPastDropdown(false);
       if (!selectedPair) return;
       try {
         const res = await api.proposeSlots(selectedPair._id, []);
@@ -180,6 +143,18 @@ export default function PairingAndScheduling() {
     };
     fetch();
   }, [selectedPair]);
+
+  // Close past dropdown when clicking outside or when sidebar opens
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (!pastDropdownRef.current) return;
+      if (!pastDropdownRef.current.contains(e.target)) {
+        setShowPastDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     let timer;
@@ -339,7 +314,7 @@ export default function PairingAndScheduling() {
     if (!selectedPair) return;
     try {
       await api.rejectSlots(selectedPair._id);
-      setMessage("Rejected slots. Waiting for new proposal from interviewer.");
+      setMessage("Latest proposal rejected. You may propose a new time if allowed.");
       
       // Fetch updated pairs in parallel for better performance
       const pairPromises = events.map(ev => api.listPairs(ev._id));
@@ -351,7 +326,7 @@ export default function PairingAndScheduling() {
       });
       
       setPairs(updated);
-      setCurrentProposals({ mine: [], partner: [], common: null });
+      setCurrentProposals({ mine: [], partner: [], minePast: [], partnerPast: [], common: null });
     } catch (err) {
       setMessage(err.message);
     }
@@ -463,16 +438,14 @@ export default function PairingAndScheduling() {
                                 </span>
                                 <span
                                   className={`text-xs px-2 py-0.5 rounded ${
-                                    p.status === "completed"
-                                      ? "bg-blue-100 text-blue-700"
-                                      : p.status === "scheduled"
+                                    p.status === "scheduled"
                                       ? "bg-emerald-100 text-emerald-800"
                                       : p.status === "rejected"
                                       ? "bg-red-100 text-red-700"
                                       : "bg-slate-100 text-slate-700"
                                   }`}
                                 >
-                                  {p.status === "completed" ? "Finished" : p.status || "Pending"}
+                                  {p.status || "Pending"}
                                 </span>
                               </div>
                             </div>
@@ -605,16 +578,14 @@ export default function PairingAndScheduling() {
                                   </span>
                                   <span
                                     className={`text-xs px-2 py-0.5 rounded ${
-                                      p.status === "completed"
-                                        ? "bg-blue-100 text-blue-700"
-                                        : p.status === "scheduled"
+                                      p.status === "scheduled"
                                         ? "bg-emerald-100 text-emerald-800"
                                         : p.status === "rejected"
                                         ? "bg-red-100 text-red-700"
                                         : "bg-slate-100 text-slate-700"
                                     }`}
                                   >
-                                    {p.status === "completed" ? "Finished" : p.status || "Pending"}
+                                    {p.status || "Pending"}
                                   </span>
                                 </div>
                               </div>
@@ -699,16 +670,14 @@ export default function PairingAndScheduling() {
 
                         <span
                           className={`text-xs px-2 py-1 rounded font-medium ${
-                            selectedPair.status === "completed"
-                              ? "bg-blue-100 text-blue-700"
-                              : selectedPair.status === "scheduled"
+                            selectedPair.status === "scheduled"
                               ? "bg-emerald-100 text-emerald-800"
                               : selectedPair.status === "rejected"
                               ? "bg-red-100 text-red-700"
                               : "bg-slate-100 text-slate-700"
                           }`}
                         >
-                          {selectedPair.status === "completed" ? "Finished" : selectedPair.status || "Pending"}
+                          {selectedPair.status || "Pending"}
                         </span>
                       </div>
                     </div>
@@ -722,8 +691,8 @@ export default function PairingAndScheduling() {
                   </div>
 
                   <p className="text-sm text-slate-700 leading-relaxed">
-                    The interviewer proposes available time slots, and the interviewee can either accept one or suggest up to three alternatives. 
-                    All interview scheduling and joining must take place between 10:00 AM and 10:00 PM.
+                    Interviewer proposes available time slots. Interviewee can accept a proposed slot 
+                    or suggest up to 3 alternative time slots for consideration.
                   </p>
 
                   {isLocked && (
@@ -751,7 +720,7 @@ export default function PairingAndScheduling() {
                       <h3 className="font-medium text-slate-900 text-sm">
                         Propose a Time
                       </h3>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3 flex-wrap">
                         <DateTimePicker
                           value={slotInput}
                           onChange={(isoDateTime) => {
@@ -786,6 +755,67 @@ export default function PairingAndScheduling() {
                           className="flex-1 text-sm"
                           disabled={isLocked}
                         />
+                        {/* Past Time Slots Toggle */}
+                        <div className="relative" ref={pastDropdownRef}>
+                          <button
+                            type="button"
+                            onClick={() => setShowPastDropdown((v) => !v)}
+                            className="px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 shadow-sm flex items-center gap-2"
+                          >
+                            Past Time Slots
+                            {(() => {
+                              const count = Array.isArray(currentProposals?.pastTimeSlots)
+                                ? currentProposals.pastTimeSlots.length
+                                : ((currentProposals?.minePastEntries || []).length + (currentProposals?.partnerPastEntries || []).length);
+                              return (
+                                <span className="inline-flex items-center justify-center text-[11px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-white min-w-[20px]">
+                                  {count}
+                                </span>
+                              );
+                            })()}
+                          </button>
+                          {showPastDropdown && (
+                            <div className="absolute left-0 mt-2 w-80 z-10 bg-white border border-slate-200 rounded-lg shadow-md">
+                              <div className="p-3">
+                                <div className="text-xs font-semibold text-slate-700 mb-2">Past Time Slots</div>
+                                {(() => {
+                                  const entries = Array.isArray(currentProposals?.pastTimeSlots)
+                                    ? currentProposals.pastTimeSlots
+                                    : [
+                                        ...(currentProposals?.minePastEntries || []),
+                                        ...(currentProposals?.partnerPastEntries || []),
+                                      ].sort((a, b) => new Date(b.time) - new Date(a.time));
+                                  if (!entries || entries.length === 0) {
+                                    return (
+                                      <div className="text-sm text-slate-500">No past time slots available.</div>
+                                    );
+                                  }
+                                  const toLabel = (r) => {
+                                    if (!r) return 'Replaced';
+                                    const map = { rejected: 'Rejected', expired: 'Expired', superseded: 'Replaced', replaced: 'Replaced' };
+                                    return map[r] || (r.charAt(0).toUpperCase() + r.slice(1));
+                                  };
+                                  const color = (r) => {
+                                    if (r === 'rejected') return 'bg-red-100 text-red-700 border-red-200';
+                                    if (r === 'expired') return 'bg-amber-100 text-amber-800 border-amber-200';
+                                    return 'bg-slate-100 text-slate-700 border-slate-200';
+                                  };
+                                  return (
+                                    <ul className="space-y-2 max-h-64 overflow-auto">
+                                      {entries.map((e, idx) => (
+                                        <li key={`${e.time}-${idx}`} className={`text-sm px-2 py-2 rounded border flex flex-col ${color(e.reason)}`}>
+                                          <span className="font-medium">{new Date(e.time).toLocaleString()}</span>
+                                          <span className="text-[11px] uppercase tracking-wide mt-0.5 font-semibold">{toLabel(e.reason)}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  );
+                                })()}
+                                <div className="mt-2 text-[11px] text-slate-500">View only. You cannot select or propose past times.</div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -847,6 +877,7 @@ export default function PairingAndScheduling() {
                               </li>
                             )}
                           </ul>
+                          {/* Past time section moved to global dropdown */}
                         </div>
 
                         <div className="bg-slate-50 rounded-lg p-4">
@@ -902,6 +933,7 @@ export default function PairingAndScheduling() {
                               </li>
                             )}
                           </ul>
+                          {/* Past time section moved to global dropdown */}
                         </div>
                       </div>
                     )}
@@ -919,16 +951,15 @@ export default function PairingAndScheduling() {
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <button
-                      disabled={
-                        isLocked ||
-                        !slotInput ||
-                        (Array.isArray(currentProposals?.mine) && currentProposals.mine.length >= 3)
-                      }
+                      disabled={!!proposeDisabledReason}
                       onClick={handlePropose}
                       className="px-5 py-2.5 bg-sky-600 text-white rounded-lg font-medium text-sm hover:bg-sky-700 transition-colors disabled:opacity-50"
                     >
                       Propose Slot
                     </button>
+                    {proposeDisabledReason && (
+                      <div className="text-xs text-slate-500 mt-1">{proposeDisabledReason}</div>
+                    )}
 
                     <div className="flex gap-2">
                       <button
@@ -944,7 +975,7 @@ export default function PairingAndScheduling() {
                         onClick={handleReject}
                         className="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-50"
                       >
-                        Reject All
+                        Reject Latest
                       </button>
                     </div>
                   </div>
@@ -959,19 +990,7 @@ export default function PairingAndScheduling() {
                           Jitsi Meet
                         </span>
                       </div>
-                      
-                      {isCompleted ? (
-                        <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 text-center">
-                          <div className="flex items-center justify-center gap-2 text-blue-800 mb-2">
-                            <CheckCircle className="w-5 h-5" />
-                            <span className="font-semibold">Session Completed</span>
-                          </div>
-                          <p className="text-sm text-blue-700">
-                            This interview session has been finished. Feedback has been submitted.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex flex-col sm:flex-row gap-3">
                         <input
                           type="text"
                           readOnly
@@ -994,7 +1013,6 @@ export default function PairingAndScheduling() {
                             onClick={() => {
                               if (!meetingLinkEnabled) return;
                               window.open(selectedPair.meetingLink, "_blank");
-                              startFeedbackCountdown(selectedPair);
                             }}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                               meetingLinkEnabled
@@ -1012,7 +1030,6 @@ export default function PairingAndScheduling() {
                                 selectedPair.meetingLink
                               );
                               setMessage("Meeting link copied to clipboard");
-                              startFeedbackCountdown(selectedPair);
                             }}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                               meetingLinkEnabled
@@ -1025,7 +1042,6 @@ export default function PairingAndScheduling() {
                           </button>
                         </div>
                       </div>
-                      )}
                     </div>
                   )}
 

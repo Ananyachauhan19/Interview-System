@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import RequirePasswordChange from "./RequirePasswordChange";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,6 +38,8 @@ export default function StudentDashboard() {
   const [meetingLinkEnabled, setMeetingLinkEnabled] = useState(false);
   const [timeUntilEnable, setTimeUntilEnable] = useState(null);
   const [isLoadingPairs, setIsLoadingPairs] = useState(false);
+  const [showPastDropdown, setShowPastDropdown] = useState(false);
+  const pastDropdownRef = useRef(null);
 
   const startFeedbackCountdown = useCallback((pair) => {
     if (!pair) {
@@ -384,12 +386,25 @@ export default function StudentDashboard() {
       try {
         const res = await api.proposeSlots(selectedPair._id, []);
         setCurrentProposals(res);
+        setShowPastDropdown(false);
       } catch {
         // ignore
       }
     };
     fetch();
   }, [selectedPair]);
+
+  // Close Past Time dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (!pastDropdownRef.current) return;
+      if (!pastDropdownRef.current.contains(e.target)) {
+        setShowPastDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Meeting link timer
   useEffect(() => {
@@ -1264,6 +1279,67 @@ export default function StudentDashboard() {
           <h3 className="font-medium text-slate-900 text-sm">
             Proposed Time Slots
           </h3>
+          {/* Past Time Slots Button (always visible) */}
+          <div className="relative" ref={pastDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setShowPastDropdown(v => !v)}
+              className="px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 shadow-sm flex items-center gap-2"
+            >
+              Past Time Slots
+              {(() => {
+                const count = Array.isArray(currentProposals?.pastTimeSlots)
+                  ? currentProposals.pastTimeSlots.length
+                  : ((currentProposals?.minePastEntries || []).length + (currentProposals?.partnerPastEntries || []).length);
+                return (
+                  <span className="inline-flex items-center justify-center text-[11px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-white min-w-[20px]">
+                    {count}
+                  </span>
+                );
+              })()}
+            </button>
+            {showPastDropdown && (
+              <div className="absolute left-0 mt-2 w-80 z-10 bg-white border border-slate-200 rounded-lg shadow-md">
+                <div className="p-3">
+                  <div className="text-xs font-semibold text-slate-700 mb-2">Past Time Slots</div>
+                  {(() => {
+                    const entries = Array.isArray(currentProposals?.pastTimeSlots)
+                      ? currentProposals.pastTimeSlots
+                      : [
+                          ...(currentProposals?.minePastEntries || []),
+                          ...(currentProposals?.partnerPastEntries || []),
+                        ].sort((a, b) => new Date(b.time) - new Date(a.time));
+                    if (!entries || entries.length === 0) {
+                      return (
+                        <div className="text-sm text-slate-500">No past time slots available.</div>
+                      );
+                    }
+                    const toLabel = (r) => {
+                      if (!r) return 'Replaced';
+                      const map = { rejected: 'Rejected', expired: 'Expired', superseded: 'Replaced', replaced: 'Replaced' };
+                      return map[r] || (r.charAt(0).toUpperCase() + r.slice(1));
+                    };
+                    const color = (r) => {
+                      if (r === 'rejected') return 'bg-red-100 text-red-700 border-red-200';
+                      if (r === 'expired') return 'bg-amber-100 text-amber-800 border-amber-200';
+                      return 'bg-slate-100 text-slate-700 border-slate-200';
+                    };
+                    return (
+                      <ul className="space-y-2 max-h-64 overflow-auto">
+                        {entries.map((e, idx) => (
+                          <li key={`${e.time}-${idx}`} className={`text-sm px-2 py-2 rounded border flex flex-col ${color(e.reason)}`}>
+                            <span className="font-medium">{new Date(e.time).toLocaleString()}</span>
+                            <span className="text-[11px] uppercase tracking-wide mt-0.5 font-semibold">{toLabel(e.reason)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
+                  <div className="mt-2 text-[11px] text-slate-500">View only. You cannot select or propose past times.</div>
+                </div>
+              </div>
+            )}
+          </div>
           {slots.map((s, idx) => (
             <div key={idx} className="flex items-center gap-2">
               <DateTimePicker

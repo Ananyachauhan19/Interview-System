@@ -38,6 +38,123 @@ function validateSlots(dates) {
   }
 }
 
+// Generate a random future slot inside allowed window and within event boundaries (if any)
+function generateRandomSlot(event) {
+  const now = new Date();
+  const startBoundary = event?.startDate ? new Date(event.startDate) : null;
+  const endBoundary = event?.endDate ? new Date(event.endDate) : null;
+
+  const base = startBoundary && startBoundary.getTime() > now.getTime() ? new Date(startBoundary) : new Date(now);
+  base.setSeconds(0, 0);
+
+  for (let i = 0; i < 50; i++) {
+    const dayOffset = Math.floor(Math.random() * 7); // within next 7 days to avoid far future
+    const d = new Date(base);
+    d.setDate(d.getDate() + dayOffset);
+    const hour = Math.floor(Math.random() * (ALLOWED_END_HOUR - ALLOWED_START_HOUR)) + ALLOWED_START_HOUR;
+    const minute = Math.floor(Math.random() * 60);
+    d.setHours(hour, minute, 0, 0);
+    if (d.getTime() <= now.getTime()) continue;
+    if (!isWithinAllowedHours(d)) continue;
+    if (startBoundary && d.getTime() < startBoundary.getTime()) continue;
+    if (endBoundary && d.getTime() > endBoundary.getTime()) continue;
+    return d;
+  }
+  // Fallback: next valid day start within window and boundaries
+  let fallback = new Date(base);
+  if (fallback.getHours() >= ALLOWED_END_HOUR) {
+    fallback.setDate(fallback.getDate() + 1);
+  }
+  fallback.setHours(ALLOWED_START_HOUR, 0, 0, 0);
+  if (startBoundary && fallback.getTime() < startBoundary.getTime()) fallback = new Date(startBoundary);
+  if (fallback.getHours() < ALLOWED_START_HOUR) fallback.setHours(ALLOWED_START_HOUR, 0, 0, 0);
+  if (fallback.getHours() >= ALLOWED_END_HOUR) {
+    fallback.setDate(fallback.getDate() + 1);
+    fallback.setHours(ALLOWED_START_HOUR, 0, 0, 0);
+  }
+  if (endBoundary && fallback.getTime() > endBoundary.getTime()) {
+    // As a last resort, just return endBoundary minus 1 hour if within window
+    const end = new Date(endBoundary);
+    end.setHours(Math.min(Math.max(ALLOWED_START_HOUR, end.getHours() - 1), ALLOWED_END_HOUR - 1), 0, 0, 0);
+    return end;
+  }
+  return fallback;
+}
+
+async function checkAndAutoAssign(pair) {
+  if (!pair) return false;
+  if (pair.status === 'scheduled') return false;
+  const ip = pair.interviewerProposalCount || 0;
+  const ep = pair.intervieweeProposalCount || 0;
+  if (ip < 3 || ep < 3) return false;
+  // Both hit limits; auto-assign a time
+  const event = await Event.findById(pair.event);
+  const slot = generateRandomSlot(event);
+  if (!slot || slot.getTime() <= Date.now()) return false;
+
+  pair.scheduledAt = slot;
+  pair.finalConfirmedTime = slot;
+  if (!pair.meetingLink) {
+    const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
+    const room = `Interview-${pair._id}-${crypto.randomBytes(3).toString('hex')}`;
+    pair.meetingLink = `${base}/${room}`;
+  }
+  pair.status = 'scheduled';
+  await pair.save();
+
+  try {
+    const populated = await Pair.findById(pair._id).populate('interviewer').populate('interviewee');
+    const whenStr = formatDateTime(slot);
+    const emails = [populated?.interviewer?.email, populated?.interviewee?.email].filter(Boolean);
+    await Promise.all(emails.map(to => sendMail({
+      to,
+      subject: 'Auto-Assigned Interview Time',
+      text: `Both participants reached the proposal limit. A time was auto-assigned for your interview: ${whenStr}. Meeting link: ${pair.meetingLink}`,
+    }).catch(() => null)));
+  } catch {}
+
+  try {
+    await sendMailForPair(pair);
+  } catch (e) {
+    console.error('[auto-assign] Failed to send scheduled emails:', e?.message);
+  }
+  return true;
+}
+
+async function expireProposalsIfNeeded(pair) {
+  const now = Date.now();
+  const users = [pair.interviewer, pair.interviewee];
+  let movedSomething = false;
+  for (const uid of users) {
+    const doc = await SlotProposal.findOne({ pair: pair._id, user: uid, event: pair.event });
+    if (!doc || !doc.slots?.length) continue;
+    const latest = new Date(doc.slots[doc.slots.length - 1]).getTime();
+    if (latest <= now) {
+      const moved = doc.slots.pop();
+      doc.pastSlots = doc.pastSlots || [];
+      doc.pastEntries = doc.pastEntries || [];
+      doc.pastSlots.push(moved);
+      doc.pastEntries.push({ time: moved, reason: 'expired' });
+      await doc.save();
+      movedSomething = true;
+      try {
+        // Notify both parties about expiration
+        const populated = await Pair.findById(pair._id).populate('interviewer').populate('interviewee');
+        const emails = [populated?.interviewer?.email, populated?.interviewee?.email].filter(Boolean);
+        const whenStr = formatDateTime(moved);
+        await Promise.all(emails.map(to => sendMail({
+          to,
+          subject: 'Suggested Interview Time Expired',
+          text: `The previously suggested time (${whenStr}) has passed without approval. Please propose a new time.`
+        }).catch(() => null)));
+      } catch {}
+    }
+  }
+  if (movedSomething) {
+    try { await checkAndAutoAssign(pair); } catch {}
+  }
+}
+
 // Helper to check user's role in a pair (handles cross-collection matching for users in both User and SpecialStudent)
 async function getUserRoleInPair(pair, user) {
   const userId = user._id.toString();
@@ -142,6 +259,8 @@ export async function proposeSlots(req, res) {
     console.log(`[proposeSlots] Manually fetching interviewee from ${Model.modelName}`);
     pair.interviewee = await Model.findById(rawIntervieweeId);
   }
+  // Expire any passed active proposals before proceeding
+  await expireProposalsIfNeeded(pair);
   
   // Check if user is part of this pair (handles cross-collection matching)
   const userRole = await getUserRoleInPair(pair, req.user);
@@ -164,10 +283,12 @@ export async function proposeSlots(req, res) {
     const partnerDoc = await SlotProposal.findOne({ pair: pair._id, user: partnerId, event: pair.event });
     const mine = (mineDoc?.slots || []).map(d => new Date(d).toISOString());
     const partner = (partnerDoc?.slots || []).map(d => new Date(d).toISOString());
+    const minePast = (mineDoc?.pastSlots || []).map(d => new Date(d).toISOString());
+    const partnerPast = (partnerDoc?.pastSlots || []).map(d => new Date(d).toISOString());
     // find first common
     const partnerSet = new Set(partner.map(d => new Date(d).getTime()));
     const common = mine.map(d => new Date(d).getTime()).find(t => partnerSet.has(t));
-    return res.json({ mine, partner, common: common ? new Date(common).toISOString() : null });
+    return res.json({ mine, partner, minePast, partnerPast, common: common ? new Date(common).toISOString() : null });
   }
 
   // Validate slots within event window
@@ -175,45 +296,39 @@ export async function proposeSlots(req, res) {
   let endBoundary = event?.endDate ? new Date(event.endDate).getTime() : null;
   const dates = (slots || []).map((s) => new Date(s));
   if (dates.some(d => isNaN(d.getTime()))) throw new HttpError(400, 'Invalid slot date');
+  // Accept exactly one active slot per proposal
+  if (dates.length !== 1) throw new HttpError(400, 'Provide exactly one slot');
   // Time-of-day + future validation
-  if (dates.length) validateSlots(dates);
+  validateSlots(dates);
   if (startBoundary && dates.some(d => d.getTime() < startBoundary)) throw new HttpError(400, 'Slot before event start');
   if (endBoundary && dates.some(d => d.getTime() > endBoundary)) throw new HttpError(400, 'Slot after event end');
 
-  // Business rule: BOTH parties may have at most 3 proposed slots in total.
-  if (dates.length > 3) throw new HttpError(400, 'May propose at most 3 slots');
-
-  // Append unique slots to existing list without overriding; cap at 3 total
-  const existingDoc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
-  let existing = (existingDoc?.slots || []).map(d => new Date(d));
-  // Build a set of timestamps for uniqueness
-  const existingSet = new Set(existing.map(d => d.getTime()));
-  const additions = [];
-  for (const d of dates) {
-    const ts = d.getTime();
-    if (!existingSet.has(ts)) {
-      additions.push(d);
-      existingSet.add(ts);
-    }
+  // Only one active slot per user; can propose only if no active exists
+  let doc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
+  if (doc?.slots?.length) {
+    throw new HttpError(400, 'You already have a pending proposal. Wait for acceptance/rejection.');
   }
-  const combined = [...existing, ...additions];
-  if (combined.length > 3) {
-    throw new HttpError(400, 'Maximum number of proposals (3) already reached');
-  }
-  // Sort ascending for consistency
-  combined.sort((a, b) => a.getTime() - b.getTime());
-
-  const doc = await SlotProposal.findOneAndUpdate(
-    { pair: pair._id, user: effectiveUserId, event: pair.event },
-    { slots: combined },
-    { upsert: true, new: true }
-  );
-
-  // Send email notification to the other party
+  const pastCount = (doc?.pastSlots?.length || 0);
+  // Enforce per-role proposal counters
   const isInterviewerProposing = isInterviewer;
+  const maxReached = isInterviewerProposing ? (pair.interviewerProposalCount >= 3) : (pair.intervieweeProposalCount >= 3);
+  if (maxReached) throw new HttpError(400, 'Maximum number of proposals (3) already reached');
+  if (!doc) doc = new SlotProposal({ pair: pair._id, user: effectiveUserId, event: pair.event, slots: [], pastSlots: [] });
+  doc.slots = [dates[0]];
+  await doc.save();
+  // Increment per-user counters on pair
+  if (isInterviewerProposing) pair.interviewerProposalCount = (pair.interviewerProposalCount || 0) + 1; else pair.intervieweeProposalCount = (pair.intervieweeProposalCount || 0) + 1;
+  await pair.save();
+
+  // If both reached max attempts and still not scheduled, auto-assign and skip proposal email
+  let autoAssigned = false;
+  try { autoAssigned = await checkAndAutoAssign(pair); } catch {}
+
+  // Send email notification to the other party (only if not auto-assigned)
+  
   
   // Always send slot proposal/acceptance emails (part of the 4-email flow)
-  if (isInterviewerProposing && pair.interviewee?.email) {
+  if (!autoAssigned && isInterviewerProposing && pair.interviewee?.email) {
     // Interviewer proposed slots -> notify interviewee
     const slotsList = dates.map(d => formatDateTime(d)).join(' | '); // Use | as separator to avoid comma conflict
     await sendSlotProposalEmail({
@@ -222,7 +337,7 @@ export async function proposeSlots(req, res) {
       slot: slotsList,
     });
     console.log(`[Email] Slot proposal sent to interviewee: ${pair.interviewee.email}`);
-  } else if (!isInterviewerProposing && pair.interviewer?.email) {
+  } else if (!autoAssigned && !isInterviewerProposing && pair.interviewer?.email) {
     // Interviewee proposed alternative slots -> notify interviewer
     const slotsList = dates.map(d => formatDateTime(d)).join(' | '); // Use | as separator to avoid comma conflict
     await sendSlotAcceptanceEmail({
@@ -235,7 +350,7 @@ export async function proposeSlots(req, res) {
   }
 
   // Return both proposals and intersection
-  const mineDoc = doc;
+  const mineDoc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
   const partnerDoc = await SlotProposal.findOne({ pair: pair._id, user: partnerId, event: pair.event });
   // Mark expired slots
   const nowTs = Date.now();
@@ -243,11 +358,17 @@ export async function proposeSlots(req, res) {
   const partnerSlotsRaw = (partnerDoc?.slots || []).map(d => new Date(d));
   const mine = mineSlotsRaw.map(d => d.toISOString());
   const partner = partnerSlotsRaw.map(d => d.toISOString());
+  const minePast = (mineDoc?.pastSlots || []).map(d => new Date(d).toISOString());
+  const partnerPast = (partnerDoc?.pastSlots || []).map(d => new Date(d).toISOString());
+  const minePastEntries = (mineDoc?.pastEntries || []).map(e => ({ time: new Date(e.time).toISOString(), reason: e.reason }));
+  const partnerPastEntries = (partnerDoc?.pastEntries || []).map(e => ({ time: new Date(e.time).toISOString(), reason: e.reason }));
+  const pastTimeSlots = [...minePastEntries, ...partnerPastEntries]
+    .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   const mineMeta = mineSlotsRaw.map(d => ({ slot: d.toISOString(), expired: d.getTime() <= nowTs }));
   const partnerMeta = partnerSlotsRaw.map(d => ({ slot: d.toISOString(), expired: d.getTime() <= nowTs }));
   const partnerSet = new Set(partner.map(d => new Date(d).getTime()));
   const common = mine.map(d => new Date(d).getTime()).find(t => partnerSet.has(t) && t > nowTs);
-  res.json({ mine, partner, common: common ? new Date(common).toISOString() : null, mineMeta, partnerMeta });
+  res.json({ mine, partner, minePast, partnerPast, minePastEntries, partnerPastEntries, pastTimeSlots, common: common ? new Date(common).toISOString() : null, mineMeta, partnerMeta });
 }
 
 export async function confirmSlot(req, res) {
@@ -302,18 +423,19 @@ export async function confirmSlot(req, res) {
   if (scheduled.getTime() <= Date.now()) throw new HttpError(400, 'Cannot confirm past time');
   if (!isWithinAllowedHours(scheduled)) throw new HttpError(400, 'Scheduled time must be between 10:00 and 22:00');
 
-  // Validate the selected time is among the OTHER party's proposed slots
+  // Validate the selected time equals the OTHER party's latest proposed slot (only latest is actionable)
   const otherUserId = confirmerIsInterviewer ? pair.interviewee?._id : pair.interviewer?._id;
   const otherProposal = await SlotProposal.findOne({ pair: pair._id, user: otherUserId, event: pair.event });
   if (!otherProposal || !otherProposal.slots?.length) throw new HttpError(400, 'No slots proposed by the other party to confirm');
-  const proposedSet = new Set((otherProposal.slots || []).map((d) => new Date(d).getTime()));
-  if (!proposedSet.has(scheduled.getTime())) throw new HttpError(400, 'Selected time is not one of the other party proposed slots');
+  const latest = otherProposal.slots[otherProposal.slots.length - 1];
+  if (!latest || new Date(latest).getTime() !== scheduled.getTime()) throw new HttpError(400, 'Only the latest proposed time can be confirmed');
 
   // Enforce event window on confirmation too
   if (event?.startDate && scheduled.getTime() < new Date(event.startDate).getTime()) throw new HttpError(400, 'Scheduled time before event start');
   if (event?.endDate && scheduled.getTime() > new Date(event.endDate).getTime()) throw new HttpError(400, 'Scheduled time after event end');
 
   pair.scheduledAt = scheduled;
+  pair.finalConfirmedTime = scheduled;
   // Auto-generate a Jitsi meet link if none provided yet.
   if (meetingLink) {
     pair.meetingLink = meetingLink;
@@ -324,6 +446,9 @@ export async function confirmSlot(req, res) {
   }
   pair.status = 'scheduled';
   await pair.save();
+
+  // If both reached max attempts and still not scheduled, auto-assign
+  try { await checkAndAutoAssign(pair); } catch {}
   
   // Send acceptance notification to the other party
   // Always send slot acceptance emails (part of the 4-email flow)
@@ -386,37 +511,60 @@ export async function rejectSlots(req, res) {
   if (!pair.interviewee || !pair.interviewee._id) {
     pair.interviewee = await Model.findById(rawIntervieweeId);
   }
-    
-  if (!req.user._id.equals(pair.interviewee?._id)) throw new HttpError(403, 'Only interviewee can reject');
+  
   if (pair.status === 'scheduled') throw new HttpError(400, 'Pair already scheduled; cannot reject now');
+  
+  // Move any expired latest proposals to past first to ensure UI reflects past entries
+  try { await expireProposalsIfNeeded(pair); } catch {}
+  
+  // Either party can reject the other party's latest proposed time
+  const userRole = await getUserRoleInPair(pair, req.user);
+  if (!userRole.isInPair) throw new HttpError(403, 'Not your pair');
+  const otherUserId = userRole.isInterviewer ? pair.interviewee?._id : pair.interviewer?._id;
+  const otherDoc = await SlotProposal.findOne({ pair: pair._id, user: otherUserId, event: pair.event });
+  if (!otherDoc || !otherDoc.slots?.length) {
+    // Nothing to reject (likely already expired and moved to past). Return success message for smoother UX.
+    return res.json({ message: 'No pending proposal to reject. Any expired times have been moved to Past Time Slots.' });
+  }
+  const latest = otherDoc.slots.pop();
+  otherDoc.pastSlots = otherDoc.pastSlots || [];
+  otherDoc.pastSlots.push(latest);
+  otherDoc.pastEntries = otherDoc.pastEntries || [];
+  otherDoc.pastEntries.push({ time: latest, reason: 'rejected' });
+  await otherDoc.save();
+  
   const { reason } = req.body || {};
-  // Cooldown: max 2 rejections per 2 hours
-  const now = Date.now();
-  if (pair.lastRejectedAt && (now - new Date(pair.lastRejectedAt).getTime()) < (30 * 60 * 1000)) {
-    throw new HttpError(429, 'Please wait before rejecting again (30 min cooldown).');
-  }
-  if (pair.rejectionCount >= 5) {
-    throw new HttpError(400, 'Maximum number of rejections reached');
-  }
-  // Delete existing proposals for this pair to force re-proposal
-  await SlotProposal.deleteMany({ pair: pair._id });
-  pair.scheduledAt = undefined;
-  pair.meetingLink = undefined;
-  pair.status = 'rejected';
+  // Track pair rejection info (throttling removed per new flow)
   pair.rejectionCount = (pair.rejectionCount || 0) + 1;
   pair.lastRejectedAt = new Date();
   pair.rejectionHistory = pair.rejectionHistory || [];
   pair.rejectionHistory.push({ at: new Date(), reason: reason || '' });
   await pair.save();
-  // Notify interviewer
-  if (pair.interviewer?.email) {
-    await sendMail({
-      to: pair.interviewer.email,
-      subject: 'Interview slots rejected',
-      text: `${pair.interviewee?.name || pair.interviewee?.email} rejected the proposed slots.${reason ? ` Reason: ${reason}` : ''} Please propose new times.`,
-    });
+  
+  // In case both have hit their limits, auto-assign
+  try {
+    const auto = await checkAndAutoAssign(pair);
+    if (auto) {
+      return res.json({ message: 'Both participants reached proposal limits. A time was auto-assigned.' });
+    }
+  } catch {}
+  
+  // Notify the proposer that their slot was rejected
+  const notifyEmail = userRole.isInterviewer ? pair.interviewee?.email : pair.interviewer?.email;
+  const rejectorName = userRole.isInterviewer ? (pair.interviewer?.name || pair.interviewer?.email) : (pair.interviewee?.name || pair.interviewee?.email);
+  if (notifyEmail) {
+    try {
+      await sendMail({
+        to: notifyEmail,
+        subject: 'Your Interview Time Was Rejected',
+        text: `The previously suggested time (${formatDateTime(latest)}) was rejected. Please propose a new time.${reason ? ` Reason: ${reason}` : ''}`,
+      });
+    } catch (e) {
+      console.error('[rejectSlots] notify email failed:', e.message);
+    }
   }
-  res.json({ message: 'Rejected. Interviewer must propose new slots.' });
+  
+  res.json({ message: 'Latest proposal rejected and moved to past' });
 }
 
 async function sendMailForPair(pair) {
