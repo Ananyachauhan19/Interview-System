@@ -45,14 +45,30 @@ async function generateRotationPairsForEvent(event) {
   // Determine model type based on whether event is special
   const modelType = event.isSpecial ? 'SpecialStudent' : 'User';
   
+  // Generate default time slots - evenly distributed between event start and end
+  const eventStart = event.startDate ? new Date(event.startDate).getTime() : Date.now();
+  const eventEnd = event.endDate ? new Date(event.endDate).getTime() : eventStart + (7 * 24 * 60 * 60 * 1000); // 7 days if no end
+  const totalPairs = pairs.length;
+  const timeGap = totalPairs > 1 ? (eventEnd - eventStart) / totalPairs : 0;
+  
   const created = await Pair.insertMany(
-    pairs.map(([a, b]) => ({ 
-      event: event._id, 
-      interviewer: a, 
-      interviewee: b,
-      interviewerModel: modelType,
-      intervieweeModel: modelType
-    }))
+    pairs.map(([a, b], index) => {
+      // Calculate default time slot for this pair
+      const defaultTime = new Date(eventStart + (timeGap * index));
+      // Round to nearest 30 minutes
+      const minutes = defaultTime.getMinutes();
+      const roundedMinutes = Math.round(minutes / 30) * 30;
+      defaultTime.setMinutes(roundedMinutes, 0, 0);
+      
+      return { 
+        event: event._id, 
+        interviewer: a, 
+        interviewee: b,
+        interviewerModel: modelType,
+        intervieweeModel: modelType,
+        defaultTimeSlot: defaultTime
+      };
+    })
   );
 
   // Pairing emails removed - only send when slots are proposed
@@ -179,9 +195,49 @@ export async function listPairs(req, res) {
     throw e; // propagate to error handler
   }
 
+  // Add default time slots to pairs that don't have them
+  const eventStart = event.startDate ? new Date(event.startDate).getTime() : Date.now();
+  const eventEnd = event.endDate ? new Date(event.endDate).getTime() : eventStart + (7 * 24 * 60 * 60 * 1000);
+  const totalPairs = pairs.length;
+  const timeGap = totalPairs > 1 ? (eventEnd - eventStart) / totalPairs : 0;
+  
   const now = Date.now();
+  
+  for (let i = 0; i < pairs.length; i++) {
+    if (!pairs[i].defaultTimeSlot) {
+      // Generate default time slot
+      const defaultTime = new Date(eventStart + (timeGap * i));
+      const minutes = defaultTime.getMinutes();
+      const roundedMinutes = Math.round(minutes / 30) * 30;
+      defaultTime.setMinutes(roundedMinutes, 0, 0);
+      
+      // Update in database
+      await Pair.findByIdAndUpdate(pairs[i]._id, { defaultTimeSlot: defaultTime });
+      pairs[i].defaultTimeSlot = defaultTime;
+      console.log(`[listPairs] Added default time slot to pair ${pairs[i]._id}: ${defaultTime.toLocaleString()}`);
+    }
+    
+    // Check if default time slot has expired (is in the past)
+    if (pairs[i].defaultTimeSlot) {
+      const defaultTimeMs = new Date(pairs[i].defaultTimeSlot).getTime();
+      pairs[i].defaultTimeExpired = defaultTimeMs <= now;
+    }
+  }
+
   const oneHourMs = 60 * 60 * 1000;
   const sanitized = pairs.map((p) => ({ ...p, status: p.status || 'pending' }));
+  
+  // Log first pair to verify defaultTimeSlot is included
+  if (sanitized.length > 0) {
+    console.log('[listPairs] Sample pair response:', {
+      id: sanitized[0]._id,
+      hasDefaultTimeSlot: !!sanitized[0].defaultTimeSlot,
+      defaultTimeSlot: sanitized[0].defaultTimeSlot,
+      defaultTimeExpired: sanitized[0].defaultTimeExpired,
+      status: sanitized[0].status
+    });
+  }
+  
   res.json(sanitized);
 }
 

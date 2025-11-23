@@ -821,6 +821,82 @@ export default function PairingAndScheduling() {
 
                     {/* Add Slot button removed */}
 
+                    {/* Default Time Slot Section - Show before proposals if no slots proposed yet */}
+                    {!isLocked && interviewerSlots.length === 0 && intervieweeSlots.length === 0 && selectedPair?.defaultTimeSlot && (
+                      <div className="mb-6">
+                        {(() => {
+                          const hasDefaultTimeSlot = selectedPair?.defaultTimeSlot;
+                          const isExpired = selectedPair?.defaultTimeSlotExpired;
+                          const isPastTime = hasDefaultTimeSlot && new Date(selectedPair.defaultTimeSlot).getTime() < Date.now();
+                          
+                          // Show expired message if default time has passed
+                          if (hasDefaultTimeSlot && (isExpired || isPastTime)) {
+                            return (
+                              <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                                <div className="inline-flex flex-col items-center gap-3">
+                                  <Clock className="w-8 h-8 text-red-600" />
+                                  <div>
+                                    <div className="text-sm font-medium text-red-900 mb-2">Default Time Slot Expired</div>
+                                    <div className="text-sm text-red-700 mb-1">
+                                      The default time ({new Date(selectedPair.defaultTimeSlot).toLocaleString()}) has already passed.
+                                    </div>
+                                    <div className="text-xs text-red-600 mt-2">Please propose a new time to continue.</div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          // Show active default time slot if not expired
+                          if (hasDefaultTimeSlot && !isExpired && !isPastTime) {
+                            return (
+                              <div className="bg-sky-50 border border-sky-200 rounded-lg p-6">
+                                <div className="text-center mb-4">
+                                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-100 rounded-lg border border-sky-300">
+                                    <Clock className="w-5 h-5 text-sky-600" />
+                                    <span className="text-sm font-medium text-sky-900">
+                                      Default Time Slot Assigned
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-sm text-slate-600 mb-2">Your scheduled time:</div>
+                                  <div className="text-lg font-semibold text-slate-900 mb-4">
+                                    {new Date(selectedPair.defaultTimeSlot).toLocaleString()}
+                                  </div>
+                                  <div className="flex gap-3 justify-center flex-wrap">
+                                    <button
+                                      onClick={() => handleConfirm(selectedPair.defaultTimeSlot, "")}
+                                      className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm"
+                                    >
+                                      Accept Default Time
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        // Auto-fill the date picker with a suggestion
+                                        const suggested = new Date(selectedPair.defaultTimeSlot);
+                                        suggested.setHours(suggested.getHours() + 1); // Suggest 1 hour later
+                                        const pad = (n) => String(n).padStart(2, "0");
+                                        setSlotInput(`${suggested.getFullYear()}-${pad(suggested.getMonth() + 1)}-${pad(suggested.getDate())}T${pad(suggested.getHours())}:${pad(suggested.getMinutes())}`);
+                                      }}
+                                      className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-medium text-sm hover:from-amber-600 hover:to-amber-700 shadow-sm"
+                                    >
+                                      Change Time
+                                    </button>
+                                  </div>
+                                  <div className="text-xs text-slate-500 mt-3">
+                                    If you're satisfied with this time, click "Accept". Otherwise, propose a different time below.
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          return null;
+                        })()}
+                      </div>
+                    )}
+
                     {/* Proposed Slots Grid */}
                     {!isLocked && (
                       <div className="grid md:grid-cols-2 gap-6">

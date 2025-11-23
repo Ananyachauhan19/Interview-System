@@ -40,6 +40,7 @@ export default function StudentDashboard() {
   const [isLoadingPairs, setIsLoadingPairs] = useState(false);
   const [showPastDropdown, setShowPastDropdown] = useState(false);
   const pastDropdownRef = useRef(null);
+  const [showProposeForm, setShowProposeForm] = useState(false);
 
   const startFeedbackCountdown = useCallback((pair) => {
     if (!pair) {
@@ -266,6 +267,17 @@ export default function StudentDashboard() {
       : currentProposals.mine || [];
   }, [currentProposals, isInterviewer]);
 
+  // Track proposal counts
+  const myProposalCount = isInterviewer 
+    ? selectedPair?.interviewerProposalCount || 0
+    : selectedPair?.intervieweeProposalCount || 0;
+  const partnerProposalCount = isInterviewer
+    ? selectedPair?.intervieweeProposalCount || 0
+    : selectedPair?.interviewerProposalCount || 0;
+  const myRemainingProposals = Math.max(0, 3 - myProposalCount);
+  const partnerRemainingProposals = Math.max(0, 3 - partnerProposalCount);
+  const bothReachedLimit = myProposalCount >= 3 && partnerProposalCount >= 3;
+
   const getUserRoleInPair = (pair) => {
     if (!me || !pair) {
       console.log('[Dashboard] getUserRoleInPair: Missing me or pair', { me, pair: !!pair });
@@ -377,7 +389,7 @@ export default function StudentDashboard() {
     };
   };
 
-  // Fetch proposals when a pair is selected
+  // Fetch proposals when a pair is selected and poll for updates
   useEffect(() => {
     const fetch = async () => {
       setCurrentProposals({ mine: [], partner: [], common: null });
@@ -392,6 +404,20 @@ export default function StudentDashboard() {
       }
     };
     fetch();
+    
+    // Poll for updates every 5 seconds when a pair is selected
+    if (!selectedPair) return;
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await api.proposeSlots(selectedPair._id, []);
+        setCurrentProposals(res);
+      } catch {
+        // ignore polling errors
+      }
+    }, 5000); // Poll every 5 seconds
+    
+    return () => clearInterval(pollInterval);
   }, [selectedPair]);
 
   // Close Past Time dropdown on outside click
@@ -438,6 +464,15 @@ export default function StudentDashboard() {
   }, [currentProposals.mine, currentProposals.partner]);
 
   // Pairing action handlers
+  // Helper to get current datetime for min validation
+  const getCurrentMinDateTime = () => {
+    const now = new Date();
+    const eventStart = selectedPair?.event?.startDate ? new Date(selectedPair.event.startDate) : null;
+    // Use the later of current time or event start
+    const minDate = eventStart && eventStart > now ? eventStart : now;
+    return minDate.toISOString();
+  };
+
   const handlePropose = async () => {
     setMessage("");
     
@@ -454,6 +489,7 @@ export default function StudentDashboard() {
       return new Date(y, m - 1, d, hh, mm).getTime();
     }
 
+    const now = Date.now();
     const isoSlots = slots.filter(Boolean).map((s) => {
       if (String(s).endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(String(s))) {
         const d = new Date(s);
@@ -465,6 +501,15 @@ export default function StudentDashboard() {
     });
     if (!selectedPair || isoSlots.length === 0) {
       setMessage("⚠️ Please select a pairing partner and add at least one time slot to continue.");
+      setIsLoadingPairs(false);
+      return;
+    }
+    
+    // Check for past time slots
+    const parsedSlots = isoSlots.map(s => new Date(s));
+    const hasPastSlot = parsedSlots.some(d => !isNaN(d.getTime()) && d.getTime() <= now);
+    if (hasPastSlot) {
+      setMessage("⚠️ Cannot propose past time slots. Please select a future time.");
       setIsLoadingPairs(false);
       return;
     }
@@ -501,13 +546,27 @@ export default function StudentDashboard() {
     }
     try {
       const res = await api.proposeSlots(selectedPair._id, isoSlots);
+      
+      // Immediately update currentProposals with the response
+      setCurrentProposals(res);
+      
       if (res.common)
         setMessage(
           `✅ Great! A common time slot was found: ${new Date(res.common).toLocaleString()}`
         );
-      else setMessage("✅ Time slots proposed successfully! Waiting for your partner's response.");
-      const ro = await api.proposeSlots(selectedPair._id, []);
-      setCurrentProposals(ro);
+      else setMessage("✅ Time proposed successfully! You and the other person can both see it now.");
+      
+      // Refresh pairs to update status
+      if (selectedEvent) {
+        const pairsData = await api.listPairs(selectedEvent._id);
+        const pairsWithEvent = pairsData.map((p) => ({ ...p, event: selectedEvent }));
+        setPairs(prevPairs => {
+          const filteredPairs = prevPairs.filter(p => p.event._id !== selectedEvent._id);
+          return [...filteredPairs, ...pairsWithEvent];
+        });
+        const updatedPair = pairsWithEvent.find(p => p._id === selectedPair._id);
+        if (updatedPair) setSelectedPair(updatedPair);
+      }
     } catch (err) {
       setMessage(err.message);
     } finally {
@@ -547,7 +606,7 @@ export default function StudentDashboard() {
     try {
       const iso = dt && dt.includes("T") ? new Date(dt).toISOString() : dt;
       await api.confirmSlot(selectedPair._id, iso, link);
-      setMessage("✅ Interview scheduled successfully! Check your meeting details below.");
+      setMessage("✅ Time slot accepted! Both parties will see the confirmed time immediately.");
       
       // Refresh pairs for this event
       const pairsData = await api.listPairs(selectedEvent._id);
@@ -562,6 +621,10 @@ export default function StudentDashboard() {
       if (updatedPair) {
         setSelectedPair(updatedPair);
       }
+      
+      // Refresh proposals
+      const ro = await api.proposeSlots(selectedPair._id, []);
+      setCurrentProposals(ro);
     } catch (err) {
       setMessage(err.message);
     }
@@ -571,7 +634,7 @@ export default function StudentDashboard() {
     if (!selectedPair || !selectedEvent) return;
     try {
       await api.rejectSlots(selectedPair._id);
-      setMessage("ℹ️ Time slots rejected. Your interviewer will propose new times shortly.");
+      setMessage("✅ Proposal rejected successfully. The other person can now propose a new time.");
       
       // Refresh pairs for this event
       const pairsData = await api.listPairs(selectedEvent._id);
@@ -588,6 +651,10 @@ export default function StudentDashboard() {
       if (updatedPair) {
         setSelectedPair(updatedPair);
       }
+      
+      // Refresh proposals
+      const ro = await api.proposeSlots(selectedPair._id, []);
+      setCurrentProposals(ro);
     } catch (err) {
       setMessage(err.message);
     }
@@ -1114,7 +1181,7 @@ export default function StudentDashboard() {
                         <div className="flex items-center gap-2">
                           <User className="w-3 h-3" />
                           <div className="flex-1">
-                            <div className="font-medium">Mentor</div>
+                            <div className="font-medium">Mentor Name</div>
                             <div className="text-xs text-slate-600 mt-0.5">
                               {event.name}
                             </div>
@@ -1154,7 +1221,7 @@ export default function StudentDashboard() {
                         <div className="flex items-center gap-2">
                           <UserCheck className="w-3 h-3" />
                           <div className="flex-1">
-                            <div className="font-medium">Candidate</div>
+                            <div className="font-medium">Candidate Name</div>
                             <div className="text-xs text-slate-600 mt-0.5">
                               {event.name}
                             </div>
@@ -1207,17 +1274,15 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900 mb-2 break-words">
-            {selectedPair.interviewer?.name ||
-              selectedPair.interviewer?.email}{" "}
-            ➜{" "}
-            {selectedPair.interviewee?.name ||
-              selectedPair.interviewee?.email}
+      <div className="flex flex-col items-center justify-center gap-3 mb-6">
+        <div className="text-center">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900 mb-3 break-words">
+            <span className="text-sky-600">Mentor:</span> {selectedPair.interviewer?.name || selectedPair.interviewer?.email}
+            <span className="mx-3 text-slate-400">➜</span>
+            <span className="text-emerald-600">Candidate:</span> {selectedPair.interviewee?.name || selectedPair.interviewee?.email}
           </h2>
 
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3 justify-center">
             <span
               className={`text-xs px-2 py-1 rounded font-medium ${
                 isInterviewer
@@ -1242,16 +1307,6 @@ export default function StudentDashboard() {
             </span>
           </div>
         </div>
-
-        <button
-          onClick={() => {
-            setSelectedPairRole(null);
-            setSelectedPair(null);
-          }}
-          className="hidden lg:block p-1.5 rounded bg-slate-100 hover:bg-slate-200 flex-shrink-0 touch-manipulation"
-        >
-          <X className="w-4 h-4 text-slate-600" />
-        </button>
       </div>
 
       {isLocked && (
@@ -1273,306 +1328,442 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      <div className="space-y-4">
-        {/* Date Input Section */}
-        <div className="max-w-md space-y-3">
-          <h3 className="font-medium text-slate-900 text-sm">
-            Proposed Time Slots
-          </h3>
-          {/* Past Time Slots Button (always visible) */}
-          <div className="relative" ref={pastDropdownRef}>
-            <button
-              type="button"
-              onClick={() => setShowPastDropdown(v => !v)}
-              className="px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 shadow-sm flex items-center gap-2"
-            >
-              Past Time Slots
-              {(() => {
-                const count = Array.isArray(currentProposals?.pastTimeSlots)
-                  ? currentProposals.pastTimeSlots.length
-                  : ((currentProposals?.minePastEntries || []).length + (currentProposals?.partnerPastEntries || []).length);
-                return (
-                  <span className="inline-flex items-center justify-center text-[11px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-white min-w-[20px]">
-                    {count}
-                  </span>
-                );
-              })()}
-            </button>
-            {showPastDropdown && (
-              <div className="absolute left-0 mt-2 w-80 z-10 bg-white border border-slate-200 rounded-lg shadow-md">
-                <div className="p-3">
-                  <div className="text-xs font-semibold text-slate-700 mb-2">Past Time Slots</div>
-                  {(() => {
-                    const entries = Array.isArray(currentProposals?.pastTimeSlots)
-                      ? currentProposals.pastTimeSlots
-                      : [
-                          ...(currentProposals?.minePastEntries || []),
-                          ...(currentProposals?.partnerPastEntries || []),
-                        ].sort((a, b) => new Date(b.time) - new Date(a.time));
-                    if (!entries || entries.length === 0) {
+      {/* Single Page Time Slot Interface */}
+      <div className="space-y-6">
+        {/* Default Time Slot Display */}
+        <div className="bg-gradient-to-br from-indigo-50 to-sky-50 rounded-xl p-6 border border-indigo-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Interview Time Slot</h3>
+            {/* Past Time Slots Button (right side) */}
+            <div className="relative" ref={pastDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setShowPastDropdown(v => !v)}
+                className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white hover:bg-slate-50 shadow-sm flex items-center gap-2"
+              >
+                Past Time Allotment
+                {(() => {
+                  const count = Array.isArray(currentProposals?.pastTimeSlots)
+                    ? currentProposals.pastTimeSlots.length
+                    : ((currentProposals?.minePastEntries || []).length + (currentProposals?.partnerPastEntries || []).length);
+                  return count > 0 ? (
+                    <span className="inline-flex items-center justify-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-white min-w-[18px]">
+                      {count}
+                    </span>
+                  ) : null;
+                })()}
+              </button>
+              {showPastDropdown && (
+                <div className="absolute right-0 mt-2 w-80 z-10 bg-white border border-slate-200 rounded-lg shadow-md">
+                  <div className="p-3">
+                    <div className="text-xs font-semibold text-slate-700 mb-2">Past Time Allotment - Full History</div>
+                    {(() => {
+                      const entries = Array.isArray(currentProposals?.pastTimeSlots)
+                        ? currentProposals.pastTimeSlots
+                        : [
+                            ...(currentProposals?.minePastEntries || []),
+                            ...(currentProposals?.partnerPastEntries || []),
+                          ].sort((a, b) => new Date(b.time) - new Date(a.time));
+                      if (!entries || entries.length === 0) {
+                        return (
+                          <div className="text-sm text-slate-500">No past time slots available.</div>
+                        );
+                      }
+                      const toLabel = (r) => {
+                        if (!r) return 'Replaced';
+                        const map = { rejected: 'Rejected', expired: 'Expired', superseded: 'Replaced', replaced: 'Replaced' };
+                        return map[r] || (r.charAt(0).toUpperCase() + r.slice(1));
+                      };
+                      const color = (r) => {
+                        if (r === 'rejected') return 'bg-red-100 text-red-700 border-red-200';
+                        if (r === 'expired') return 'bg-amber-100 text-amber-800 border-amber-200';
+                        return 'bg-slate-100 text-slate-700 border-slate-200';
+                      };
                       return (
-                        <div className="text-sm text-slate-500">No past time slots available.</div>
+                        <ul className="space-y-2 max-h-64 overflow-auto">
+                          {entries.map((e, idx) => (
+                            <li key={`${e.time}-${idx}`} className={`text-xs px-2 py-2 rounded border flex flex-col ${color(e.reason)}`}>
+                              <span className="font-medium">{new Date(e.time).toLocaleString()}</span>
+                              <span className="text-[10px] uppercase tracking-wide mt-0.5 font-semibold">{toLabel(e.reason)}</span>
+                            </li>
+                          ))}
+                        </ul>
                       );
-                    }
-                    const toLabel = (r) => {
-                      if (!r) return 'Replaced';
-                      const map = { rejected: 'Rejected', expired: 'Expired', superseded: 'Replaced', replaced: 'Replaced' };
-                      return map[r] || (r.charAt(0).toUpperCase() + r.slice(1));
-                    };
-                    const color = (r) => {
-                      if (r === 'rejected') return 'bg-red-100 text-red-700 border-red-200';
-                      if (r === 'expired') return 'bg-amber-100 text-amber-800 border-amber-200';
-                      return 'bg-slate-100 text-slate-700 border-slate-200';
-                    };
-                    return (
-                      <ul className="space-y-2 max-h-64 overflow-auto">
-                        {entries.map((e, idx) => (
-                          <li key={`${e.time}-${idx}`} className={`text-sm px-2 py-2 rounded border flex flex-col ${color(e.reason)}`}>
-                            <span className="font-medium">{new Date(e.time).toLocaleString()}</span>
-                            <span className="text-[11px] uppercase tracking-wide mt-0.5 font-semibold">{toLabel(e.reason)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    );
-                  })()}
-                  <div className="mt-2 text-[11px] text-slate-500">View only. You cannot select or propose past times.</div>
+                    })()}
+                    <div className="mt-2 text-[10px] text-slate-500">Full history of all previous time slots.</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Show Scheduled/Default Time */}
+          {isLocked && selectedPair?.scheduledAt ? (
+            <div className="text-center py-6">
+              <div className="inline-flex flex-col items-center gap-3 px-8 py-6 bg-white rounded-xl border-2 border-emerald-300 shadow-lg">
+                <CheckCircle className="w-8 h-8 text-emerald-600" />
+                <div>
+                  <div className="text-sm font-medium text-slate-600 mb-1">Your interview time:</div>
+                  <div className="text-xl font-bold text-emerald-700">
+                    {new Date(selectedPair.scheduledAt).toLocaleString()}
+                  </div>
+                  {bothReachedLimit && (
+                    <div className="mt-2 text-xs text-slate-600 bg-slate-50 px-3 py-2 rounded border border-slate-200">
+                      ✓ Finalized after both parties used their 3 proposals
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
-          {slots.map((s, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <DateTimePicker
-                value={s}
-                onChange={(isoDateTime) => {
-                  const v = isoDateTime;
-                  const ev = selectedPair?.event || {};
-                  const toLocal = (val) => {
-                    if (!val) return "";
-                    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(val))
-                      return val;
-                    const d = new Date(val);
-                    if (isNaN(d.getTime())) return "";
-                    const pad = (n) => String(n).padStart(2, "0");
-                    return `${d.getFullYear()}-${pad(
-                      d.getMonth() + 1
-                    )}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
-                      d.getMinutes()
-                    )}`;
-                  };
-                  const startLocal = ev.startDate
-                    ? toLocal(ev.startDate)
-                    : null;
-                  const endLocal = ev.endDate
-                    ? toLocal(ev.endDate)
-                    : null;
-                  if (startLocal && v < startLocal) {
-                    setMessage(
-                      "⚠️ Selected time was before the event start. It has been adjusted to the event start time."
-                    );
-                    setSlots((prev) =>
-                      prev.map((val, i) =>
-                        i === idx ? startLocal : val
-                      )
-                    );
-                    return;
-                  }
-                  if (endLocal && v > endLocal) {
-                    setMessage(
-                      "⚠️ Selected time was after the event end. It has been adjusted to the event end time."
-                    );
-                    setSlots((prev) =>
-                      prev.map((val, i) =>
-                        i === idx ? endLocal : val
-                      )
-                    );
-                    return;
-                  }
-                  setSlots((prev) =>
-                    prev.map((v2, i) => (i === idx ? v : v2))
-                  );
-                }}
-                min={selectedPair?.event?.startDate}
-                max={selectedPair?.event?.endDate}
-                placeholder="Select interview time"
-                className="flex-1 text-sm"
-                disabled={isLocked}
-              />
-              {!isLocked && slots.length > 1 && (
-                <button
-                  onClick={() => removeSlot(idx)}
-                  className="p-2 rounded bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200 transition-colors touch-manipulation"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
             </div>
-          ))}
-        </div>
-
-        {!isLocked && (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-            <button
-              onClick={addSlot}
-              disabled={
-                slots.length >= 3 || slots.some(slot => !slot || slot.trim() === "")
-              }
-              className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-lg text-slate-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Add Time Slot
-            </button>
-            <div className="text-xs text-slate-600 text-center sm:text-left">
-              {slots.some(slot => !slot || slot.trim() === "") ? (
-                <span className="text-amber-600">Complete the current slot to add more</span>
-              ) : slots.length >= 3 ? (
-                <span className="text-slate-500">Maximum 3 slots reached</span>
-              ) : isInterviewer ? (
-                "Add multiple available time slots (max 3)"
+          ) : (
+            <div className="space-y-4">
+              {/* Show partner's proposed time if exists - same single tab style */}
+              {(isInterviewer ? intervieweeSlots : interviewerSlots).length > 0 ? (
+                <div>
+                  <div className="text-center mb-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 rounded-lg border border-purple-300">
+                      <Clock className="w-5 h-5 text-purple-600" />
+                      <span className="text-sm font-medium text-purple-900">
+                        Proposed Time (by {isInterviewer ? 'Candidate' : 'Mentor'})
+                      </span>
+                      <span className="text-xs px-2 py-0.5 bg-purple-200 text-purple-800 rounded-full font-semibold">
+                        {partnerProposalCount}/3
+                      </span>
+                    </div>
+                    {bothReachedLimit && (
+                      <div className="mt-2 text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded border border-amber-200 inline-block">
+                        ⚠️ Both parties used all 3 proposals - this time will be finalized
+                      </div>
+                    )}
+                  </div>
+                  {(isInterviewer ? intervieweeSlots : interviewerSlots).map((s, i) => (
+                    <div key={i} className="bg-white rounded-lg p-6 border-2 border-purple-300 shadow-md text-center mb-4">
+                      <div className="text-sm text-slate-600 mb-2">Current proposed time:</div>
+                      <div className="text-lg font-semibold text-slate-900 mb-4">
+                        {new Date(s).toLocaleString()}
+                      </div>
+                      <div className="flex gap-3 justify-center flex-wrap">
+                        <button
+                          onClick={() => handleConfirm(s, "")}
+                          className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm"
+                        >
+                          Accept This Time
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowProposeForm(true);
+                          }}
+                          className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-medium text-sm hover:from-amber-600 hover:to-amber-700 shadow-sm"
+                        >
+                          Change Time
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await handleReject();
+                          }}
+                          className="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium text-sm hover:from-red-600 hover:to-red-700 shadow-sm"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                `You may propose up to 3 alternative time slots (${slots.length}/3)`
+                /* Show default time or my pending proposal */
+                <div>
+                  {(isInterviewer ? interviewerSlots : intervieweeSlots).length > 0 ? (
+                    /* I have proposed - show as "Proposed Time" (visible to both sides) */
+                    <div className="text-center py-6">
+                      <div className="text-center mb-4">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 rounded-lg border border-purple-300">
+                          <Clock className="w-5 h-5 text-purple-600" />
+                          <span className="text-sm font-medium text-purple-900">
+                            Proposed Time (Waiting for confirmation)
+                          </span>
+                          <span className="text-xs px-2 py-0.5 bg-purple-200 text-purple-800 rounded-full font-semibold">
+                            {myProposalCount}/3
+                          </span>
+                        </div>
+                        {bothReachedLimit && (
+                          <div className="mt-2 text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded border border-amber-200 inline-block">
+                            ⚠️ Both parties used all 3 proposals - this time will be finalized
+                          </div>
+                        )}
+                      </div>
+                      <div className="bg-white rounded-lg p-6 border-2 border-purple-300 shadow-md text-center mb-4">
+                        <div className="text-sm text-slate-600 mb-2">Current proposed time:</div>
+                        <div className="text-lg font-semibold text-slate-900 mb-4">
+                          {new Date((isInterviewer ? interviewerSlots : intervieweeSlots)[0]).toLocaleString()}
+                        </div>
+                        <div className="flex gap-3 justify-center flex-wrap">
+                          <button
+                            onClick={() => handleConfirm((isInterviewer ? interviewerSlots : intervieweeSlots)[0], "")}
+                            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm"
+                          >
+                            Accept This Time
+                          </button>
+                          <button
+                            onClick={() => setShowProposeForm(true)}
+                            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-medium text-sm hover:from-amber-600 hover:to-amber-700 shadow-sm"
+                          >
+                            Change Time
+                          </button>
+                          <button
+                            onClick={async () => {
+                              await handleReject();
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium text-sm hover:from-red-600 hover:to-red-700 shadow-sm"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* No proposals yet - show default time slot if available and not expired */
+                    <div className="text-center py-6">
+                      {selectedPair?.defaultTimeSlot ? (
+                        selectedPair.defaultTimeExpired ? (
+                          /* Default time has expired */
+                          <div>
+                            <div className="inline-flex flex-col items-center gap-3 px-8 py-6 bg-red-50 rounded-xl border-2 border-red-300">
+                              <Clock className="w-8 h-8 text-red-600" />
+                              <div>
+                                <div className="text-sm font-medium text-red-900 mb-2">Default time slot has expired</div>
+                                <div className="text-sm text-red-700 line-through">
+                                  {new Date(selectedPair.defaultTimeSlot).toLocaleString()}
+                                </div>
+                                <div className="text-xs text-red-600 mt-2">Please propose a new time to schedule your interview</div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => setShowProposeForm(true)}
+                              className="mt-4 px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
+                            >
+                              Propose New Time
+                            </button>
+                          </div>
+                        ) : (
+                          /* Valid future default time */
+                          <div>
+                            <div className="text-center mb-4">
+                              <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-100 rounded-lg border border-sky-300">
+                                <Clock className="w-5 h-5 text-sky-600" />
+                                <span className="text-sm font-medium text-sky-900">
+                                  Default Time Slot Assigned
+                                </span>
+                              </div>
+                            </div>
+                            <div className="bg-white rounded-lg p-6 border-2 border-sky-200 shadow-md text-center mb-4">
+                              <div className="text-sm text-slate-600 mb-2">Your scheduled time:</div>
+                              <div className="text-lg font-semibold text-slate-900 mb-4">
+                                {new Date(selectedPair.defaultTimeSlot).toLocaleString()}
+                              </div>
+                              <div className="flex gap-3 justify-center flex-wrap">
+                                <button
+                                  onClick={() => handleConfirm(selectedPair.defaultTimeSlot, "")}
+                                  className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm"
+                                >
+                                  Accept Default Time
+                                </button>
+                                <button
+                                  onClick={() => setShowProposeForm(true)}
+                                  className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-medium text-sm hover:from-amber-600 hover:to-amber-700 shadow-sm"
+                                >
+                                  Change Time
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      ) : (
+                        <div>
+                          <div className="inline-flex items-center gap-2 px-6 py-4 bg-slate-100 rounded-lg border border-slate-300 mb-4">
+                            <Clock className="w-5 h-5 text-slate-500" />
+                            <div className="text-sm font-medium text-slate-700">
+                              No time slot scheduled yet
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setShowProposeForm(true)}
+                            className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
+                          >
+                            Propose a time slot
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Proposed Slots Grid */}
-        {!isLocked && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            <div className="bg-slate-50 rounded-lg p-3 sm:p-4">
-              <h4 className="font-semibold text-slate-900 mb-2 sm:mb-3 text-sm">
-                Interviewer Proposed Times
-              </h4>
-              <div className="text-xs text-slate-600 mb-2 sm:mb-3">
-                Time slots suggested by interviewer for the interview
-              </div>
-              <ul className="space-y-2">
-                {interviewerSlots.length > 0 ? (
-                  interviewerSlots.map((s, i) => (
-                    <li
-                      key={i}
-                      className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-colors ${
-                        selectedToAccept === s
-                          ? "bg-indigo-50 border-indigo-200"
-                          : "bg-white border-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      {!isInterviewer && (
-                        <input
-                          type="radio"
-                          name="acceptSlot"
-                          value={s}
-                          checked={selectedToAccept === s}
-                          onChange={() => setSelectedToAccept(s)}
-                          className="mt-1 text-indigo-600 focus:ring-indigo-500"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-slate-900">
-                          {new Date(s).toLocaleString()}
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          Proposed by:{" "}
-                          {selectedPair?.interviewer?.name ||
-                            selectedPair?.interviewer?.email}
-                        </div>
-                      </div>
-                    </li>
-                  ))
-                ) : (
-                  <li className="text-slate-500 text-sm text-center py-4">
-                    No time slots proposed yet
-                  </li>
-                )}
-              </ul>
-            </div>
-
-            <div className="bg-slate-50 rounded-lg p-3 sm:p-4">
-              <h4 className="font-semibold text-slate-900 mb-2 sm:mb-3 text-sm">
-                Interviewee Proposed Times
-              </h4>
-              <div className="text-xs text-slate-600 mb-2 sm:mb-3">
-                Alternative time slots suggested by interviewee
-              </div>
-              <ul className="space-y-2">
-                {intervieweeSlots.length > 0 ? (
-                  intervieweeSlots.map((s, i) => (
-                    <li
-                      key={i}
-                      className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-colors ${
-                        selectedToAccept === s
-                          ? "bg-indigo-50 border-indigo-200"
-                          : "bg-white border-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      {isInterviewer && (
-                        <input
-                          type="radio"
-                          name="acceptSlot"
-                          value={s}
-                          checked={selectedToAccept === s}
-                          onChange={() => setSelectedToAccept(s)}
-                          className="mt-1 text-indigo-600 focus:ring-indigo-500"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-slate-900">
-                          {new Date(s).toLocaleString()}
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          Proposed by:{" "}
-                          {selectedPair?.interviewee?.name ||
-                            selectedPair?.interviewee?.email}
-                        </div>
-                      </div>
-                    </li>
-                  ))
-                ) : (
-                  <li className="text-slate-500 text-sm text-center py-4">
-                    No alternative slots proposed
-                  </li>
-                )}
-              </ul>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {currentProposals.common && (
-        <div className="p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-200 text-sm flex items-center">
-          <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
-          <div>
-            <span className="font-medium">Common slot identified: </span>
-            {new Date(currentProposals.common).toLocaleString()}
-          </div>
+          )}
         </div>
-      )}
 
-      {/* Action Buttons - Clean Row Layout */}
-      <div className="flex flex-col lg:flex-row gap-3 pt-2">
-        <button
-          disabled={isLocked}
-          onClick={handlePropose}
-          className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium text-sm hover:from-blue-600 hover:to-blue-700 active:from-blue-700 active:to-blue-800 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-        >
-          {isInterviewer ? "Propose Time Slots" : "Suggest Alternatives"}
-        </button>
+        {/* Propose New Time Form (shown when user clicks "Propose a new time") */}
+        {showProposeForm && !isLocked && (
+          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-slate-900">
+                  {isInterviewer ? 'Propose Time Slot' : 'Suggest Alternative Time'}
+                </h3>
+                <div className="text-xs text-slate-600 mt-1">
+                  {myRemainingProposals > 0 ? (
+                    <span>You have <span className="font-semibold text-sky-600">{myRemainingProposals}</span> proposal{myRemainingProposals !== 1 ? 's' : ''} remaining</span>
+                  ) : (
+                    <span className="text-amber-600 font-medium">⚠️ This is your last proposal (3/3 used)</span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowProposeForm(false);
+                  setSlots([""]);
+                }}
+                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+                {slots.map((s, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <DateTimePicker
+                      value={s}
+                      onChange={(isoDateTime) => {
+                        const v = isoDateTime;
+                        
+                        // Check if selected time is in the past
+                        if (v) {
+                          const selectedTime = new Date(v).getTime();
+                          const currentTime = Date.now();
+                          if (selectedTime <= currentTime) {
+                            setMessage("⚠️ Cannot select past time. Please choose a future time.");
+                            return;
+                          }
+                        }
+                        
+                        const ev = selectedPair?.event || {};
+                        const toLocal = (val) => {
+                          if (!val) return "";
+                          if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(val))
+                            return val;
+                          const d = new Date(val);
+                          if (isNaN(d.getTime())) return "";
+                          const pad = (n) => String(n).padStart(2, "0");
+                          return `${d.getFullYear()}-${pad(
+                            d.getMonth() + 1
+                          )}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
+                            d.getMinutes()
+                          )}`;
+                        };
+                        const startLocal = ev.startDate
+                          ? toLocal(ev.startDate)
+                          : null;
+                        const endLocal = ev.endDate
+                          ? toLocal(ev.endDate)
+                          : null;
+                        if (startLocal && v < startLocal) {
+                          setMessage(
+                            "⚠️ Selected time was before the event start. It has been adjusted to the event start time."
+                          );
+                          setSlots((prev) =>
+                            prev.map((val, i) =>
+                              i === idx ? startLocal : val
+                            )
+                          );
+                          return;
+                        }
+                        if (endLocal && v > endLocal) {
+                          setMessage(
+                            "⚠️ Selected time was after the event end. It has been adjusted to the event end time."
+                          );
+                          setSlots((prev) =>
+                            prev.map((val, i) =>
+                              i === idx ? endLocal : val
+                            )
+                          );
+                          return;
+                        }
+                        setSlots((prev) =>
+                          prev.map((v2, i) => (i === idx ? v : v2))
+                        );
+                      }}
+                      min={getCurrentMinDateTime()}
+                      max={selectedPair?.event?.endDate}
+                      placeholder="Select interview time"
+                      className="flex-1 text-sm"
+                      disabled={isLocked}
+                    />
+                    {!isLocked && slots.length > 1 && (
+                      <button
+                        onClick={() => removeSlot(idx)}
+                        className="p-2 rounded bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200 transition-colors touch-manipulation"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
 
-        <button
-          disabled={!selectedToAccept || isLocked}
-          onClick={() => handleConfirm(selectedToAccept, "")}
-          className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 active:from-emerald-700 active:to-emerald-800 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-        >
-          Accept Selected Time
-        </button>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-4">
+                <button
+                  onClick={addSlot}
+                  disabled={
+                    slots.length >= 3 || slots.some(slot => !slot || slot.trim() === "")
+                  }
+                  className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-lg text-slate-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Add Time Slot
+                </button>
+                <div className="text-xs text-slate-600 text-center sm:text-left">
+                  {slots.some(slot => !slot || slot.trim() === "") ? (
+                    <span className="text-amber-600">Complete the current slot to add more</span>
+                  ) : slots.length >= 3 ? (
+                    <span className="text-slate-500">Maximum 3 slots reached</span>
+                  ) : isInterviewer ? (
+                    "Add multiple available time slots (max 3)"
+                  ) : (
+                    `You may propose up to 3 alternative time slots (${slots.length}/3)`
+                  )}
+                </div>
+              </div>
 
-        <button
-          disabled={isLocked}
-          onClick={handleReject}
-          className="flex-1 px-6 py-3 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg font-medium text-sm hover:from-slate-600 hover:to-slate-700 active:from-slate-700 active:to-slate-800 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-        >
-          Reject All
-        </button>
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={() => {
+                    setShowProposeForm(false);
+                    setSlots([""]);
+                    setMessage("");
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await handlePropose();
+                    setShowProposeForm(false);
+                    setSlots([""]);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700"
+                >
+                  Propose Time
+                </button>
+              </div>
+
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                <p className="text-xs text-blue-800">
+                  <Info className="w-4 h-4 inline mr-1" />
+                  The other person will respond to your proposed time soon.
+                </p>
+              </div>
+            </div>
+        )}
       </div>
 
       {isLocked && selectedPair.meetingLink && (
@@ -1852,7 +2043,7 @@ export default function StudentDashboard() {
                     <div className="flex items-center gap-2">
                       <User className={`w-4 h-4 ${selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id ? 'text-white' : 'text-indigo-600'}`} />
                       <div className="flex-1">
-                        <div className="font-semibold">Mentor Role</div>
+                        <div className="font-semibold">Mentor Name</div>
                         <div className="text-xs mt-1 opacity-90">
                           {interviewerPair.interviewer?.name || interviewerPair.interviewer?.email || "N/A"} ➜ {interviewerPair.interviewee?.name || interviewerPair.interviewee?.email || "N/A"}
                         </div>
@@ -1897,7 +2088,7 @@ export default function StudentDashboard() {
                     <div className="flex items-center gap-2">
                       <User className={`w-4 h-4 ${selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id ? 'text-white' : 'text-indigo-600'}`} />
                       <div className="flex-1">
-                        <div className="font-semibold">Candidate Role</div>
+                        <div className="font-semibold">Candidate Name</div>
                         <div className="text-xs mt-1 opacity-90">
                           {intervieweePair.interviewer?.name || intervieweePair.interviewer?.email || "N/A"} ➜ {intervieweePair.interviewee?.name || intervieweePair.interviewee?.email || "N/A"}
                         </div>

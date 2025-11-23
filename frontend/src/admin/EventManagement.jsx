@@ -301,7 +301,7 @@ export default function EventManagement() {
 
           {/* Modern Sliding Switch for Interview Type */}
           <div className="flex justify-center mb-6">
-            <div className="relative inline-flex items-center bg-slate-200 rounded-full p-1.5 w-80">
+            <div className="relative inline-flex items-center bg-slate-200 rounded-full p-1.5 w-full max-w-[15rem] sm:max-w-[18rem]">
               <div
                 className={`absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] bg-gradient-to-r transition-all duration-300 ease-in-out rounded-full shadow-lg ${
                   specialMode
@@ -312,7 +312,7 @@ export default function EventManagement() {
               <button
                 type="button"
                 onClick={() => { setSpecialMode(false); setMsg(""); }}
-                className={`relative z-10 flex-1 px-6 py-3 text-base font-semibold rounded-full transition-colors duration-300 ${
+                className={`relative z-10 flex-1 px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 ${
                   !specialMode
                     ? 'text-white'
                     : 'text-slate-600 hover:text-slate-800'
@@ -323,7 +323,7 @@ export default function EventManagement() {
               <button
                 type="button"
                 onClick={() => { setSpecialMode(true); setMsg(""); }}
-                className={`relative z-10 flex-1 px-6 py-3 text-base font-semibold rounded-full transition-colors duration-300 ${
+                className={`relative z-10 flex-1 px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 ${
                   specialMode
                     ? 'text-white'
                     : 'text-slate-600 hover:text-slate-800'

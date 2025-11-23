@@ -6,6 +6,7 @@ const pairSchema = new mongoose.Schema({
   interviewee: { type: mongoose.Schema.Types.ObjectId, refPath: 'intervieweeModel', required: true },
   interviewerModel: { type: String, enum: ['User', 'SpecialStudent'], default: 'User' },
   intervieweeModel: { type: String, enum: ['User', 'SpecialStudent'], default: 'User' },
+  defaultTimeSlot: Date, // Auto-generated default time when pair is created
   scheduledAt: Date,
   finalConfirmedTime: Date,
   meetingLink: String,

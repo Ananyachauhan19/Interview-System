@@ -87,13 +87,49 @@ async function checkAndAutoAssign(pair) {
   const ip = pair.interviewerProposalCount || 0;
   const ep = pair.intervieweeProposalCount || 0;
   if (ip < 3 || ep < 3) return false;
-  // Both hit limits; auto-assign a time
-  const event = await Event.findById(pair.event);
-  const slot = generateRandomSlot(event);
-  if (!slot || slot.getTime() <= Date.now()) return false;
+  
+  // Both hit limits; use the last submitted time as final
+  // Get both users' proposals
+  const interviewerDoc = await SlotProposal.findOne({ 
+    pair: pair._id, 
+    user: pair.interviewer, 
+    event: pair.event 
+  });
+  const intervieweeDoc = await SlotProposal.findOne({ 
+    pair: pair._id, 
+    user: pair.interviewee, 
+    event: pair.event 
+  });
+  
+  // Find the most recently proposed slot (last submitted)
+  let lastSlot = null;
+  let lastSlotTime = 0;
+  
+  if (interviewerDoc?.slots?.length > 0 && interviewerDoc.updatedAt) {
+    const slotTime = new Date(interviewerDoc.updatedAt).getTime();
+    if (slotTime > lastSlotTime) {
+      lastSlotTime = slotTime;
+      lastSlot = interviewerDoc.slots[0];
+    }
+  }
+  
+  if (intervieweeDoc?.slots?.length > 0 && intervieweeDoc.updatedAt) {
+    const slotTime = new Date(intervieweeDoc.updatedAt).getTime();
+    if (slotTime > lastSlotTime) {
+      lastSlotTime = slotTime;
+      lastSlot = intervieweeDoc.slots[0];
+    }
+  }
+  
+  // If no valid last slot found, fall back to random slot generation
+  if (!lastSlot || new Date(lastSlot).getTime() <= Date.now()) {
+    const event = await Event.findById(pair.event);
+    lastSlot = generateRandomSlot(event);
+    if (!lastSlot || lastSlot.getTime() <= Date.now()) return false;
+  }
 
-  pair.scheduledAt = slot;
-  pair.finalConfirmedTime = slot;
+  pair.scheduledAt = lastSlot;
+  pair.finalConfirmedTime = lastSlot;
   if (!pair.meetingLink) {
     const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
     const room = `Interview-${pair._id}-${crypto.randomBytes(3).toString('hex')}`;
@@ -104,12 +140,12 @@ async function checkAndAutoAssign(pair) {
 
   try {
     const populated = await Pair.findById(pair._id).populate('interviewer').populate('interviewee');
-    const whenStr = formatDateTime(slot);
+    const whenStr = formatDateTime(lastSlot);
     const emails = [populated?.interviewer?.email, populated?.interviewee?.email].filter(Boolean);
     await Promise.all(emails.map(to => sendMail({
       to,
-      subject: 'Auto-Assigned Interview Time',
-      text: `Both participants reached the proposal limit. A time was auto-assigned for your interview: ${whenStr}. Meeting link: ${pair.meetingLink}`,
+      subject: 'Interview Time Finalized',
+      text: `Both participants have used their 3 proposals. The last submitted time has been set as final: ${whenStr}. Meeting link: ${pair.meetingLink}`,
     }).catch(() => null)));
   } catch {}
 
@@ -285,10 +321,29 @@ export async function proposeSlots(req, res) {
     const partner = (partnerDoc?.slots || []).map(d => new Date(d).toISOString());
     const minePast = (mineDoc?.pastSlots || []).map(d => new Date(d).toISOString());
     const partnerPast = (partnerDoc?.pastSlots || []).map(d => new Date(d).toISOString());
+    
+    // Include rich past entries with reasons for UI display
+    const minePastEntries = (mineDoc?.pastEntries || []).map(e => ({
+      time: new Date(e.time).toISOString(),
+      reason: e.reason
+    }));
+    const partnerPastEntries = (partnerDoc?.pastEntries || []).map(e => ({
+      time: new Date(e.time).toISOString(),
+      reason: e.reason
+    }));
+    
     // find first common
     const partnerSet = new Set(partner.map(d => new Date(d).getTime()));
     const common = mine.map(d => new Date(d).getTime()).find(t => partnerSet.has(t));
-    return res.json({ mine, partner, minePast, partnerPast, common: common ? new Date(common).toISOString() : null });
+    return res.json({ 
+      mine, 
+      partner, 
+      minePast, 
+      partnerPast, 
+      minePastEntries,
+      partnerPastEntries,
+      common: common ? new Date(common).toISOString() : null 
+    });
   }
 
   // Validate slots within event window
@@ -303,21 +358,38 @@ export async function proposeSlots(req, res) {
   if (startBoundary && dates.some(d => d.getTime() < startBoundary)) throw new HttpError(400, 'Slot before event start');
   if (endBoundary && dates.some(d => d.getTime() > endBoundary)) throw new HttpError(400, 'Slot after event end');
 
-  // Only one active slot per user; can propose only if no active exists
+  // Allow replacing existing proposal - move old proposal to pastSlots and pastEntries
   let doc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
-  if (doc?.slots?.length) {
-    throw new HttpError(400, 'You already have a pending proposal. Wait for acceptance/rejection.');
-  }
-  const pastCount = (doc?.pastSlots?.length || 0);
-  // Enforce per-role proposal counters
+  const hadPreviousProposal = doc?.slots?.length > 0;
+  
+  // Enforce per-role proposal counters (only increment if this is a NEW proposal, not a replacement)
   const isInterviewerProposing = isInterviewer;
   const maxReached = isInterviewerProposing ? (pair.interviewerProposalCount >= 3) : (pair.intervieweeProposalCount >= 3);
-  if (maxReached) throw new HttpError(400, 'Maximum number of proposals (3) already reached');
-  if (!doc) doc = new SlotProposal({ pair: pair._id, user: effectiveUserId, event: pair.event, slots: [], pastSlots: [] });
+  if (maxReached && !hadPreviousProposal) throw new HttpError(400, 'Maximum number of proposals (3) already reached');
+  
+  if (!doc) doc = new SlotProposal({ pair: pair._id, user: effectiveUserId, event: pair.event, slots: [], pastSlots: [], pastEntries: [] });
+  
+  // Move old proposal to pastSlots and pastEntries with 'superseded' reason before replacing
+  if (hadPreviousProposal) {
+    doc.pastSlots = [...(doc.pastSlots || []), ...doc.slots];
+    // Add to pastEntries with 'superseded' reason
+    if (!doc.pastEntries) doc.pastEntries = [];
+    for (const oldSlot of doc.slots) {
+      doc.pastEntries.push({
+        time: oldSlot,
+        reason: 'superseded'
+      });
+    }
+  }
+  
   doc.slots = [dates[0]];
   await doc.save();
-  // Increment per-user counters on pair
-  if (isInterviewerProposing) pair.interviewerProposalCount = (pair.interviewerProposalCount || 0) + 1; else pair.intervieweeProposalCount = (pair.intervieweeProposalCount || 0) + 1;
+  
+  // Increment per-user counters on pair (only if new proposal, not replacement)
+  if (!hadPreviousProposal) {
+    if (isInterviewerProposing) pair.interviewerProposalCount = (pair.interviewerProposalCount || 0) + 1; 
+    else pair.intervieweeProposalCount = (pair.intervieweeProposalCount || 0) + 1;
+  }
   await pair.save();
 
   // If both reached max attempts and still not scheduled, auto-assign and skip proposal email
