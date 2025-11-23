@@ -130,6 +130,7 @@ async function checkAndAutoAssign(pair) {
 
   pair.scheduledAt = lastSlot;
   pair.finalConfirmedTime = lastSlot;
+  pair.currentProposedTime = lastSlot;
   if (!pair.meetingLink) {
     const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
     const room = `Interview-${pair._id}-${crypto.randomBytes(3).toString('hex')}`;
@@ -187,8 +188,91 @@ async function expireProposalsIfNeeded(pair) {
     }
   }
   if (movedSomething) {
-    try { await checkAndAutoAssign(pair); } catch {}
+    try { 
+      await checkAndAutoAssign(pair); 
+      
+      // If both users have no active proposals left (all expired), schedule the last proposed time
+      await checkAndScheduleLastProposal(pair);
+    } catch {}
   }
+}
+
+// New function: Schedule last proposed time when all proposals expire
+async function checkAndScheduleLastProposal(pair) {
+  if (!pair) return false;
+  if (pair.status === 'scheduled') return false;
+  
+  // Check if both users have no active proposals
+  const interviewerDoc = await SlotProposal.findOne({ 
+    pair: pair._id, 
+    user: pair.interviewer, 
+    event: pair.event 
+  });
+  const intervieweeDoc = await SlotProposal.findOne({ 
+    pair: pair._id, 
+    user: pair.interviewee, 
+    event: pair.event 
+  });
+  
+  const interviewerHasActive = interviewerDoc?.slots?.length > 0;
+  const intervieweeHasActive = intervieweeDoc?.slots?.length > 0;
+  
+  // If either has active proposals, don't auto-schedule yet
+  if (interviewerHasActive || intervieweeHasActive) return false;
+  
+  // Both have no active proposals - find the last proposed time from either user
+  let lastSlot = null;
+  let lastSlotTime = 0;
+  
+  // Check interviewer's past proposals
+  if (interviewerDoc?.pastEntries?.length > 0) {
+    const lastEntry = interviewerDoc.pastEntries[interviewerDoc.pastEntries.length - 1];
+    const slotTime = new Date(lastEntry.time).getTime();
+    if (slotTime > lastSlotTime) {
+      lastSlotTime = slotTime;
+      lastSlot = lastEntry.time;
+    }
+  }
+  
+  // Check interviewee's past proposals
+  if (intervieweeDoc?.pastEntries?.length > 0) {
+    const lastEntry = intervieweeDoc.pastEntries[intervieweeDoc.pastEntries.length - 1];
+    const slotTime = new Date(lastEntry.time).getTime();
+    if (slotTime > lastSlotTime) {
+      lastSlotTime = slotTime;
+      lastSlot = lastEntry.time;
+    }
+  }
+  
+  // If no last slot found, can't schedule
+  if (!lastSlot) return false;
+  
+  // Schedule the last proposed time
+  pair.scheduledAt = lastSlot;
+  pair.finalConfirmedTime = lastSlot;
+  pair.currentProposedTime = lastSlot;
+  if (!pair.meetingLink) {
+    const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
+    const room = `Interview-${pair._id}-${crypto.randomBytes(3).toString('hex')}`;
+    pair.meetingLink = `${base}/${room}`;
+  }
+  pair.status = 'scheduled';
+  await pair.save();
+  
+  // Send notification
+  try {
+    const populated = await Pair.findById(pair._id).populate('interviewer').populate('interviewee');
+    const whenStr = formatDateTime(lastSlot);
+    const emails = [populated?.interviewer?.email, populated?.interviewee?.email].filter(Boolean);
+    await Promise.all(emails.map(to => sendMail({
+      to,
+      subject: 'Interview Time Automatically Scheduled',
+      text: `All proposed times have expired. The last proposed time has been automatically scheduled: ${whenStr}. Meeting link: ${pair.meetingLink}`,
+    }).catch(() => null)));
+  } catch {}
+  
+  console.log(`[checkAndScheduleLastProposal] Auto-scheduled pair ${pair._id} with last proposed time: ${formatDateTime(lastSlot)}`);
+  return true;
 }
 
 // Helper to check user's role in a pair (handles cross-collection matching for users in both User and SpecialStudent)
@@ -362,10 +446,10 @@ export async function proposeSlots(req, res) {
   let doc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
   const hadPreviousProposal = doc?.slots?.length > 0;
   
-  // Enforce per-role proposal counters (only increment if this is a NEW proposal, not a replacement)
+  // Enforce per-role proposal counters (EVERY submission counts, including replacements)
   const isInterviewerProposing = isInterviewer;
   const maxReached = isInterviewerProposing ? (pair.interviewerProposalCount >= 3) : (pair.intervieweeProposalCount >= 3);
-  if (maxReached && !hadPreviousProposal) throw new HttpError(400, 'Maximum number of proposals (3) already reached');
+  if (maxReached) throw new HttpError(400, 'Maximum number of proposals (3) already reached');
   
   if (!doc) doc = new SlotProposal({ pair: pair._id, user: effectiveUserId, event: pair.event, slots: [], pastSlots: [], pastEntries: [] });
   
@@ -385,11 +469,13 @@ export async function proposeSlots(req, res) {
   doc.slots = [dates[0]];
   await doc.save();
   
-  // Increment per-user counters on pair (only if new proposal, not replacement)
-  if (!hadPreviousProposal) {
-    if (isInterviewerProposing) pair.interviewerProposalCount = (pair.interviewerProposalCount || 0) + 1; 
-    else pair.intervieweeProposalCount = (pair.intervieweeProposalCount || 0) + 1;
-  }
+  // Increment per-user counters on pair (count every attempt)
+  if (isInterviewerProposing) pair.interviewerProposalCount = (pair.interviewerProposalCount || 0) + 1; 
+  else pair.intervieweeProposalCount = (pair.intervieweeProposalCount || 0) + 1;
+  await pair.save();
+
+  // Update unified currentProposedTime on pair always (default or latest user proposal)
+  pair.currentProposedTime = dates[0];
   await pair.save();
 
   // If both reached max attempts and still not scheduled, auto-assign and skip proposal email
@@ -440,7 +526,25 @@ export async function proposeSlots(req, res) {
   const partnerMeta = partnerSlotsRaw.map(d => ({ slot: d.toISOString(), expired: d.getTime() <= nowTs }));
   const partnerSet = new Set(partner.map(d => new Date(d).getTime()));
   const common = mine.map(d => new Date(d).getTime()).find(t => partnerSet.has(t) && t > nowTs);
-  res.json({ mine, partner, minePast, partnerPast, minePastEntries, partnerPastEntries, pastTimeSlots, common: common ? new Date(common).toISOString() : null, mineMeta, partnerMeta });
+  // Include unified currentProposedTime for frontend immediate sync
+  const freshPair = await Pair.findById(pair._id).lean();
+  res.json({ 
+    mine, 
+    partner, 
+    minePast, 
+    partnerPast, 
+    minePastEntries, 
+    partnerPastEntries, 
+    pastTimeSlots, 
+    common: common ? new Date(common).toISOString() : null, 
+    mineMeta, 
+    partnerMeta, 
+    currentProposedTime: freshPair?.currentProposedTime ? new Date(freshPair.currentProposedTime).toISOString() : null,
+    status: freshPair?.status || 'pending',
+    scheduledAt: freshPair?.scheduledAt ? new Date(freshPair.scheduledAt).toISOString() : null,
+    interviewerProposalCount: freshPair?.interviewerProposalCount || 0,
+    intervieweeProposalCount: freshPair?.intervieweeProposalCount || 0
+  });
 }
 
 export async function confirmSlot(req, res) {
@@ -508,6 +612,7 @@ export async function confirmSlot(req, res) {
 
   pair.scheduledAt = scheduled;
   pair.finalConfirmedTime = scheduled;
+  pair.currentProposedTime = scheduled; // New line added
   // Auto-generate a Jitsi meet link if none provided yet.
   if (meetingLink) {
     pair.meetingLink = meetingLink;

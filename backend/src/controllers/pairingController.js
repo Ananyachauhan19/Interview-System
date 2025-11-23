@@ -66,7 +66,8 @@ async function generateRotationPairsForEvent(event) {
         interviewee: b,
         interviewerModel: modelType,
         intervieweeModel: modelType,
-        defaultTimeSlot: defaultTime
+        defaultTimeSlot: defaultTime,
+        currentProposedTime: defaultTime
       };
     })
   );
@@ -212,9 +213,15 @@ export async function listPairs(req, res) {
       defaultTime.setMinutes(roundedMinutes, 0, 0);
       
       // Update in database
-      await Pair.findByIdAndUpdate(pairs[i]._id, { defaultTimeSlot: defaultTime });
+      await Pair.findByIdAndUpdate(pairs[i]._id, { defaultTimeSlot: defaultTime, currentProposedTime: defaultTime });
       pairs[i].defaultTimeSlot = defaultTime;
+      pairs[i].currentProposedTime = defaultTime;
       console.log(`[listPairs] Added default time slot to pair ${pairs[i]._id}: ${defaultTime.toLocaleString()}`);
+    }
+    // Ensure currentProposedTime is initialized if missing
+    if (pairs[i].defaultTimeSlot && !pairs[i].currentProposedTime) {
+      await Pair.findByIdAndUpdate(pairs[i]._id, { currentProposedTime: pairs[i].defaultTimeSlot });
+      pairs[i].currentProposedTime = pairs[i].defaultTimeSlot;
     }
     
     // Check if default time slot has expired (is in the past)

@@ -9,6 +9,8 @@ const pairSchema = new mongoose.Schema({
   defaultTimeSlot: Date, // Auto-generated default time when pair is created
   scheduledAt: Date,
   finalConfirmedTime: Date,
+  // Unified currently active proposed time (default or latest user proposal)
+  currentProposedTime: Date,
   meetingLink: String,
   status: { type: String, enum: ['pending', 'rejected', 'scheduled', 'completed'], default: 'pending' },
   interviewerProposalCount: { type: Number, default: 0 },
