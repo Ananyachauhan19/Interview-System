@@ -1533,24 +1533,43 @@ export default function StudentDashboard() {
                     <div className="text-center py-6">
                       {selectedPair?.defaultTimeSlot ? (
                         selectedPair.defaultTimeExpired ? (
-                          /* Default time has expired */
-                          <div>
-                            <div className="inline-flex flex-col items-center gap-3 px-8 py-6 bg-red-50 rounded-xl border-2 border-red-300">
-                              <Clock className="w-8 h-8 text-red-600" />
-                              <div>
-                                <div className="text-sm font-medium text-red-900 mb-2">Default time slot has expired</div>
-                                <div className="text-sm text-red-700 line-through">
-                                  {fmt(selectedPair.defaultTimeSlot)}
+                          /* Redesigned expired default time UI */
+                          <div className="max-w-md mx-auto">
+                            <div className="rounded-xl border border-amber-300 bg-gradient-to-br from-amber-50 to-amber-100 px-6 py-5 shadow-sm">
+                              <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-amber-200/60">
+                                  <Clock className="w-6 h-6 text-amber-700" />
                                 </div>
-                                <div className="text-xs text-red-600 mt-2">Please propose a new time to schedule your interview</div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-semibold text-amber-800 tracking-wide mb-1">Previous Default Time Expired</div>
+                                  <div className="text-xs text-amber-700 mb-3 leading-relaxed">
+                                    The originally suggested time has passed and is no longer valid. Please select a new time to keep the scheduling moving forward.
+                                  </div>
+                                  <div className="inline-flex items-center gap-2 mb-4">
+                                    <span className="text-sm font-medium text-slate-600 line-through">
+                                      {fmt(selectedPair.defaultTimeSlot)}
+                                    </span>
+                                    <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-200 px-2 py-1 rounded">Expired</span>
+                                  </div>
+                                  <div className="flex flex-col sm:flex-row gap-3">
+                                    <button
+                                      onClick={() => setShowProposeForm(true)}
+                                      className="flex-1 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
+                                    >
+                                      Propose New Time
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setShowProposeForm(true);
+                                      }}
+                                      className="px-4 py-2.5 bg-white text-sky-600 border border-sky-300 rounded-lg font-medium text-sm hover:bg-sky-50 shadow-sm"
+                                    >
+                                      Open Picker
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                            <button
-                              onClick={() => setShowProposeForm(true)}
-                              className="mt-4 px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
-                            >
-                              Propose New Time
-                            </button>
                           </div>
                         ) : (
                           /* Valid future default time */
