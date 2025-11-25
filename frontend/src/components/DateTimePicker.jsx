@@ -29,9 +29,16 @@ export default function DateTimePicker({
   const flatpickrRef = useRef(null);
   const lastSelectedDateRef = useRef(null);
   const lastInsideClickRef = useRef(false);
+  const okButtonClickedRef = useRef(false);
+  const isCalendarOpenRef = useRef(false);
 
   useEffect(() => {
     if (!inputRef.current) return;
+    
+    // Don't recreate if instance exists and is open
+    if (flatpickrRef.current && isCalendarOpenRef.current) {
+      return;
+    }
 
     const options = {
       enableTime,
@@ -42,19 +49,26 @@ export default function DateTimePicker({
       defaultDate: value || null,
       minDate: min || null,
       maxDate: max || null,
-      // Keep calendar open unless user clicks outside
+      // Keep calendar open unless OK button was clicked
       onClose: (selectedDates, dateStr, instance) => {
         try {
-          if (lastInsideClickRef.current) {
-            // Reopen immediately if the close was triggered by an inside click
+          if (!okButtonClickedRef.current) {
+            // Reopen immediately if OK button wasn't clicked
             setTimeout(() => {
-              if (instance && typeof instance.open === "function")
+              if (instance && typeof instance.open === "function") {
                 instance.open();
+                isCalendarOpenRef.current = true;
+              }
             }, 0);
+          } else {
+            // Reset flag after closing
+            okButtonClickedRef.current = false;
+            isCalendarOpenRef.current = false;
           }
         } catch {}
       },
       onOpen: (selectedDates, dateStr, instance) => {
+        isCalendarOpenRef.current = true;
         // If no selection yet, just jump calendar view to today without selecting
         if (!instance.selectedDates || instance.selectedDates.length === 0) {
           // Try to restore the last selected date if available
@@ -263,6 +277,60 @@ export default function DateTimePicker({
 
           // Increase calendar width
           instance.calendarContainer.style.width = "auto";
+
+          // Add OK button to the calendar header (top right corner)
+          const monthsContainer = instance.monthNav;
+          if (monthsContainer) {
+            // Make months container relative for absolute positioning
+            monthsContainer.style.position = "relative";
+            monthsContainer.style.display = "flex";
+            monthsContainer.style.alignItems = "center";
+            monthsContainer.style.justifyContent = "center";
+            
+            // Create OK button
+            const okButton = document.createElement("button");
+            okButton.textContent = "OK";
+            okButton.type = "button";
+            okButton.className = "flatpickr-ok-button";
+            okButton.style.cssText =
+              "position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 4px 12px; background: white; color: #0ea5e9; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); z-index: 10;";
+            
+            // Add hover effect
+            okButton.addEventListener("mouseenter", () => {
+              okButton.style.background = "rgba(255, 255, 255, 0.95)";
+              okButton.style.borderColor = "rgba(255, 255, 255, 0.5)";
+              okButton.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.15)";
+            });
+            okButton.addEventListener("mouseleave", () => {
+              okButton.style.background = "white";
+              okButton.style.borderColor = "rgba(255, 255, 255, 0.3)";
+              okButton.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.1)";
+            });
+            
+            // OK button click handler
+            okButton.addEventListener("click", () => {
+              // Set the flag to allow closing via OK button
+              okButtonClickedRef.current = true;
+              // Close the calendar
+              if (instance && typeof instance.close === "function") {
+                instance.close();
+              }
+            });
+            
+            monthsContainer.appendChild(okButton);
+            
+            // Add Enter key listener to trigger OK button
+            const handleKeyDown = (e) => {
+              if (e.key === "Enter" && instance.isOpen) {
+                e.preventDefault();
+                okButton.click();
+              }
+            };
+            document.addEventListener("keydown", handleKeyDown);
+            // Store for cleanup
+            instance.__handleKeyDown = handleKeyDown;
+            instance.__okButton = okButton;
+          }
 
           // Restructure DOM to place time picker beside calendar
           if (enableTime && instance.timeContainer) {
@@ -758,6 +826,11 @@ export default function DateTimePicker({
     flatpickrRef.current = flatpickr(inputRef.current, options);
 
     return () => {
+      // Don't destroy if calendar is open - keep instance alive
+      if (isCalendarOpenRef.current) {
+        return;
+      }
+      
       if (
         flatpickrRef.current &&
         typeof flatpickrRef.current.destroy === "function"
@@ -770,8 +843,15 @@ export default function DateTimePicker({
               true
             );
           }
+          if (flatpickrRef.current.__handleKeyDown) {
+            document.removeEventListener(
+              "keydown",
+              flatpickrRef.current.__handleKeyDown
+            );
+          }
         } catch {}
         flatpickrRef.current.destroy();
+        flatpickrRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -790,6 +870,25 @@ export default function DateTimePicker({
       } catch {}
     }
   }, [value]);
+
+  // Safeguard: Keep calendar open during parent re-renders
+  useEffect(() => {
+    // Check if calendar should be open but isn't
+    const checkInterval = setInterval(() => {
+      if (
+        isCalendarOpenRef.current &&
+        flatpickrRef.current &&
+        !flatpickrRef.current.isOpen
+      ) {
+        // Reopen if it was closed unexpectedly
+        try {
+          flatpickrRef.current.open();
+        } catch {}
+      }
+    }, 100); // Check every 100ms
+
+    return () => clearInterval(checkInterval);
+  }, []);
 
   return (
     <div className="relative">
@@ -969,6 +1068,37 @@ export default function DateTimePicker({
           bottom: 0;
           background: linear-gradient(to top, #f1f5f9, transparent);
           border-radius: 0 0 8px 8px;
+        }
+        
+        /* OK Button styling */
+        .flatpickr-custom .ok-button-container {
+          padding: 12px 16px;
+          border-top: 1px solid #e2e8f0;
+          background: white;
+        }
+        
+        .flatpickr-custom .ok-button {
+          width: 100%;
+          padding: 10px 20px;
+          background: #0ea5e9;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .flatpickr-custom .ok-button:hover {
+          background: #0284c7;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+        
+        .flatpickr-custom .ok-button:active {
+          background: #0369a1;
+          transform: translateY(1px);
         }
       `}</style>
     </div>

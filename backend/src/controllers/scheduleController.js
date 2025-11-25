@@ -131,6 +131,7 @@ async function checkAndAutoAssign(pair) {
   pair.scheduledAt = lastSlot;
   pair.finalConfirmedTime = lastSlot;
   pair.currentProposedTime = lastSlot;
+  // Generate meeting link now since both parties have exhausted their proposals
   if (!pair.meetingLink) {
     const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
     const room = `Interview-${pair._id}-${crypto.randomBytes(3).toString('hex')}`;
@@ -143,10 +144,38 @@ async function checkAndAutoAssign(pair) {
     const populated = await Pair.findById(pair._id).populate('interviewer').populate('interviewee');
     const whenStr = formatDateTime(lastSlot);
     const emails = [populated?.interviewer?.email, populated?.interviewee?.email].filter(Boolean);
+    
+    const html = `
+      <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
+        <p style="margin-bottom:20px;">Dear Participant,</p>
+        <p style="margin-bottom:16px;">Both participants have used their maximum number of proposals (3 each). Based on the most recently submitted proposal, your interview has been automatically scheduled.</p>
+        
+        <div style="background:#f0f9ff;padding:24px;border-radius:8px;border-left:4px solid #0ea5e9;margin:24px 0;">
+          <p style="margin:0 0 12px 0;font-size:17px;font-weight:700;color:#0c4a6e;">✓ Interview Time Finalized</p>
+          <p style="margin:0 0 8px 0;font-size:16px;font-weight:600;color:#0c4a6e;">${whenStr}</p>
+          <p style="margin:12px 0 0 0;font-size:14px;color:#0c4a6e;"><strong>Meeting Link:</strong></p>
+          <p style="margin:4px 0 0 0;font-size:14px;"><a href="${pair.meetingLink}" style="color:#0ea5e9;word-break:break-all;">${pair.meetingLink}</a></p>
+        </div>
+        
+        <div style="background:#dbeafe;padding:16px;border-radius:6px;margin:24px 0;border-left:3px solid #3b82f6;">
+          <p style="margin:0;font-size:14px;color:#1e3a8a;"><strong>📝 Important Reminders:</strong></p>
+          <ul style="margin:8px 0 0 20px;padding:0;font-size:14px;color:#1e3a8a;">
+            <li style="margin:6px 0;">Please mark this time in your calendar</li>
+            <li style="margin:6px 0;">Join the meeting at least 5 minutes early</li>
+            <li style="margin:6px 0;">Ensure your camera and microphone are working properly</li>
+            <li style="margin:6px 0;">Have your preparation materials ready</li>
+          </ul>
+        </div>
+        
+        <p style="margin-top:28px;color:#64748b;font-size:14px;">We look forward to a successful interview session!</p>
+        <p style="margin-top:24px;">Best regards,<br/><strong>PeerPrep Team</strong></p>
+      </div>
+    `;
+    
     await Promise.all(emails.map(to => sendMail({
       to,
-      subject: 'Interview Time Finalized',
-      text: `Both participants have used their 3 proposals. The last submitted time has been set as final: ${whenStr}. Meeting link: ${pair.meetingLink}`,
+      subject: 'Interview Time Finalized - Details & Meeting Link',
+      html
     }).catch(() => null)));
   } catch {}
 
@@ -179,10 +208,30 @@ async function expireProposalsIfNeeded(pair) {
         const populated = await Pair.findById(pair._id).populate('interviewer').populate('interviewee');
         const emails = [populated?.interviewer?.email, populated?.interviewee?.email].filter(Boolean);
         const whenStr = formatDateTime(moved);
+        
+        const html = `
+          <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
+            <p style="margin-bottom:20px;">Dear Participant,</p>
+            <p style="margin-bottom:16px;">The previously proposed interview time has expired without being confirmed by both parties.</p>
+            
+            <div style="background:#fef2f2;padding:20px;border-radius:8px;border-left:4px solid #ef4444;margin:24px 0;">
+              <p style="margin:0;font-size:16px;font-weight:600;color:#7f1d1d;">⏰ Expired Time: ${whenStr}</p>
+            </div>
+            
+            <div style="background:#dbeafe;padding:16px;border-radius:6px;margin:24px 0;border-left:3px solid #3b82f6;">
+              <p style="margin:0;font-size:14px;color:#1e3a8a;"><strong>📝 Next Steps:</strong></p>
+              <p style="margin:8px 0 0 0;font-size:14px;color:#1e3a8a;">Please log in to your dashboard and propose a new interview time that works for your schedule.</p>
+            </div>
+            
+            <p style="margin-top:28px;color:#64748b;font-size:14px;">Thank you for your prompt attention to scheduling your interview.</p>
+            <p style="margin-top:24px;">Best regards,<br/><strong>PeerPrep Team</strong></p>
+          </div>
+        `;
+        
         await Promise.all(emails.map(to => sendMail({
           to,
-          subject: 'Suggested Interview Time Expired',
-          text: `The previously suggested time (${whenStr}) has passed without approval. Please propose a new time.`
+          subject: 'Interview Time Expired - New Proposal Required',
+          html
         }).catch(() => null)));
       } catch {}
     }
@@ -197,7 +246,7 @@ async function expireProposalsIfNeeded(pair) {
   }
 }
 
-// New function: Schedule last proposed time when all proposals expire
+// New function: Set default time when all proposals expire (requires both parties to confirm)
 async function checkAndScheduleLastProposal(pair) {
   if (!pair) return false;
   if (pair.status === 'scheduled') return false;
@@ -217,11 +266,11 @@ async function checkAndScheduleLastProposal(pair) {
   const interviewerHasActive = interviewerDoc?.slots?.length > 0;
   const intervieweeHasActive = intervieweeDoc?.slots?.length > 0;
   
-  // If either has active proposals, don't auto-schedule yet
+  // If either has active proposals, don't auto-set default time yet
   if (interviewerHasActive || intervieweeHasActive) return false;
   
-  // Both have no active proposals - find the last proposed time from either user
-  let lastSlot = null;
+  // Both have no active proposals - find the last proposed time from either user OR generate a new default time
+  let defaultSlot = null;
   let lastSlotTime = 0;
   
   // Check interviewer's past proposals
@@ -230,7 +279,7 @@ async function checkAndScheduleLastProposal(pair) {
     const slotTime = new Date(lastEntry.time).getTime();
     if (slotTime > lastSlotTime) {
       lastSlotTime = slotTime;
-      lastSlot = lastEntry.time;
+      defaultSlot = lastEntry.time;
     }
   }
   
@@ -240,38 +289,99 @@ async function checkAndScheduleLastProposal(pair) {
     const slotTime = new Date(lastEntry.time).getTime();
     if (slotTime > lastSlotTime) {
       lastSlotTime = slotTime;
-      lastSlot = lastEntry.time;
+      defaultSlot = lastEntry.time;
     }
   }
   
-  // If no last slot found, can't schedule
-  if (!lastSlot) return false;
-  
-  // Schedule the last proposed time
-  pair.scheduledAt = lastSlot;
-  pair.finalConfirmedTime = lastSlot;
-  pair.currentProposedTime = lastSlot;
-  if (!pair.meetingLink) {
-    const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
-    const room = `Interview-${pair._id}-${crypto.randomBytes(3).toString('hex')}`;
-    pair.meetingLink = `${base}/${room}`;
+  // If no last slot found, generate a random future slot as default
+  if (!defaultSlot || new Date(defaultSlot).getTime() <= Date.now()) {
+    const event = await Event.findById(pair.event);
+    defaultSlot = generateRandomSlot(event);
+    if (!defaultSlot || defaultSlot.getTime() <= Date.now()) return false;
   }
-  pair.status = 'scheduled';
+  
+  // Set the default time as a proposal for BOTH parties to review and confirm
+  // This creates an active slot in both users' proposals that they must explicitly accept
+  if (!interviewerDoc) {
+    const newDoc = new SlotProposal({ 
+      pair: pair._id, 
+      user: pair.interviewer, 
+      event: pair.event, 
+      slots: [defaultSlot],
+      pastSlots: [],
+      pastEntries: []
+    });
+    await newDoc.save();
+  } else {
+    interviewerDoc.slots = [defaultSlot];
+    await interviewerDoc.save();
+  }
+  
+  if (!intervieweeDoc) {
+    const newDoc = new SlotProposal({ 
+      pair: pair._id, 
+      user: pair.interviewee, 
+      event: pair.event, 
+      slots: [defaultSlot],
+      pastSlots: [],
+      pastEntries: []
+    });
+    await newDoc.save();
+  } else {
+    intervieweeDoc.slots = [defaultSlot];
+    await intervieweeDoc.save();
+  }
+  
+  // Update pair with the default proposed time but keep status as pending
+  pair.currentProposedTime = defaultSlot;
+  // DO NOT set scheduledAt or finalConfirmedTime yet - only after both confirm
+  // DO NOT generate meeting link - only after both parties confirm
+  pair.status = 'pending'; // Keep as pending until both parties confirm
   await pair.save();
   
-  // Send notification
+  // Send professional notification about the automatically set default time
   try {
     const populated = await Pair.findById(pair._id).populate('interviewer').populate('interviewee');
-    const whenStr = formatDateTime(lastSlot);
+    const whenStr = formatDateTime(defaultSlot);
     const emails = [populated?.interviewer?.email, populated?.interviewee?.email].filter(Boolean);
+    
+    const html = `
+      <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
+        <p style="margin-bottom:20px;">Dear Participant,</p>
+        <p style="margin-bottom:16px;">Since all previously proposed interview times have expired, the system has automatically set a default time based on the most recent proposals.</p>
+        
+        <div style="background:#fef3c7;padding:24px;border-radius:8px;border-left:4px solid #f59e0b;margin:24px 0;">
+          <p style="margin:0 0 12px 0;font-size:17px;font-weight:700;color:#78350f;">📅 Automatically Set Default Time</p>
+          <p style="margin:0;font-size:16px;font-weight:600;color:#78350f;">${whenStr}</p>
+        </div>
+        
+        <div style="background:#dbeafe;padding:16px;border-radius:6px;margin:24px 0;border-left:3px solid #3b82f6;">
+          <p style="margin:0;font-size:14px;color:#1e3a8a;"><strong>📝 Action Required - Both Parties Must Confirm:</strong></p>
+          <ul style="margin:8px 0 0 20px;padding:0;font-size:14px;color:#1e3a8a;">
+            <li style="margin:6px 0;">Please log in to your dashboard to review this time</li>
+            <li style="margin:6px 0;">If this time works for you, <strong>accept it to confirm</strong></li>
+            <li style="margin:6px 0;">If this time doesn't work, propose an alternative time</li>
+            <li style="margin:6px 0;"><strong>The interview will only be scheduled after both parties confirm</strong></li>
+          </ul>
+        </div>
+        
+        <div style="background:#f1f5f9;padding:16px;border-radius:6px;margin:24px 0;">
+          <p style="margin:0;font-size:14px;color:#475569;"><strong>ℹ️ Important:</strong> This is a proposed time only. The meeting link will be provided once both parties have confirmed and accepted this time.</p>
+        </div>
+        
+        <p style="margin-top:28px;color:#64748b;font-size:14px;">Please respond at your earliest convenience to finalize the interview schedule.</p>
+        <p style="margin-top:24px;">Best regards,<br/><strong>PeerPrep Team</strong></p>
+      </div>
+    `;
+    
     await Promise.all(emails.map(to => sendMail({
       to,
-      subject: 'Interview Time Automatically Scheduled',
-      text: `All proposed times have expired. The last proposed time has been automatically scheduled: ${whenStr}. Meeting link: ${pair.meetingLink}`,
+      subject: 'Default Interview Time Set - Confirmation Required',
+      html
     }).catch(() => null)));
   } catch {}
   
-  console.log(`[checkAndScheduleLastProposal] Auto-scheduled pair ${pair._id} with last proposed time: ${formatDateTime(lastSlot)}`);
+  console.log(`[checkAndScheduleLastProposal] Default time set for pair ${pair._id}: ${formatDateTime(defaultSlot)} (requires both parties to confirm)`);
   return true;
 }
 
@@ -731,10 +841,31 @@ export async function rejectSlots(req, res) {
   const rejectorName = userRole.isInterviewer ? (pair.interviewer?.name || pair.interviewer?.email) : (pair.interviewee?.name || pair.interviewee?.email);
   if (notifyEmail) {
     try {
+      const html = `
+        <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
+          <p style="margin-bottom:20px;">Dear Participant,</p>
+          <p style="margin-bottom:16px;">Your proposed interview time has been declined by the other participant.</p>
+          
+          <div style="background:#fef3c7;padding:20px;border-radius:8px;border-left:4px solid #f59e0b;margin:24px 0;">
+            <p style="margin:0 0 8px 0;font-size:14px;color:#78350f;"><strong>Declined Time:</strong></p>
+            <p style="margin:0;font-size:16px;font-weight:600;color:#78350f;">${formatDateTime(latest)}</p>
+            ${reason ? `<p style="margin:12px 0 0 0;font-size:14px;color:#78350f;"><strong>Reason:</strong> ${reason}</p>` : ''}
+          </div>
+          
+          <div style="background:#dbeafe;padding:16px;border-radius:6px;margin:24px 0;border-left:3px solid #3b82f6;">
+            <p style="margin:0;font-size:14px;color:#1e3a8a;"><strong>📝 Next Steps:</strong></p>
+            <p style="margin:8px 0 0 0;font-size:14px;color:#1e3a8a;">Please log in to your dashboard and propose an alternative time that better accommodates both schedules.</p>
+          </div>
+          
+          <p style="margin-top:28px;color:#64748b;font-size:14px;">We appreciate your flexibility in finding a mutually convenient time for the interview.</p>
+          <p style="margin-top:24px;">Best regards,<br/><strong>PeerPrep Team</strong></p>
+        </div>
+      `;
+      
       await sendMail({
         to: notifyEmail,
-        subject: 'Your Interview Time Was Rejected',
-        text: `The previously suggested time (${formatDateTime(latest)}) was rejected. Please propose a new time.${reason ? ` Reason: ${reason}` : ''}`,
+        subject: 'Interview Time Proposal Declined - New Time Needed',
+        html
       });
     } catch (e) {
       console.error('[rejectSlots] notify email failed:', e.message);

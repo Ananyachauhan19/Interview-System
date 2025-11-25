@@ -41,6 +41,12 @@ export default function StudentDashboard() {
   const [showPastDropdown, setShowPastDropdown] = useState(false);
   const pastDropdownRef = useRef(null);
   const [showProposeForm, setShowProposeForm] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Set mounted state after initial render to prevent flicker
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const startFeedbackCountdown = useCallback((pair) => {
     if (!pair) {
@@ -704,44 +710,41 @@ export default function StudentDashboard() {
     return true;
   });
 
-  const stats = {
+  const stats = useMemo(() => ({
     totalEvents: events.length,
     joinedEvents: events.filter(e => e.joined).length,
     completedEvents: events.filter(e => e.endDate && new Date(e.endDate) < new Date()).length,
     specialEvents: events.filter(e => e.isSpecial).length
-  };
+  }), [events]);
 
-  const StatsComponent = () => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="grid grid-cols-3 gap-3 mb-4"
-    >
-      {[
-        { label: "Total", value: stats.totalEvents, icon: BookOpen, color: "sky" },
-        { label: "Joined", value: stats.joinedEvents, icon: CheckCircle, color: "emerald" },
-        { label: "Special", value: stats.specialEvents, icon: Award, color: "purple" }
-      ].map((stat, index) => (
-        <motion.div
-          key={stat.label}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: index * 0.1 }}
-          className={`bg-white rounded-lg border border-slate-200 p-3`}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg font-semibold text-slate-800">{stat.value}</div>
-              <div className="text-xs text-slate-600">{stat.label}</div>
-            </div>
-            <div className={`p-1.5 bg-${stat.color}-50 rounded`}>
-              <stat.icon className={`w-3 h-3 text-${stat.color}-600`} />
+  const StatsComponent = useMemo(() => {
+    const statsData = [
+      { label: "Total", value: stats.totalEvents, icon: BookOpen, color: "sky" },
+      { label: "Joined", value: stats.joinedEvents, icon: CheckCircle, color: "emerald" },
+      { label: "Special", value: stats.specialEvents, icon: Award, color: "purple" }
+    ];
+
+    return () => (
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        {statsData.map((stat) => (
+          <div
+            key={stat.label}
+            className="bg-white rounded-lg border border-slate-200 p-3"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-lg font-semibold text-slate-800">{stat.value}</div>
+                <div className="text-xs text-slate-600">{stat.label}</div>
+              </div>
+              <div className={`p-1.5 bg-${stat.color}-50 rounded`}>
+                <stat.icon className={`w-3 h-3 text-${stat.color}-600`} />
+              </div>
             </div>
           </div>
-        </motion.div>
-      ))}
-    </motion.div>
-  );
+        ))}
+      </div>
+    );
+  }, [stats]);
 
   const EventList = () => (
     <div className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 h-[calc(100vh-5rem)] sm:h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
@@ -1057,14 +1060,10 @@ export default function StudentDashboard() {
             );
           })()
         ) : filteredEvents.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center text-slate-500 py-6"
-          >
+          <div className="text-center text-slate-500 py-6">
             <Calendar className="w-8 h-8 mx-auto mb-2 text-slate-300" />
             <p className="text-sm">No interviews found</p>
-          </motion.div>
+          </div>
         ) : (
           filteredEvents.map((event, index) => {
             const active = selectedEvent && selectedEvent._id === event._id;
@@ -2202,34 +2201,26 @@ export default function StudentDashboard() {
     return (
       <div className="flex-1 flex flex-col p-6 sm:p-8">
         {/* Welcome Message */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">
             Welcome back, {user?.name || me?.name || "Student"}! 👋
           </h1>
           <p className="text-slate-600 text-sm sm:text-base">
             Ready to ace your next interview? Select an interview from the left to get started.
           </p>
-        </motion.div>
+        </div>
 
         {/* Animated Tips Section */}
         <div className="flex-1 flex flex-col items-center justify-center">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="w-20 h-20 mb-6 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg"
-          >
+          <div className="w-20 h-20 mb-6 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg">
             <BookOpen className="w-10 h-10 text-white" />
-          </motion.div>
+          </div>
           
           <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-8 text-center">
             Interview Sessions
           </h2>
 
-          {/* Rotating Tips */}
+          {/* Rotating Tips - Keep animation for smooth transitions */}
           <div className="w-full max-w-2xl min-h-[80px] flex items-center justify-center mb-8">
             <AnimatePresence mode="wait">
               <motion.div
@@ -2268,22 +2259,14 @@ export default function StudentDashboard() {
       <div className="min-h-screen w-full bg-slate-50 flex flex-col pt-16">
         <div className="flex-1 w-full mx-auto px-2 sm:px-4 py-2 sm:py-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3">
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={`${selectedEvent ? 'hidden' : 'block'} lg:block lg:col-span-3`}
-            >
+            <div className={`${selectedEvent ? 'hidden' : 'block'} lg:block lg:col-span-3`}>
               <EventList />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={`${selectedEvent ? 'block' : 'hidden'} lg:block lg:col-span-9`}
-            >
+            </div>
+            <div className={`${selectedEvent ? 'block' : 'hidden'} lg:block lg:col-span-9`}>
               <div className="bg-white rounded-lg border border-slate-200 p-2 sm:p-4 h-[calc(100vh-5rem)] sm:h-[calc(100vh-4rem)] flex flex-col overflow-auto">
                 {selectedEvent ? <EventDetails /> : <Placeholder />}
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>

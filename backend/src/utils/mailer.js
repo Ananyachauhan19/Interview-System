@@ -71,17 +71,33 @@ export function buildICS({ uid, start, end, summary, description, url, organizer
 
 // Onboarding email: StudentId & Password
 export async function sendOnboardingEmail({ to, studentId, password }) {
-  const subject = 'Welcome to PeerPrep - Your Mock Interview System';
+  const subject = 'Welcome to PeerPrep - Your Account Details';
   const html = `
-    <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;">
-      <p>Dear Student,</p>
-      <p>Welcome to PeerPrep - Your Mock Interview System! Your account has been successfully created.</p>
-      <p>
-        <strong>Student ID:</strong> {studentId}<br/>
-        <strong>Password:</strong> {password}
-      </p>
-      <p>Please log in and change your password after your first login for security reasons.</p>
-      <p>Best regards,<br/>PeerPrep Team</p>
+    <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
+      <p style="margin-bottom:20px;">Dear Student,</p>
+      <p style="margin-bottom:16px;">Welcome to <strong>PeerPrep - Mock Interview System</strong>! Your account has been successfully created.</p>
+      
+      <div style="background:#f0f9ff;padding:24px;border-radius:8px;border-left:4px solid #0ea5e9;margin:24px 0;">
+        <p style="margin:0 0 12px 0;font-size:17px;font-weight:700;color:#0c4a6e;">📋 Your Login Credentials</p>
+        <table style="width:100%;font-size:15px;">
+          <tr>
+            <td style="padding:8px 0;color:#475569;width:40%;"><strong>Student ID:</strong></td>
+            <td style="padding:8px 0;color:#0f172a;font-weight:600;">{studentId}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#475569;"><strong>Temporary Password:</strong></td>
+            <td style="padding:8px 0;color:#0f172a;font-weight:600;">{password}</td>
+          </tr>
+        </table>
+      </div>
+      
+      <div style="background:#fef3c7;padding:16px;border-radius:6px;margin:24px 0;border-left:3px solid #f59e0b;">
+        <p style="margin:0;font-size:14px;color:#78350f;"><strong>🔒 Important Security Notice:</strong></p>
+        <p style="margin:8px 0 0 0;font-size:14px;color:#78350f;">For your security, please change your password immediately after your first login.</p>
+      </div>
+      
+      <p style="margin-top:28px;color:#64748b;font-size:14px;">If you have any questions or need assistance, please contact your program administrator.</p>
+      <p style="margin-top:24px;">Best regards,<br/><strong>PeerPrep Team</strong></p>
     </div>
   `;
   return sendMail({ to, subject, html: renderTemplate(html, { studentId, password }) });
@@ -91,13 +107,25 @@ export async function sendOnboardingEmail({ to, studentId, password }) {
 export async function sendPasswordResetEmail({ to, name, resetUrl }) {
   const subject = 'Password Reset Request - PeerPrep';
   const html = `
-    <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;">
-      <p>Dear {name},</p>
-      <p>We received a request to reset your password for PeerPrep.</p>
-      <p>Click the link below to reset your password (valid for 1 hour):</p>
-      <p><a href="{resetUrl}" style="display:inline-block;padding:12px 24px;background:#0ea5e9;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">Reset Password</a></p>
-      <p>Or copy and paste this link in your browser:<br/>{resetUrl}</p>
-      <p>If you didn't request this password reset, please ignore this email.</p>
+    <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
+      <p style="margin-bottom:20px;">Dear {name},</p>
+      <p style="margin-bottom:16px;">We received a request to reset your password for your <strong>PeerPrep</strong> account.</p>
+      
+      <div style="background:#dbeafe;padding:20px;border-radius:8px;margin:24px 0;text-align:center;">
+        <p style="margin:0 0 16px 0;font-size:14px;color:#1e3a8a;">Click the button below to reset your password:</p>
+        <a href="{resetUrl}" style="display:inline-block;padding:14px 32px;background:#0ea5e9;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:16px;">Reset Password</a>
+        <p style="margin:16px 0 0 0;font-size:13px;color:#475569;">This link is valid for 1 hour</p>
+      </div>
+      
+      <div style="background:#f1f5f9;padding:16px;border-radius:6px;margin:24px 0;">
+        <p style="margin:0;font-size:13px;color:#475569;">Or copy and paste this link in your browser:</p>
+        <p style="margin:8px 0 0 0;font-size:13px;color:#0ea5e9;word-break:break-all;">{resetUrl}</p>
+      </div>
+      
+      <div style="background:#fef3c7;padding:16px;border-radius:6px;margin:24px 0;border-left:3px solid #f59e0b;">
+        <p style="margin:0;font-size:14px;color:#78350f;"><strong>⚠️ Security Notice:</strong></p>
+        <p style="margin:8px 0 0 0;font-size:14px;color:#78350f;">If you did not request this password reset, please ignore this email. Your password will remain unchanged.</p>
+      </div>
       <p>Best regards,<br/>PeerPrep Team</p>
     </div>
   `;
