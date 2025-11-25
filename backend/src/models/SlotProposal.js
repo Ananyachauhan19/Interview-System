@@ -11,7 +11,10 @@ const slotProposalSchema = new mongoose.Schema({
   // Rich past entries with reason for UI and auditing
   pastEntries: [{
     time: { type: Date },
-    reason: { type: String, enum: ['rejected', 'expired', 'superseded'], default: 'rejected' }
+    reason: { type: String, enum: ['rejected', 'expired', 'superseded'], default: 'rejected' },
+    proposedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Who originally proposed this time
+    replacedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Who caused it to be replaced (optional)
+    replacedAt: { type: Date } // When it was replaced/rejected/expired
   }],
 }, { timestamps: true });
 

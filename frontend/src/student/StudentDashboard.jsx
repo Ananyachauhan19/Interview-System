@@ -251,8 +251,7 @@ export default function StudentDashboard() {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short'
+      minute: '2-digit'
     });
   };
 
@@ -581,6 +580,11 @@ export default function StudentDashboard() {
 
     try {
       const res = await api.proposeSlots(selectedPair._id, isoSlots);
+      
+      // Debug: Log the proposed time and response
+      console.log('[Propose] Submitted slots:', isoSlots);
+      console.log('[Propose] Backend response mine:', res.mine);
+      console.log('[Propose] Backend response partner:', res.partner);
       
       // Immediately update currentProposals with the response
       setCurrentProposals(res);
@@ -1339,11 +1343,11 @@ export default function StudentDashboard() {
       )}
 
       {/* Single Page Time Slot Interface */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Default Time Slot Display */}
-        <div className="bg-gradient-to-br from-indigo-50 to-sky-50 rounded-xl p-6 border border-indigo-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900">Interview Time Slot</h3>
+        <div className="bg-gradient-to-br from-indigo-50 to-sky-50 rounded-xl p-4 border border-indigo-200">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-slate-900">Interview Time Slot</h3>
             {/* Past Time Slots Button (right side) */}
             <div className="relative" ref={pastDropdownRef}>
               <button
@@ -1364,10 +1368,10 @@ export default function StudentDashboard() {
                 })()}
               </button>
               {showPastDropdown && (
-                <div className="absolute right-0 mt-2 w-80 z-10 bg-white border border-slate-200 rounded-lg shadow-md">
-                  <div className="p-3">
-                    <div className="text-xs font-semibold text-slate-700 mb-2">Past Time Slots</div>
-                    <div className="text-[10px] text-slate-500 mb-3">Shows expired, rejected, and replaced dates only</div>
+                <div className="absolute right-0 mt-2 w-96 z-10 bg-white border border-slate-200 rounded-lg shadow-lg">
+                  <div className="p-4">
+                    <div className="text-xs font-semibold text-slate-700 mb-2">Past Time Slots History</div>
+                    <div className="text-[10px] text-slate-500 mb-3">Detailed history of expired, rejected, and replaced proposals</div>
                     {(() => {
                       // Collect all past entries from both users
                       const entries = Array.isArray(currentProposals?.pastTimeSlots)
@@ -1399,25 +1403,72 @@ export default function StudentDashboard() {
                       };
                       
                       const color = (r) => {
-                        if (r === 'rejected') return 'bg-red-100 text-red-700 border-red-200';
-                        if (r === 'expired') return 'bg-amber-100 text-amber-800 border-amber-200';
-                        return 'bg-slate-100 text-slate-700 border-slate-200';
+                        if (r === 'rejected') return 'bg-red-50 border-red-200';
+                        if (r === 'expired') return 'bg-amber-50 border-amber-200';
+                        return 'bg-slate-50 border-slate-200';
+                      };
+                      
+                      const getRoleLabel = (user) => {
+                        if (!user) return 'Unknown';
+                        const userId = user._id || user;
+                        const interviewerId = selectedPair?.interviewer?._id || selectedPair?.interviewer;
+                        const intervieweeId = selectedPair?.interviewee?._id || selectedPair?.interviewee;
+                        
+                        if (String(userId) === String(interviewerId)) return 'Mentor';
+                        if (String(userId) === String(intervieweeId)) return 'Candidate';
+                        return user.name || user.email || 'User';
                       };
                       
                       return (
-                        <ul className="space-y-2 max-h-64 overflow-auto">
+                        <ul className="space-y-3 max-h-96 overflow-auto">
                           {filteredEntries.map((e, idx) => (
-                            <li key={`${e.time}-${idx}`} className={`text-xs px-3 py-2 rounded border flex items-center justify-between ${color(e.reason)}`}>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{fmt(e.time)}</span>
-                                <span className="text-[10px] uppercase tracking-wide mt-0.5 font-semibold">{toLabel(e.reason)}</span>
-                              </div>
-                              <div className={`text-[9px] font-bold uppercase px-2 py-1 rounded ${
-                                e.reason === 'expired' ? 'bg-amber-200 text-amber-900' :
-                                e.reason === 'rejected' ? 'bg-red-200 text-red-900' :
-                                'bg-slate-200 text-slate-900'
-                              }`}>
-                                {toLabel(e.reason)}
+                            <li key={`${e.time}-${idx}`} className={`text-xs px-3 py-3 rounded-lg border ${color(e.reason)}`}>
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <div className="flex-1">
+                                  <div className="font-semibold text-slate-900 mb-1">{fmt(e.time)}</div>
+                                  {e.proposedBy && (
+                                    <div className="text-[10px] text-slate-600 mb-1">
+                                      <span className="font-medium">Proposed by:</span>{' '}
+                                      <span className="text-indigo-700 font-semibold">
+                                        {getRoleLabel(e.proposedBy)}
+                                      </span>
+                                      {e.proposedBy.name && (
+                                        <span className="text-slate-500"> ({e.proposedBy.name})</span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {e.reason === 'rejected' && e.replacedBy && (
+                                    <div className="text-[10px] text-red-700">
+                                      <span className="font-medium">Declined by:</span>{' '}
+                                      <span className="font-semibold">{getRoleLabel(e.replacedBy)}</span>
+                                      {e.replacedBy.name && <span> ({e.replacedBy.name})</span>}
+                                    </div>
+                                  )}
+                                  {e.reason === 'superseded' && e.replacedBy && (
+                                    <div className="text-[10px] text-slate-600">
+                                      <span className="font-medium">Replaced by:</span>{' '}
+                                      <span className="font-semibold">{getRoleLabel(e.replacedBy)}</span>
+                                      {e.replacedBy.name && <span> ({e.replacedBy.name})</span>}
+                                    </div>
+                                  )}
+                                  {e.replacedAt && (
+                                    <div className="text-[9px] text-slate-500 mt-1">
+                                      {new Date(e.replacedAt).toLocaleString(undefined, {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className={`text-[9px] font-bold uppercase px-2 py-1 rounded whitespace-nowrap ${
+                                  e.reason === 'expired' ? 'bg-amber-200 text-amber-900' :
+                                  e.reason === 'rejected' ? 'bg-red-200 text-red-900' :
+                                  'bg-slate-300 text-slate-900'
+                                }`}>
+                                  {toLabel(e.reason)}
+                                </div>
                               </div>
                             </li>
                           ))}
@@ -1434,16 +1485,16 @@ export default function StudentDashboard() {
           {isLocked && selectedPair?.scheduledAt ? (
             isScheduledTimeExpired ? (
               /* Expired Scheduled Time UI */
-              <div className="text-center py-6">
+              <div className="text-center py-4">
                 <div className="max-w-lg mx-auto rounded-xl border-2 border-red-300 bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 shadow-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-red-500 to-orange-500 px-6 py-3">
+                  <div className="bg-gradient-to-r from-red-500 to-orange-500 px-4 py-2">
                     <div className="flex items-center justify-center gap-2 text-white">
                       <AlertCircle className="w-5 h-5" />
                       <span className="font-bold text-base">Scheduled Time Expired</span>
                     </div>
                   </div>
-                  <div className="px-8 py-6">
-                    <div className="flex items-start gap-4 mb-5">
+                  <div className="px-6 py-4">
+                    <div className="flex items-start gap-3 mb-4">
                       <div className="p-3 rounded-full bg-red-100">
                         <Clock className="w-7 h-7 text-red-600" />
                       </div>
@@ -1489,8 +1540,8 @@ export default function StudentDashboard() {
               </div>
             ) : (
               /* Active Scheduled Time UI */
-              <div className="text-center py-6">
-                <div className="inline-flex flex-col items-center gap-3 px-8 py-6 bg-white rounded-xl border-2 border-emerald-300 shadow-lg">
+              <div className="text-center py-4">
+                <div className="inline-flex flex-col items-center gap-2 px-6 py-4 bg-white rounded-xl border-2 border-emerald-300 shadow-lg">
                   <CheckCircle className="w-8 h-8 text-emerald-600" />
                   <div>
                     <div className="text-sm font-medium text-slate-600 mb-1">Your interview time:</div>
@@ -1507,127 +1558,81 @@ export default function StudentDashboard() {
               </div>
             )
           ) : (
-            <div className="space-y-4">
-              {/* Check if both parties have the same slot - indicates system-generated default time */}
+            <div className="space-y-3">
+              {/* Single common proposal tab showing the most recent proposal from either party */}
               {(() => {
                 const mySlots = isInterviewer ? interviewerSlots : intervieweeSlots;
                 const partnerSlots = isInterviewer ? intervieweeSlots : interviewerSlots;
                 
-                // If both have exactly one slot and they're identical, it's a system-generated default
+                // Check if both have the same slot (system-generated default)
                 const isSystemDefault = mySlots.length === 1 && partnerSlots.length === 1 && 
                                        mySlots[0] === partnerSlots[0];
                 
-                // Priority 1: Show default time if it's a system-generated default (both have same slot)
+                // Show Default Time first if it exists
                 if (isSystemDefault && !selectedPair?.defaultTimeExpired) {
                   return (
-                    /* Default Time Tab - First Priority */
-                <div>
-                  <div className="text-center mb-4">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-100 rounded-lg border border-sky-300">
-                      <Clock className="w-5 h-5 text-sky-600" />
-                      <span className="text-sm font-medium text-sky-900">
-                        Default Time Slot Assigned
-                      </span>
+                    <div>
+                      <div className="text-center mb-3">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-100 rounded-lg border border-sky-300">
+                          <Clock className="w-5 h-5 text-sky-600" />
+                          <span className="text-sm font-medium text-sky-900">
+                            Default Time Slot Assigned
+                          </span>
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 border-2 border-sky-200 shadow-md text-center">
+                        <div className="text-xs text-slate-600 mb-2">Your scheduled time:</div>
+                        <div className="text-lg font-semibold text-slate-900 mb-3">
+                          {fmt(mySlots[0])}
+                        </div>
+                        <div className="flex gap-3 justify-center flex-wrap">
+                          <button
+                            onClick={() => handleConfirm(mySlots[0], "")}
+                            className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm"
+                          >
+                            Confirm Default Time
+                          </button>
+                          <button
+                            onClick={() => setShowProposeForm(true)}
+                            className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
+                          >
+                            Propose Different Time
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-white rounded-lg p-6 border-2 border-sky-200 shadow-md text-center mb-4">
-                    <div className="text-sm text-slate-600 mb-2">Your scheduled time:</div>
-                    <div className="text-lg font-semibold text-slate-900 mb-4">
-                      {fmt(mySlots[0])}
-                    </div>
-                    <div className="flex gap-3 justify-center flex-wrap">
-                      <button
-                        onClick={() => handleConfirm(mySlots[0], "")}
-                        className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm"
-                      >
-                        Confirm Default Time
-                      </button>
-                      <button
-                        onClick={() => setShowProposeForm(true)}
-                        className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
-                      >
-                        Propose Different Time
-                      </button>
-                    </div>
-                  </div>
-                </div>
                   );
                 }
                 
-                // Priority 2: Show partner's proposed time (only if it's different from mine - actual user proposal)
-                if (partnerSlots.length > 0 && (!mySlots.length || mySlots[0] !== partnerSlots[0])) {
-                  return (
-                    /* Partner's Proposal - Second Priority */
-                <div>
-                  <div className="text-center mb-4">
-                    <div className="inline-flex items-center gap-3 px-4 py-2 bg-indigo-50 rounded-lg border border-indigo-200">
-                      <Clock className="w-5 h-5 text-indigo-600" />
-                      <span className="text-sm font-medium text-indigo-900">
-                        Proposed by {isInterviewer ? 'Candidate' : 'Mentor'}
-                      </span>
-                      <span className="inline-flex items-center justify-center min-w-[42px] px-2 py-1 bg-indigo-600 text-white text-xs font-bold rounded">
-                        {partnerProposalCount}/3
-                      </span>
-                    </div>
-                    {bothReachedLimit && (
-                      <div className="mt-3 text-xs text-amber-800 bg-amber-50 px-4 py-2 rounded-lg border border-amber-300 inline-block font-medium">
-                        ⚠ Both parties have reached the proposal limit. This time will be automatically confirmed.
-                      </div>
-                    )}
-                  </div>
-                  {(isInterviewer ? intervieweeSlots : interviewerSlots).map((s, i) => (
-                    <div key={i} className="bg-white rounded-lg p-6 border-2 border-indigo-300 shadow-md text-center mb-4">
-                      <div className="text-sm font-semibold text-indigo-700 mb-3">Current Proposed Time</div>
-                      <div className="text-xl font-bold text-slate-900 mb-4 px-4 py-3 bg-indigo-50 rounded-lg">
-                        {fmt(s)}
-                      </div>
-                      <div className="flex gap-3 justify-center flex-wrap">
-                        <button
-                          onClick={() => handleConfirm(s, "")}
-                          className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm"
-                        >
-                          Confirm Time
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowProposeForm(true);
-                          }}
-                          className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
-                        >
-                          Propose Different Time
-                        </button>
-                        <button
-                          onClick={async () => {
-                            await handleReject();
-                          }}
-                          className="px-6 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg font-medium text-sm hover:from-slate-600 hover:to-slate-700 shadow-sm"
-                        >
-                          Decline
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                  );
-                }
+                // Single common proposal tab: show MY proposal first if it exists, otherwise partner's
+                // This ensures when I propose a new time, I immediately see it in the tab
+                const hasAnyProposal = (partnerSlots.length > 0 || mySlots.length > 0) && !isSystemDefault;
                 
-                // Priority 3: Show user's own proposal (only if different from partner's)
-                if (mySlots.length > 0 && (!partnerSlots.length || mySlots[0] !== partnerSlots[0])) {
+                if (hasAnyProposal) {
+                  // Determine whose proposal to show - prioritize my latest proposal
+                  const showingMyProposal = mySlots.length > 0;
+                  const proposedByMe = showingMyProposal;
+                  const displaySlot = showingMyProposal ? mySlots[0] : partnerSlots[0];
+                  const proposerName = showingMyProposal 
+                    ? 'You'
+                    : (isInterviewer ? 'Candidate' : 'Mentor');
+                  const totalProposals = myProposalCount + partnerProposalCount;
+                  
                   return (
-                    /* My Own Proposal - Third Priority */
-                    <div className="text-center py-6">
-                      <div className="text-center mb-4">
-                        <div className="inline-flex items-center gap-3 px-4 py-2 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <div>
+                      <div className="text-center mb-3">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-200">
                           <Clock className="w-5 h-5 text-indigo-600" />
                           <span className="text-sm font-medium text-indigo-900">
-                            Your Proposed Time
+                            Current Proposal
                           </span>
                           <span className="inline-flex items-center justify-center min-w-[42px] px-2 py-1 bg-indigo-600 text-white text-xs font-bold rounded">
-                            {myProposalCount}/3
+                            {totalProposals}/6
                           </span>
                         </div>
                         <div className="mt-2 text-xs text-slate-600">
-                          Awaiting {isInterviewer ? 'candidate' : 'mentor'} confirmation
+                          Proposed by <span className="font-semibold text-indigo-700">{proposerName}</span>
+                          {proposedByMe && <span className="ml-1">(awaiting {isInterviewer ? 'candidate' : 'mentor'} response)</span>}
                         </div>
                         {bothReachedLimit && (
                           <div className="mt-3 text-xs text-amber-800 bg-amber-50 px-4 py-2 rounded-lg border border-amber-300 inline-block font-medium">
@@ -1635,78 +1640,98 @@ export default function StudentDashboard() {
                           </div>
                         )}
                       </div>
-                      <div className="bg-white rounded-lg p-6 border-2 border-indigo-300 shadow-md text-center mb-4">
-                        <div className="text-sm font-semibold text-indigo-700 mb-3">Current Proposed Time</div>
-                        <div className="text-xl font-bold text-slate-900 mb-4 px-4 py-3 bg-indigo-50 rounded-lg">
-                          {fmt((isInterviewer ? interviewerSlots : intervieweeSlots)[0])}
+                      
+                      <div className="bg-white rounded-lg p-4 border-2 border-indigo-300 shadow-md text-center">
+                        <div className="text-xs font-semibold text-indigo-700 mb-2">Proposed Time</div>
+                        <div className="text-xl font-bold text-slate-900 mb-3 px-4 py-2 bg-indigo-50 rounded-lg">
+                          {fmt(displaySlot)}
                         </div>
-                        <div className="flex gap-3 justify-center flex-wrap">
-                          <button
-                            onClick={() => handleConfirm((isInterviewer ? interviewerSlots : intervieweeSlots)[0], "")}
-                            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm"
-                          >
-                            Confirm Time
-                          </button>
-                          <button
-                            onClick={() => setShowProposeForm(true)}
-                            className="px-4 py-2 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
-                          >
-                            Propose Different Time
-                          </button>
-                          <button
-                            onClick={async () => {
-                              await handleReject();
-                            }}
-                            className="px-4 py-2 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg font-medium text-sm hover:from-slate-600 hover:to-slate-700 shadow-sm"
-                          >
-                            Withdraw Proposal
-                          </button>
-                        </div>
+                        
+                        {/* Show appropriate actions based on who proposed */}
+                        {proposedByMe ? (
+                          <div className="flex gap-3 justify-center flex-wrap">
+                            <button
+                              onClick={() => setShowProposeForm(true)}
+                              className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
+                            >
+                              Change Proposal
+                            </button>
+                            <button
+                              onClick={async () => {
+                                await handleReject();
+                              }}
+                              className="px-6 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg font-medium text-sm hover:from-slate-600 hover:to-slate-700 shadow-sm"
+                            >
+                              Withdraw Proposal
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-3 justify-center flex-wrap">
+                            <button
+                              onClick={() => handleConfirm(displaySlot, "")}
+                              className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm"
+                            >
+                              Accept Proposal
+                            </button>
+                            <button
+                              onClick={() => setShowProposeForm(true)}
+                              className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
+                            >
+                              Propose Different Time
+                            </button>
+                            <button
+                              onClick={async () => {
+                                await handleReject();
+                              }}
+                              className="px-6 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg font-medium text-sm hover:from-slate-600 hover:to-slate-700 shadow-sm"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
                 }
                 
-                // Priority 4: Expired default time or empty state
+                // No proposals - show empty state or expired default
                 return (
                   <div>
                     {selectedPair?.defaultTimeExpired ? (
-                      /* Expired default time - prompt to propose new time */
-                    <div className="text-center py-6">
-                      <div className="max-w-md mx-auto">
-                        <div className="rounded-xl border border-amber-300 bg-gradient-to-br from-amber-50 to-amber-100 px-6 py-5 shadow-sm">
-                          <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-lg bg-amber-200/60">
-                              <Clock className="w-6 h-6 text-amber-700" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-sm font-semibold text-amber-800 tracking-wide mb-1">Previous Default Time Expired</div>
-                              <div className="text-xs text-amber-700 mb-3 leading-relaxed">
-                                The originally suggested time has passed and is no longer valid. Please select a new time to keep the scheduling moving forward.
+                      <div className="text-center py-6">
+                        <div className="max-w-md mx-auto">
+                          <div className="rounded-xl border border-amber-300 bg-gradient-to-br from-amber-50 to-amber-100 px-6 py-5 shadow-sm">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 rounded-lg bg-amber-200/60">
+                                <Clock className="w-6 h-6 text-amber-700" />
                               </div>
-                              <div className="inline-flex items-center gap-2 mb-4">
-                                <span className="text-sm font-medium text-slate-600 line-through">
-                                  {fmt(selectedPair.defaultTimeSlot)}
-                                </span>
-                                <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-200 px-2 py-1 rounded">Expired</span>
-                              </div>
-                              <div className="flex flex-col sm:flex-row gap-3">
-                                <button
-                                  onClick={() => setShowProposeForm(true)}
-                                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
-                                >
-                                  Propose New Time
-                                </button>
+                              <div className="flex-1">
+                                <div className="text-sm font-semibold text-amber-800 tracking-wide mb-1">Previous Default Time Expired</div>
+                                <div className="text-xs text-amber-700 mb-3 leading-relaxed">
+                                  The originally suggested time has passed and is no longer valid. Please select a new time to keep the scheduling moving forward.
+                                </div>
+                                <div className="inline-flex items-center gap-2 mb-4">
+                                  <span className="text-sm font-medium text-slate-600 line-through">
+                                    {fmt(selectedPair.defaultTimeSlot)}
+                                  </span>
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-200 px-2 py-1 rounded">Expired</span>
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                  <button
+                                    onClick={() => setShowProposeForm(true)}
+                                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
+                                  >
+                                    Propose New Time
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
                     ) : (
-                      /* Empty state - no proposals yet and no default time */
-                      <div className="text-center py-6">
-                        <div className="inline-flex items-center gap-2 px-6 py-4 bg-slate-100 rounded-lg border border-slate-300 mb-4">
+                      <div className="text-center py-4">
+                        <div className="inline-flex items-center gap-2 px-5 py-3 bg-slate-100 rounded-lg border border-slate-300 mb-3">
                           <Clock className="w-5 h-5 text-slate-500" />
                           <div className="text-sm font-medium text-slate-700">
                             No time slot scheduled yet
@@ -1729,8 +1754,8 @@ export default function StudentDashboard() {
 
         {/* Propose New Time Form (shown when user clicks "Propose a new time") */}
         {showProposeForm && !isLocked && (
-          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="font-semibold text-slate-900">
                   {isInterviewer ? 'Propose Interview Time' : 'Propose Alternative Time'}
@@ -1815,7 +1840,7 @@ export default function StudentDashboard() {
               />
             </div>
 
-              <div className="flex gap-3 mt-4">
+              <div className="flex gap-2 mt-3">
                 <button
                   onClick={() => {
                     setShowProposeForm(false);
@@ -1841,7 +1866,7 @@ export default function StudentDashboard() {
                 </button>
               </div>
 
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mt-3 p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-xs text-blue-800 text-center">
                   <Info className="w-3.5 h-3.5 inline mr-1" />
                   Each party can propose up to 3 different times. If all proposals expire, the last proposed time will be automatically scheduled.

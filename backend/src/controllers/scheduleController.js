@@ -101,7 +101,7 @@ async function checkAndAutoAssign(pair) {
     event: pair.event 
   });
   
-  // Find the most recently proposed slot (last submitted = last in array)
+  // Find the most recently proposed slot (last submitted)
   let lastSlot = null;
   let lastSlotTime = 0;
   
@@ -109,8 +109,7 @@ async function checkAndAutoAssign(pair) {
     const slotTime = new Date(interviewerDoc.updatedAt).getTime();
     if (slotTime > lastSlotTime) {
       lastSlotTime = slotTime;
-      // Get the LAST slot in the array (most recently added)
-      lastSlot = interviewerDoc.slots[interviewerDoc.slots.length - 1];
+      lastSlot = interviewerDoc.slots[0];
     }
   }
   
@@ -118,8 +117,7 @@ async function checkAndAutoAssign(pair) {
     const slotTime = new Date(intervieweeDoc.updatedAt).getTime();
     if (slotTime > lastSlotTime) {
       lastSlotTime = slotTime;
-      // Get the LAST slot in the array (most recently added)
-      lastSlot = intervieweeDoc.slots[intervieweeDoc.slots.length - 1];
+      lastSlot = intervieweeDoc.slots[0];
     }
   }
   
@@ -202,7 +200,12 @@ async function expireProposalsIfNeeded(pair) {
       doc.pastSlots = doc.pastSlots || [];
       doc.pastEntries = doc.pastEntries || [];
       doc.pastSlots.push(moved);
-      doc.pastEntries.push({ time: moved, reason: 'expired' });
+      doc.pastEntries.push({ 
+        time: moved, 
+        reason: 'expired',
+        proposedBy: uid,
+        replacedAt: new Date()
+      });
       await doc.save();
       movedSomething = true;
       try {
@@ -569,21 +572,33 @@ export async function proposeSlots(req, res) {
 
   // If no slots provided, return current proposals (read-only for both roles)
   if (!slots || slots.length === 0) {
-    const mineDoc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
-    const partnerDoc = await SlotProposal.findOne({ pair: pair._id, user: partnerId, event: pair.event });
+    const mineDoc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event })
+      .populate('pastEntries.proposedBy', 'name email')
+      .populate('pastEntries.replacedBy', 'name email');
+    const partnerDoc = await SlotProposal.findOne({ pair: pair._id, user: partnerId, event: pair.event })
+      .populate('pastEntries.proposedBy', 'name email')
+      .populate('pastEntries.replacedBy', 'name email');
     const mine = (mineDoc?.slots || []).map(d => new Date(d).toISOString());
     const partner = (partnerDoc?.slots || []).map(d => new Date(d).toISOString());
     const minePast = (mineDoc?.pastSlots || []).map(d => new Date(d).toISOString());
     const partnerPast = (partnerDoc?.pastSlots || []).map(d => new Date(d).toISOString());
     
-    // Include rich past entries with reasons for UI display
+    // Include rich past entries with reasons and user info for UI display
     const minePastEntries = (mineDoc?.pastEntries || []).map(e => ({
       time: new Date(e.time).toISOString(),
-      reason: e.reason
+      reason: e.reason,
+      proposedBy: e.proposedBy ? { name: e.proposedBy.name, email: e.proposedBy.email, _id: e.proposedBy._id } : null,
+      replacedBy: e.replacedBy ? { name: e.replacedBy.name, email: e.replacedBy.email, _id: e.replacedBy._id } : null,
+      replacedAt: e.replacedAt ? new Date(e.replacedAt).toISOString() : null,
+      source: 'mine' // Mark as coming from current user's proposals
     }));
     const partnerPastEntries = (partnerDoc?.pastEntries || []).map(e => ({
       time: new Date(e.time).toISOString(),
-      reason: e.reason
+      reason: e.reason,
+      proposedBy: e.proposedBy ? { name: e.proposedBy.name, email: e.proposedBy.email, _id: e.proposedBy._id } : null,
+      replacedBy: e.replacedBy ? { name: e.replacedBy.name, email: e.replacedBy.email, _id: e.replacedBy._id } : null,
+      replacedAt: e.replacedAt ? new Date(e.replacedAt).toISOString() : null,
+      source: 'partner' // Mark as coming from partner's proposals
     }));
     
     // find first common
@@ -612,25 +627,42 @@ export async function proposeSlots(req, res) {
   if (startBoundary && dates.some(d => d.getTime() < startBoundary)) throw new HttpError(400, 'Slot before event start');
   if (endBoundary && dates.some(d => d.getTime() > endBoundary)) throw new HttpError(400, 'Slot after event end');
 
-  // Accumulate proposals instead of replacing - allow up to 3 active proposals
+  // Allow replacing existing proposal - move old proposal to pastSlots and pastEntries
   let doc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
+  const hadPreviousProposal = doc?.slots?.length > 0;
   
-  // Enforce per-role proposal counters (EVERY submission counts)
+  // Enforce per-role proposal counters (EVERY submission counts, including replacements)
   const isInterviewerProposing = isInterviewer;
-  const currentCount = isInterviewerProposing ? (pair.interviewerProposalCount || 0) : (pair.intervieweeProposalCount || 0);
-  
-  if (currentCount >= 3) throw new HttpError(400, 'Maximum number of proposals (3) already reached');
+  const maxReached = isInterviewerProposing ? (pair.interviewerProposalCount >= 3) : (pair.intervieweeProposalCount >= 3);
+  if (maxReached) throw new HttpError(400, 'Maximum number of proposals (3) already reached');
   
   if (!doc) doc = new SlotProposal({ pair: pair._id, user: effectiveUserId, event: pair.event, slots: [], pastSlots: [], pastEntries: [] });
   
-  // Add new slot to existing slots (accumulate up to 3)
-  doc.slots = doc.slots || [];
-  doc.slots.push(dates[0]);
+  // Move old proposal to pastSlots and pastEntries with 'superseded' reason before replacing
+  if (hadPreviousProposal) {
+    doc.pastSlots = [...(doc.pastSlots || []), ...doc.slots];
+    // Add to pastEntries with 'superseded' reason
+    if (!doc.pastEntries) doc.pastEntries = [];
+    for (const oldSlot of doc.slots) {
+      doc.pastEntries.push({
+        time: oldSlot,
+        reason: 'superseded',
+        proposedBy: effectiveUserId,
+        replacedBy: effectiveUserId,
+        replacedAt: new Date()
+      });
+    }
+  }
+  
+  doc.slots = [dates[0]];
   await doc.save();
   
+  // Debug: Log what was saved
+  console.log('[Propose] User', effectiveUserId, 'saved slot:', dates[0].toISOString());
+  
   // Increment per-user counters on pair (count every attempt)
-  if (isInterviewerProposing) pair.interviewerProposalCount = currentCount + 1; 
-  else pair.intervieweeProposalCount = currentCount + 1;
+  if (isInterviewerProposing) pair.interviewerProposalCount = (pair.interviewerProposalCount || 0) + 1; 
+  else pair.intervieweeProposalCount = (pair.intervieweeProposalCount || 0) + 1;
   await pair.save();
 
   // Update unified currentProposedTime on pair always (default or latest user proposal)
@@ -666,19 +698,42 @@ export async function proposeSlots(req, res) {
     console.log(`[Email] New slot proposal sent to interviewer: ${pair.interviewer.email}`);
   }
 
-  // Return both proposals and intersection
-  const mineDoc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
-  const partnerDoc = await SlotProposal.findOne({ pair: pair._id, user: partnerId, event: pair.event });
+  // Return both proposals and intersection with populated user info
+  const mineDoc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event })
+    .populate('pastEntries.proposedBy', 'name email')
+    .populate('pastEntries.replacedBy', 'name email');
+  const partnerDoc = await SlotProposal.findOne({ pair: pair._id, user: partnerId, event: pair.event })
+    .populate('pastEntries.proposedBy', 'name email')
+    .populate('pastEntries.replacedBy', 'name email');
   // Mark expired slots
   const nowTs = Date.now();
   const mineSlotsRaw = (mineDoc?.slots || []).map(d => new Date(d));
   const partnerSlotsRaw = (partnerDoc?.slots || []).map(d => new Date(d));
   const mine = mineSlotsRaw.map(d => d.toISOString());
   const partner = partnerSlotsRaw.map(d => d.toISOString());
+  
+  // Debug: Log what's being returned
+  console.log('[Propose] Returning mine:', mine);
+  console.log('[Propose] Returning partner:', partner);
+  
   const minePast = (mineDoc?.pastSlots || []).map(d => new Date(d).toISOString());
   const partnerPast = (partnerDoc?.pastSlots || []).map(d => new Date(d).toISOString());
-  const minePastEntries = (mineDoc?.pastEntries || []).map(e => ({ time: new Date(e.time).toISOString(), reason: e.reason }));
-  const partnerPastEntries = (partnerDoc?.pastEntries || []).map(e => ({ time: new Date(e.time).toISOString(), reason: e.reason }));
+  const minePastEntries = (mineDoc?.pastEntries || []).map(e => ({ 
+    time: new Date(e.time).toISOString(), 
+    reason: e.reason,
+    proposedBy: e.proposedBy ? { name: e.proposedBy.name, email: e.proposedBy.email, _id: e.proposedBy._id } : null,
+    replacedBy: e.replacedBy ? { name: e.replacedBy.name, email: e.replacedBy.email, _id: e.replacedBy._id } : null,
+    replacedAt: e.replacedAt ? new Date(e.replacedAt).toISOString() : null,
+    source: 'mine'
+  }));
+  const partnerPastEntries = (partnerDoc?.pastEntries || []).map(e => ({ 
+    time: new Date(e.time).toISOString(), 
+    reason: e.reason,
+    proposedBy: e.proposedBy ? { name: e.proposedBy.name, email: e.proposedBy.email, _id: e.proposedBy._id } : null,
+    replacedBy: e.replacedBy ? { name: e.replacedBy.name, email: e.replacedBy.email, _id: e.replacedBy._id } : null,
+    replacedAt: e.replacedAt ? new Date(e.replacedAt).toISOString() : null,
+    source: 'partner'
+  }));
   const pastTimeSlots = [...minePastEntries, ...partnerPastEntries]
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   const mineMeta = mineSlotsRaw.map(d => ({ slot: d.toISOString(), expired: d.getTime() <= nowTs }));
@@ -866,7 +921,13 @@ export async function rejectSlots(req, res) {
   otherDoc.pastSlots = otherDoc.pastSlots || [];
   otherDoc.pastSlots.push(latest);
   otherDoc.pastEntries = otherDoc.pastEntries || [];
-  otherDoc.pastEntries.push({ time: latest, reason: 'rejected' });
+  otherDoc.pastEntries.push({ 
+    time: latest, 
+    reason: 'rejected',
+    proposedBy: otherUserId,
+    replacedBy: effectiveUserId,
+    replacedAt: new Date()
+  });
   await otherDoc.save();
   
   const { reason } = req.body || {};
