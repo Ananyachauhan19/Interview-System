@@ -101,7 +101,7 @@ async function checkAndAutoAssign(pair) {
     event: pair.event 
   });
   
-  // Find the most recently proposed slot (last submitted)
+  // Find the most recently proposed slot (last submitted = last in array)
   let lastSlot = null;
   let lastSlotTime = 0;
   
@@ -109,7 +109,8 @@ async function checkAndAutoAssign(pair) {
     const slotTime = new Date(interviewerDoc.updatedAt).getTime();
     if (slotTime > lastSlotTime) {
       lastSlotTime = slotTime;
-      lastSlot = interviewerDoc.slots[0];
+      // Get the LAST slot in the array (most recently added)
+      lastSlot = interviewerDoc.slots[interviewerDoc.slots.length - 1];
     }
   }
   
@@ -117,7 +118,8 @@ async function checkAndAutoAssign(pair) {
     const slotTime = new Date(intervieweeDoc.updatedAt).getTime();
     if (slotTime > lastSlotTime) {
       lastSlotTime = slotTime;
-      lastSlot = intervieweeDoc.slots[0];
+      // Get the LAST slot in the array (most recently added)
+      lastSlot = intervieweeDoc.slots[intervieweeDoc.slots.length - 1];
     }
   }
   
@@ -210,22 +212,80 @@ async function expireProposalsIfNeeded(pair) {
         const whenStr = formatDateTime(moved);
         
         const html = `
-          <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
-            <p style="margin-bottom:20px;">Dear Participant,</p>
-            <p style="margin-bottom:16px;">The previously proposed interview time has expired without being confirmed by both parties.</p>
-            
-            <div style="background:#fef2f2;padding:20px;border-radius:8px;border-left:4px solid #ef4444;margin:24px 0;">
-              <p style="margin:0;font-size:16px;font-weight:600;color:#7f1d1d;">⏰ Expired Time: ${whenStr}</p>
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+            <div style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+              <!-- Header -->
+              <div style="background:linear-gradient(135deg, #ef4444 0%, #f97316 100%);padding:32px 24px;text-align:center;">
+                <div style="background:rgba(255,255,255,0.95);border-radius:50%;width:64px;height:64px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                  <span style="font-size:32px;">⏰</span>
+                </div>
+                <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;">Interview Time Expired</h1>
+                <p style="margin:8px 0 0;color:rgba(255,255,255,0.95);font-size:14px;font-weight:500;">Action Required: New Proposal Needed</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding:32px 24px;">
+                <p style="margin:0 0 24px;font-size:15px;color:#334155;line-height:1.6;">Dear Participant,</p>
+                
+                <p style="margin:0 0 24px;font-size:15px;color:#334155;line-height:1.6;">
+                  The previously proposed interview time has expired without being confirmed by both parties.
+                </p>
+                
+                <!-- Expired Time Box -->
+                <div style="background:linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);padding:20px;border-radius:12px;border:2px solid #fca5a5;margin:24px 0;box-shadow:0 2px 8px rgba(239,68,68,0.1);">
+                  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                    <div style="background:#fee2e2;border-radius:8px;padding:8px;">
+                      <span style="font-size:20px;">🕐</span>
+                    </div>
+                    <div>
+                      <p style="margin:0;font-size:12px;color:#991b1b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Expired Time</p>
+                    </div>
+                  </div>
+                  <p style="margin:0;font-size:18px;font-weight:700;color:#7f1d1d;padding-left:44px;">${whenStr}</p>
+                </div>
+                
+                <!-- Next Steps Box -->
+                <div style="background:linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);padding:20px;border-radius:12px;border:2px solid #93c5fd;margin:24px 0;box-shadow:0 2px 8px rgba(59,130,246,0.1);">
+                  <div style="display:flex;align-items:start;gap:12px;">
+                    <div style="background:#bfdbfe;border-radius:8px;padding:8px;flex-shrink:0;">
+                      <span style="font-size:20px;">📝</span>
+                    </div>
+                    <div style="flex:1;">
+                      <p style="margin:0 0 8px;font-size:14px;color:#1e3a8a;font-weight:700;">Next Steps:</p>
+                      <p style="margin:0;font-size:14px;color:#1e40af;line-height:1.5;">
+                        Please log in to your dashboard and propose a new interview time that works for your schedule.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Call to Action -->
+                <div style="text-align:center;margin:32px 0;">
+                  <a href="#" style="display:inline-block;background:linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;font-size:15px;box-shadow:0 4px 12px rgba(14,165,233,0.3);">
+                    Go to Dashboard
+                  </a>
+                </div>
+                
+                <p style="margin:32px 0 0;color:#64748b;font-size:14px;line-height:1.6;">
+                  Thank you for your prompt attention to scheduling your interview.
+                </p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background:#f1f5f9;padding:24px;text-align:center;border-top:1px solid #e2e8f0;">
+                <p style="margin:0 0 4px;font-size:15px;color:#334155;font-weight:600;">Best regards,</p>
+                <p style="margin:0;font-size:15px;color:#0ea5e9;font-weight:700;">PeerPrep Team</p>
+                <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">This is an automated notification from the PeerPrep Interview System.</p>
+              </div>
             </div>
-            
-            <div style="background:#dbeafe;padding:16px;border-radius:6px;margin:24px 0;border-left:3px solid #3b82f6;">
-              <p style="margin:0;font-size:14px;color:#1e3a8a;"><strong>📝 Next Steps:</strong></p>
-              <p style="margin:8px 0 0 0;font-size:14px;color:#1e3a8a;">Please log in to your dashboard and propose a new interview time that works for your schedule.</p>
-            </div>
-            
-            <p style="margin-top:28px;color:#64748b;font-size:14px;">Thank you for your prompt attention to scheduling your interview.</p>
-            <p style="margin-top:24px;">Best regards,<br/><strong>PeerPrep Team</strong></p>
-          </div>
+          </body>
+          </html>
         `;
         
         await Promise.all(emails.map(to => sendMail({
@@ -552,36 +612,25 @@ export async function proposeSlots(req, res) {
   if (startBoundary && dates.some(d => d.getTime() < startBoundary)) throw new HttpError(400, 'Slot before event start');
   if (endBoundary && dates.some(d => d.getTime() > endBoundary)) throw new HttpError(400, 'Slot after event end');
 
-  // Allow replacing existing proposal - move old proposal to pastSlots and pastEntries
+  // Accumulate proposals instead of replacing - allow up to 3 active proposals
   let doc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
-  const hadPreviousProposal = doc?.slots?.length > 0;
   
-  // Enforce per-role proposal counters (EVERY submission counts, including replacements)
+  // Enforce per-role proposal counters (EVERY submission counts)
   const isInterviewerProposing = isInterviewer;
-  const maxReached = isInterviewerProposing ? (pair.interviewerProposalCount >= 3) : (pair.intervieweeProposalCount >= 3);
-  if (maxReached) throw new HttpError(400, 'Maximum number of proposals (3) already reached');
+  const currentCount = isInterviewerProposing ? (pair.interviewerProposalCount || 0) : (pair.intervieweeProposalCount || 0);
+  
+  if (currentCount >= 3) throw new HttpError(400, 'Maximum number of proposals (3) already reached');
   
   if (!doc) doc = new SlotProposal({ pair: pair._id, user: effectiveUserId, event: pair.event, slots: [], pastSlots: [], pastEntries: [] });
   
-  // Move old proposal to pastSlots and pastEntries with 'superseded' reason before replacing
-  if (hadPreviousProposal) {
-    doc.pastSlots = [...(doc.pastSlots || []), ...doc.slots];
-    // Add to pastEntries with 'superseded' reason
-    if (!doc.pastEntries) doc.pastEntries = [];
-    for (const oldSlot of doc.slots) {
-      doc.pastEntries.push({
-        time: oldSlot,
-        reason: 'superseded'
-      });
-    }
-  }
-  
-  doc.slots = [dates[0]];
+  // Add new slot to existing slots (accumulate up to 3)
+  doc.slots = doc.slots || [];
+  doc.slots.push(dates[0]);
   await doc.save();
   
   // Increment per-user counters on pair (count every attempt)
-  if (isInterviewerProposing) pair.interviewerProposalCount = (pair.interviewerProposalCount || 0) + 1; 
-  else pair.intervieweeProposalCount = (pair.intervieweeProposalCount || 0) + 1;
+  if (isInterviewerProposing) pair.interviewerProposalCount = currentCount + 1; 
+  else pair.intervieweeProposalCount = currentCount + 1;
   await pair.save();
 
   // Update unified currentProposedTime on pair always (default or latest user proposal)

@@ -113,6 +113,12 @@ export default function PairingAndScheduling() {
   }, [selectedPair, me]);
 
   const isLocked = selectedPair?.status === "scheduled";
+  
+  // Check if scheduled time has expired
+  const isScheduledTimeExpired = useMemo(() => {
+    if (!selectedPair?.scheduledAt) return false;
+    return new Date(selectedPair.scheduledAt).getTime() <= Date.now();
+  }, [selectedPair?.scheduledAt]);
 
   const interviewerSlots = useMemo(() => {
     if (!currentProposals) return [];
@@ -696,22 +702,47 @@ export default function PairingAndScheduling() {
                   </p>
 
                   {isLocked && (
-                    <div className="p-4 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200 text-sm flex items-start">
-                      <CheckCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <div className="font-medium">
-                          Interview scheduled and confirmed
-                        </div>
-                        {selectedPair?.scheduledAt && (
-                          <div className="text-emerald-800 mt-1 flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5" />
-                            {new Date(
-                              selectedPair.scheduledAt
-                            ).toLocaleString()}
+                    isScheduledTimeExpired ? (
+                      /* Expired Scheduled Time */
+                      <div className="bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 border-2 border-red-300 rounded-lg p-5 shadow-md">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-full bg-red-100">
+                            <AlertCircle className="w-5 h-5 text-red-600" />
                           </div>
-                        )}
+                          <div className="flex-1">
+                            <div className="font-semibold text-red-900 mb-1">Your scheduled time has expired.</div>
+                            <div className="text-sm text-red-700 mb-3">Please propose a new time.</div>
+                            {selectedPair?.scheduledAt && (
+                              <div className="bg-white rounded-lg px-3 py-2 border border-red-200 inline-flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-slate-500" />
+                                <span className="text-sm text-slate-700 line-through">
+                                  {new Date(selectedPair.scheduledAt).toLocaleString()}
+                                </span>
+                                <span className="text-[10px] font-bold uppercase text-red-700 bg-red-100 px-2 py-0.5 rounded">Expired</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      /* Active Scheduled Time */
+                      <div className="p-4 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200 text-sm flex items-start">
+                        <CheckCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium">
+                            Interview scheduled and confirmed
+                          </div>
+                          {selectedPair?.scheduledAt && (
+                            <div className="text-emerald-800 mt-1 flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5" />
+                              {new Date(
+                                selectedPair.scheduledAt
+                              ).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
                   )}
 
                   <div className="space-y-4">
@@ -777,41 +808,64 @@ export default function PairingAndScheduling() {
                           {showPastDropdown && (
                             <div className="absolute left-0 mt-2 w-80 z-10 bg-white border border-slate-200 rounded-lg shadow-md">
                               <div className="p-3">
-                                <div className="text-xs font-semibold text-slate-700 mb-2">Past Time Slots</div>
+                                <div className="text-xs font-semibold text-slate-700 mb-1">Past Time Slots</div>
+                                <div className="text-[10px] text-slate-500 mb-3">Only shows expired, rejected, and replaced dates</div>
                                 {(() => {
+                                  // Collect all past entries from both users
                                   const entries = Array.isArray(currentProposals?.pastTimeSlots)
                                     ? currentProposals.pastTimeSlots
                                     : [
                                         ...(currentProposals?.minePastEntries || []),
                                         ...(currentProposals?.partnerPastEntries || []),
-                                      ].sort((a, b) => new Date(b.time) - new Date(a.time));
-                                  if (!entries || entries.length === 0) {
+                                      ];
+                                  
+                                  // Filter to only show expired, rejected, replaced, and superseded entries
+                                  const filteredEntries = entries
+                                    .filter(e => {
+                                      const reason = e.reason?.toLowerCase();
+                                      return reason === 'expired' || reason === 'rejected' || 
+                                             reason === 'replaced' || reason === 'superseded';
+                                    })
+                                    .sort((a, b) => new Date(b.time) - new Date(a.time));
+                                  
+                                  if (!filteredEntries || filteredEntries.length === 0) {
                                     return (
-                                      <div className="text-sm text-slate-500">No past time slots available.</div>
+                                      <div className="text-sm text-slate-500 py-4 text-center">No past time slots yet</div>
                                     );
                                   }
+                                  
                                   const toLabel = (r) => {
                                     if (!r) return 'Replaced';
                                     const map = { rejected: 'Rejected', expired: 'Expired', superseded: 'Replaced', replaced: 'Replaced' };
                                     return map[r] || (r.charAt(0).toUpperCase() + r.slice(1));
                                   };
+                                  
                                   const color = (r) => {
                                     if (r === 'rejected') return 'bg-red-100 text-red-700 border-red-200';
                                     if (r === 'expired') return 'bg-amber-100 text-amber-800 border-amber-200';
                                     return 'bg-slate-100 text-slate-700 border-slate-200';
                                   };
+                                  
                                   return (
                                     <ul className="space-y-2 max-h-64 overflow-auto">
-                                      {entries.map((e, idx) => (
-                                        <li key={`${e.time}-${idx}`} className={`text-sm px-2 py-2 rounded border flex flex-col ${color(e.reason)}`}>
-                                          <span className="font-medium">{new Date(e.time).toLocaleString()}</span>
-                                          <span className="text-[11px] uppercase tracking-wide mt-0.5 font-semibold">{toLabel(e.reason)}</span>
+                                      {filteredEntries.map((e, idx) => (
+                                        <li key={`${e.time}-${idx}`} className={`text-sm px-3 py-2 rounded border flex items-center justify-between ${color(e.reason)}`}>
+                                          <div className="flex flex-col">
+                                            <span className="font-medium">{new Date(e.time).toLocaleString()}</span>
+                                            <span className="text-[10px] uppercase tracking-wide mt-0.5 font-semibold">{toLabel(e.reason)}</span>
+                                          </div>
+                                          <div className={`text-[9px] font-bold uppercase px-2 py-1 rounded ${
+                                            e.reason === 'expired' ? 'bg-amber-200 text-amber-900' :
+                                            e.reason === 'rejected' ? 'bg-red-200 text-red-900' :
+                                            'bg-slate-200 text-slate-900'
+                                          }`}>
+                                            {toLabel(e.reason)}
+                                          </div>
                                         </li>
                                       ))}
                                     </ul>
                                   );
                                 })()}
-                                <div className="mt-2 text-[11px] text-slate-500">View only. You cannot select or propose past times.</div>
                               </div>
                             </div>
                           )}
