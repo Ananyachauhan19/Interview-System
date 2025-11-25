@@ -250,8 +250,9 @@ export default function StudentDashboard() {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
     });
   };
 
@@ -422,10 +423,26 @@ export default function StudentDashboard() {
 
   // Fetch proposals when a pair is selected and poll for updates
   useEffect(() => {
-    const fetch = async () => {
+    if (!selectedPair) {
       setCurrentProposals({ mine: [], partner: [], common: null });
+      return;
+    }
+    
+    // Initialize with default time immediately if available (for instant display)
+    if (selectedPair.defaultTimeSlot && !selectedPair.defaultTimeExpired) {
+      const defaultSlot = new Date(selectedPair.defaultTimeSlot).toISOString();
+      setCurrentProposals({
+        mine: [defaultSlot],
+        partner: [defaultSlot],
+        common: null,
+        minePastEntries: [],
+        partnerPastEntries: [],
+        pastTimeSlots: []
+      });
+    }
+    
+    const fetch = async () => {
       setSelectedToAccept("");
-      if (!selectedPair) return;
       try {
         const res = await api.proposeSlots(selectedPair._id, []);
         setCurrentProposals(res);
@@ -434,10 +451,11 @@ export default function StudentDashboard() {
         // ignore
       }
     };
+    
+    // Fetch actual proposal data (will override default if proposals exist)
     fetch();
     
     // Poll for updates every 5 seconds when a pair is selected
-    if (!selectedPair) return;
     
     const pollInterval = setInterval(async () => {
       try {
@@ -977,28 +995,36 @@ export default function StudentDashboard() {
                   </div>
                 </button>
                 
-                {/* Pairing Tabs - Show when event is selected and joined */}
+                {/* Pairing Tabs with Tree Structure */}
                 {active && event.joined && (interviewerPair || intervieweePair) && (
-                  <div className="ml-6 space-y-1">
-                    {interviewerPair && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (selectedPairRole !== "interviewer" || selectedPair?._id !== interviewerPair._id) {
-                            setSelectedPairRole("interviewer");
-                            setSelectedPair(interviewerPair);
-                          }
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ${
-                          selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
-                            ? "bg-indigo-100 border-indigo-300 text-indigo-900"
-                            : "bg-white border-slate-200 hover:border-indigo-200 text-slate-700"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <User className="w-3 h-3 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium">Mentor</div>
+                  <div className="relative pl-4">
+                    {/* Vertical line connecting to parent event */}
+                    <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-300"></div>
+                    
+                    <div className="space-y-1">
+                      {interviewerPair && (
+                        <div className="relative">
+                          {/* Horizontal branch line */}
+                          <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300"></div>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (selectedPairRole !== "interviewer" || selectedPair?._id !== interviewerPair._id) {
+                                setSelectedPairRole("interviewer");
+                                setSelectedPair(interviewerPair);
+                              }
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ml-3 ${
+                              selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
+                                ? "bg-indigo-100 border-indigo-300 text-indigo-900"
+                                : "bg-white border-slate-200 hover:border-indigo-200 text-slate-700"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <User className="w-3 h-3 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium">Mentor</div>
                             <div className="text-xs text-slate-600 mt-0.5 truncate">
                               {event.name}
                             </div>
@@ -1021,26 +1047,31 @@ export default function StudentDashboard() {
                           </div>
                         </div>
                       </button>
-                    )}
-                    {intervieweePair && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (selectedPairRole !== "interviewee" || selectedPair?._id !== intervieweePair._id) {
-                            setSelectedPairRole("interviewee");
-                            setSelectedPair(intervieweePair);
-                          }
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ${
-                          selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
-                            ? "bg-indigo-100 border-indigo-300 text-indigo-900"
-                            : "bg-white border-slate-200 hover:border-indigo-200 text-slate-700"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <User className="w-3 h-3 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium">Candidate</div>
+                        </div>
+                      )}
+                      {intervieweePair && (
+                        <div className="relative">
+                          {/* Horizontal branch line */}
+                          <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300"></div>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (selectedPairRole !== "interviewee" || selectedPair?._id !== intervieweePair._id) {
+                                setSelectedPairRole("interviewee");
+                                setSelectedPair(intervieweePair);
+                              }
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ml-3 ${
+                              selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
+                                ? "bg-indigo-100 border-indigo-300 text-indigo-900"
+                                : "bg-white border-slate-200 hover:border-indigo-200 text-slate-700"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <User className="w-3 h-3 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium">Candidate</div>
                             <div className="text-xs text-slate-600 mt-0.5 truncate">
                               {event.name}
                             </div>
@@ -1063,7 +1094,9 @@ export default function StudentDashboard() {
                           </div>
                         </div>
                       </button>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1285,7 +1318,7 @@ export default function StudentDashboard() {
         <div className="flex-1">
           <div className="text-xs text-slate-500">Back to event details</div>
           <div className="font-medium text-slate-800 text-sm">
-            {isInterviewer ? "Interviewer" : "Interviewee"} View
+            {isInterviewer ? "Mentor" : "Candidate"} View
           </div>
         </div>
       </div>
@@ -1307,7 +1340,7 @@ export default function StudentDashboard() {
               }`}
             >
               You are the{" "}
-              {isInterviewer ? "Interviewer" : "Interviewee"}
+              {isInterviewer ? "Mentor" : "Candidate"}
             </span>
 
             <span
@@ -1656,14 +1689,6 @@ export default function StudentDashboard() {
                             >
                               Change Proposal
                             </button>
-                            <button
-                              onClick={async () => {
-                                await handleReject();
-                              }}
-                              className="px-6 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg font-medium text-sm hover:from-slate-600 hover:to-slate-700 shadow-sm"
-                            >
-                              Withdraw Proposal
-                            </button>
                           </div>
                         ) : (
                           <div className="flex gap-3 justify-center flex-wrap">
@@ -1958,22 +1983,17 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      <AnimatePresence>
-        {message && (
-          <motion.div
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 5 }}
-            className={`flex items-start gap-2 text-sm p-3 rounded-lg ${getMessageStyle(message).bg} ${getMessageStyle(message).text} border ${getMessageStyle(message).border}`}
-          >
-            {(() => {
-              const Icon = getMessageStyle(message).icon;
-              return <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${getMessageStyle(message).iconColor}`} />;
-            })()}
-            <span className="flex-1">{message}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {message && (
+        <div
+          className={`flex items-start gap-2 text-sm p-3 rounded-lg ${getMessageStyle(message).bg} ${getMessageStyle(message).text} border ${getMessageStyle(message).border}`}
+        >
+          {(() => {
+            const Icon = getMessageStyle(message).icon;
+            return <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${getMessageStyle(message).iconColor}`} />;
+          })()}
+          <span className="flex-1">{message}</span>
+        </div>
+      )}
 
       {/* Disclaimer */}
       <div className="mt-4 pt-4 border-t border-slate-200">
