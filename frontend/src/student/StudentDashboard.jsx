@@ -33,6 +33,8 @@ export default function StudentDashboard() {
     mine: [],
     partner: [],
     common: null,
+    mineUpdatedAt: null,
+    partnerUpdatedAt: null,
   });
   const [selectedToAccept, setSelectedToAccept] = useState("");
   const [meetingLinkEnabled, setMeetingLinkEnabled] = useState(false);
@@ -437,7 +439,9 @@ export default function StudentDashboard() {
         common: null,
         minePastEntries: [],
         partnerPastEntries: [],
-        pastTimeSlots: []
+        pastTimeSlots: [],
+        mineUpdatedAt: null,
+        partnerUpdatedAt: null,
       });
     }
     
@@ -1637,13 +1641,23 @@ export default function StudentDashboard() {
                   );
                 }
                 
-                // Single common proposal tab: show MY proposal first if it exists, otherwise partner's
-                // This ensures when I propose a new time, I immediately see it in the tab
+                // Single common proposal tab: show the MOST RECENT proposal (regardless of who made it)
+                // Use timestamps to determine which proposal is newer
                 const hasAnyProposal = (partnerSlots.length > 0 || mySlots.length > 0) && !isSystemDefault;
                 
                 if (hasAnyProposal) {
-                  // Determine whose proposal to show - prioritize my latest proposal
-                  const showingMyProposal = mySlots.length > 0;
+                  // Determine whose proposal to show based on most recent timestamp
+                  const myTimestamp = currentProposals.mineUpdatedAt ? new Date(currentProposals.mineUpdatedAt).getTime() : 0;
+                  const partnerTimestamp = currentProposals.partnerUpdatedAt ? new Date(currentProposals.partnerUpdatedAt).getTime() : 0;
+                  
+                  // If both have proposals, show the most recent one. Otherwise show whichever exists.
+                  let showingMyProposal;
+                  if (mySlots.length > 0 && partnerSlots.length > 0) {
+                    showingMyProposal = myTimestamp >= partnerTimestamp;
+                  } else {
+                    showingMyProposal = mySlots.length > 0;
+                  }
+                  
                   const proposedByMe = showingMyProposal;
                   const displaySlot = showingMyProposal ? mySlots[0] : partnerSlots[0];
                   const proposerName = showingMyProposal 
@@ -1694,9 +1708,10 @@ export default function StudentDashboard() {
                           <div className="flex gap-3 justify-center flex-wrap">
                             <button
                               onClick={() => handleConfirm(displaySlot, "")}
-                              className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm"
+                              className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm flex items-center justify-center gap-2"
                             >
-                              Accept Proposal
+                              <CheckCircle className="w-4 h-4" />
+                              Accept Time
                             </button>
                             <button
                               onClick={() => setShowProposeForm(true)}

@@ -580,6 +580,8 @@ export async function proposeSlots(req, res) {
       .populate('pastEntries.replacedBy', 'name email');
     const mine = (mineDoc?.slots || []).map(d => new Date(d).toISOString());
     const partner = (partnerDoc?.slots || []).map(d => new Date(d).toISOString());
+    const mineUpdatedAt = mineDoc?.updatedAt ? new Date(mineDoc.updatedAt).toISOString() : null;
+    const partnerUpdatedAt = partnerDoc?.updatedAt ? new Date(partnerDoc.updatedAt).toISOString() : null;
     const minePast = (mineDoc?.pastSlots || []).map(d => new Date(d).toISOString());
     const partnerPast = (partnerDoc?.pastSlots || []).map(d => new Date(d).toISOString());
     
@@ -611,7 +613,9 @@ export async function proposeSlots(req, res) {
       partnerPast, 
       minePastEntries,
       partnerPastEntries,
-      common: common ? new Date(common).toISOString() : null 
+      common: common ? new Date(common).toISOString() : null,
+      mineUpdatedAt,
+      partnerUpdatedAt
     });
   }
 
@@ -738,6 +742,8 @@ export async function proposeSlots(req, res) {
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   const mineMeta = mineSlotsRaw.map(d => ({ slot: d.toISOString(), expired: d.getTime() <= nowTs }));
   const partnerMeta = partnerSlotsRaw.map(d => ({ slot: d.toISOString(), expired: d.getTime() <= nowTs }));
+  const mineUpdatedAt = mineDoc?.updatedAt ? new Date(mineDoc.updatedAt).toISOString() : null;
+  const partnerUpdatedAt = partnerDoc?.updatedAt ? new Date(partnerDoc.updatedAt).toISOString() : null;
   const partnerSet = new Set(partner.map(d => new Date(d).getTime()));
   const common = mine.map(d => new Date(d).getTime()).find(t => partnerSet.has(t) && t > nowTs);
   // Include unified currentProposedTime for frontend immediate sync
@@ -753,6 +759,8 @@ export async function proposeSlots(req, res) {
     common: common ? new Date(common).toISOString() : null, 
     mineMeta, 
     partnerMeta, 
+    mineUpdatedAt,
+    partnerUpdatedAt,
     currentProposedTime: freshPair?.currentProposedTime ? new Date(freshPair.currentProposedTime).toISOString() : null,
     status: freshPair?.status || 'pending',
     scheduledAt: freshPair?.scheduledAt ? new Date(freshPair.scheduledAt).toISOString() : null,
