@@ -25,22 +25,21 @@ export default function LandingPage() {
       </div>
 
       {/* Navbar - Full Width with Background */}
-      <nav className={`z-40 bg-indigo-800 sticky top-0 transition-all duration-500 ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'}`}>
+      <nav className={`z-40 bg-white border-b border-gray-200 sticky top-0 transition-all duration-500 shadow-sm ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'}`}>
         <div className="w-full">
           <div className="flex items-center justify-between h-16 px-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-white shadow-sm backdrop-blur-sm">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">PeerPrep</h1>
-                <p className="text-xs text-indigo-200 -mt-1">Interview Practice Platform</p>
-              </div>
+            <div className="flex items-center">
+              <img 
+                src="/images/logo.png" 
+                alt="PeerPrep Logo" 
+                className="w-auto object-contain"
+                style={{ height: '120px' }}
+              />
             </div>
 
             <button 
               onClick={handleLoginClick} 
-              className="px-6 py-2.5 bg-white text-indigo-800 rounded-lg font-semibold shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 hover:bg-indigo-50"
+              className="px-6 py-2.5 bg-sky-500 text-white rounded-lg font-semibold shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 hover:bg-sky-600"
             >
               Login
             </button>

@@ -17,6 +17,18 @@ export default function SessionAndFeedback() {
   const [myFeedback, setMyFeedback] = useState([]);
   const [receivedFeedback, setReceivedFeedback] = useState({});
 
+  // Emoji mapping for ratings
+  const getRatingEmoji = (rating) => {
+    const emojis = {
+      1: '😞',
+      2: '😕',
+      3: '😐',
+      4: '😊',
+      5: '😄'
+    };
+    return emojis[rating] || rating;
+  };
+
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
 
   useEffect(() => {
@@ -331,7 +343,11 @@ export default function SessionAndFeedback() {
                           >
                             <h3 className="text-xl font-semibold text-purple-800 mb-2">Feedback Received</h3>
                             <p className="text-sm text-purple-700 mb-1"><strong>From:</strong> {received.from}</p>
-                            <p className="text-sm text-purple-700 mb-1"><strong>Marks:</strong> {received.marks}</p>
+                            <p className="text-sm text-purple-700 mb-1 flex items-center gap-2">
+                              <strong>Rating:</strong> 
+                              <span className="text-2xl">{getRatingEmoji(received.marks)}</span>
+                              <span className="text-purple-600">({received.marks}/5)</span>
+                            </p>
                             <p className="text-sm text-purple-700 whitespace-pre-wrap"><strong>Comments:</strong> {received.comments}</p>
                           </motion.div>
                         );
@@ -343,7 +359,7 @@ export default function SessionAndFeedback() {
                           transition={{ delay: 0.2 }}
                           className="p-4 bg-gray-50 text-gray-600 rounded-xl border border-gray-200 text-sm"
                         >
-                          Waiting for mentor feedback.
+                          Waiting for interviewer feedback.
                         </motion.div>
                       );
                     }

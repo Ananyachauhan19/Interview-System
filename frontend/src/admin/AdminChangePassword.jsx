@@ -3,7 +3,7 @@ import { api } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 
-export default function ChangePassword() {
+export default function AdminChangePassword() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -43,10 +43,10 @@ export default function ChangePassword() {
     }
 
     try {
-      await api.changeStudentPassword(currentPassword, newPassword, confirmPassword);
+      await api.changeAdminPassword(currentPassword, newPassword, confirmPassword);
       setSuccess('Password changed successfully!');
       setTimeout(() => {
-        navigate('/student/dashboard', { replace: true });
+        navigate('/admin/event', { replace: true });
       }, 1500);
     } catch (err) {
       setSuccess('');
@@ -61,30 +61,29 @@ export default function ChangePassword() {
       <div className="w-full max-w-2xl">
         {/* Back Button */}
         <button
-          onClick={() => navigate('/student/dashboard')}
-          className="mb-6 flex items-center gap-2 text-slate-600 hover:text-sky-600 transition-colors"
+          onClick={() => navigate('/admin/event')}
+          className="mb-6 flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm font-medium">Back to Dashboard</span>
         </button>
 
-        <div className="bg-white rounded-xl shadow-lg border-2 border-sky-100 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-lg border-2 border-blue-100 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-sky-50 to-blue-100 px-8 py-8 border-b-2 border-sky-200">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-8 py-8 border-b-2 border-blue-200">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-sky-500 rounded-xl shadow-md">
+              <div className="p-3 bg-blue-500 rounded-xl shadow-md">
                 <Lock className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-slate-800">Change Password</h1>
-                <p className="text-slate-600 mt-1">Update your student account credentials</p>
+                <p className="text-slate-600 mt-1">Update your admin account credentials</p>
               </div>
             </div>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
-        
             {/* Current Password */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -95,14 +94,14 @@ export default function ChangePassword() {
                   type={showCurrentPassword ? "text" : "password"}
                   value={currentPassword}
                   onChange={e => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-sky-200 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all pr-12 bg-sky-50/30"
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all pr-12 bg-blue-50/30"
                   placeholder="Enter current password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-sky-500 hover:text-sky-700 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 hover:text-blue-700 transition-colors"
                 >
                   {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -119,19 +118,19 @@ export default function ChangePassword() {
                   type={showNewPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-sky-200 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all pr-12 bg-sky-50/30"
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all pr-12 bg-blue-50/30"
                   placeholder="Enter new password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-sky-500 hover:text-sky-700 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 hover:text-blue-700 transition-colors"
                 >
                   {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              <div className="mt-2 text-xs text-slate-600 bg-sky-50 p-3 rounded-lg border border-sky-100">
+              <div className="mt-2 text-xs text-slate-600 bg-blue-50 p-3 rounded-lg border border-blue-100">
                 <span>Minimum 6 characters, must include @ or #</span>
               </div>
             </div>
@@ -146,14 +145,14 @@ export default function ChangePassword() {
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-sky-200 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all pr-12 bg-sky-50/30"
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all pr-12 bg-blue-50/30"
                   placeholder="Confirm new password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-sky-500 hover:text-sky-700 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 hover:text-blue-700 transition-colors"
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -185,7 +184,7 @@ export default function ChangePassword() {
               {/* Cancel Button */}
               <button
                 type="button"
-                onClick={() => navigate('/student/dashboard')}
+                onClick={() => navigate('/admin/event')}
                 className="flex-1 py-3 px-4 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-all border-2 border-slate-200"
               >
                 Cancel
@@ -195,7 +194,7 @@ export default function ChangePassword() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 py-3 px-4 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-semibold hover:from-sky-600 hover:to-sky-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">

@@ -25,7 +25,36 @@ export async function changePassword(req, res) {
     await user.save();
   }
   
-  res.json({ message: 'Password changed' });
+  res.json({ message: 'Password changed successfully' });
+}
+
+// Change password for admin (requires current password) - Separate logic for admin
+export async function changeAdminPassword(req, res) {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  const user = req.user;
+  if (!user) throw new HttpError(401, 'Unauthorized');
+  
+  // Verify user is admin
+  if (user.role !== 'admin') throw new HttpError(403, 'Only admins can use this endpoint');
+  
+  // Validate input
+  if (!currentPassword || !newPassword || !confirmPassword) throw new HttpError(400, 'All fields required');
+  if (newPassword !== confirmPassword) throw new HttpError(400, 'New passwords do not match');
+  if (newPassword.length < 6) throw new HttpError(400, 'New password must be at least 6 characters');
+  if (!/[#@]/.test(newPassword)) throw new HttpError(400, 'New password must contain @ or #');
+  
+  // Verify current password
+  const ok = await user.verifyPassword(currentPassword);
+  if (!ok) throw new HttpError(401, 'Current password incorrect');
+  
+  // Update admin password in database
+  user.passwordHash = await User.hashPassword(newPassword);
+  user.mustChangePassword = false;
+  await user.save();
+  
+  console.log(`[Admin Password Change] Password updated for admin: ${user.email}`);
+  
+  res.json({ message: 'Admin password changed successfully', email: user.email });
 }
 import User from '../models/User.js';
 import SpecialStudent from '../models/SpecialStudent.js';

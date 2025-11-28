@@ -1028,7 +1028,7 @@ export default function StudentDashboard() {
                             <div className="flex items-center gap-2">
                               <User className="w-3 h-3 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <div className="font-medium">Mentor</div>
+                                <div className="font-medium">Interviewer</div>
                             <div className="text-xs text-slate-600 mt-0.5 truncate">
                               {event.name}
                             </div>
@@ -1234,7 +1234,7 @@ export default function StudentDashboard() {
                         <div className="flex items-center gap-2">
                           <User className="w-3 h-3" />
                           <div className="flex-1">
-                            <div className="font-medium">Mentor Name</div>
+                            <div className="font-medium">Interviewer Name</div>
                             <div className="text-xs text-slate-600 mt-0.5">
                               {event.name}
                             </div>
@@ -1322,7 +1322,7 @@ export default function StudentDashboard() {
         <div className="flex-1">
           <div className="text-xs text-slate-500">Back to event details</div>
           <div className="font-medium text-slate-800 text-sm">
-            {isInterviewer ? "Mentor" : "Candidate"} View
+            {isInterviewer ? "Interviewer" : "Candidate"} View
           </div>
         </div>
       </div>
@@ -1330,7 +1330,7 @@ export default function StudentDashboard() {
       <div className="flex flex-col items-center justify-center gap-3 mb-6">
         <div className="text-center">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900 mb-3 break-words">
-            <span className="text-sky-600">Mentor:</span> {selectedPair.interviewer?.name || selectedPair.interviewer?.email}
+            <span className="text-sky-600">Interviewer:</span> {selectedPair.interviewer?.name || selectedPair.interviewer?.email}
             <span className="mx-3 text-slate-400">➜</span>
             <span className="text-emerald-600">Candidate:</span> {selectedPair.interviewee?.name || selectedPair.interviewee?.email}
           </h2>
@@ -1344,7 +1344,7 @@ export default function StudentDashboard() {
               }`}
             >
               You are the{" "}
-              {isInterviewer ? "Mentor" : "Candidate"}
+              {isInterviewer ? "Interviewer" : "Candidate"}
             </span>
 
             <span
@@ -1451,7 +1451,7 @@ export default function StudentDashboard() {
                         const interviewerId = selectedPair?.interviewer?._id || selectedPair?.interviewer;
                         const intervieweeId = selectedPair?.interviewee?._id || selectedPair?.interviewee;
                         
-                        if (String(userId) === String(interviewerId)) return 'Mentor';
+                        if (String(userId) === String(interviewerId)) return 'Interviewer';
                         if (String(userId) === String(intervieweeId)) return 'Candidate';
                         return user.name || user.email || 'User';
                       };
@@ -1662,7 +1662,7 @@ export default function StudentDashboard() {
                   const displaySlot = showingMyProposal ? mySlots[0] : partnerSlots[0];
                   const proposerName = showingMyProposal 
                     ? 'You'
-                    : (isInterviewer ? 'Candidate' : 'Mentor');
+                    : (isInterviewer ? 'Candidate' : 'Interviewer');
                   const totalProposals = myProposalCount + partnerProposalCount;
                   
                   return (
@@ -1679,7 +1679,7 @@ export default function StudentDashboard() {
                         </div>
                         <div className="mt-2 text-xs text-slate-600">
                           Proposed by <span className="font-semibold text-indigo-700">{proposerName}</span>
-                          {proposedByMe && <span className="ml-1">(awaiting {isInterviewer ? 'candidate' : 'mentor'} response)</span>}
+                          {proposedByMe && <span className="ml-1">(awaiting {isInterviewer ? 'candidate' : 'interviewer'} response)</span>}
                         </div>
                         {bothReachedLimit && (
                           <div className="mt-3 text-xs text-amber-800 bg-amber-50 px-4 py-2 rounded-lg border border-amber-300 inline-block font-medium">
@@ -2014,7 +2014,7 @@ export default function StudentDashboard() {
       <div className="mt-4 pt-4 border-t border-slate-200">
         <p className="text-xs text-slate-500 text-center italic">
           <Info className="w-3 h-3 inline mr-1" />
-          Mentor proposes available time slots. Candidate can accept a proposed slot or suggest up to 3 alternative time slots for consideration. All interview scheduling and joining must take place between 10:00 AM and 10:00 PM.
+          Interviewer proposes available time slots. Candidate can accept a proposed slot or suggest up to 3 alternative time slots for consideration. All interview scheduling and joining must take place between 10:00 AM and 10:00 PM.
         </p>
       </div>
     </div>
@@ -2165,7 +2165,7 @@ export default function StudentDashboard() {
                 <h3 className="font-medium text-slate-800 text-sm">Your Pairing Details</h3>
               </div>
               <p className="text-slate-700 text-xs mb-3">
-                View your role as Mentor or Candidate and manage scheduling.
+                View your role as Interviewer or Candidate and manage scheduling.
               </p>
               
               {/* Interviewer/Interviewee Tabs for Mobile */}
@@ -2188,7 +2188,7 @@ export default function StudentDashboard() {
                     <div className="flex items-center gap-2">
                       <User className={`w-4 h-4 ${selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id ? 'text-white' : 'text-indigo-600'}`} />
                       <div className="flex-1">
-                        <div className="font-semibold">Mentor Name</div>
+                        <div className="font-semibold">Interviewer Name</div>
                         <div className="text-xs mt-1 opacity-90">
                           {interviewerPair.interviewer?.name || interviewerPair.interviewer?.email || "N/A"} ➜ {interviewerPair.interviewee?.name || interviewerPair.interviewee?.email || "N/A"}
                         </div>

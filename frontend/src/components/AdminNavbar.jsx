@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User } from "lucide-react";
+import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Lock, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export function AdminNavbar() {
@@ -91,34 +91,31 @@ export function AdminNavbar() {
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white shadow-sm"
+      className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white shadow-sm"
     >
       <div className="w-full flex items-center justify-between h-16 px-4 sm:px-6">
-        {/* Brand Logo and Title (PeerPrep) */}
+        {/* Brand Logo */}
         <motion.div
-          className="flex items-center gap-3"
+          className="hidden sm:flex items-center"
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-              <GraduationCap className="text-indigo-600 w-5 h-5" />
-            </div>
-            <div className="hidden sm:block">
-              <div>
-                <h1 className="text-xl font-bold text-slate-800">PeerPrep</h1>
-                <p className="text-xs text-indigo-600 -mt-1">Interview Practice Platform</p>
-              </div>
-            </div>
-          </div>
+          <img 
+            src="/images/logo.png" 
+            alt="PeerPrep Logo" 
+            className="w-auto object-contain"
+            style={{ height: '120px' }}
+          />
         </motion.div>
 
-        {/* Center: Mobile Title */}
+        {/* Center: Mobile Logo */}
         <div className="flex-1 flex justify-center sm:hidden">
-          <h1 className="text-white text-lg font-bold tracking-tight flex items-center gap-2">
-            <GraduationCap className="text-white w-4 h-4" />
-            Admin
-          </h1>
+          <img 
+            src="/images/logo.png" 
+            alt="PeerPrep Logo" 
+            className="w-auto object-contain"
+            style={{ height: '99px' }}
+          />
         </div>
 
         {/* Right Side: Desktop Navigation + Mobile Buttons */}
@@ -140,8 +137,8 @@ export function AdminNavbar() {
                     whileTap="tap"
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors mx-1 ${
                       isActive
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-slate-700 hover:text-slate-800 hover:bg-slate-50"
+                        ? "bg-sky-50 text-sky-600"
+                        : "text-gray-600 hover:text-sky-500 hover:bg-sky-50"
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -159,29 +156,23 @@ export function AdminNavbar() {
               );
             })}
 
-            {/* Desktop Logout Button */}
-            <motion.button
-              variants={itemHover}
-              whileHover="hover"
-              whileTap="tap"
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 hover:text-red-600 hover:bg-red-50 ml-2 transition-colors duration-200 border border-transparent hover:border-red-200"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="font-medium text-sm">Logout</span>
-            </motion.button>
-
-            {/* Desktop Profile */}
-            <div className="relative ml-2 profile-container">
+            {/* Desktop Profile Dropdown */}
+            <div className="relative ml-3 profile-container">
               <motion.button
                 variants={itemHover}
                 whileHover="hover"
                 whileTap="tap"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 hover:text-slate-800 hover:bg-slate-50 transition-colors duration-200 border border-transparent hover:border-slate-200"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 hover:bg-sky-50 text-gray-700 transition-all duration-200 border border-gray-200"
               >
-                <User className="w-4 h-4" />
-                <span className="font-medium text-sm">Profile</span>
+                <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white font-semibold text-sm">
+                  {adminName.charAt(0).toUpperCase()}
+                </div>
+                <div className="text-left hidden lg:block">
+                  <div className="font-semibold text-sm text-slate-800">{adminName}</div>
+                  <div className="text-xs text-slate-500">Admin</div>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
               </motion.button>
 
               <AnimatePresence>
@@ -191,12 +182,52 @@ export function AdminNavbar() {
                     initial="closed"
                     animate="open"
                     exit="closed"
-                    className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 p-4 z-50"
+                    className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50"
                   >
-                    <h3 className="font-bold text-slate-900 text-base mb-3">Profile Info</h3>
-                    <div className="text-slate-700 text-sm space-y-1">
-                      <p className="font-semibold">{adminName}</p>
-                      <p className="text-slate-500">{adminEmail}</p>
+                    {/* Profile Header */}
+                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 px-4 py-3 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold">
+                          {adminName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-slate-900 truncate">{adminName}</div>
+                          <div className="text-xs text-slate-600 truncate">{adminEmail}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Menu Items */}
+                    <div className="py-2">
+                      <Link
+                        to="/admin/change-password"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
+                          <Lock className="w-4 h-4 text-sky-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">Change Password</div>
+                          <div className="text-xs text-slate-500">Update your account password</div>
+                        </div>
+                      </Link>
+
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          handleLogout();
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-700 hover:bg-red-50 transition-colors group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                          <LogOut className="w-4 h-4 text-red-600" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="text-sm font-medium text-red-600">Logout</div>
+                          <div className="text-xs text-slate-500">Sign out of your account</div>
+                        </div>
+                      </button>
                     </div>
                   </motion.div>
                 )}
@@ -211,9 +242,9 @@ export function AdminNavbar() {
               whileHover="hover"
               whileTap="tap"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors duration-200 border border-transparent"
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-sky-500 text-white font-semibold text-sm shadow-md"
             >
-              <User className="text-slate-700 w-5 h-5" />
+              {adminName.charAt(0).toUpperCase()}
             </motion.button>
 
             <AnimatePresence>
@@ -223,12 +254,52 @@ export function AdminNavbar() {
                   initial="closed"
                   animate="open"
                   exit="closed"
-                  className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 p-4 z-50"
+                  className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50"
                 >
-                  <h3 className="font-bold text-slate-900 text-base mb-3">Profile Info</h3>
-                  <div className="text-slate-700 text-sm space-y-1">
-                    <p className="font-semibold">{adminName}</p>
-                    <p className="text-slate-500">{adminEmail}</p>
+                  {/* Profile Header */}
+                  <div className="bg-gradient-to-r from-sky-50 to-blue-50 px-4 py-3 border-b border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold">
+                        {adminName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-slate-900 truncate">{adminName}</div>
+                        <div className="text-xs text-slate-600 truncate">{adminEmail}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="py-2">
+                    <Link
+                      to="/admin/change-password"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
+                        <Lock className="w-4 h-4 text-sky-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">Change Password</div>
+                        <div className="text-xs text-slate-500">Update your account password</div>
+                      </div>
+                    </Link>
+
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-700 hover:bg-red-50 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                        <LogOut className="w-4 h-4 text-red-600" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-medium text-red-600">Logout</div>
+                        <div className="text-xs text-slate-500">Sign out of your account</div>
+                      </div>
+                    </button>
                   </div>
                 </motion.div>
               )}
@@ -239,12 +310,12 @@ export function AdminNavbar() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={toggleMenu}
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 transition-colors duration-200 border border-white/30"
+            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors duration-200 border border-gray-200"
           >
             {isMenuOpen ? (
-              <X className="text-slate-700 w-5 h-5" />
+              <X className="text-gray-700 w-5 h-5" />
             ) : (
-              <Menu className="text-slate-700 w-5 h-5" />
+              <Menu className="text-gray-700 w-5 h-5" />
             )}
           </motion.button>
         </div>
@@ -273,13 +344,13 @@ export function AdminNavbar() {
             >
               <div className="bg-white h-full rounded-l-2xl shadow-2xl border-l border-slate-200 p-6 flex flex-col">
                 {/* Mobile Menu Header */}
-                <div className="flex items-center gap-3 pb-6 mb-4 border-b border-slate-200">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-800 flex items-center justify-center">
-                    <GraduationCap className="text-white w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-slate-900 font-bold text-lg">Admin Dashboard</h2>
-                  </div>
+                <div className="flex items-center pb-6 mb-4 border-b border-gray-200">
+                  <img 
+                    src="/images/logo.png" 
+                    alt="PeerPrep Logo" 
+                    className="w-auto object-contain"
+                    style={{ height: '120px' }}
+                  />
                 </div>
 
                 {/* Mobile Menu Items */}
@@ -293,28 +364,39 @@ export function AdminNavbar() {
                         onClick={() => setActive(path)}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                           isActive
-                            ? "bg-indigo-50 text-indigo-800"
-                            : "text-slate-700 hover:text-indigo-800 hover:bg-slate-50"
+                            ? "bg-sky-50 text-sky-600"
+                            : "text-gray-600 hover:text-sky-500 hover:bg-sky-50"
                         }`}
                       >
                         <Icon className="w-4 h-4" />
                         <span className="font-medium text-sm">{label}</span>
                         {isActive && (
-                          <div className="ml-auto w-2 h-2 bg-indigo-600 rounded-full" />
+                          <div className="ml-auto w-2 h-2 bg-sky-500 rounded-full" />
                         )}
                       </Link>
                     );
                   })}
                 </div>
 
-                {/* Mobile Logout Button */}
-                <button
-                  onClick={handleLogout}
-                  className="mt-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-700 hover:text-red-600 hover:bg-red-50 transition-all duration-200 border border-transparent hover:border-red-200"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="font-medium text-sm">Logout</span>
-                </button>
+                {/* Mobile Menu Footer Actions */}
+                <div className="mt-auto space-y-2 pt-4 border-t border-gray-200">
+                  <Link
+                    to="/admin/change-password"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-700 hover:bg-sky-50 transition-colors group"
+                  >
+                    <Lock className="w-4 h-4 text-sky-600" />
+                    <span className="font-medium text-sm">Change Password</span>
+                  </Link>
+                  
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="font-medium text-sm">Logout</span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           </>

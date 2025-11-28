@@ -11,6 +11,7 @@ import StudentDirectory from "./admin/StudentDirectory";
 import EventManagement from "./admin/EventManagement";
 import EventDetail from "./admin/EventDetail";
 import FeedbackReview from "./admin/FeedbackReview";
+import AdminChangePassword from "./admin/AdminChangePassword";
 import AdminProtectedRoute from "./admin/AdminProtectedRoute";
 import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
 import { ToastContainer } from 'react-toastify';
@@ -23,7 +24,8 @@ function AppContent() {
   const isStudentLogin = location.pathname === "/student";
   const isResetPassword = location.pathname === "/reset-password";
   const isFeedbackForm = location.pathname.startsWith("/student/feedback/");
-  const isStudentDashboard = location.pathname.startsWith("/student/") && !isStudentLogin && !isFeedbackForm;
+  const isChangePassword = location.pathname === "/student/change-password" || location.pathname === "/admin/change-password";
+  const isStudentDashboard = location.pathname.startsWith("/student/") && !isStudentLogin && !isFeedbackForm && !isChangePassword;
   const isAdmin = location.pathname.startsWith("/admin/");
   const isLoginPage = isMain || isStudentLogin || isResetPassword;
 
@@ -44,6 +46,7 @@ function AppContent() {
           <Route path="/admin/event" element={<EventManagement />} />
           <Route path="/admin/event/:id" element={<EventDetail />} />
           <Route path="/admin/feedback" element={<FeedbackReview />} />
+          <Route path="/admin/change-password" element={<AdminChangePassword />} />
         </Routes>
       
       {!isLoginPage && !isFeedbackForm && <Footer />}

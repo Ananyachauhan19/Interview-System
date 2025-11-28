@@ -43,6 +43,7 @@ export const api = {
   me: () => request('/auth/me'),
   login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password } }),
   changeStudentPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
+  changeAdminPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/admin-change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
   requestPasswordReset: (email) => request('/auth/password/request-reset', { method: 'POST', body: { email } }),
   resetPassword: (token, newPassword) => request('/auth/password/reset', { method: 'POST', body: { token, newPassword } }),
 

@@ -57,7 +57,7 @@ export default function FeedbackForm() {
         
         if (!userId || String(interviewerId) !== String(userId)) {
           console.log('[FeedbackForm] User is not the interviewer');
-          setError("Only the mentor can submit feedback for this session.");
+          setError("Only the interviewer can submit feedback for this session.");
           return;
         }
 
@@ -181,6 +181,18 @@ export default function FeedbackForm() {
     );
   }
 
+  // Emoji mapping for ratings
+  const getRatingEmoji = (rating) => {
+    const emojis = {
+      1: '😞',
+      2: '😕',
+      3: '😐',
+      4: '😊',
+      5: '😄'
+    };
+    return emojis[rating] || '';
+  };
+
   console.log('[FeedbackForm] Rendering feedback form for pair:', pair._id);
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 overflow-hidden flex items-center justify-center">
@@ -276,8 +288,8 @@ export default function FeedbackForm() {
                   <tr className="bg-slate-50">
                     <th className="p-2 border border-slate-200"></th>
                     {[1, 2, 3, 4, 5].map((num) => (
-                      <th key={num} className="text-center p-1 border border-slate-200 text-xs text-slate-600">
-                        {num}
+                      <th key={num} className="text-center p-1 border border-slate-200 text-lg">
+                        {getRatingEmoji(num)}
                       </th>
                     ))}
                   </tr>
