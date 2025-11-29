@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-do
 import StudentLogin from "./auth/StudentLogin";
 import ResetPassword from "./auth/ResetPassword";
 import LandingPage from "./pages/LandingPage";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import ContactUs from "./pages/ContactUs";
 import StudentDashboard from "./student/StudentDashboard";
 import ChangePassword from "./student/ChangePassword";
 import SessionAndFeedback from "./student/SessionAndFeedback";
@@ -23,6 +26,7 @@ function AppContent() {
   const isMain = location.pathname === "/";
   const isStudentLogin = location.pathname === "/student";
   const isResetPassword = location.pathname === "/reset-password";
+  const isPublicPage = location.pathname === "/privacy" || location.pathname === "/terms" || location.pathname === "/contact";
   const isFeedbackForm = location.pathname.startsWith("/student/feedback/");
   const isChangePassword = location.pathname === "/student/change-password" || location.pathname === "/admin/change-password";
   const isStudentDashboard = location.pathname.startsWith("/student/") && !isStudentLogin && !isFeedbackForm && !isChangePassword;
@@ -31,25 +35,28 @@ function AppContent() {
 
   return (
     <div className={gradientBg + " min-h-screen w-full flex flex-col"}>
-      {!isFeedbackForm && (isAdmin ? <AdminNavbar /> : isStudentDashboard ? <StudentNavbar /> : null)}
+      {!isFeedbackForm && !isPublicPage && (isAdmin ? <AdminNavbar /> : isStudentDashboard ? <StudentNavbar /> : null)}
      
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/student" element={<StudentLogin />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/student/change-password" element={<ChangePassword />} />
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="/student/session" element={<SessionAndFeedback />} />
-          <Route path="/student/feedback/:pairId" element={<FeedbackForm />} />
-          <Route path="/admin/onboarding" element={<StudentOnboarding />} />
-          <Route path="/admin/students" element={<StudentDirectory />} />
-          <Route path="/admin/event" element={<EventManagement />} />
-          <Route path="/admin/event/:id" element={<EventDetail />} />
-          <Route path="/admin/feedback" element={<FeedbackReview />} />
-          <Route path="/admin/change-password" element={<AdminChangePassword />} />
-        </Routes>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/student" element={<StudentLogin />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/contact" element={<ContactUs />} />
+        <Route path="/student/change-password" element={<ChangePassword />} />
+        <Route path="/student/dashboard" element={<StudentDashboard />} />
+        <Route path="/student/session" element={<SessionAndFeedback />} />
+        <Route path="/student/feedback/:pairId" element={<FeedbackForm />} />
+        <Route path="/admin/onboarding" element={<StudentOnboarding />} />
+        <Route path="/admin/students" element={<StudentDirectory />} />
+        <Route path="/admin/event" element={<EventManagement />} />
+        <Route path="/admin/event/:id" element={<EventDetail />} />
+        <Route path="/admin/feedback" element={<FeedbackReview />} />
+        <Route path="/admin/change-password" element={<AdminChangePassword />} />
+      </Routes>
       
-      {!isLoginPage && !isFeedbackForm && <Footer />}
+      {!isLoginPage && !isFeedbackForm && !isPublicPage && <Footer />}
     </div>
   );
 }

@@ -314,8 +314,12 @@ export default function StudentLoginPage() {
                 <div className="relative bg-transparent rounded-lg w-full">
                   {/* Header Section */}
                   <div className="relative text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-sky-100 to-sky-200 rounded-xl mb-4 border border-sky-300/40">
-                      <Book size={28} className="text-sky-600 drop-shadow-lg" />
+                    <div className="inline-flex items-center justify-center mb-4">
+                      <img 
+                        src="/images/logo.png" 
+                        alt="Logo" 
+                        className="h-28 w-auto object-contain drop-shadow-lg"
+                      />
                     </div>
                     <h1 className="text-2xl font-bold text-sky-800 mb-2 drop-shadow-lg">
                       Student Portal
