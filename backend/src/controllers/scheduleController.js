@@ -86,7 +86,9 @@ async function checkAndAutoAssign(pair) {
   if (pair.status === 'scheduled') return false;
   const ip = pair.interviewerProposalCount || 0;
   const ep = pair.intervieweeProposalCount || 0;
-  if (ip < 3 || ep < 3) return false;
+  // Changed to combined limit: auto-assign when combined attempts reach 3
+  const combined = ip + ep;
+  if (combined < 3) return false;
   
   // Both hit limits; use the last submitted time as final
   // Get both users' proposals
@@ -148,7 +150,7 @@ async function checkAndAutoAssign(pair) {
     const html = `
       <div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:600px;">
         <p style="margin-bottom:20px;">Dear Participant,</p>
-        <p style="margin-bottom:16px;">Both participants have used their maximum number of proposals (3 each). Based on the most recently submitted proposal, your interview has been automatically scheduled.</p>
+        <p style="margin-bottom:16px;">The maximum of 3 combined proposals has been reached by both participants. Based on the most recently submitted proposal, your interview has been automatically scheduled.</p>
         
         <div style="background:#f0f9ff;padding:24px;border-radius:8px;border-left:4px solid #0ea5e9;margin:24px 0;">
           <p style="margin:0 0 12px 0;font-size:17px;font-weight:700;color:#0c4a6e;">✓ Interview Time Finalized</p>
@@ -635,10 +637,10 @@ export async function proposeSlots(req, res) {
   let doc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
   const hadPreviousProposal = doc?.slots?.length > 0;
   
-  // Enforce per-role proposal counters (EVERY submission counts, including replacements)
-  const isInterviewerProposing = isInterviewer;
-  const maxReached = isInterviewerProposing ? (pair.interviewerProposalCount >= 3) : (pair.intervieweeProposalCount >= 3);
-  if (maxReached) throw new HttpError(400, 'Maximum number of proposals (3) already reached');
+  // Enforce combined proposal limit (EVERY submission counts, including replacements)
+  // Changed from 3 per user (6 total) to 3 combined total across both users
+  const combinedProposalCount = (pair.interviewerProposalCount || 0) + (pair.intervieweeProposalCount || 0);
+  if (combinedProposalCount >= 3) throw new HttpError(400, 'Maximum of 3 combined proposals reached by both participants');
   
   if (!doc) doc = new SlotProposal({ pair: pair._id, user: effectiveUserId, event: pair.event, slots: [], pastSlots: [], pastEntries: [] });
   
@@ -665,6 +667,7 @@ export async function proposeSlots(req, res) {
   console.log('[Propose] User', effectiveUserId, 'saved slot:', dates[0].toISOString());
   
   // Increment per-user counters on pair (count every attempt)
+  const isInterviewerProposing = isInterviewer;
   if (isInterviewerProposing) pair.interviewerProposalCount = (pair.interviewerProposalCount || 0) + 1; 
   else pair.intervieweeProposalCount = (pair.intervieweeProposalCount || 0) + 1;
   await pair.save();
@@ -950,7 +953,7 @@ export async function rejectSlots(req, res) {
   try {
     const auto = await checkAndAutoAssign(pair);
     if (auto) {
-      return res.json({ message: 'Both participants reached proposal limits. A time was auto-assigned.' });
+      return res.json({ message: 'Maximum of 3 combined proposals reached. A time was auto-assigned.' });
     }
   } catch {}
   

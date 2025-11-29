@@ -308,9 +308,18 @@ export default function StudentDashboard() {
       : selectedPair.interviewerProposalCount || 0;
   }, [selectedPair, isInterviewer]);
   
+  const totalProposalCount = myProposalCount + partnerProposalCount;
+  const combinedRemainingProposals = Math.max(0, 3 - totalProposalCount);
   const myRemainingProposals = Math.max(0, 3 - myProposalCount);
   const partnerRemainingProposals = Math.max(0, 3 - partnerProposalCount);
-  const bothReachedLimit = myProposalCount >= 3 && partnerProposalCount >= 3;
+  const bothReachedLimit = totalProposalCount >= 3;
+
+  // Memoize isSystemDefault to prevent flicker when proposals update
+  const isSystemDefault = useMemo(() => {
+    const mySlots = isInterviewer ? currentProposals.mine || [] : currentProposals.partner || [];
+    const partnerSlots = isInterviewer ? currentProposals.partner || [] : currentProposals.mine || [];
+    return mySlots.length === 1 && partnerSlots.length === 1 && mySlots[0] === partnerSlots[0];
+  }, [currentProposals.mine, currentProposals.partner, isInterviewer]);
 
   const getUserRoleInPair = (pair) => {
     if (!me || !pair) {
@@ -430,27 +439,22 @@ export default function StudentDashboard() {
       return;
     }
     
-    // Initialize with default time immediately if available (for instant display)
-    if (selectedPair.defaultTimeSlot && !selectedPair.defaultTimeExpired) {
-      const defaultSlot = new Date(selectedPair.defaultTimeSlot).toISOString();
-      setCurrentProposals({
-        mine: [defaultSlot],
-        partner: [defaultSlot],
-        common: null,
-        minePastEntries: [],
-        partnerPastEntries: [],
-        pastTimeSlots: [],
-        mineUpdatedAt: null,
-        partnerUpdatedAt: null,
-      });
-    }
-    
     const fetch = async () => {
       setSelectedToAccept("");
       try {
         const res = await api.proposeSlots(selectedPair._id, []);
         setCurrentProposals(res);
         setShowPastDropdown(false);
+        
+        // Update selectedPair with fresh proposal counts
+        if (res.interviewerProposalCount !== undefined && res.intervieweeProposalCount !== undefined) {
+          setSelectedPair(prev => ({
+            ...prev,
+            interviewerProposalCount: res.interviewerProposalCount,
+            intervieweeProposalCount: res.intervieweeProposalCount,
+            status: res.status || prev.status
+          }));
+        }
       } catch {
         // ignore
       }
@@ -459,16 +463,36 @@ export default function StudentDashboard() {
     // Fetch actual proposal data (will override default if proposals exist)
     fetch();
     
-    // Poll for updates every 5 seconds when a pair is selected
+    // Poll for updates every 10 seconds when a pair is selected (reduced frequency)
     
     const pollInterval = setInterval(async () => {
       try {
         const res = await api.proposeSlots(selectedPair._id, []);
-        setCurrentProposals(res);
+        // Only update if data actually changed to prevent flicker
+        setCurrentProposals(prev => {
+          const mineChanged = JSON.stringify(prev.mine) !== JSON.stringify(res.mine);
+          const partnerChanged = JSON.stringify(prev.partner) !== JSON.stringify(res.partner);
+          const commonChanged = prev.common !== res.common;
+          const countsChanged = prev.interviewerProposalCount !== res.interviewerProposalCount ||
+                               prev.intervieweeProposalCount !== res.intervieweeProposalCount;
+          if (mineChanged || partnerChanged || commonChanged || countsChanged) {
+            // Update selectedPair counts if they changed
+            if (countsChanged && res.interviewerProposalCount !== undefined && res.intervieweeProposalCount !== undefined) {
+              setSelectedPair(prevPair => ({
+                ...prevPair,
+                interviewerProposalCount: res.interviewerProposalCount,
+                intervieweeProposalCount: res.intervieweeProposalCount,
+                status: res.status || prevPair.status
+              }));
+            }
+            return res;
+          }
+          return prev; // No change, keep previous state
+        });
       } catch {
         // ignore polling errors
       }
-    }, 5000); // Poll every 5 seconds
+    }, 10000); // Poll every 10 seconds (less aggressive)
     
     return () => clearInterval(pollInterval);
   }, [selectedPair]);
@@ -512,9 +536,7 @@ export default function StudentDashboard() {
     return () => clearInterval(timer);
   }, [selectedPair?.scheduledAt]);
 
-  useEffect(() => {
-    setSelectedToAccept("");
-  }, [currentProposals.mine, currentProposals.partner]);
+  // Removed: useEffect that was resetting selectedToAccept and causing flicker
 
   // Pairing action handlers
   // Helper to get current datetime for min validation
@@ -607,9 +629,23 @@ export default function StudentDashboard() {
       console.log('[Propose] Submitted slots:', isoSlots);
       console.log('[Propose] Backend response mine:', res.mine);
       console.log('[Propose] Backend response partner:', res.partner);
+      console.log('[Propose] Backend response counts:', {
+        interviewer: res.interviewerProposalCount,
+        interviewee: res.intervieweeProposalCount
+      });
       
       // Immediately update currentProposals with the response
       setCurrentProposals(res);
+      
+      // Update selectedPair with fresh proposal counts from backend response
+      if (res.interviewerProposalCount !== undefined && res.intervieweeProposalCount !== undefined) {
+        setSelectedPair(prev => ({
+          ...prev,
+          interviewerProposalCount: res.interviewerProposalCount,
+          intervieweeProposalCount: res.intervieweeProposalCount,
+          status: res.status || prev.status
+        }));
+      }
       
       if (res.common)
         setMessage(
@@ -670,6 +706,16 @@ export default function StudentDashboard() {
       // Refresh proposals
       const ro = await api.proposeSlots(selectedPair._id, []);
       setCurrentProposals(ro);
+      
+      // Update selectedPair with fresh proposal counts
+      if (ro.interviewerProposalCount !== undefined && ro.intervieweeProposalCount !== undefined) {
+        setSelectedPair(prev => ({
+          ...prev,
+          interviewerProposalCount: ro.interviewerProposalCount,
+          intervieweeProposalCount: ro.intervieweeProposalCount,
+          status: ro.status || prev.status
+        }));
+      }
     } catch (err) {
       setMessage(err.message);
     }
@@ -689,17 +735,25 @@ export default function StudentDashboard() {
         return [...filteredPairs, ...pairsWithEvent];
       });
       
-      setCurrentProposals({ mine: [], partner: [], common: null });
-      
       // Update the selected pair with the new data
       const updatedPair = pairsWithEvent.find(p => p._id === selectedPair._id);
       if (updatedPair) {
         setSelectedPair(updatedPair);
       }
       
-      // Refresh proposals
+      // Refresh proposals (removed intermediate empty state that caused flicker)
       const ro = await api.proposeSlots(selectedPair._id, []);
       setCurrentProposals(ro);
+      
+      // Update selectedPair with fresh proposal counts
+      if (ro.interviewerProposalCount !== undefined && ro.intervieweeProposalCount !== undefined) {
+        setSelectedPair(prev => ({
+          ...prev,
+          interviewerProposalCount: ro.interviewerProposalCount,
+          intervieweeProposalCount: ro.intervieweeProposalCount,
+          status: ro.status || prev.status
+        }));
+      }
     } catch (err) {
       setMessage(err.message);
     }
@@ -1601,10 +1655,7 @@ export default function StudentDashboard() {
                 const mySlots = isInterviewer ? interviewerSlots : intervieweeSlots;
                 const partnerSlots = isInterviewer ? intervieweeSlots : interviewerSlots;
                 
-                // Check if both have the same slot (system-generated default)
-                const isSystemDefault = mySlots.length === 1 && partnerSlots.length === 1 && 
-                                       mySlots[0] === partnerSlots[0];
-                
+                // Use memoized isSystemDefault to prevent flicker
                 // Show Default Time first if it exists
                 if (isSystemDefault && !selectedPair?.defaultTimeExpired) {
                   return (
@@ -1674,7 +1725,7 @@ export default function StudentDashboard() {
                             Current Proposal
                           </span>
                           <span className="inline-flex items-center justify-center min-w-[42px] px-2 py-1 bg-indigo-600 text-white text-xs font-bold rounded">
-                            {totalProposals}/6
+                            {totalProposals}/3
                           </span>
                         </div>
                         <div className="mt-2 text-xs text-slate-600">
@@ -1683,7 +1734,7 @@ export default function StudentDashboard() {
                         </div>
                         {bothReachedLimit && (
                           <div className="mt-3 text-xs text-amber-800 bg-amber-50 px-4 py-2 rounded-lg border border-amber-300 inline-block font-medium">
-                            ⚠ Both parties have reached the proposal limit. This time will be automatically confirmed.
+                            ⚠ Maximum of 3 combined proposals reached. This time will be automatically confirmed.
                           </div>
                         )}
                       </div>
@@ -1708,14 +1759,16 @@ export default function StudentDashboard() {
                           <div className="flex gap-3 justify-center flex-wrap">
                             <button
                               onClick={() => handleConfirm(displaySlot, "")}
-                              className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm flex items-center justify-center gap-2"
+                              disabled={isLoadingPairs}
+                              className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <CheckCircle className="w-4 h-4" />
-                              Accept Time
+                              {isLoadingPairs ? <span className="animate-spin">⏳</span> : <CheckCircle className="w-4 h-4" />}
+                              {isLoadingPairs ? 'Processing...' : 'Accept Time'}
                             </button>
                             <button
                               onClick={() => setShowProposeForm(true)}
-                              className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
+                              disabled={isLoadingPairs}
+                              className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Propose Different Time
                             </button>
@@ -1723,9 +1776,11 @@ export default function StudentDashboard() {
                               onClick={async () => {
                                 await handleReject();
                               }}
-                              className="px-6 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg font-medium text-sm hover:from-slate-600 hover:to-slate-700 shadow-sm"
+                              disabled={isLoadingPairs}
+                              className="px-6 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg font-medium text-sm hover:from-slate-600 hover:to-slate-700 shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Decline
+                              {isLoadingPairs && <span className="animate-spin">⏳</span>}
+                              {isLoadingPairs ? 'Processing...' : 'Decline'}
                             </button>
                           </div>
                         )}
@@ -1801,12 +1856,12 @@ export default function StudentDashboard() {
                   {isInterviewer ? 'Propose Interview Time' : 'Propose Alternative Time'}
                 </h3>
                 <div className="text-xs mt-1">
-                  {myRemainingProposals > 0 ? (
+                  {combinedRemainingProposals > 0 ? (
                     <span className="text-slate-600">
-                      <span className="font-semibold text-emerald-600">{myRemainingProposals}</span> of 3 proposals remaining
+                      <span className="font-semibold text-emerald-600">{combinedRemainingProposals}</span> of 3 combined proposals remaining
                     </span>
                   ) : (
-                    <span className="text-red-600 font-medium">⚠ Maximum proposals reached (3/3)</span>
+                    <span className="text-red-600 font-medium">⚠ Maximum combined proposals reached (3/3)</span>
                   )}
                 </div>
               </div>
@@ -1876,7 +1931,7 @@ export default function StudentDashboard() {
                 max={selectedPair?.event?.endDate}
                 placeholder="Select interview time"
                 className="w-full text-sm"
-                disabled={isLocked}
+                disabled={isLocked || isLoadingPairs}
               />
             </div>
 
@@ -1887,7 +1942,8 @@ export default function StudentDashboard() {
                     setSlots([""]);
                     setMessage("");
                   }}
-                  className="flex-1 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium text-sm"
+                  disabled={isLoadingPairs}
+                  className="flex-1 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -1900,9 +1956,11 @@ export default function StudentDashboard() {
                       setSlots([""]);
                     }
                   }}
-                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700"
+                  disabled={isLoadingPairs}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Propose Time
+                  {isLoadingPairs && <span className="animate-spin">⏳</span>}
+                  {isLoadingPairs ? 'Processing...' : 'Propose Time'}
                 </button>
               </div>
 

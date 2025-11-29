@@ -1,5 +1,5 @@
-/* eslint-disable no-unused-vars */
-import { useEffect, useMemo, useState, useRef } from "react";
+﻿/* eslint-disable no-unused-vars */
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -43,9 +43,10 @@ export default function PairingAndScheduling() {
     const myActiveCount = Array.isArray(currentProposals?.mine) ? currentProposals.mine.length : 0;
     const partnerActiveCount = Array.isArray(currentProposals?.partner) ? currentProposals.partner.length : 0;
     const myPastCount = Array.isArray(currentProposals?.minePast) ? currentProposals.minePast.length : 0;
-    const attempts = myActiveCount + myPastCount;
+    const partnerPastCount = Array.isArray(currentProposals?.partnerPast) ? currentProposals.partnerPast.length : 0;
+    const combinedAttempts = myActiveCount + myPastCount + partnerActiveCount + partnerPastCount;
     if (!slotInput) return 'Select a time to propose.';
-    if (attempts >= 3) return 'You’ve reached the maximum of 3 proposals.';
+    if (combinedAttempts >= 3) return 'Maximum of 3 combined proposals reached by both participants.';
     if (myActiveCount > 0) return 'You already have a pending proposal; wait for a response.';
     if (partnerActiveCount > 0) return 'Your partner has a pending proposal; accept or reject it first.';
     return null;
@@ -188,15 +189,16 @@ export default function PairingAndScheduling() {
     return () => clearInterval(timer);
   }, [selectedPair?.scheduledAt]);
 
-  useEffect(() => {
-    setSelectedToAccept("");
-  }, [currentProposals.mine, currentProposals.partner]);
+  // Removed: useEffect that was causing flickering by resetting selectedToAccept
 
   const handlePropose = async () => {
     setMessage("");
     
     // Prevent double submission
-    if (isLoading) return;
+    if (isLoading) {
+      setMessage("Processing... Please wait.");
+      return;
+    }
     setIsLoading(true);
     
     function parseLocalDateTime(value) {
@@ -272,14 +274,13 @@ export default function PairingAndScheduling() {
     }
     try {
       const res = await api.proposeSlots(selectedPair._id, isoSlots);
+      // Immediate UI update with response data
+      setCurrentProposals(res);
       if (res.common)
         setMessage(
           `Common slot found: ${new Date(res.common).toLocaleString()}`
         );
       else setMessage("Slots proposed. Waiting for partner.");
-      // Refresh proposals and clear input
-      const ro = await api.proposeSlots(selectedPair._id, []);
-      setCurrentProposals(ro);
       setSlotInput("");
     } catch (err) {
       setMessage(err.message);
@@ -296,11 +297,20 @@ export default function PairingAndScheduling() {
 
   const handleConfirm = async (dt, link) => {
     if (!selectedPair) return;
+    if (isLoading) {
+      setMessage("Processing... Please wait.");
+      return;
+    }
+    setIsLoading(true);
     try {
       const iso = dt && dt.includes("T") ? new Date(dt).toISOString() : dt;
       await api.confirmSlot(selectedPair._id, iso, link);
       setMessage("Scheduled successfully!");
       
+      // Immediately fetch updated proposals for instant UI feedback
+      const proposalUpdate = await api.proposeSlots(selectedPair._id, []);
+      setCurrentProposals(proposalUpdate);
+      
       // Fetch updated pairs in parallel for better performance
       const pairPromises = events.map(ev => api.listPairs(ev._id));
       const pairResults = await Promise.all(pairPromises);
@@ -313,14 +323,25 @@ export default function PairingAndScheduling() {
       setPairs(updated);
     } catch (err) {
       setMessage(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleReject = async () => {
     if (!selectedPair) return;
+    if (isLoading) {
+      setMessage("Processing... Please wait.");
+      return;
+    }
+    setIsLoading(true);
     try {
       await api.rejectSlots(selectedPair._id);
       setMessage("Latest proposal rejected. You may propose a new time if allowed.");
+      
+      // Immediately fetch updated proposals for instant UI feedback
+      const proposalUpdate = await api.proposeSlots(selectedPair._id, []);
+      setCurrentProposals(proposalUpdate);
       
       // Fetch updated pairs in parallel for better performance
       const pairPromises = events.map(ev => api.listPairs(ev._id));
@@ -332,9 +353,10 @@ export default function PairingAndScheduling() {
       });
       
       setPairs(updated);
-      setCurrentProposals({ mine: [], partner: [], minePast: [], partnerPast: [], common: null });
     } catch (err) {
       setMessage(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -1081,11 +1103,12 @@ export default function PairingAndScheduling() {
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <button
-                      disabled={!!proposeDisabledReason}
+                      disabled={!!proposeDisabledReason || isLoading}
                       onClick={handlePropose}
-                      className="px-5 py-2.5 bg-sky-600 text-white rounded-lg font-medium text-sm hover:bg-sky-700 transition-colors disabled:opacity-50"
+                      className="px-5 py-2.5 bg-sky-600 text-white rounded-lg font-medium text-sm hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                      Propose Slot
+                      {isLoading && <span className="animate-spin">⏳</span>}
+                      {isLoading ? 'Processing...' : 'Propose Slot'}
                     </button>
                     {proposeDisabledReason && (
                       <div className="text-xs text-slate-500 mt-1">{proposeDisabledReason}</div>
@@ -1093,19 +1116,21 @@ export default function PairingAndScheduling() {
 
                     <div className="flex gap-2">
                       <button
-                        disabled={!selectedToAccept || isLocked}
+                        disabled={!selectedToAccept || isLocked || isLoading}
                         onClick={() => handleConfirm(selectedToAccept, "")}
-                        className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                        className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
-                        Accept Selected Time
+                        {isLoading && <span className="animate-spin">⏳</span>}
+                        {isLoading ? 'Processing...' : 'Accept Selected Time'}
                       </button>
 
                       <button
-                        disabled={isLocked}
+                        disabled={isLocked || isLoading}
                         onClick={handleReject}
-                        className="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-50"
+                        className="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
-                        Reject Latest
+                        {isLoading && <span className="animate-spin">⏳</span>}
+                        {isLoading ? 'Processing...' : 'Reject Latest'}
                       </button>
                     </div>
                   </div>
