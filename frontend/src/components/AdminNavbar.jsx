@@ -3,16 +3,35 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Lock, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
+import { api } from "../utils/api";
 
 export function AdminNavbar() {
   const location = useLocation();
   const [active, setActive] = useState(location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [adminName, setAdminName] = useState(localStorage.getItem("adminName") || "Admin");
+  const [adminEmail, setAdminEmail] = useState(localStorage.getItem("adminEmail") || "admin@example.com");
 
-  // Retrieve admin info from localStorage (set this in your login component)
-  const adminName = localStorage.getItem("adminName") || "Admin";
-  const adminEmail = localStorage.getItem("adminEmail") || "admin@example.com";
+  // Fetch admin profile from backend
+  useEffect(() => {
+    async function fetchAdminProfile() {
+      try {
+        const data = await api.me();
+        if (data && data.email) {
+          setAdminEmail(data.email);
+          localStorage.setItem("adminEmail", data.email);
+        }
+        if (data && data.name) {
+          setAdminName(data.name);
+          localStorage.setItem("adminName", data.name);
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin profile:", err);
+      }
+    }
+    fetchAdminProfile();
+  }, []);
 
   // Close mobile menu and profile dropdown when route changes
   useEffect(() => {
