@@ -122,15 +122,54 @@ async function uploadTemplate(file) {
 }
 
 export async function createEvent(req, res) {
-  const { name, description, startDate, endDate } = req.body;
+  const { name, description, startDate, endDate, allowedParticipants } = req.body;
   // Validate dates
   const start = startDate ? new Date(startDate) : null;
   const end = endDate ? new Date(endDate) : null;
   const now = Date.now();
-  if (start && start.getTime() < now) throw new HttpError(400, 'Start date cannot be in the past');
-  if (start && end && end.getTime() < start.getTime()) throw new HttpError(400, 'End date must be the same or after start date');
-  const tpl = await uploadTemplate(req.file);
-  const event = await Event.create({ name, description, startDate: start || undefined, endDate: end || undefined, ...tpl });
+    // Normalize allowedParticipants from body (may come as string in multipart)
+    let coordinatorId = undefined;
+    let finalAllowed = [];
+    if (allowedParticipants) {
+      if (Array.isArray(allowedParticipants)) {
+        finalAllowed = allowedParticipants;
+      } else if (typeof allowedParticipants === 'string') {
+        try {
+          const parsed = JSON.parse(allowedParticipants);
+          if (Array.isArray(parsed)) finalAllowed = parsed; else finalAllowed = allowedParticipants.split(',').map(s=>s.trim()).filter(Boolean);
+        } catch {
+          finalAllowed = allowedParticipants.split(',').map(s=>s.trim()).filter(Boolean);
+        }
+      }
+    }
+
+    // If a coordinator is creating the event, scope participants to their students
+    if (req.user?.role === 'coordinator') {
+      coordinatorId = req.user.coordinatorId;
+      if (!coordinatorId) {
+        return res.status(400).json({ success: false, message: 'Coordinator ID missing on user' });
+      }
+      // Filter allowedParticipants to only students assigned to this coordinator
+      if (Array.isArray(finalAllowed) && finalAllowed.length) {
+        const students = await User.find({
+          _id: { $in: finalAllowed },
+          role: 'student',
+          teacherId: coordinatorId,
+        }).select('_id');
+        finalAllowed = students.map(s => s._id);
+      }
+    }
+
+    const tpl = await uploadTemplate(req.file);
+    const event = await Event.create({
+      name,
+      description,
+      startDate: start || undefined,
+      endDate: end || undefined,
+      ...tpl,
+      allowedParticipants: finalAllowed,
+      coordinatorId,
+    });
   
   // Send response immediately - emails will be sent asynchronously
   res.status(201).json(event);
@@ -138,9 +177,19 @@ export async function createEvent(req, res) {
   // Send emails and generate pairs asynchronously (non-blocking)
   setImmediate(async () => {
     try {
-      const students = await User.find({ role: 'student', email: { $exists: true, $ne: null } }, '_id email name');
+      let studentsQuery = { role: 'student', email: { $exists: true, $ne: null } };
+      // If coordinator event, restrict to assigned students
+      if (event.coordinatorId) {
+        studentsQuery = { ...studentsQuery, teacherId: event.coordinatorId };
+      }
+      let students = await User.find(studentsQuery, '_id email name');
+      // If allowedParticipants was provided, intersect with it
+      if (Array.isArray(event.allowedParticipants) && event.allowedParticipants.length) {
+        const allowedSet = new Set(event.allowedParticipants.map(id => id.toString()));
+        students = students.filter(s => allowedSet.has(s._id.toString()));
+      }
       const ids = students.map(s => s._id.toString());
-      // Always set participants to all students in DB (so analytics show joined count)
+      // Set participants to eligible students only
       event.participants = students.map(s => s._id);
       await event.save();
       
@@ -598,6 +647,12 @@ export async function getEvent(req, res) {
   const eventId = req.params.id;
   const event = await Event.findById(eventId).populate('participants', 'name email').lean();
   if (!event) throw new HttpError(404, 'Event not found');
+  
+  // Coordinators can only view their own events
+  if (req.user?.role === 'coordinator' && event.coordinatorId !== req.user.coordinatorId) {
+    throw new HttpError(403, 'Access denied: You can only view your own events');
+  }
+  
   const now = new Date();
   const ended = event.endDate ? (now > new Date(event.endDate)) : false;
   const canDeleteTemplate = ended && !!event.templateKey;
@@ -619,7 +674,25 @@ export async function listEvents(req, res) {
     userCreatedAt: userCreatedAt
   });
   
-  const events = await Event.find().sort({ createdAt: -1 }).lean();
+    let query = {};
+    // Coordinators see only their events; admins see all; students see coordinator-matching or unscoped events, or ones explicitly allowed
+    if (req.user?.role === 'coordinator') {
+      query.coordinatorId = req.user.coordinatorId;
+    } else if (req.user?.role === 'student') {
+      const teacherId = req.user?.teacherId;
+      const orClauses = [];
+      // Unscoped events (no coordinator) should be visible
+      orClauses.push({ coordinatorId: { $exists: false } });
+      orClauses.push({ coordinatorId: null });
+      // Events for this coordinator only
+      if (teacherId) {
+        orClauses.push({ coordinatorId: teacherId });
+      }
+      // Explicitly allowed (special or otherwise)
+      orClauses.push({ allowedParticipants: req.user._id });
+      query.$or = orClauses;
+    }
+    const events = await Event.find(query).sort({ createdAt: -1 }).lean();
   
   console.log('[listEvents] Total events:', events.length);
   console.log('[listEvents] Special events:', events.filter(e => e.isSpecial).map(e => ({
@@ -751,6 +824,12 @@ export async function joinEvent(req, res) {
 export async function exportJoinedCsv(req, res) {
   const event = await Event.findById(req.params.id).populate('participants');
   if (!event) throw new HttpError(404, 'Event not found');
+  
+  // Coordinators can only export CSV for their own events
+  if (req.user?.role === 'coordinator' && event.coordinatorId !== req.user.coordinatorId) {
+    throw new HttpError(403, 'Access denied: You can only export participants for your own events');
+  }
+  
   const header = 'name,email,studentId,course,branch,college\n';
   const rows = event.participants.map(s => [s.name, s.email, s.studentId, s.course, s.branch, s.college].join(','));
   const csv = header + rows.join('\n');
@@ -762,6 +841,12 @@ export async function exportJoinedCsv(req, res) {
 export async function eventAnalytics(req, res) {
   const event = await Event.findById(req.params.id);
   if (!event) throw new HttpError(404, 'Event not found');
+  
+  // Coordinators can only view analytics for their own events
+  if (req.user?.role === 'coordinator' && event.coordinatorId !== req.user.coordinatorId) {
+    throw new HttpError(403, 'Access denied: You can only view analytics for your own events');
+  }
+  
   const pairs = await Pair.find({ event: event._id });
   const fb = await Feedback.find({ event: event._id });
   const joined = event.participants.length;

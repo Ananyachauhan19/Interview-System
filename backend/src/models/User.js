@@ -2,10 +2,12 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema({
-  role: { type: String, enum: ['admin', 'student'], default: 'student' },
+  role: { type: String, enum: ['admin', 'student', 'coordinator'], default: 'student' },
   name: String,
   email: { type: String, unique: true, sparse: true },
   studentId: { type: String, unique: true, sparse: true },
+  coordinatorId: { type: String, unique: true, sparse: true },
+  teacherId: String, // For students: links to coordinator's coordinatorID
   passwordHash: { type: String, required: true },
   mustChangePassword: { type: Boolean, default: false },
   course: String,

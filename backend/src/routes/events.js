@@ -4,7 +4,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { createEvent, listEvents, joinEvent, exportJoinedCsv, eventAnalytics, replaceEventTemplate, getTemplateUrl, deleteEventTemplate, getEvent, createSpecialEvent, checkSpecialEventCsv} from '../controllers/eventController.js';
 import { supabase } from '../utils/supabase.js';
-import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { requireAuth, requireAdmin, requireAdminOrCoordinator } from '../middleware/auth.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -14,14 +14,14 @@ const multi = upload.fields([
 ]);
 
 router.get('/', requireAuth, listEvents);
-router.post('/', requireAuth, requireAdmin, upload.single('template'), createEvent);
+router.post('/', requireAuth, requireAdminOrCoordinator, upload.single('template'), createEvent);
 router.post('/special/check-csv', requireAuth, requireAdmin, upload.single('csv'), checkSpecialEventCsv);
 router.post('/special', requireAuth, requireAdmin, multi, createSpecialEvent);
-router.get('/:id', requireAuth, requireAdmin, getEvent);
+router.get('/:id', requireAuth, requireAdminOrCoordinator, getEvent);
 router.post('/:id/join', requireAuth, joinEvent);
 router.post('/:id/template', requireAuth, requireAdmin, upload.single('template'), replaceEventTemplate);
-router.get('/:id/participants.csv', requireAuth, requireAdmin, exportJoinedCsv);
-router.get('/:id/analytics', requireAuth, requireAdmin, eventAnalytics);
+router.get('/:id/participants.csv', requireAuth, requireAdminOrCoordinator, exportJoinedCsv);
+router.get('/:id/analytics', requireAuth, requireAdminOrCoordinator, eventAnalytics);
 router.get('/:id/template-url', requireAuth, getTemplateUrl);
 router.delete('/:id/template', requireAuth, requireAdmin, deleteEventTemplate);
 router.get('/__supabase/health', requireAuth, requireAdmin, async (req, res) => {
@@ -50,5 +50,8 @@ router.get('/__supabase/write-test', requireAuth, requireAdmin, async (req, res)
 		return res.status(500).json({ ok: false, reason: 'exception', error: e?.message || String(e) });
 	}
 });
+
+// Coordinator-scoped event creation
+// Removed unused coordinator route here; coordinator events are handled in /api/coordinators/events
 
 export default router;

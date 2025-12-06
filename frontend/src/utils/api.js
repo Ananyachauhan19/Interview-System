@@ -42,6 +42,7 @@ export const api = {
   // Auth (unified)
   me: () => request('/auth/me'),
   login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password } }),
+  changePassword: (currentPassword, newPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword: newPassword } }),
   changeStudentPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
   changeAdminPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/admin-change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
   requestPasswordReset: (email) => request('/auth/password/request-reset', { method: 'POST', body: { email } }),
@@ -62,6 +63,10 @@ export const api = {
     return request('/students/upload', { method: 'POST', formData: fd });
   },
   createStudent: (body) => request('/students/create', { method: 'POST', body }),
+
+  // Coordinators
+  listAllCoordinators: (search = '') => request(`/coordinators/list${search ? '?search=' + encodeURIComponent(search) : ''}`),
+  createCoordinator: (body) => request('/coordinators/create', { method: 'POST', body }),
 
   // Events
   listEvents: () => request('/events'),

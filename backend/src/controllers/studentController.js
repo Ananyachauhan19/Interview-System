@@ -7,13 +7,20 @@ import SpecialStudent from '../models/SpecialStudent.js';
 export async function listAllStudents(req, res) {
   try {
     const { search } = req.query;
+    const user = req.user;
     let query = { role: 'student' };
+    
+    // Coordinators see only their assigned students
+    if (user.role === 'coordinator') {
+      query.teacherId = user.coordinatorId;
+    }
     
     // Add search filter if provided
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.trim(), 'i');
+      const baseQuery = user.role === 'coordinator' ? { role: 'student', teacherId: user.coordinatorId } : { role: 'student' };
       query = {
-        role: 'student',
+        ...baseQuery,
         $or: [
           { name: searchRegex },
           { email: searchRegex },
@@ -23,7 +30,7 @@ export async function listAllStudents(req, res) {
     }
     
     const students = await User.find(query)
-      .select('name email studentId course branch college createdAt')
+      .select('name email studentId course branch college teacherId createdAt')
       .sort({ createdAt: -1 })
       .lean();
     
@@ -41,8 +48,8 @@ export async function checkStudentsCsv(req, res) {
   const rows = parsed.data;
   const results = [];
 
-  // Required fields for onboarding
-  const requiredFields = ['name', 'email', 'studentid', 'branch'];
+  // Required fields for onboarding - all 8 fields must be present
+  const requiredFields = ['course', 'name', 'email', 'studentid', 'password', 'branch', 'college', 'teacherid'];
 
   // Track duplicates inside the CSV
   const seenEmails = new Set();
@@ -61,15 +68,15 @@ export async function checkStudentsCsv(req, res) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   for (const row of normalizedRows) {
-    const { course, name, email, studentid, password, branch, college } = row;
+    const { course, name, email, studentid, password, branch, college, teacherid } = row;
 
     // Skip completely empty rows
     if (!email && !studentid && !name) continue;
 
-    // Check required fields
+    // Check required fields - all must be present and non-empty
     const missing = requiredFields.filter((f) => {
-      if (f === 'studentid') return !studentid;
-      return !(row[f] && row[f].toString().trim());
+      const value = row[f];
+      return !value || !value.toString().trim();
     });
     if (missing.length > 0) {
       results.push({ row: row.__row, email, studentid, status: 'missing_fields', missing });
@@ -111,8 +118,8 @@ export async function uploadStudentsCsv(req, res) {
   const rows = parsed.data;
   const results = [];
 
-  // Required fields for onboarding
-  const requiredFields = ['name', 'email', 'studentid', 'branch'];
+  // Required fields for onboarding - all 8 fields must be present
+  const requiredFields = ['course', 'name', 'email', 'studentid', 'password', 'branch', 'college', 'teacherid'];
 
   // Track duplicates inside the CSV
   const seenEmails = new Set();
@@ -132,15 +139,15 @@ export async function uploadStudentsCsv(req, res) {
   const newStudents = []; // Collect new students for async email sending
 
   for (const row of normalizedRows) {
-    const { course, name, email, studentid, password, branch, college } = row;
+    const { course, name, email, studentid, password, branch, college, teacherid } = row;
 
     // Skip completely empty rows
     if (!email && !studentid && !name) continue;
 
-    // Check required fields
+    // Check required fields - all must be present and non-empty
     const missing = requiredFields.filter((f) => {
-      if (f === 'studentid') return !studentid;
-      return !(row[f] && row[f].toString().trim());
+      const value = row[f];
+      return !value || !value.toString().trim();
     });
     if (missing.length > 0) {
       results.push({ row: row.__row, email, studentid, status: 'missing_fields', missing });
@@ -207,6 +214,7 @@ export async function uploadStudentsCsv(req, res) {
       const passwordHash = await User.hashPassword(defaultPassword);
       const user = await User.create({
         role: 'student', course, name, email, studentId: studentid, passwordHash, branch, college,
+        teacherId: teacherid,
         mustChangePassword: true,
       });
       results.push({ row: row.__row, id: user._id, email, studentid, status: 'created' });
@@ -250,9 +258,14 @@ export async function uploadStudentsCsv(req, res) {
 
 export async function createStudent(req, res) {
   try {
-    const { name, email, studentid, password, branch, course, college } = req.body || {};
+    const { name, email, studentid, password, branch, course, college, teacherid } = req.body || {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!name || !email || !studentid || !branch) return res.status(400).json({ error: 'Missing required fields (name, email, studentid, branch)' });
+    
+    // Check all required fields
+    if (!name || !email || !studentid || !password || !branch || !course || !college || !teacherid) {
+      return res.status(400).json({ error: 'All fields are required: name, email, studentid, password, branch, course, college, teacherid' });
+    }
+    
     if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
 
     const exists = await User.findOne({ $or: [{ email }, { studentId: studentid }] });
@@ -261,7 +274,7 @@ export async function createStudent(req, res) {
     // Use student ID as default password if not provided
     const defaultPassword = password || studentid;
     const passwordHash = await User.hashPassword(defaultPassword);
-    const user = await User.create({ role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, mustChangePassword: true });
+    const user = await User.create({ role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, teacherId: teacherid, mustChangePassword: true });
 
     if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
       await sendOnboardingEmail({
@@ -288,6 +301,7 @@ function normalizeRow(r) {
     password: map.password,
     branch: map.branch,
     college: map.college,
+    teacherid: map.teacherid || map.teacher_id || map.teacherId,
   };
 }
 

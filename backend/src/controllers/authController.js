@@ -4,7 +4,7 @@ export async function changePassword(req, res) {
   const user = req.user;
   if (!user) throw new HttpError(401, 'Unauthorized');
   
-  if (user.role !== 'student') throw new HttpError(403, 'Only students can change password here');
+  if (user.role !== 'student' && user.role !== 'coordinator') throw new HttpError(403, 'Only students or coordinators can change password here');
   if (!currentPassword || !newPassword || !confirmPassword) throw new HttpError(400, 'All fields required');
   if (newPassword !== confirmPassword) throw new HttpError(400, 'New passwords do not match');
   if (newPassword.length < 6) throw new HttpError(400, 'New password must be at least 6 characters');
@@ -121,6 +121,15 @@ export async function login(req, res) {
       studentId: student.studentId
     });
     return res.json({ token, user: sanitizeUser(student) });
+  }
+
+  // Try coordinator by email only
+  const coordinator = await User.findOne({ role: 'coordinator', email: idLower });
+  if (coordinator) {
+    const ok = await coordinator.verifyPassword(password);
+    if (!ok) throw new HttpError(401, 'Invalid credentials');
+    const token = signToken({ sub: coordinator._id, role: coordinator.role, email: coordinator.email });
+    return res.json({ token, user: sanitizeUser(coordinator) });
   }
 
   // Try special student by email OR studentId

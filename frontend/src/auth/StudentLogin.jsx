@@ -201,17 +201,38 @@ export default function StudentLoginPage() {
         localStorage.removeItem('rememberedEmail');
       }
       
-      // Store student name and email in localStorage
-      localStorage.setItem('studentName', res.user?.name || 'Student');
-      localStorage.setItem('studentEmail', res.user?.email || email);
+      // Store user info in localStorage based on role
+      const userName = res.user?.name || 'User';
+      const userEmail = res.user?.email || email;
+      
+      if (role === 'coordinator') {
+        localStorage.setItem('coordinatorName', userName);
+        localStorage.setItem('coordinatorEmail', userEmail);
+      } else {
+        localStorage.setItem('studentName', userName);
+        localStorage.setItem('studentEmail', userEmail);
+      }
+      
       if (res.user?._id) {
         localStorage.setItem('userId', res.user._id);
       } else if (res.user?.id) {
         localStorage.setItem('userId', res.user.id);
       }
+      
+      // Decide landing based on role
       if (role === 'admin') {
         localStorage.setItem('isAdmin', 'true');
-        navigate('/admin/event', { replace: true });
+        if (res.user?.mustChangePassword) {
+          navigate('/admin/change-password', { replace: true });
+        } else {
+          navigate('/admin/dashboard', { replace: true });
+        }
+      } else if (role === 'coordinator') {
+        if (res.user?.mustChangePassword) {
+          navigate('/coordinator/change-password', { replace: true });
+        } else {
+          navigate('/coordinator/dashboard', { replace: true });
+        }
       } else {
         localStorage.removeItem('isAdmin');
         if (res.user?.mustChangePassword) {

@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { api } from '../utils/api';
 
-export default function AdminProtectedRoute({ children }) {
+export default function StudentProtectedRoute({ children }) {
   const [isAuthorized, setIsAuthorized] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +20,7 @@ export default function AdminProtectedRoute({ children }) {
       }
 
       const user = await api.me();
-      if (user && user.role === 'admin') {
+      if (user && user.role === 'student') {
         setIsAuthorized(true);
       } else {
         setIsAuthorized(false);
@@ -36,7 +36,7 @@ export default function AdminProtectedRoute({ children }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-sky-500 border-t-transparent"></div>
       </div>
     );
   }

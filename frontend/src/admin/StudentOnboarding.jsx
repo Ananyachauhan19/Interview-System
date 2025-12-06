@@ -12,7 +12,7 @@ export default function StudentOnboarding() {
   const [uploadResult, setUploadResult] = useState(null);
   const [clientErrors, setClientErrors] = useState([]);
   const [showSingleForm, setShowSingleForm] = useState(false);
-  const [singleForm, setSingleForm] = useState({ course: '', name: '', email: '', studentid: '', password: '', branch: '', college: '' });
+  const [singleForm, setSingleForm] = useState({ course: '', name: '', email: '', studentid: '', password: '', branch: '', college: '', teacherid: '' });
   const [singleMsg, setSingleMsg] = useState('');
   const [singleLoading, setSingleLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -20,6 +20,9 @@ export default function StudentOnboarding() {
   const [dragActive, setDragActive] = useState(false);
   const [openTabs, setOpenTabs] = useState([]); // [{ key, label, data }]
   const [activeTab, setActiveTab] = useState(null); // key
+
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const errorsByRow = clientErrors.reduce((acc, cur) => {
     const msg = cur.details ? (Array.isArray(cur.details) ? cur.details.join(', ') : cur.details) : cur.error;
@@ -97,7 +100,6 @@ export default function StudentOnboarding() {
         const errs = [];
         const seenEmails = new Set();
         const seenIds = new Set();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         parsed.forEach((r) => {
           const rowNum = r.__row;
           const missing = [];
@@ -242,10 +244,10 @@ export default function StudentOnboarding() {
   const submitSingle = async () => {
     setSingleMsg('');
     setSingleLoading(true);
-    const { name, email, studentid, branch } = singleForm;
+    const { name, email, studentid, branch, teacherid } = singleForm;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!name || !email || !studentid || !branch) {
-      setSingleMsg('Please fill in all required fields: Name, Email, Student ID, and Branch');
+    if (!name || !email || !studentid || !branch || !teacherid) {
+      setSingleMsg('Please fill in all required fields: Name, Email, Student ID, Branch, and Teacher ID');
       setSingleLoading(false);
       return;
     }
@@ -258,9 +260,9 @@ export default function StudentOnboarding() {
       const data = await api.createStudent(singleForm);
       setSingleMsg(`Student ${data.name || data.email} has been successfully added!`);
       setTimeout(() => setSingleMsg(''), 4000);
-      const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', password: singleForm.password || '', branch: singleForm.branch || '', college: singleForm.college || '', __row: 'N/A' };
+      const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', password: singleForm.password || '', branch: singleForm.branch || '', college: singleForm.college || '', teacherid: singleForm.teacherid || '', __row: 'N/A' };
       setStudents((s) => [newStudent, ...s]);
-      setSingleForm({ name: '', email: '', studentid: '', password: '', branch: '', course: '', college: '' });
+      setSingleForm({ name: '', email: '', studentid: '', password: '', branch: '', course: '', college: '', teacherid: '' });
     } catch (err) {
       const errorMessage = err.message || 'Failed to create student';
       // Make error messages user-friendly
@@ -279,9 +281,9 @@ export default function StudentOnboarding() {
   };
 
   const isSingleValid = () => {
-    const { name, email, studentid, branch } = singleForm;
+    const { course, name, email, studentid, password, branch, college, teacherid } = singleForm;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return name && email && studentid && branch && emailRegex.test(email);
+    return course && name && email && studentid && password && branch && college && teacherid && emailRegex.test(email);
   };
 
   return (
@@ -318,12 +320,12 @@ export default function StudentOnboarding() {
               <h3 className="text-sm font-semibold text-slate-800 mb-2">CSV Upload Guidelines</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700">
                 <div className="space-y-1">
-                  <p><strong>Required columns:</strong> Name, Email, Student ID, Branch</p>
+                  <p><strong>Required columns:</strong> Name, Email, Student ID, Branch, Teacher ID</p>
                   <p><strong>Optional columns:</strong> Course, College, Password</p>
                 </div>
                 <div className="space-y-1">
                   <p><strong>Password:</strong> If not provided, password will be automatically generated.</p>
-                  <p><strong>Duplicates:</strong> Automatically detected and skipped.</p>
+                  <p><strong>Teacher ID:</strong> Links student to coordinator. Required for visibility.</p>
                 </div>
               </div>
             </div>
@@ -368,6 +370,7 @@ export default function StudentOnboarding() {
                 { key: 'email', label: 'Email Address *', placeholder: 'john@university.edu' },
                 { key: 'studentid', label: 'Student ID *', placeholder: 'STU2024001' },
                 { key: 'branch', label: 'Branch *', placeholder: 'Computer Science' },
+                { key: 'teacherid', label: 'Teacher ID', placeholder: 'COORD123 (optional)' },
                 { key: 'course', label: 'Course', placeholder: 'B.Tech' },
                 { key: 'college', label: 'College', placeholder: 'University Name' },
                 { key: 'password', label: 'Password (defaults to Student ID)', placeholder: '••••••••', type: 'password' },

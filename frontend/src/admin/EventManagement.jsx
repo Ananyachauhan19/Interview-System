@@ -19,7 +19,18 @@ export default function EventManagement() {
   const [csvValidationResults, setCsvValidationResults] = useState(null);
   const [showValidationPopup, setShowValidationPopup] = useState(false);
   const [csvError, setCsvError] = useState("");
+  const [userRole, setUserRole] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Determine user role from current path
+    const path = window.location.pathname;
+    if (path.startsWith('/coordinator')) {
+      setUserRole('coordinator');
+    } else if (path.startsWith('/admin')) {
+      setUserRole('admin');
+    }
+  }, []);
 
   const resetForm = () => {
     setTitle("");
@@ -227,8 +238,9 @@ export default function EventManagement() {
         setMsg(''); // Clear any error messages
         resetForm();
         
-        // Navigate immediately
-        if (newId) navigate(`/admin/event/${newId}`, { state: { eventCreated: true } });
+        // Navigate based on user role
+        const redirectPath = userRole === 'coordinator' ? `/coordinator/event/${newId}` : `/admin/event/${newId}`;
+        if (newId) navigate(redirectPath, { state: { eventCreated: true } });
         
         // Show email notification after a delay (emails are being sent in background)
         setTimeout(() => {
@@ -244,8 +256,9 @@ export default function EventManagement() {
         setMsg(''); // Clear any error messages
         resetForm();
         
-        // Navigate immediately
-        if (ev && ev._id) navigate(`/admin/event/${ev._id}`, { state: { eventCreated: true } });
+        // Navigate based on user role
+        const redirectPath = userRole === 'coordinator' ? `/coordinator/event/${ev._id}` : `/admin/event/${ev._id}`;
+        if (ev && ev._id) navigate(redirectPath, { state: { eventCreated: true } });
         
         // Show email notification after a delay (emails are being sent in background)
         setTimeout(() => {

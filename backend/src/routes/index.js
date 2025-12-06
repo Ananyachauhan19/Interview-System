@@ -5,6 +5,7 @@ import eventRoutes from './events.js';
 import pairingRoutes from './pairing.js';
 import scheduleRoutes from './schedule.js';
 import feedbackRoutes from './feedback.js';
+import coordinatorRoutes from './coordinators.js';
 
 const router = Router();
 router.use('/auth', authRoutes);
@@ -13,5 +14,6 @@ router.use('/events', eventRoutes);
 router.use('/pairing', pairingRoutes);
 router.use('/schedule', scheduleRoutes);
 router.use('/feedback', feedbackRoutes);
+router.use('/coordinators', coordinatorRoutes);
 
 export default router;

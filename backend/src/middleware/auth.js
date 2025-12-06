@@ -31,3 +31,20 @@ export function requireAdmin(req, res, next) {
   if (!req.user || req.user.role !== 'admin') throw new HttpError(403, 'Admin only');
   next();
 }
+
+export function requireAdminOrCoordinator(req, res, next) {
+  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'coordinator')) {
+    throw new HttpError(403, 'Admin or Coordinator only');
+  }
+  next();
+}
+
+export function requireStudent(req, res, next) {
+  if (!req.user || req.user.role !== 'student') throw new HttpError(403, 'Student only');
+  next();
+}
+
+export function requireCoordinator(req, res, next) {
+  if (!req.user || req.user.role !== 'coordinator') throw new HttpError(403, 'Coordinator only');
+  next();
+}
