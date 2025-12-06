@@ -23,7 +23,45 @@ export async function listAllCoordinators(req, res) {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.json({ count: users.length, coordinators: users });
+    // Compute dynamic student assignment counts per coordinator
+    const coordinatorIds = users.map(u => (u.coordinatorId || '').trim()).filter(Boolean);
+    let countsMap = new Map();
+    if (coordinatorIds.length) {
+      // Count students assigned to a coordinator by either teacherId (preferred linkage)
+      // or fallback to student.coordinatorId if data was populated that way.
+      const pipeline = [
+        {
+          $match: {
+            role: 'student',
+            $or: [
+              { teacherId: { $in: coordinatorIds } },
+              { coordinatorId: { $in: coordinatorIds } },
+            ],
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $cond: [
+                { $and: [ { $ne: ['$teacherId', null] }, { $ne: ['$teacherId', ''] } ] },
+                '$teacherId',
+                '$coordinatorId',
+              ],
+            },
+            count: { $sum: 1 },
+          },
+        },
+      ];
+      const counts = await User.aggregate(pipeline);
+      countsMap = new Map(counts.map(c => [c._id, c.count]));
+    }
+
+    const enriched = users.map(u => ({
+      ...u,
+      studentsAssigned: countsMap.get(u.coordinatorId) || 0,
+    }));
+
+    res.json({ count: enriched.length, coordinators: enriched });
   } catch (err) {
     console.error('Error listing coordinators:', err);
     res.status(500).json({ error: 'Failed to fetch coordinators' });

@@ -235,6 +235,7 @@ export default function StudentDirectory() {
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Branch</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Course</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">College</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Coordinator Assigned</th>
                     {activeTab === "special" && (
                       <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Events</th>
                     )}
@@ -264,6 +265,7 @@ export default function StudentDirectory() {
                         <td className="px-4 py-2 text-slate-700 text-sm">{s.branch || "-"}</td>
                         <td className="px-4 py-2 text-slate-600 text-sm">{s.course || "-"}</td>
                         <td className="px-4 py-2 text-slate-600 text-sm max-w-[200px]"><span className="truncate block">{s.college || "-"}</span></td>
+                        <td className="px-4 py-2 text-slate-700 text-sm">{s.teacherId || "-"}</td>
                         {activeTab === "special" && (
                           <td className="px-4 py-2 text-slate-700 text-sm">
                             <div className="flex flex-wrap gap-1">

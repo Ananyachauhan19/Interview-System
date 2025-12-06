@@ -89,9 +89,12 @@ export async function listPairs(req, res) {
   if (!event) throw new HttpError(404, 'Event not found');
 
   let query = { event: id };
-  
-  // If not admin, restrict to pairs where user is interviewer or interviewee
-  if (req.user?.role !== 'admin') {
+
+  // Admins see all pairs; Coordinators should see all pairs for their events
+  if (req.user?.role === 'coordinator') {
+    // Coordinators can view all pairs for events they own; event ownership validated in getEvent route
+    query = { event: id };
+  } else if (req.user?.role !== 'admin') {
     const userIdToCheck = req.user._id;
     
     // Check for cross-collection IDs based on event type

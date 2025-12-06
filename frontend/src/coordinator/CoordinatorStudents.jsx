@@ -31,7 +31,7 @@ export default function CoordinatorStudents() {
   const filteredStudents = students.filter((student) =>
     student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.studentid?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.branch?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -76,7 +76,7 @@ export default function CoordinatorStudents() {
               </div>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Student ID</p>
-                <p className="text-sm font-semibold text-slate-800">{student.studentid}</p>
+                <p className="text-sm font-semibold text-slate-800">{student.studentId}</p>
               </div>
             </div>
 
@@ -242,7 +242,7 @@ export default function CoordinatorStudents() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-mono text-sm text-slate-700">{student.studentid}</span>
+                        <span className="font-mono text-sm text-slate-700">{student.studentId}</span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-slate-700">{student.branch || "N/A"}</span>

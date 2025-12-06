@@ -14,6 +14,8 @@ export function CoordinatorNavbar() {
 
   useEffect(() => {
     async function fetchProfile() {
+      const existingToken = localStorage.getItem("token");
+      if (!existingToken) return;
       try {
         const data = await api.me();
         if (data && data.email) {
@@ -25,7 +27,7 @@ export function CoordinatorNavbar() {
           localStorage.setItem("coordinatorName", data.name);
         }
       } catch (err) {
-        console.error("Failed to fetch coordinator profile:", err);
+        console.warn("Coordinator profile fetch failed:", err?.message || err);
       }
     }
     fetchProfile();

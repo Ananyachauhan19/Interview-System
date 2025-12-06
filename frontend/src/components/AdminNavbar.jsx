@@ -16,6 +16,9 @@ export function AdminNavbar() {
   // Fetch admin profile from backend
   useEffect(() => {
     async function fetchAdminProfile() {
+      // Avoid hitting /auth/me without a token which causes 401 spam
+      const existingToken = localStorage.getItem("token");
+      if (!existingToken) return;
       try {
         const data = await api.me();
         if (data && data.email) {
@@ -27,7 +30,8 @@ export function AdminNavbar() {
           localStorage.setItem("adminName", data.name);
         }
       } catch (err) {
-        console.error("Failed to fetch admin profile:", err);
+        // Silently ignore 401s and keep local data
+        console.warn("Admin profile fetch failed:", err?.message || err);
       }
     }
     fetchAdminProfile();
@@ -51,6 +55,7 @@ export function AdminNavbar() {
   }, [isProfileOpen]);
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("adminName");
     localStorage.removeItem("adminEmail");
@@ -64,6 +69,7 @@ export function AdminNavbar() {
   const navItems = [
     { path: "/admin/onboarding", label: "Add Students", Icon: Users },
     { path: "/admin/coordinators", label: "Add Coordinator", Icon: User },
+    { path: "/admin/coordinator-directory", label: "Coordinator Database", Icon: Users },
     { path: "/admin/students", label: "Student Database", Icon: User },
     { path: "/admin/event", label: "Create Interview", Icon: CalendarDays },
     { path: "/admin/event/:id", label: "Scheduled Interviews", Icon: BookOpen },

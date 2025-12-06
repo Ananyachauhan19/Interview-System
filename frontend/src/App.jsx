@@ -17,6 +17,7 @@ import EventManagement from "./admin/EventManagement";
 import EventDetail from "./admin/EventDetail";
 import FeedbackReview from "./admin/FeedbackReview";
 import CoordinatorOnboarding from "./admin/CoordinatorOnboarding";
+import CoordinatorDirectory from "./admin/CoordinatorDirectory";
 import AdminChangePassword from "./admin/AdminChangePassword";
 import AdminProtectedRoute from "./admin/AdminProtectedRoute";
 import CoordinatorDashboard from "./coordinator/CoordinatorDashboard";
@@ -40,7 +41,7 @@ function AppContent() {
   const isChangePassword = location.pathname === "/student/change-password" || location.pathname === "/admin/change-password" || location.pathname === "/coordinator/change-password";
   const isStudentDashboard = location.pathname.startsWith("/student/") && !isStudentLogin && !isFeedbackForm && !isChangePassword;
   const isAdmin = location.pathname.startsWith("/admin/");
-  const isCoordinator = location.pathname.startsWith("/coordinator/");
+  const isCoordinator = location.pathname.startsWith("/coordinator") ;
   const isLoginPage = isMain || isStudentLogin || isResetPassword;
 
   return (
@@ -70,6 +71,7 @@ function AppContent() {
         <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/onboarding" element={<AdminProtectedRoute><StudentOnboarding /></AdminProtectedRoute>} />
         <Route path="/admin/students" element={<AdminProtectedRoute><StudentDirectory /></AdminProtectedRoute>} />
+        <Route path="/admin/coordinator-directory" element={<AdminProtectedRoute><CoordinatorDirectory /></AdminProtectedRoute>} />
         <Route path="/admin/coordinators" element={<AdminProtectedRoute><CoordinatorOnboarding /></AdminProtectedRoute>} />
         <Route path="/admin/event" element={<AdminProtectedRoute><EventManagement /></AdminProtectedRoute>} />
         <Route path="/admin/event/:id" element={<AdminProtectedRoute><EventDetail /></AdminProtectedRoute>} />

@@ -23,7 +23,8 @@ export default function CoordinatorDashboard() {
         api.listEvents()
       ]);
       setStudents(studentsData.students || []);
-      setEvents(eventsData.events || []);
+      // backend returns an array of events directly; fallback if wrapped
+      setEvents(Array.isArray(eventsData) ? eventsData : (eventsData.events || []));
     } catch (err) {
       console.error('Failed to load data:', err);
     } finally {
@@ -100,65 +101,11 @@ export default function CoordinatorDashboard() {
           </motion.div>
         </div>
 
-        {/* Students Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-slate-900">My Students</h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search students..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
-              />
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-12 text-slate-500">Loading...</div>
-          ) : filteredStudents.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
-              {searchQuery ? 'No students match your search' : 'No students assigned yet'}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Email</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Student ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">Branch</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {filteredStudents.map((student) => (
-                    <tr key={student._id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 text-sm text-slate-900">{student.name}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600">{student.email}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600">{student.studentId}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600">{student.branch}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
         {/* Events Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-slate-900">My Events</h2>
-            <button
-              onClick={() => navigate('/coordinator/event/create')}
-              className="flex items-center gap-2 px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors text-sm font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              Create Event
-            </button>
+            
           </div>
 
           {loading ? (

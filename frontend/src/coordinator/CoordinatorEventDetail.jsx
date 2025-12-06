@@ -5,7 +5,7 @@ import { api } from '../utils/api';
 import { 
   Calendar, Users, ArrowLeft, Download, Clock, 
   CheckCircle, XCircle, AlertCircle, FileText, Mail,
-  UserCheck, RefreshCw
+  UserCheck, RefreshCw, Link2
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -107,6 +107,64 @@ export default function CoordinatorEventDetail() {
   const joinedCount = analytics?.joined || 0;
   const pairedCount = analytics?.pairs || 0;
 
+  const PairCard = ({ pair, index }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5 + index * 0.1 }}
+      className="p-3 rounded-lg bg-white border border-slate-200 hover:shadow-sm transition-all duration-200"
+    >
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between flex-wrap gap-1">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
+              <div className="font-medium text-indigo-700 text-sm truncate">
+                {pair.interviewer?.name || pair.interviewer?.email}
+              </div>
+              <div className="text-xs text-slate-500">Mentor</div>
+            </div>
+            <div className="text-slate-400 flex-shrink-0 text-xs">→</div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium text-sky-700 text-sm truncate">
+                {pair.interviewee?.name || pair.interviewee?.email}
+              </div>
+              <div className="text-xs text-slate-500">Candidate</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-1 text-xs text-slate-600 border-t pt-1.5">
+          <span className={`px-1.5 py-0.5 rounded ${
+            pair.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+            pair.status === 'scheduled' || pair.scheduledAt || pair.currentProposedTime || pair.defaultTimeSlot
+              ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-700'
+          }`}>
+            {pair.status || (pair.scheduledAt || pair.currentProposedTime || pair.defaultTimeSlot ? 'Scheduled' : 'Pending')}
+          </span>
+
+          {(pair.scheduledAt || pair.currentProposedTime || pair.defaultTimeSlot) && (
+            <span className="flex items-center gap-0.5">
+              <Clock className="w-3 h-3" />
+              {new Date(pair.scheduledAt || pair.currentProposedTime || pair.defaultTimeSlot).toLocaleString()}
+            </span>
+          )}
+
+          {pair.meetingLink && (
+            <a
+              href={pair.meetingLink}
+              className="flex items-center gap-0.5 text-sky-600 hover:text-sky-800 underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Link2 className="w-3 h-3" />
+              Meeting
+            </a>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+
   return (
     <div className="min-h-screen py-8 px-4 bg-slate-50">
       <div className="max-w-7xl mx-auto mt-16">
@@ -193,46 +251,6 @@ export default function CoordinatorEventDetail() {
           </div>
         </motion.div>
 
-        {/* Participants Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-6"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Users className="w-6 h-6 text-emerald-600" />
-              Participants ({participants.length})
-            </h2>
-          </div>
-
-          {participants.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500">No participants yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Email</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {participants.map((participant, index) => (
-                    <tr key={participant._id || index} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 text-sm text-slate-800">{participant.name || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600">{participant.email || 'N/A'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </motion.div>
 
         {/* Pairs Section */}
         <motion.div
@@ -254,51 +272,12 @@ export default function CoordinatorEventDetail() {
               <p className="text-slate-500">No pairs created yet</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {pairs.map((pair, index) => (
-                <motion.div
-                  key={pair._id || index}
-                  whileHover={{ scale: 1.02 }}
-                  className="border border-slate-200 rounded-lg p-4 hover:border-emerald-300 transition-all"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-slate-800">Pair {index + 1}</h3>
-                    {pair.scheduledAt ? (
-                      <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">Scheduled</span>
-                    ) : (
-                      <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">Not Scheduled</span>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-semibold text-emerald-700">1</span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-800">{pair.student1?.name || 'Student 1'}</p>
-                        <p className="text-xs text-slate-500">{pair.student1?.email || 'N/A'}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-sky-100 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-semibold text-sky-700">2</span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-800">{pair.student2?.name || 'Student 2'}</p>
-                        <p className="text-xs text-slate-500">{pair.student2?.email || 'N/A'}</p>
-                      </div>
-                    </div>
-                  </div>
-                  {pair.scheduledAt && (
-                    <div className="mt-3 pt-3 border-t border-slate-200">
-                      <p className="text-xs text-slate-600 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDate(pair.scheduledAt)}
-                      </p>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
+            <div className="max-h-80 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {pairs.map((pair, index) => (
+                  <PairCard key={pair._id || index} pair={pair} index={index} />
+                ))}
+              </div>
             </div>
           )}
         </motion.div>
