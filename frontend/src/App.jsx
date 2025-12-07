@@ -13,6 +13,8 @@ import StudentLearning from "./student/StudentLearning";
 import LearningDetail from "./student/LearningDetail";
 import StudentProtectedRoute from "./student/StudentProtectedRoute";
 import AdminDashboard from "./admin/AdminDashboard";
+import AdminLearning from "./admin/AdminLearning";
+import AdminLearningDetail from "./admin/AdminLearningDetail";
 import StudentOnboarding from "./admin/StudentOnboarding";
 import StudentDirectory from "./admin/StudentDirectory";
 import EventManagement from "./admin/EventManagement";
@@ -81,6 +83,8 @@ function AppContent() {
         <Route path="/admin/event/:id" element={<AdminProtectedRoute><EventDetail /></AdminProtectedRoute>} />
         <Route path="/admin/feedback" element={<AdminProtectedRoute><FeedbackReview /></AdminProtectedRoute>} />
         <Route path="/admin/change-password" element={<AdminProtectedRoute><AdminChangePassword /></AdminProtectedRoute>} />
+        <Route path="/admin/learning" element={<AdminProtectedRoute><AdminLearning /></AdminProtectedRoute>} />
+        <Route path="/admin/learning/:semester/:subject/:teacherId" element={<AdminProtectedRoute><AdminLearningDetail /></AdminProtectedRoute>} />
         
         {/* Coordinator Routes - Protected */}
         <Route path="/coordinator/dashboard" element={<CoordinatorProtectedRoute><CoordinatorDashboard /></CoordinatorProtectedRoute>} />

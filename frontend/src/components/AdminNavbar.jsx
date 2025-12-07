@@ -74,6 +74,7 @@ export function AdminNavbar() {
     { path: "/admin/event", label: "Create Interview", Icon: CalendarDays },
     { path: "/admin/event/:id", label: "Scheduled Interviews", Icon: BookOpen },
     { path: "/admin/feedback", label: "Feedback Review", Icon: GraduationCap },
+    { path: "/admin/learning", label: "Learning", Icon: BookOpen },
   ];
 
   // Animation variants
