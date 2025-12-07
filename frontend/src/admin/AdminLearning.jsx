@@ -123,7 +123,7 @@ export default function AdminLearning() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex items-center justify-between"
+          className="mb-8"
         >
           <div>
             <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
@@ -133,13 +133,6 @@ export default function AdminLearning() {
               Manage all courses, semesters, and content
             </p>
           </div>
-          <button
-            onClick={openCreateSemesterModal}
-            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Add Semester</span>
-          </button>
         </motion.div>
 
         {/* Semesters Grid */}
@@ -150,14 +143,7 @@ export default function AdminLearning() {
             className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center"
           >
             <BookOpen className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">No courses available yet</p>
-            <button
-              onClick={openCreateSemesterModal}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Create First Semester</span>
-            </button>
+            <p className="text-gray-500 dark:text-gray-400 text-lg">No courses available yet</p>
           </motion.div>
         ) : (
           <div className="space-y-4">
@@ -191,17 +177,6 @@ export default function AdminLearning() {
                     ) : (
                       <ChevronRight className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                     )}
-                  </div>
-
-                  {/* Admin Actions */}
-                  <div className="flex items-center space-x-2 ml-4">
-                    <button
-                      onClick={() => openCreateSubjectModal(semester)}
-                      className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900 rounded-lg transition-colors"
-                      title="Add Subject"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
                   </div>
                 </div>
 

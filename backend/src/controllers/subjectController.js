@@ -5,8 +5,16 @@ import { supabase } from '../utils/supabase.js';
 // Get all semesters for a coordinator
 export async function listSemesters(req, res) {
   try {
-    const coordinatorId = req.user._id;
-    const semesters = await Semester.find({ coordinatorId }).sort({ order: 1 }).lean();
+    const ownerFilter = req.user.role === 'coordinator'
+      ? {
+          $or: [
+            { coordinatorId: req.user.coordinatorId },
+            // Legacy fallback: some old records may have stored the user's ObjectId as coordinatorId
+            { coordinatorId: (req.user._id?.toString?.() || '') }
+          ]
+        }
+      : {};
+    const semesters = await Semester.find(ownerFilter).sort({ order: 1 }).lean();
     res.json({ count: semesters.length, semesters });
   } catch (err) {
     console.error('Error listing semesters:', err);
@@ -19,8 +27,9 @@ export async function createSemester(req, res) {
   try {
     const { semesterName, semesterDescription } = req.body;
     if (!semesterName) throw new HttpError(400, 'Semester name is required');
-    
-    const coordinatorId = req.user._id;
+    // Coordinators create under their coordinatorId string; admins must specify coordinatorId
+    const coordinatorId = req.user.role === 'coordinator' ? req.user.coordinatorId : (req.body.coordinatorId || null);
+    if (!coordinatorId) throw new HttpError(400, 'coordinatorId is required');
     
     // Get max order for this coordinator
     const maxSemester = await Semester.findOne({ coordinatorId }).sort({ order: -1 }).select('order').lean();
@@ -47,9 +56,8 @@ export async function updateSemester(req, res) {
   try {
     const { id } = req.params;
     const { semesterName, semesterDescription } = req.body;
-    const coordinatorId = req.user._id;
-    
-    const semester = await Semester.findOne({ _id: id, coordinatorId });
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
+    const semester = await Semester.findOne({ _id: id, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     if (semesterName !== undefined) semester.semesterName = semesterName;
@@ -68,9 +76,8 @@ export async function updateSemester(req, res) {
 export async function deleteSemester(req, res) {
   try {
     const { id } = req.params;
-    const coordinatorId = req.user._id;
-    
-    const semester = await Semester.findOneAndDelete({ _id: id, coordinatorId });
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
+    const semester = await Semester.findOneAndDelete({ _id: id, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     res.json({ message: 'Semester deleted successfully' });
@@ -86,11 +93,9 @@ export async function reorderSemesters(req, res) {
   try {
     const { semesterIds } = req.body;
     if (!Array.isArray(semesterIds)) throw new HttpError(400, 'semesterIds must be an array');
-    
-    const coordinatorId = req.user._id;
-    
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
     const updates = semesterIds.map((id, index) => 
-      Semester.updateOne({ _id: id, coordinatorId }, { order: index })
+      Semester.updateOne({ _id: id, ...ownerFilter }, { order: index })
     );
     
     await Promise.all(updates);
@@ -110,8 +115,8 @@ export async function addSubject(req, res) {
     
     if (!subjectName) throw new HttpError(400, 'Subject name is required');
     
-    const coordinatorId = req.user._id;
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
+    const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     // Check for duplicate subject (case-insensitive)
@@ -147,8 +152,8 @@ export async function updateSubject(req, res) {
     const { semesterId, subjectId } = req.params;
     const { subjectName, subjectDescription } = req.body;
     
-    const coordinatorId = req.user._id;
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
+    const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     const subject = semester.subjects.id(subjectId);
@@ -194,8 +199,8 @@ export async function reorderSubjects(req, res) {
     
     if (!Array.isArray(subjectIds)) throw new HttpError(400, 'subjectIds must be an array');
     
-    const coordinatorId = req.user._id;
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
+    const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     subjectIds.forEach((id, index) => {
@@ -222,8 +227,8 @@ export async function addChapter(req, res) {
     
     if (!chapterName) throw new HttpError(400, 'Chapter name is required');
     
-    const coordinatorId = req.user._id;
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
+    const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     const subject = semester.subjects.id(subjectId);
@@ -252,8 +257,8 @@ export async function updateChapter(req, res) {
     const { semesterId, subjectId, chapterId } = req.params;
     const { chapterName, importanceLevel } = req.body;
     
-    const coordinatorId = req.user._id;
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
+    const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     const subject = semester.subjects.id(subjectId);
@@ -305,8 +310,8 @@ export async function reorderChapters(req, res) {
     
     if (!Array.isArray(chapterIds)) throw new HttpError(400, 'chapterIds must be an array');
     
-    const coordinatorId = req.user._id;
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
+    const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     const subject = semester.subjects.id(subjectId);
@@ -336,12 +341,21 @@ export async function addTopic(req, res) {
     console.log('[addTopic] Request files:', req.files);
     
     const { semesterId, subjectId, chapterId } = req.params;
-    const { topicName, difficulty } = req.body;
+    const { topicName, difficulty, difficultyLevel, topicVideoLink, notesLink } = req.body;
     
     if (!topicName) throw new HttpError(400, 'Topic name is required');
     
-    const coordinatorId = req.user._id;
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    // Coordinator ownership filter with legacy fallback (ObjectId string stored in coordinatorId)
+    const legacyOwnerFilter = req.user.role === 'coordinator'
+      ? {
+          $or: [
+            { coordinatorId: req.user.coordinatorId },
+            { coordinatorId: String(req.user._id) },
+          ],
+        }
+      : {};
+    
+    const semester = await Semester.findOne({ _id: semesterId, ...legacyOwnerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     const subject = semester.subjects.id(subjectId);
@@ -351,13 +365,13 @@ export async function addTopic(req, res) {
     if (!chapter) throw new HttpError(404, 'Chapter not found');
     
     // Handle links - can be string, array, or multiple form fields
-    let topicVideoLink = '';
-    let notesLink = '';
+    let videoLink = topicVideoLink || '';
+    let notes = notesLink || '';
     
     if (req.body.links) {
       const linksArray = Array.isArray(req.body.links) ? req.body.links : [req.body.links];
-      topicVideoLink = linksArray[0] || '';
-      notesLink = linksArray[1] || '';
+      videoLink = linksArray[0] || videoLink;
+      notes = linksArray[1] || notes;
     }
     
     let questionPDF = null;
@@ -382,9 +396,9 @@ export async function addTopic(req, res) {
     const order = chapter.topics.length;
     chapter.topics.push({
       topicName,
-      difficultyLevel: difficulty || 'medium',
-      topicVideoLink,
-      notesLink,
+      difficultyLevel: difficultyLevel || difficulty || 'medium',
+      topicVideoLink: videoLink,
+      notesLink: notes,
       questionPDF,
       order
     });
@@ -406,10 +420,25 @@ export async function addTopic(req, res) {
 export async function updateTopic(req, res) {
   try {
     const { semesterId, subjectId, chapterId, topicId } = req.params;
-    const { topicName, difficultyLevel, topicVideoLink, notesLink } = req.body;
+      const { topicName, difficultyLevel, difficulty, topicVideoLink, notesLink, links } = req.body;
     
-    const coordinatorId = req.user._id;
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    let ownerFilter = {};
+      // Legacy fallback: some semesters stored coordinator ObjectId string in coordinatorId
+      const legacyOwnerFilter = req.user.role === 'coordinator'
+        ? {
+            $or: [
+              { coordinatorId: req.user.coordinatorId },
+              { coordinatorId: String(req.user._id) },
+            ],
+          }
+        : {};
+
+    if (req.user.role === 'coordinator') {
+      const coordId = req.user.coordinatorId;
+      const legacyId = req.user._id?.toString?.() || '';
+      ownerFilter = { $or: [ { coordinatorId: coordId }, { coordinatorId: legacyId } ] };
+    }
+    const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     const subject = semester.subjects.id(subjectId);
@@ -423,9 +452,17 @@ export async function updateTopic(req, res) {
     
     // Update fields
     if (topicName !== undefined) topic.topicName = topicName;
+    // Accept both 'difficultyLevel' and legacy 'difficulty' keys
     if (difficultyLevel !== undefined) topic.difficultyLevel = difficultyLevel;
+    else if (difficulty !== undefined) topic.difficultyLevel = difficulty;
     if (topicVideoLink !== undefined) topic.topicVideoLink = topicVideoLink;
     if (notesLink !== undefined) topic.notesLink = notesLink;
+    // If 'links' provided (string or array), map [video, notes]
+    if (links !== undefined) {
+      const arr = Array.isArray(links) ? links : (links ? [links] : []);
+      topic.topicVideoLink = arr[0] || topic.topicVideoLink || '';
+      topic.notesLink = arr[1] || topic.notesLink || '';
+    }
     
     // Handle PDF upload if provided
     const pdfFile = req.files?.questionPDF?.[0];
@@ -434,15 +471,12 @@ export async function updateTopic(req, res) {
       const { data, error } = await supabase.storage
         .from('question-pdfs')
         .upload(fileName, pdfFile.buffer, {
-          contentType: pdfFile.mimetype
+          contentType: pdfFile.mimetype,
         });
-      
       if (error) throw new HttpError(500, 'Failed to upload PDF');
-      
       const { data: urlData } = supabase.storage
         .from('question-pdfs')
         .getPublicUrl(fileName);
-      
       topic.questionPDF = urlData.publicUrl;
     }
     
@@ -460,9 +494,8 @@ export async function updateTopic(req, res) {
 export async function deleteTopic(req, res) {
   try {
     const { semesterId, subjectId, chapterId, topicId } = req.params;
-    const coordinatorId = req.user._id;
-    
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
+    const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     const subject = semester.subjects.id(subjectId);
@@ -490,8 +523,8 @@ export async function reorderTopics(req, res) {
     
     if (!Array.isArray(topicIds)) throw new HttpError(400, 'topicIds must be an array');
     
-    const coordinatorId = req.user._id;
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
+    const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     const subject = semester.subjects.id(subjectId);

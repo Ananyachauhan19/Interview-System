@@ -685,7 +685,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ ...chapter });
   const [showAddTopic, setShowAddTopic] = useState(false);
-  const [newTopic, setNewTopic] = useState({ topicName: '', difficulty: 'medium', links: '', questionPDF: null });
+  const [newTopic, setNewTopic] = useState({ topicName: '', difficulty: 'medium', videoLink: '', notesLink: '', questionPDF: null });
 
   const handleUpdate = async () => {
     if (!editData.chapterName.trim()) {
@@ -716,9 +716,8 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
       const formData = new FormData();
       formData.append('topicName', newTopic.topicName);
       formData.append('difficulty', newTopic.difficulty);
-      const linksArray = newTopic.links.split('\n').filter(l => l.trim());
-      console.log('[handleAddTopic] Links array:', linksArray);
-      linksArray.forEach(link => formData.append('links', link.trim()));
+      if (newTopic.videoLink) formData.append('topicVideoLink', newTopic.videoLink);
+      if (newTopic.notesLink) formData.append('notesLink', newTopic.notesLink);
       if (newTopic.questionPDF) {
         console.log('[handleAddTopic] Adding PDF file:', newTopic.questionPDF.name);
         formData.append('questionPDF', newTopic.questionPDF);
@@ -728,7 +727,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
       await api.addTopic(semesterId, subjectId, chapter._id, formData);
       console.log('[handleAddTopic] Topic added successfully');
       toast.success('Topic added');
-      setNewTopic({ topicName: '', difficulty: 'medium', links: '', questionPDF: null });
+      setNewTopic({ topicName: '', difficulty: 'medium', videoLink: '', notesLink: '', questionPDF: null });
       setShowAddTopic(false);
       loadSemesters();
     } catch (err) {
@@ -874,39 +873,63 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
 
               {showAddTopic && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-white p-3 rounded-lg mb-2 shadow">
-                  <h5 className="text-sm font-semibold mb-2">New Topic</h5>
-                  <input
-                    type="text"
-                    placeholder="Topic name"
-                    value={newTopic.topicName}
-                    onChange={(e) => setNewTopic({ ...newTopic, topicName: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg mb-2 text-sm"
-                  />
-                  <select
-                    value={newTopic.difficulty}
-                    onChange={(e) => setNewTopic({ ...newTopic, difficulty: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg mb-2 text-sm"
-                  >
-                    <option value="easy">Easy</option>
-                    <option value="easy-medium">Easy-Medium</option>
-                    <option value="medium">Medium</option>
-                    <option value="medium-hard">Medium-Hard</option>
-                    <option value="hard">Hard</option>
-                  </select>
-                  <textarea
-                    placeholder="Links (one per line)"
-                    value={newTopic.links}
-                    onChange={(e) => setNewTopic({ ...newTopic, links: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg mb-2 text-sm"
-                    rows="2"
-                  />
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={(e) => setNewTopic({ ...newTopic, questionPDF: e.target.files[0] })}
-                    className="w-full px-3 py-2 border rounded-lg mb-2 text-sm"
-                  />
-                  <div className="flex gap-2">
+                  <h5 className="text-sm font-semibold mb-3">New Topic</h5>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Topic Name *</label>
+                      <input
+                        type="text"
+                        placeholder="Enter topic name"
+                        value={newTopic.topicName}
+                        onChange={(e) => setNewTopic({ ...newTopic, topicName: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Difficulty Level</label>
+                      <select
+                        value={newTopic.difficulty}
+                        onChange={(e) => setNewTopic({ ...newTopic, difficulty: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      >
+                        <option value="easy">Easy</option>
+                        <option value="easy-medium">Easy-Medium</option>
+                        <option value="medium">Medium</option>
+                        <option value="medium-hard">Medium-Hard</option>
+                        <option value="hard">Hard</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Video Link (Optional)</label>
+                      <input
+                        type="url"
+                        placeholder="https://example.com/video"
+                        value={newTopic.videoLink || ''}
+                        onChange={(e) => setNewTopic({ ...newTopic, videoLink: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Notes Link (Optional)</label>
+                      <input
+                        type="url"
+                        placeholder="https://example.com/notes"
+                        value={newTopic.notesLink || ''}
+                        onChange={(e) => setNewTopic({ ...newTopic, notesLink: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Question PDF (Optional)</label>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => setNewTopic({ ...newTopic, questionPDF: e.target.files[0] })}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-3">
                     <button onClick={handleAddTopic} className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm">
                       <Save className="w-3 h-3" />
                       Save
@@ -914,7 +937,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                     <button
                       onClick={() => {
                         setShowAddTopic(false);
-                        setNewTopic({ topicName: '', difficulty: 'medium', links: '', questionPDF: null });
+                        setNewTopic({ topicName: '', difficulty: 'medium', videoLink: '', notesLink: '', questionPDF: null });
                       }}
                       className="flex items-center gap-1 bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400 text-sm"
                     >
@@ -956,8 +979,9 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ 
     topicName: topic.topicName, 
-    difficulty: topic.difficulty, 
-    links: (topic.links || []).join('\n'),
+    difficulty: topic.difficultyLevel || topic.difficulty, 
+    videoLink: topic.topicVideoLink || '',
+    notesLink: topic.notesLink || '',
     questionPDF: null
   });
 
@@ -970,8 +994,8 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
       const formData = new FormData();
       formData.append('topicName', editData.topicName);
       formData.append('difficulty', editData.difficulty);
-      const linksArray = editData.links.split('\n').filter(l => l.trim());
-      linksArray.forEach(link => formData.append('links', link.trim()));
+      if (editData.videoLink) formData.append('topicVideoLink', editData.videoLink);
+      if (editData.notesLink) formData.append('notesLink', editData.notesLink);
       if (editData.questionPDF) formData.append('questionPDF', editData.questionPDF);
       
       await api.updateTopic(semesterId, subjectId, chapterId, topic._id, formData);
@@ -995,36 +1019,59 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
           <div className="flex-1">
             {isEditing ? (
               <div className="space-y-2">
-                <input
-                  type="text"
-                  value={editData.topicName}
-                  onChange={(e) => setEditData({ ...editData, topicName: e.target.value })}
-                  className="w-full px-2 py-1 border rounded font-semibold text-xs"
-                />
-                <select
-                  value={editData.difficulty}
-                  onChange={(e) => setEditData({ ...editData, difficulty: e.target.value })}
-                  className="w-full px-2 py-1 border rounded text-xs"
-                >
-                  <option value="easy">Easy</option>
-                  <option value="easy-medium">Easy-Medium</option>
-                  <option value="medium">Medium</option>
-                  <option value="medium-hard">Medium-Hard</option>
-                  <option value="hard">Hard</option>
-                </select>
-                <textarea
-                  placeholder="Links (one per line)"
-                  value={editData.links}
-                  onChange={(e) => setEditData({ ...editData, links: e.target.value })}
-                  className="w-full px-2 py-1 border rounded text-xs"
-                  rows="2"
-                />
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => setEditData({ ...editData, questionPDF: e.target.files[0] })}
-                  className="w-full px-2 py-1 border rounded text-xs"
-                />
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Topic Name *</label>
+                  <input
+                    type="text"
+                    placeholder="Enter topic name"
+                    value={editData.topicName}
+                    onChange={(e) => setEditData({ ...editData, topicName: e.target.value })}
+                    className="w-full px-2 py-1 border rounded text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Difficulty Level</label>
+                  <select
+                    value={editData.difficulty}
+                    onChange={(e) => setEditData({ ...editData, difficulty: e.target.value })}
+                    className="w-full px-2 py-1 border rounded text-xs"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="easy-medium">Easy-Medium</option>
+                    <option value="medium">Medium</option>
+                    <option value="medium-hard">Medium-Hard</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Video Link (Optional)</label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/video"
+                    value={editData.videoLink}
+                    onChange={(e) => setEditData({ ...editData, videoLink: e.target.value })}
+                    className="w-full px-2 py-1 border rounded text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Notes Link (Optional)</label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/notes"
+                    value={editData.notesLink}
+                    onChange={(e) => setEditData({ ...editData, notesLink: e.target.value })}
+                    className="w-full px-2 py-1 border rounded text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Question PDF (Optional)</label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => setEditData({ ...editData, questionPDF: e.target.files[0] })}
+                    className="w-full px-2 py-1 border rounded text-xs"
+                  />
+                </div>
                 <div className="flex gap-2">
                   <button onClick={handleUpdate} className="flex items-center gap-1 bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 text-xs">
                     <Save className="w-3 h-3" />

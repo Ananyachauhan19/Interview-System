@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { requireAuth, requireCoordinator } from '../middleware/auth.js';
+import { requireAuth, requireAdminOrCoordinator } from '../middleware/auth.js';
 import {
   listSemesters,
   createSemester,
@@ -25,28 +25,28 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Semester routes
-router.get('/', requireAuth, requireCoordinator, listSemesters);
-router.post('/', requireAuth, requireCoordinator, createSemester);
-router.put('/:id', requireAuth, requireCoordinator, updateSemester);
-router.delete('/:id', requireAuth, requireCoordinator, deleteSemester);
-router.post('/reorder', requireAuth, requireCoordinator, reorderSemesters);
+router.get('/', requireAuth, requireAdminOrCoordinator, listSemesters);
+router.post('/', requireAuth, requireAdminOrCoordinator, createSemester);
+router.put('/:id', requireAuth, requireAdminOrCoordinator, updateSemester);
+router.delete('/:id', requireAuth, requireAdminOrCoordinator, deleteSemester);
+router.post('/reorder', requireAuth, requireAdminOrCoordinator, reorderSemesters);
 
 // Subject routes (nested under semester)
-router.post('/:semesterId/subjects', requireAuth, requireCoordinator, addSubject);
-router.put('/:semesterId/subjects/:subjectId', requireAuth, requireCoordinator, updateSubject);
-router.delete('/:semesterId/subjects/:subjectId', requireAuth, requireCoordinator, deleteSubject);
-router.post('/:semesterId/subjects/reorder', requireAuth, requireCoordinator, reorderSubjects);
+router.post('/:semesterId/subjects', requireAuth, requireAdminOrCoordinator, addSubject);
+router.put('/:semesterId/subjects/:subjectId', requireAuth, requireAdminOrCoordinator, updateSubject);
+router.delete('/:semesterId/subjects/:subjectId', requireAuth, requireAdminOrCoordinator, deleteSubject);
+router.post('/:semesterId/subjects/reorder', requireAuth, requireAdminOrCoordinator, reorderSubjects);
 
 // Chapter routes (nested under subject)
-router.post('/:semesterId/subjects/:subjectId/chapters', requireAuth, requireCoordinator, addChapter);
-router.put('/:semesterId/subjects/:subjectId/chapters/:chapterId', requireAuth, requireCoordinator, updateChapter);
-router.delete('/:semesterId/subjects/:subjectId/chapters/:chapterId', requireAuth, requireCoordinator, deleteChapter);
-router.post('/:semesterId/subjects/:subjectId/chapters/reorder', requireAuth, requireCoordinator, reorderChapters);
+router.post('/:semesterId/subjects/:subjectId/chapters', requireAuth, requireAdminOrCoordinator, addChapter);
+router.put('/:semesterId/subjects/:subjectId/chapters/:chapterId', requireAuth, requireAdminOrCoordinator, updateChapter);
+router.delete('/:semesterId/subjects/:subjectId/chapters/:chapterId', requireAuth, requireAdminOrCoordinator, deleteChapter);
+router.post('/:semesterId/subjects/:subjectId/chapters/reorder', requireAuth, requireAdminOrCoordinator, reorderChapters);
 
 // Topic routes (nested under chapter) - with file upload support
-router.post('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics', requireAuth, requireCoordinator, upload.fields([{ name: 'questionPDF', maxCount: 1 }]), addTopic);
-router.put('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics/:topicId', requireAuth, requireCoordinator, upload.fields([{ name: 'questionPDF', maxCount: 1 }]), updateTopic);
-router.delete('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics/:topicId', requireAuth, requireCoordinator, deleteTopic);
-router.post('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics/reorder', requireAuth, requireCoordinator, reorderTopics);
+router.post('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics', requireAuth, requireAdminOrCoordinator, upload.fields([{ name: 'questionPDF', maxCount: 1 }]), addTopic);
+router.put('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics/:topicId', requireAuth, requireAdminOrCoordinator, upload.fields([{ name: 'questionPDF', maxCount: 1 }]), updateTopic);
+router.delete('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics/:topicId', requireAuth, requireAdminOrCoordinator, deleteTopic);
+router.post('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics/reorder', requireAuth, requireAdminOrCoordinator, reorderTopics);
 
 export default router;

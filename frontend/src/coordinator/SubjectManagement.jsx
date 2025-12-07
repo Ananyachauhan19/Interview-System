@@ -552,45 +552,60 @@ export default function SubjectManagement() {
                 <div className="border border-blue-300 rounded-lg p-3 bg-blue-50 space-y-2">
                   <div className="flex items-start gap-2">
                     <GripVertical className="w-4 h-4 text-slate-400 cursor-move flex-shrink-0 mt-2" />
-                    <div className="flex-1 space-y-2">
-                      <input
-                        type="text"
-                        placeholder="Topic name *"
-                        value={editingTopic.topicName}
-                        onChange={(e) => setEditingTopic({ ...editingTopic, topicName: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                      />
-                      <input
-                        type="url"
-                        placeholder="Video link (optional)"
-                        value={editingTopic.topicVideoLink || ''}
-                        onChange={(e) => setEditingTopic({ ...editingTopic, topicVideoLink: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                      />
-                      <input
-                        type="url"
-                        placeholder="Notes link (optional)"
-                        value={editingTopic.notesLink || ''}
-                        onChange={(e) => setEditingTopic({ ...editingTopic, notesLink: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                      />
-                      <select
-                        value={editingTopic.difficultyLevel}
-                        onChange={(e) => setEditingTopic({ ...editingTopic, difficultyLevel: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                      >
-                        <option value="easy">Easy</option>
-                        <option value="easy-medium">Easy-Medium</option>
-                        <option value="medium">Medium</option>
-                        <option value="medium-hard">Medium-Hard</option>
-                        <option value="hard">Hard</option>
-                      </select>
-                      <input
-                        type="file"
-                        accept=".pdf"
-                        onChange={(e) => setEditingTopic({ ...editingTopic, questionPDF: e.target.files[0] })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                      />
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Topic Name *</label>
+                        <input
+                          type="text"
+                          placeholder="Enter topic name"
+                          value={editingTopic.topicName}
+                          onChange={(e) => setEditingTopic({ ...editingTopic, topicName: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty Level</label>
+                        <select
+                          value={editingTopic.difficultyLevel}
+                          onChange={(e) => setEditingTopic({ ...editingTopic, difficultyLevel: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                        >
+                          <option value="easy">Easy</option>
+                          <option value="easy-medium">Easy-Medium</option>
+                          <option value="medium">Medium</option>
+                          <option value="medium-hard">Medium-Hard</option>
+                          <option value="hard">Hard</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Video Link (Optional)</label>
+                        <input
+                          type="url"
+                          placeholder="https://example.com/video"
+                          value={editingTopic.topicVideoLink || ''}
+                          onChange={(e) => setEditingTopic({ ...editingTopic, topicVideoLink: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Notes Link (Optional)</label>
+                        <input
+                          type="url"
+                          placeholder="https://example.com/notes"
+                          value={editingTopic.notesLink || ''}
+                          onChange={(e) => setEditingTopic({ ...editingTopic, notesLink: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Question PDF (Optional)</label>
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={(e) => setEditingTopic({ ...editingTopic, questionPDF: e.target.files[0] })}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -674,45 +689,60 @@ export default function SubjectManagement() {
 
         {/* Add Topic Form */}
         {showAddTopic ? (
-          <div className="border border-blue-300 rounded-lg p-3 bg-blue-50 space-y-2">
-            <input
-              type="text"
-              placeholder="Topic name *"
-              value={newTopic.topicName}
-              onChange={(e) => setNewTopic({ ...newTopic, topicName: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-            />
-            <input
-              type="url"
-              placeholder="Video link (optional)"
-              value={newTopic.topicVideoLink}
-              onChange={(e) => setNewTopic({ ...newTopic, topicVideoLink: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-            />
-            <input
-              type="url"
-              placeholder="Notes link (optional)"
-              value={newTopic.notesLink}
-              onChange={(e) => setNewTopic({ ...newTopic, notesLink: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-            />
-            <select
-              value={newTopic.difficultyLevel}
-              onChange={(e) => setNewTopic({ ...newTopic, difficultyLevel: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-            >
-              <option value="easy">Easy</option>
-              <option value="easy-medium">Easy-Medium</option>
-              <option value="medium">Medium</option>
-              <option value="medium-hard">Medium-Hard</option>
-              <option value="hard">Hard</option>
-            </select>
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={(e) => setNewTopic({ ...newTopic, questionPDF: e.target.files[0] })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-            />
+          <div className="border border-blue-300 rounded-lg p-3 bg-blue-50 space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Topic Name *</label>
+              <input
+                type="text"
+                placeholder="Enter topic name"
+                value={newTopic.topicName}
+                onChange={(e) => setNewTopic({ ...newTopic, topicName: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty Level</label>
+              <select
+                value={newTopic.difficultyLevel}
+                onChange={(e) => setNewTopic({ ...newTopic, difficultyLevel: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              >
+                <option value="easy">Easy</option>
+                <option value="easy-medium">Easy-Medium</option>
+                <option value="medium">Medium</option>
+                <option value="medium-hard">Medium-Hard</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Video Link (Optional)</label>
+              <input
+                type="url"
+                placeholder="https://example.com/video"
+                value={newTopic.topicVideoLink}
+                onChange={(e) => setNewTopic({ ...newTopic, topicVideoLink: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Notes Link (Optional)</label>
+              <input
+                type="url"
+                placeholder="https://example.com/notes"
+                value={newTopic.notesLink}
+                onChange={(e) => setNewTopic({ ...newTopic, notesLink: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Question PDF (Optional)</label>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setNewTopic({ ...newTopic, questionPDF: e.target.files[0] })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              />
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={handleAddTopic}
