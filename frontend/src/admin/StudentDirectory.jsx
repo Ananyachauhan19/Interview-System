@@ -234,18 +234,17 @@ export default function StudentDirectory() {
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Email</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Branch</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Course</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Semester</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">College</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Coordinator Assigned</th>
                     {activeTab === "special" && (
                       <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Events</th>
                     )}
-                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Registered</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
                   {filteredStudents.map((s) => {
                     const initial = s.name?.charAt(0)?.toUpperCase() || "?";
-                    const registered = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "-";
                     return (
                       <tr key={s._id} className="hover:bg-slate-50">
                         <td className="px-4 py-2">
@@ -264,6 +263,7 @@ export default function StudentDirectory() {
                         <td className="px-4 py-2 text-slate-700 max-w-[260px] text-sm"><span className="truncate block">{s.email || "-"}</span></td>
                         <td className="px-4 py-2 text-slate-700 text-sm">{s.branch || "-"}</td>
                         <td className="px-4 py-2 text-slate-600 text-sm">{s.course || "-"}</td>
+                        <td className="px-4 py-2 text-slate-600 text-sm">{s.semester || "-"}</td>
                         <td className="px-4 py-2 text-slate-600 text-sm max-w-[200px]"><span className="truncate block">{s.college || "-"}</span></td>
                         <td className="px-4 py-2 text-slate-700 text-sm">{s.teacherId || "-"}</td>
                         {activeTab === "special" && (
@@ -283,7 +283,6 @@ export default function StudentDirectory() {
                             </div>
                           </td>
                         )}
-                        <td className="px-4 py-2 text-slate-600 text-sm">{registered}</td>
                       </tr>
                     );
                   })}

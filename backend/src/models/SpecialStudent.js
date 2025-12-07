@@ -8,6 +8,7 @@ const specialStudentSchema = new mongoose.Schema({
   branch: { type: String, required: true },
   course: String,
   college: String,
+  semester: { type: Number, min: 1, max: 8 }, // Current semester (1-8)
   events: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' }], // Array of events this student participates in
   // Store original password for reference (already hashed)
   passwordHash: String,

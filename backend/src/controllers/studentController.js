@@ -30,7 +30,7 @@ export async function listAllStudents(req, res) {
     }
     
     const students = await User.find(query)
-      .select('name email studentId course branch college teacherId createdAt')
+      .select('name email studentId course branch college semester teacherId createdAt')
       .sort({ createdAt: -1 })
       .lean();
     
@@ -344,7 +344,7 @@ export async function listAllSpecialStudents(req, res) {
     
     const specialStudents = await SpecialStudent.find(query)
       .populate('events', 'name isSpecial')
-      .select('name email studentId course branch college events createdAt')
+      .select('name email studentId course branch college semester events createdAt')
       .sort({ createdAt: -1 })
       .lean();
     
@@ -361,7 +361,7 @@ export async function listSpecialStudentsByEvent(req, res) {
     const { eventId } = req.params;
     
     const specialStudents = await SpecialStudent.find({ events: eventId })
-      .select('name email studentId course branch college createdAt')
+      .select('name email studentId course branch college semester createdAt')
       .sort({ createdAt: -1 })
       .lean();
     

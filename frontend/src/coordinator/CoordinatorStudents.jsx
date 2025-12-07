@@ -91,6 +91,16 @@ export default function CoordinatorStudents() {
             </div>
 
             <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-lg">
+              <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                <BookOpen className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Semester</p>
+                <p className="text-sm font-semibold text-slate-800">{student.semester || "N/A"}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-lg">
               <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
                 <School className="w-5 h-5 text-emerald-600" />
               </div>
@@ -212,6 +222,9 @@ export default function CoordinatorStudents() {
                       Branch
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Semester
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       College
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
@@ -246,6 +259,9 @@ export default function CoordinatorStudents() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-slate-700">{student.branch || "N/A"}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-slate-700">{student.semester || "N/A"}</span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-slate-700">{student.college || "N/A"}</span>
