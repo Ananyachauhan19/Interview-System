@@ -471,11 +471,11 @@ export default function AdminLearningDetail() {
                                     )}
 
                                     {/* Notes Button */}
-                                    {topic.notesLink && (
+                                    {topic.notesPDF && (
                                       <button
-                                        onClick={() => openModal('notes', topic.notesLink)}
+                                        onClick={() => openModal('pdf', topic.notesPDF)}
                                         className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                                        title="View Notes"
+                                        title="View Notes PDF"
                                       >
                                         <FileText className="w-4 h-4" />
                                       </button>
@@ -737,15 +737,19 @@ export default function AdminLearningDetail() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Notes Link
+                      Notes PDF {editingTopic && '(Leave empty to keep existing)'}
                     </label>
                     <input
-                      type="url"
-                      name="notesLink"
-                      defaultValue={editingTopic?.notesLink || ''}
+                      type="file"
+                      name="notesPDF"
+                      accept=".pdf"
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-100"
-                      placeholder="https://example.com/notes.pdf"
                     />
+                    {editingTopic?.notesPDF && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Current: <a href={editingTopic.notesPDF} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View PDF</a>
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

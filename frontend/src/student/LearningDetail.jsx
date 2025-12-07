@@ -393,11 +393,11 @@ export default function LearningDetail() {
                                     )}
 
                                     {/* Notes Button */}
-                                    {topic.notesLink && (
+                                    {topic.notesPDF && (
                                       <button
-                                        onClick={() => openModal('notes', topic.notesLink, topic)}
+                                        onClick={() => openModal('pdf', topic.notesPDF, topic)}
                                         className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                                        title="View Notes"
+                                        title="View Notes PDF"
                                       >
                                         <FileText className="w-4 h-4" />
                                       </button>

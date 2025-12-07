@@ -341,7 +341,7 @@ export async function addTopic(req, res) {
     console.log('[addTopic] Request files:', req.files);
     
     const { semesterId, subjectId, chapterId } = req.params;
-    const { topicName, difficulty, difficultyLevel, topicVideoLink, notesLink } = req.body;
+    const { topicName, difficulty, difficultyLevel, topicVideoLink } = req.body;
     
     if (!topicName) throw new HttpError(400, 'Topic name is required');
     
@@ -364,27 +364,21 @@ export async function addTopic(req, res) {
     const chapter = subject.chapters.id(chapterId);
     if (!chapter) throw new HttpError(404, 'Chapter not found');
     
-    // Handle links - can be string, array, or multiple form fields
+    // Handle video link
     let videoLink = topicVideoLink || '';
-    let notes = notesLink || '';
     
-    if (req.body.links) {
-      const linksArray = Array.isArray(req.body.links) ? req.body.links : [req.body.links];
-      videoLink = linksArray[0] || videoLink;
-      notes = linksArray[1] || notes;
-    }
-    
+    // Handle question PDF upload
     let questionPDF = null;
-    const pdfFile = req.files?.questionPDF?.[0];
-    if (pdfFile) {
-      const fileName = `${Date.now()}-${pdfFile.originalname}`;
+    const questionPdfFile = req.files?.questionPDF?.[0];
+    if (questionPdfFile) {
+      const fileName = `question-${Date.now()}-${questionPdfFile.originalname}`;
       const { data, error } = await supabase.storage
         .from('question-pdfs')
-        .upload(fileName, pdfFile.buffer, {
-          contentType: pdfFile.mimetype
+        .upload(fileName, questionPdfFile.buffer, {
+          contentType: questionPdfFile.mimetype
         });
       
-      if (error) throw new HttpError(500, 'Failed to upload PDF');
+      if (error) throw new HttpError(500, 'Failed to upload question PDF');
       
       const { data: urlData } = supabase.storage
         .from('question-pdfs')
@@ -393,12 +387,32 @@ export async function addTopic(req, res) {
       questionPDF = urlData.publicUrl;
     }
     
+    // Handle notes PDF upload
+    let notesPDF = null;
+    const notesPdfFile = req.files?.notesPDF?.[0];
+    if (notesPdfFile) {
+      const fileName = `notes-${Date.now()}-${notesPdfFile.originalname}`;
+      const { data, error } = await supabase.storage
+        .from('notes-pdfs')
+        .upload(fileName, notesPdfFile.buffer, {
+          contentType: notesPdfFile.mimetype
+        });
+      
+      if (error) throw new HttpError(500, 'Failed to upload notes PDF');
+      
+      const { data: urlData } = supabase.storage
+        .from('notes-pdfs')
+        .getPublicUrl(fileName);
+      
+      notesPDF = urlData.publicUrl;
+    }
+    
     const order = chapter.topics.length;
     chapter.topics.push({
       topicName,
       difficultyLevel: difficultyLevel || difficulty || 'medium',
       topicVideoLink: videoLink,
-      notesLink: notes,
+      notesPDF,
       questionPDF,
       order
     });
@@ -420,7 +434,7 @@ export async function addTopic(req, res) {
 export async function updateTopic(req, res) {
   try {
     const { semesterId, subjectId, chapterId, topicId } = req.params;
-      const { topicName, difficultyLevel, difficulty, topicVideoLink, notesLink, links } = req.body;
+      const { topicName, difficultyLevel, difficulty, topicVideoLink } = req.body;
     
     let ownerFilter = {};
       // Legacy fallback: some semesters stored coordinator ObjectId string in coordinatorId
@@ -456,28 +470,37 @@ export async function updateTopic(req, res) {
     if (difficultyLevel !== undefined) topic.difficultyLevel = difficultyLevel;
     else if (difficulty !== undefined) topic.difficultyLevel = difficulty;
     if (topicVideoLink !== undefined) topic.topicVideoLink = topicVideoLink;
-    if (notesLink !== undefined) topic.notesLink = notesLink;
-    // If 'links' provided (string or array), map [video, notes]
-    if (links !== undefined) {
-      const arr = Array.isArray(links) ? links : (links ? [links] : []);
-      topic.topicVideoLink = arr[0] || topic.topicVideoLink || '';
-      topic.notesLink = arr[1] || topic.notesLink || '';
-    }
     
-    // Handle PDF upload if provided
-    const pdfFile = req.files?.questionPDF?.[0];
-    if (pdfFile) {
-      const fileName = `${Date.now()}-${pdfFile.originalname}`;
+    // Handle question PDF upload if provided
+    const questionPdfFile = req.files?.questionPDF?.[0];
+    if (questionPdfFile) {
+      const fileName = `question-${Date.now()}-${questionPdfFile.originalname}`;
       const { data, error } = await supabase.storage
         .from('question-pdfs')
-        .upload(fileName, pdfFile.buffer, {
-          contentType: pdfFile.mimetype,
+        .upload(fileName, questionPdfFile.buffer, {
+          contentType: questionPdfFile.mimetype,
         });
-      if (error) throw new HttpError(500, 'Failed to upload PDF');
+      if (error) throw new HttpError(500, 'Failed to upload question PDF');
       const { data: urlData } = supabase.storage
         .from('question-pdfs')
         .getPublicUrl(fileName);
       topic.questionPDF = urlData.publicUrl;
+    }
+    
+    // Handle notes PDF upload if provided
+    const notesPdfFile = req.files?.notesPDF?.[0];
+    if (notesPdfFile) {
+      const fileName = `notes-${Date.now()}-${notesPdfFile.originalname}`;
+      const { data, error } = await supabase.storage
+        .from('notes-pdfs')
+        .upload(fileName, notesPdfFile.buffer, {
+          contentType: notesPdfFile.mimetype,
+        });
+      if (error) throw new HttpError(500, 'Failed to upload notes PDF');
+      const { data: urlData } = supabase.storage
+        .from('notes-pdfs')
+        .getPublicUrl(fileName);
+      topic.notesPDF = urlData.publicUrl;
     }
     
     console.log('[updateTopic] Topic updated successfully');

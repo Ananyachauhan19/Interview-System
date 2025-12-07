@@ -685,7 +685,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ ...chapter });
   const [showAddTopic, setShowAddTopic] = useState(false);
-  const [newTopic, setNewTopic] = useState({ topicName: '', difficulty: 'medium', videoLink: '', notesLink: '', questionPDF: null });
+  const [newTopic, setNewTopic] = useState({ topicName: '', difficulty: 'medium', videoLink: '', notesPDF: null, questionPDF: null });
 
   const handleUpdate = async () => {
     if (!editData.chapterName.trim()) {
@@ -717,7 +717,10 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
       formData.append('topicName', newTopic.topicName);
       formData.append('difficulty', newTopic.difficulty);
       if (newTopic.videoLink) formData.append('topicVideoLink', newTopic.videoLink);
-      if (newTopic.notesLink) formData.append('notesLink', newTopic.notesLink);
+      if (newTopic.notesPDF) {
+        console.log('[handleAddTopic] Adding notes PDF file:', newTopic.notesPDF.name);
+        formData.append('notesPDF', newTopic.notesPDF);
+      }
       if (newTopic.questionPDF) {
         console.log('[handleAddTopic] Adding PDF file:', newTopic.questionPDF.name);
         formData.append('questionPDF', newTopic.questionPDF);
@@ -727,7 +730,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
       await api.addTopic(semesterId, subjectId, chapter._id, formData);
       console.log('[handleAddTopic] Topic added successfully');
       toast.success('Topic added');
-      setNewTopic({ topicName: '', difficulty: 'medium', videoLink: '', notesLink: '', questionPDF: null });
+      setNewTopic({ topicName: '', difficulty: 'medium', videoLink: '', notesPDF: null, questionPDF: null });
       setShowAddTopic(false);
       loadSemesters();
     } catch (err) {
@@ -910,12 +913,11 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Notes Link (Optional)</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Notes PDF (Optional)</label>
                       <input
-                        type="url"
-                        placeholder="https://example.com/notes"
-                        value={newTopic.notesLink || ''}
-                        onChange={(e) => setNewTopic({ ...newTopic, notesLink: e.target.value })}
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => setNewTopic({ ...newTopic, notesPDF: e.target.files[0] })}
                         className="w-full px-3 py-2 border rounded-lg text-sm"
                       />
                     </div>
@@ -937,7 +939,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                     <button
                       onClick={() => {
                         setShowAddTopic(false);
-                        setNewTopic({ topicName: '', difficulty: 'medium', videoLink: '', notesLink: '', questionPDF: null });
+                        setNewTopic({ topicName: '', difficulty: 'medium', videoLink: '', notesPDF: null, questionPDF: null });
                       }}
                       className="flex items-center gap-1 bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400 text-sm"
                     >
@@ -981,7 +983,7 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
     topicName: topic.topicName, 
     difficulty: topic.difficultyLevel || topic.difficulty, 
     videoLink: topic.topicVideoLink || '',
-    notesLink: topic.notesLink || '',
+    notesPDF: null,
     questionPDF: null
   });
 
@@ -995,7 +997,7 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
       formData.append('topicName', editData.topicName);
       formData.append('difficulty', editData.difficulty);
       if (editData.videoLink) formData.append('topicVideoLink', editData.videoLink);
-      if (editData.notesLink) formData.append('notesLink', editData.notesLink);
+      if (editData.notesPDF) formData.append('notesPDF', editData.notesPDF);
       if (editData.questionPDF) formData.append('questionPDF', editData.questionPDF);
       
       await api.updateTopic(semesterId, subjectId, chapterId, topic._id, formData);
@@ -1054,14 +1056,18 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Notes Link (Optional)</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Notes PDF (Optional)</label>
                   <input
-                    type="url"
-                    placeholder="https://example.com/notes"
-                    value={editData.notesLink}
-                    onChange={(e) => setEditData({ ...editData, notesLink: e.target.value })}
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => setEditData({ ...editData, notesPDF: e.target.files[0] })}
                     className="w-full px-2 py-1 border rounded text-xs"
                   />
+                  {topic.notesPDF && (
+                    <a href={topic.notesPDF} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline mt-1 inline-block">
+                      View current PDF
+                    </a>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Question PDF (Optional)</label>
@@ -1115,7 +1121,18 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
                     className="flex items-center gap-1 text-red-600 hover:underline mt-1 text-xs"
                   >
                     <FileText className="w-3 h-3" />
-                    View PDF
+                    Question PDF
+                  </a>
+                )}
+                {topic.notesPDF && (
+                  <a
+                    href={topic.notesPDF}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-blue-600 hover:underline mt-1 text-xs"
+                  >
+                    <FileText className="w-3 h-3" />
+                    Notes PDF
                   </a>
                 )}
               </>

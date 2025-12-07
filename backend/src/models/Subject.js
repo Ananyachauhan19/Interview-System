@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const topicSchema = new mongoose.Schema({
   topicName: { type: String, required: true, trim: true },
   topicVideoLink: { type: String, trim: true },
-  notesLink: { type: String, trim: true },
+  notesPDF: { type: String, trim: true }, // URL to stored PDF
   questionPDF: { type: String, trim: true }, // URL to stored PDF
   difficultyLevel: { 
     type: String, 
