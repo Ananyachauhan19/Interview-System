@@ -23,6 +23,13 @@ export const getAllSemestersForStudent = async (req, res) => {
 
     console.log('[Learning] Found semesters:', semesters.length);
 
+    // Get student's current semester for filtering (students only, not admins)
+    let studentSemester = null;
+    if (req.user.role === 'student') {
+      studentSemester = req.user.semester;
+      console.log('[Learning] Student semester:', studentSemester);
+    }
+
     // Group subjects by semester and subject name
     const semesterMap = {};
 
@@ -98,7 +105,23 @@ export const getAllSemestersForStudent = async (req, res) => {
       })
     }));
 
-    res.json(result);
+    // Filter by student semester if user is a student
+    let filteredResult = result;
+    if (studentSemester !== null && studentSemester !== undefined) {
+      filteredResult = result.filter(sem => {
+        // Extract semester number from semester name (e.g., "Semester 1" -> 1)
+        const match = sem.semesterName.match(/\d+/);
+        if (match) {
+          const semNum = parseInt(match[0]);
+          return semNum <= studentSemester;
+        }
+        // If no number found, include it (edge case)
+        return true;
+      });
+      console.log(`[Learning] Filtered ${result.length} semesters to ${filteredResult.length} for student semester ${studentSemester}`);
+    }
+
+    res.json(filteredResult);
   } catch (error) {
     console.error('Error fetching semesters for student:', error);
     res.status(500).json({ message: 'Failed to fetch semesters', error: error.message });

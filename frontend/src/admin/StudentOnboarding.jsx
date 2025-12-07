@@ -12,7 +12,7 @@ export default function StudentOnboarding() {
   const [uploadResult, setUploadResult] = useState(null);
   const [clientErrors, setClientErrors] = useState([]);
   const [showSingleForm, setShowSingleForm] = useState(false);
-  const [singleForm, setSingleForm] = useState({ course: '', name: '', email: '', studentid: '', password: '', branch: '', college: '', teacherid: '' });
+  const [singleForm, setSingleForm] = useState({ course: '', name: '', email: '', studentid: '', password: '', branch: '', college: '', teacherid: '', semester: '' });
   const [singleMsg, setSingleMsg] = useState('');
   const [singleLoading, setSingleLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -244,10 +244,10 @@ export default function StudentOnboarding() {
   const submitSingle = async () => {
     setSingleMsg('');
     setSingleLoading(true);
-    const { name, email, studentid, branch, teacherid } = singleForm;
+    const { name, email, studentid, branch, teacherid, semester } = singleForm;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!name || !email || !studentid || !branch || !teacherid) {
-      setSingleMsg('Please fill in all required fields: Name, Email, Student ID, Branch, and Teacher ID');
+    if (!name || !email || !studentid || !branch || !teacherid || !semester) {
+      setSingleMsg('Please fill in all required fields: Name, Email, Student ID, Branch, Teacher ID, and Semester');
       setSingleLoading(false);
       return;
     }
@@ -260,9 +260,9 @@ export default function StudentOnboarding() {
       const data = await api.createStudent(singleForm);
       setSingleMsg(`Student ${data.name || data.email} has been successfully added!`);
       setTimeout(() => setSingleMsg(''), 4000);
-      const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', password: singleForm.password || '', branch: singleForm.branch || '', college: singleForm.college || '', teacherid: singleForm.teacherid || '', __row: 'N/A' };
+      const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', password: singleForm.password || '', branch: singleForm.branch || '', college: singleForm.college || '', teacherid: singleForm.teacherid || '', semester: singleForm.semester || '', __row: 'N/A' };
       setStudents((s) => [newStudent, ...s]);
-      setSingleForm({ name: '', email: '', studentid: '', password: '', branch: '', course: '', college: '', teacherid: '' });
+      setSingleForm({ name: '', email: '', studentid: '', password: '', branch: '', course: '', college: '', teacherid: '', semester: '' });
     } catch (err) {
       const errorMessage = err.message || 'Failed to create student';
       // Make error messages user-friendly
@@ -281,9 +281,9 @@ export default function StudentOnboarding() {
   };
 
   const isSingleValid = () => {
-    const { course, name, email, studentid, password, branch, college, teacherid } = singleForm;
+    const { course, name, email, studentid, password, branch, college, teacherid, semester } = singleForm;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return course && name && email && studentid && password && branch && college && teacherid && emailRegex.test(email);
+    return course && name && email && studentid && password && branch && college && teacherid && semester && emailRegex.test(email);
   };
 
   return (
@@ -370,7 +370,8 @@ export default function StudentOnboarding() {
                 { key: 'email', label: 'Email Address *', placeholder: 'john@university.edu' },
                 { key: 'studentid', label: 'Student ID *', placeholder: 'STU2024001' },
                 { key: 'branch', label: 'Branch *', placeholder: 'Computer Science' },
-                { key: 'teacherid', label: 'Teacher ID', placeholder: 'COORD123 (optional)' },
+                { key: 'teacherid', label: 'Teacher ID *', placeholder: 'COORD123' },
+                { key: 'semester', label: 'Semester *', placeholder: '1-8', type: 'number' },
                 { key: 'course', label: 'Course', placeholder: 'B.Tech' },
                 { key: 'college', label: 'College', placeholder: 'University Name' },
                 { key: 'password', label: 'Password (defaults to Student ID)', placeholder: '••••••••', type: 'password' },

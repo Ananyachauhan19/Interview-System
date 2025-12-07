@@ -48,8 +48,8 @@ export async function checkStudentsCsv(req, res) {
   const rows = parsed.data;
   const results = [];
 
-  // Required fields for onboarding - all 8 fields must be present
-  const requiredFields = ['course', 'name', 'email', 'studentid', 'password', 'branch', 'college', 'teacherid'];
+  // Required fields for onboarding - all 9 fields must be present
+  const requiredFields = ['course', 'name', 'email', 'studentid', 'password', 'branch', 'college', 'teacherid', 'semester'];
 
   // Track duplicates inside the CSV
   const seenEmails = new Set();
@@ -118,8 +118,8 @@ export async function uploadStudentsCsv(req, res) {
   const rows = parsed.data;
   const results = [];
 
-  // Required fields for onboarding - all 8 fields must be present
-  const requiredFields = ['course', 'name', 'email', 'studentid', 'password', 'branch', 'college', 'teacherid'];
+  // Required fields for onboarding - all 9 fields must be present
+  const requiredFields = ['course', 'name', 'email', 'studentid', 'password', 'branch', 'college', 'teacherid', 'semester'];
 
   // Track duplicates inside the CSV
   const seenEmails = new Set();
@@ -212,9 +212,15 @@ export async function uploadStudentsCsv(req, res) {
       // Use student ID as default password if not provided
       const defaultPassword = password || studentid;
       const passwordHash = await User.hashPassword(defaultPassword);
+      const semesterNum = parseInt(row.semester);
+      if (isNaN(semesterNum) || semesterNum < 1 || semesterNum > 8) {
+        results.push({ row: row.__row, email, studentid, status: 'error', message: 'Semester must be between 1 and 8' });
+        continue;
+      }
       const user = await User.create({
         role: 'student', course, name, email, studentId: studentid, passwordHash, branch, college,
         teacherId: teacherid,
+        semester: semesterNum,
         mustChangePassword: true,
       });
       results.push({ row: row.__row, id: user._id, email, studentid, status: 'created' });
@@ -258,12 +264,17 @@ export async function uploadStudentsCsv(req, res) {
 
 export async function createStudent(req, res) {
   try {
-    const { name, email, studentid, password, branch, course, college, teacherid } = req.body || {};
+    const { name, email, studentid, password, branch, course, college, teacherid, semester } = req.body || {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     // Check all required fields
-    if (!name || !email || !studentid || !password || !branch || !course || !college || !teacherid) {
-      return res.status(400).json({ error: 'All fields are required: name, email, studentid, password, branch, course, college, teacherid' });
+    if (!name || !email || !studentid || !password || !branch || !course || !college || !teacherid || !semester) {
+      return res.status(400).json({ error: 'All fields are required: name, email, studentid, password, branch, course, college, teacherid, semester' });
+    }
+    
+    const semesterNum = parseInt(semester);
+    if (isNaN(semesterNum) || semesterNum < 1 || semesterNum > 8) {
+      return res.status(400).json({ error: 'Semester must be a number between 1 and 8' });
     }
     
     if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
@@ -274,7 +285,7 @@ export async function createStudent(req, res) {
     // Use student ID as default password if not provided
     const defaultPassword = password || studentid;
     const passwordHash = await User.hashPassword(defaultPassword);
-    const user = await User.create({ role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, teacherId: teacherid, mustChangePassword: true });
+    const user = await User.create({ role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, teacherId: teacherid, semester: semesterNum, mustChangePassword: true });
 
     if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
       await sendOnboardingEmail({
@@ -302,6 +313,7 @@ function normalizeRow(r) {
     branch: map.branch,
     college: map.college,
     teacherid: map.teacherid || map.teacher_id || map.teacherId,
+    semester: map.semester,
   };
 }
 

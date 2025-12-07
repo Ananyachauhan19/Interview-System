@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
   course: String,
   branch: String,
   college: String,
+  semester: { type: Number, min: 1, max: 8 }, // Required for students: current semester (1-8)
   passwordResetToken: String,
   passwordResetExpires: Date,
 }, { timestamps: true });
