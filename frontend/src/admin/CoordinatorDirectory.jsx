@@ -160,7 +160,7 @@ export default function CoordinatorDirectory() {
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Coordinator</th>
                     <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Email</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Coordinator ID</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Events Created</th>
                     <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Students Assigned</th>
                     <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Created</th>
                   </tr>
@@ -185,7 +185,20 @@ export default function CoordinatorDirectory() {
                         <td className="px-4 py-2 text-slate-700 max-w-[260px] text-sm">
                           <span className="truncate block">{c.email || "-"}</span>
                         </td>
-                        <td className="px-4 py-2 text-slate-700 text-sm">{c.coordinatorId || "-"}</td>
+                        <td className="px-4 py-2 text-slate-700 text-sm">
+                          {c.eventsCreated ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium text-slate-900">
+                                {c.eventsCreated.total} Total
+                              </span>
+                              <span className="text-xs text-slate-500">
+                                {c.eventsCreated.regular} Regular, {c.eventsCreated.special} Special
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-500">0</span>
+                          )}
+                        </td>
                         <td className="px-4 py-2 text-slate-700 text-sm">{c.studentsAssigned ?? 0}</td>
                         <td className="px-4 py-2 text-slate-600 text-sm">{registered}</td>
                       </tr>

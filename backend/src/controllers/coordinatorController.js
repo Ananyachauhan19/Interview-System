@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Event from '../models/Event.js';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
 
 export async function listAllCoordinators(req, res) {
@@ -29,39 +30,65 @@ export async function listAllCoordinators(req, res) {
     if (coordinatorIds.length) {
       // Count students assigned to a coordinator by either teacherId (preferred linkage)
       // or fallback to student.coordinatorId if data was populated that way.
-      const pipeline = [
-        {
-          $match: {
-            role: 'student',
-            $or: [
-              { teacherId: { $in: coordinatorIds } },
-              { coordinatorId: { $in: coordinatorIds } },
+    const pipeline = [
+      {
+        $match: {
+          role: 'student',
+          $or: [
+            { teacherId: { $in: coordinatorIds } },
+            { coordinatorId: { $in: coordinatorIds } },
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $cond: [
+              { $and: [ { $ne: ['$teacherId', null] }, { $ne: ['$teacherId', ''] } ] },
+              '$teacherId',
+              '$coordinatorId',
             ],
           },
+          count: { $sum: 1 },
         },
-        {
-          $group: {
-            _id: {
-              $cond: [
-                { $and: [ { $ne: ['$teacherId', null] }, { $ne: ['$teacherId', ''] } ] },
-                '$teacherId',
-                '$coordinatorId',
-              ],
-            },
-            count: { $sum: 1 },
-          },
+      },
+    ];
+    const counts = await User.aggregate(pipeline);
+    countsMap = new Map(counts.map(c => [c._id, c.count]));
+  }
+
+  // Count events created by each coordinator
+  const eventsPipeline = [
+    {
+      $match: {
+        coordinatorId: { $in: coordinatorIds }
+      }
+    },
+    {
+      $group: {
+        _id: '$coordinatorId',
+        regularEvents: {
+          $sum: { $cond: [{ $eq: ['$isSpecial', false] }, 1, 0] }
         },
-      ];
-      const counts = await User.aggregate(pipeline);
-      countsMap = new Map(counts.map(c => [c._id, c.count]));
+        specialEvents: {
+          $sum: { $cond: [{ $eq: ['$isSpecial', true] }, 1, 0] }
+        },
+        totalEvents: { $sum: 1 }
+      }
     }
+  ];
+  const eventCounts = await Event.aggregate(eventsPipeline);
+  const eventsMap = new Map(eventCounts.map(e => [e._id, {
+    regular: e.regularEvents,
+    special: e.specialEvents,
+    total: e.totalEvents
+  }]));
 
-    const enriched = users.map(u => ({
-      ...u,
-      studentsAssigned: countsMap.get(u.coordinatorId) || 0,
-    }));
-
-    res.json({ count: enriched.length, coordinators: enriched });
+  const enriched = users.map(u => ({
+    ...u,
+    studentsAssigned: countsMap.get(u.coordinatorId) || 0,
+    eventsCreated: eventsMap.get(u.coordinatorId) || { regular: 0, special: 0, total: 0 }
+  }));    res.json({ count: enriched.length, coordinators: enriched });
   } catch (err) {
     console.error('Error listing coordinators:', err);
     res.status(500).json({ error: 'Failed to fetch coordinators' });
