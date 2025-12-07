@@ -712,21 +712,28 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
       return;
     }
     try {
+      console.log('[handleAddTopic] Creating FormData...');
       const formData = new FormData();
       formData.append('topicName', newTopic.topicName);
       formData.append('difficulty', newTopic.difficulty);
       const linksArray = newTopic.links.split('\n').filter(l => l.trim());
+      console.log('[handleAddTopic] Links array:', linksArray);
       linksArray.forEach(link => formData.append('links', link.trim()));
-      if (newTopic.questionPDF) formData.append('questionPDF', newTopic.questionPDF);
+      if (newTopic.questionPDF) {
+        console.log('[handleAddTopic] Adding PDF file:', newTopic.questionPDF.name);
+        formData.append('questionPDF', newTopic.questionPDF);
+      }
       
+      console.log('[handleAddTopic] Calling API...');
       await api.addTopic(semesterId, subjectId, chapter._id, formData);
+      console.log('[handleAddTopic] Topic added successfully');
       toast.success('Topic added');
       setNewTopic({ topicName: '', difficulty: 'medium', links: '', questionPDF: null });
       setShowAddTopic(false);
       loadSemesters();
     } catch (err) {
-      console.error('Failed to add topic:', err);
-      toast.error('Failed to add topic');
+      console.error('[handleAddTopic] Failed to add topic:', err);
+      toast.error(`Failed to add topic: ${err.message}`);
     }
   };
 

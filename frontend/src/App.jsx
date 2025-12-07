@@ -9,6 +9,8 @@ import StudentDashboard from "./student/StudentDashboard";
 import ChangePassword from "./student/ChangePassword";
 import SessionAndFeedback from "./student/SessionAndFeedback";
 import FeedbackForm from "./student/FeedbackForm";
+import StudentLearning from "./student/StudentLearning";
+import LearningDetail from "./student/LearningDetail";
 import StudentProtectedRoute from "./student/StudentProtectedRoute";
 import AdminDashboard from "./admin/AdminDashboard";
 import StudentOnboarding from "./admin/StudentOnboarding";
@@ -28,6 +30,7 @@ import CoordinatorProtectedRoute from "./coordinator/CoordinatorProtectedRoute";
 import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
 import { CoordinatorNavbar } from "./coordinator/CoordinatorNavbar";
 import { ToastContainer } from 'react-toastify';
+import { ThemeProvider } from './context/ThemeContext';
 
 const gradientBg = "bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100";
 
@@ -45,7 +48,7 @@ function AppContent() {
   const isLoginPage = isMain || isStudentLogin || isResetPassword;
 
   return (
-    <div className={gradientBg + " min-h-screen w-full flex flex-col"}>
+    <div className={gradientBg + " dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen w-full flex flex-col"}>
       {!isFeedbackForm && !isPublicPage && (
         isAdmin ? <AdminNavbar /> :
         isCoordinator ? <CoordinatorNavbar /> :
@@ -66,6 +69,8 @@ function AppContent() {
         <Route path="/student/dashboard" element={<StudentProtectedRoute><StudentDashboard /></StudentProtectedRoute>} />
         <Route path="/student/session" element={<StudentProtectedRoute><SessionAndFeedback /></StudentProtectedRoute>} />
         <Route path="/student/feedback/:pairId" element={<StudentProtectedRoute><FeedbackForm /></StudentProtectedRoute>} />
+        <Route path="/student/learning" element={<StudentProtectedRoute><StudentLearning /></StudentProtectedRoute>} />
+        <Route path="/student/learning/:semester/:subject/:teacherId" element={<StudentProtectedRoute><LearningDetail /></StudentProtectedRoute>} />
         
         {/* Admin Routes - Protected */}
         <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
@@ -94,10 +99,12 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-      <ToastContainer position="top-right" autoClose={3000} />
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppContent />
+        <ToastContainer position="top-right" autoClose={3000} />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

@@ -150,4 +150,22 @@ export const api = {
   },
   deleteTopic: (semesterId, subjectId, chapterId, topicId) => request(`/subjects/${semesterId}/subjects/${subjectId}/chapters/${chapterId}/topics/${topicId}`, { method: 'DELETE' }),
   reorderTopics: (semesterId, subjectId, chapterId, topicIds) => request(`/subjects/${semesterId}/subjects/${subjectId}/chapters/${chapterId}/topics/reorder`, { method: 'POST', body: { topicIds } }),
+
+  // Learning (Student)
+  getAllSemestersForStudent: () => request('/learning/semesters'),
+  getCoordinatorSubjects: (coordinatorId) => request(`/learning/coordinator/${coordinatorId}/subjects`),
+  getSubjectDetails: (semesterId, subjectId) => request(`/learning/semester/${semesterId}/subject/${subjectId}`),
+  startVideoTracking: (topicId, semesterId, subjectId, chapterId, coordinatorId) =>
+    request(`/learning/topic/${topicId}/start`, {
+      method: 'POST',
+      body: { semesterId, subjectId, chapterId, coordinatorId }
+    }),
+  updateTopicProgress: (semesterId, subjectId, chapterId, topicId, videoWatchedSeconds, coordinatorId) => 
+    request(`/learning/semester/${semesterId}/subject/${subjectId}/chapter/${chapterId}/topic/${topicId}/progress`, { 
+      method: 'POST', 
+      body: { videoWatchedSeconds, coordinatorId } 
+    }),
+  getTopicProgress: (topicId) => request(`/learning/topic/${topicId}/progress`),
+  getSubjectProgress: (subjectId) => request(`/learning/subject/${subjectId}/progress`),
+  getStudentProgress: () => request('/learning/progress'),
 };

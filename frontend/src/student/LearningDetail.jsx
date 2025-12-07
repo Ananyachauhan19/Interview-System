@@ -1,0 +1,479 @@
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ChevronDown,
+  ChevronRight,
+  BookOpen,
+  Video,
+  FileText,
+  FileQuestion,
+  Star,
+  X,
+  ExternalLink,
+  Menu,
+  CheckCircle2,
+  Circle
+} from 'lucide-react';
+import { api } from '../utils/api';
+import toast from 'react-hot-toast';
+
+export default function LearningDetail() {
+  const { semester, subject, teacherId } = useParams();
+  const location = useLocation();
+  const { semesterId, subjectId, coordinatorName: initialCoordinatorName, coordinatorId: initialCoordinatorId } = location.state || {};
+
+  const [allSubjects, setAllSubjects] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [subjectDetails, setSubjectDetails] = useState(null);
+  const [expandedChapters, setExpandedChapters] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [currentCoordinatorId, setCurrentCoordinatorId] = useState(initialCoordinatorId);
+  const [currentCoordinatorName, setCurrentCoordinatorName] = useState(initialCoordinatorName);
+  
+  // Modal states
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState(null);
+  const [modalType, setModalType] = useState(null); // 'video', 'notes', 'pdf'
+  
+  // Progress tracking
+  const [progress, setProgress] = useState({});
+
+  useEffect(() => {
+    loadCoordinatorSubjects();
+  }, [teacherId]);
+
+  useEffect(() => {
+    console.log('[LearningDetail] Initial state from navigation:');
+    console.log('  - semesterId:', semesterId);
+    console.log('  - subjectId:', subjectId);
+    console.log('  - coordinatorName:', initialCoordinatorName);
+    console.log('  - coordinatorId:', initialCoordinatorId);
+    if (semesterId && subjectId) {
+      loadSubjectDetails(semesterId, subjectId);
+      setSelectedSubject({ semesterId, subjectId });
+      loadSubjectProgress(subjectId);
+    }
+  }, [semesterId, subjectId]);
+
+  const loadCoordinatorSubjects = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getCoordinatorSubjects(teacherId);
+      setAllSubjects(data);
+    } catch (error) {
+      console.error('Error loading subjects:', error);
+      toast.error('Failed to load subjects');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSubjectDetails = async (semId, subjId) => {
+    try {
+      const data = await api.getSubjectDetails(semId, subjId);
+      console.log('[LearningDetail] Subject details loaded:', data);
+      console.log('[LearningDetail] Coordinator Name:', data.coordinatorName);
+      setSubjectDetails(data);
+      // Update current coordinator info from loaded data
+      if (data.coordinatorId) {
+        setCurrentCoordinatorId(data.coordinatorId);
+        console.log('[LearningDetail] Set coordinator ID:', data.coordinatorId);
+      }
+      if (data.coordinatorName) {
+        setCurrentCoordinatorName(data.coordinatorName);
+        console.log('[LearningDetail] Set coordinator name:', data.coordinatorName);
+      }
+    } catch (error) {
+      console.error('Error loading subject details:', error);
+      toast.error('Failed to load subject details');
+    }
+  };
+
+  const loadSubjectProgress = async (subjId) => {
+    try {
+      const data = await api.getSubjectProgress(subjId);
+      setProgress(prev => ({
+        ...prev,
+        [subjId]: data
+      }));
+    } catch (error) {
+      console.error('Error loading progress:', error);
+    }
+  };
+
+  const handleSubjectClick = (subject) => {
+    setSelectedSubject({ semesterId: subject.semesterId, subjectId: subject.subjectId });
+    loadSubjectDetails(subject.semesterId, subject.subjectId);
+    loadSubjectProgress(subject.subjectId);
+  };
+
+  const toggleChapter = (chapterId) => {
+    setExpandedChapters(prev => ({
+      ...prev,
+      [chapterId]: !prev[chapterId]
+    }));
+  };
+
+  const openModal = async (type, content, topic) => {
+    setModalType(type);
+    setModalContent(content);
+    setModalOpen(true);
+
+    // Start backend tracking if it's a video (no frontend timer needed)
+    if (type === 'video') {
+      try {
+        // Use currentCoordinatorId which is reliably set from state or loaded data
+        const coordId = currentCoordinatorId || subjectDetails?.coordinatorId;
+        
+        if (!coordId) {
+          console.error('Coordinator ID not available');
+          toast.error('Unable to track video progress');
+          return;
+        }
+
+        await api.startVideoTracking(
+          topic._id,
+          subjectDetails.semesterId,
+          subjectDetails.subjectId,
+          topic.chapterId,
+          coordId
+        );
+        console.log('[Video] Backend tracking started');
+        
+        // Refresh progress after 3 minutes + 5 seconds buffer
+        setTimeout(async () => {
+          await loadSubjectProgress(subjectDetails.subjectId);
+          // Also reload subject details to update chapter/topic completion states
+          await loadSubjectDetails(subjectDetails.semesterId, subjectDetails.subjectId);
+          toast.success('Topic completed! 🎉');
+        }, 185000); // 3:05 minutes
+      } catch (error) {
+        console.error('Error starting video tracking:', error);
+        toast.error('Failed to start video tracking');
+      }
+    }
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setModalContent(null);
+    setModalType(null);
+  };
+
+  const openInNewTab = (url) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const getDifficultyBadge = (difficulty) => {
+    const colors = {
+      easy: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+      medium: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+      hard: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+    };
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[difficulty] || colors.medium}`}>
+        {difficulty || 'Medium'}
+      </span>
+    );
+  };
+
+  const isTopicCompleted = (topicId) => {
+    if (!subjectDetails?.subjectId || !progress[subjectDetails.subjectId]) {
+      return false;
+    }
+    const progressRecords = progress[subjectDetails.subjectId].progressRecords || [];
+    const topicProgress = progressRecords.find(p => p.topicId === topicId);
+    return topicProgress?.completed || false;
+  };
+
+  const getSubjectProgressPercentage = (subjId) => {
+    return progress[subjId]?.percentage || 0;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
+      <div className="flex h-[calc(100vh-4rem)]">
+        {/* Sidebar */}
+        <motion.aside
+          initial={false}
+          animate={{ width: sidebarOpen ? 320 : 0 }}
+          className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden"
+        >
+          <div className="h-full overflow-y-auto p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-gray-900 dark:text-gray-100">Subjects</h2>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {allSubjects.map((subject) => {
+                const isSelected = selectedSubject?.subjectId === subject.subjectId;
+                const progressPercent = getSubjectProgressPercentage(subject.subjectId);
+
+                return (
+                  <div key={subject.subjectId}>
+                    <button
+                      onClick={() => handleSubjectClick(subject)}
+                      className={`w-full text-left p-3 rounded-lg transition-all ${
+                        isSelected
+                          ? 'bg-indigo-50 dark:bg-indigo-900 border-indigo-200 dark:border-indigo-600 border'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2 mb-2">
+                        <BookOpen className={`w-4 h-4 ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'}`} />
+                        <span className={`font-medium text-sm ${isSelected ? 'text-indigo-900 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                          {subject.subjectName}
+                        </span>
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progressPercent}%` }}
+                          transition={{ duration: 0.5, ease: 'easeOut' }}
+                          className="h-full bg-gradient-to-r from-indigo-500 to-purple-600"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{progressPercent}% complete</p>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </motion.aside>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto">
+          {/* Toggle Sidebar Button */}
+          {!sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="fixed left-4 top-20 z-10 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <Menu className="w-5 h-5 dark:text-gray-300" />
+            </button>
+          )}
+
+          {subjectDetails ? (
+            <div className="max-w-5xl mx-auto p-6">
+              {/* Header */}
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  {subjectDetails.subjectName}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">{subjectDetails.subjectDescription}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  Taught by <span className="font-medium dark:text-gray-300">
+                    {currentCoordinatorName || subjectDetails?.coordinatorName || initialCoordinatorName || 'Teacher'}
+                  </span>
+                </p>
+              </div>
+
+              {/* Chapters */}
+              <div className="space-y-4">
+                {subjectDetails.chapters.map((chapter, chapterIdx) => (
+                  <div key={chapter._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+                    {/* Chapter Header */}
+                    <div
+                      onClick={() => toggleChapter(chapter._id)}
+                      className="flex items-center justify-between p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          {expandedChapters[chapter._id] ? (
+                            <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                          ) : (
+                            <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                          )}
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                            Chapter {chapterIdx + 1}: {chapter.chapterName}
+                          </h3>
+                        </div>
+                        <div className="flex items-center">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < (chapter.importanceLevel || 3)
+                                  ? 'text-yellow-400 fill-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {chapter.topics.length} {chapter.topics.length === 1 ? 'topic' : 'topics'}
+                      </span>
+                    </div>
+
+                    {/* Topics */}
+                    <AnimatePresence>
+                      {expandedChapters[chapter._id] && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="border-t border-gray-100 dark:border-gray-700"
+                        >
+                          <div className="p-5">
+                            <div className="space-y-3">
+                              {chapter.topics.map((topic) => (
+                                <div
+                                  key={topic._id}
+                                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                                >
+                                  <div className="flex items-center space-x-3 flex-1">
+                                    {isTopicCompleted(topic._id) ? (
+                                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                                    ) : (
+                                      <Circle className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                                    )}
+                                    <div className="text-gray-700 dark:text-gray-200 font-medium flex-1">
+                                      {topic.topicName}
+                                    </div>
+                                    {getDifficultyBadge(topic.difficultyLevel)}
+                                  </div>
+
+                                  <div className="flex items-center space-x-2 ml-4">
+                                    {/* Video Button */}
+                                    {topic.topicVideoLink && (
+                                      <button
+                                        onClick={() => openModal('video', topic.topicVideoLink, { ...topic, chapterId: chapter._id })}
+                                        className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                        title="Watch Video"
+                                      >
+                                        <Video className="w-4 h-4" />
+                                      </button>
+                                    )}
+
+                                    {/* Notes Button */}
+                                    {topic.notesLink && (
+                                      <button
+                                        onClick={() => openModal('notes', topic.notesLink, topic)}
+                                        className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                        title="View Notes"
+                                      >
+                                        <FileText className="w-4 h-4" />
+                                      </button>
+                                    )}
+
+                                    {/* PDF Button */}
+                                    {topic.questionPDF && (
+                                      <button
+                                        onClick={() => openModal('pdf', topic.questionPDF, topic)}
+                                        className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                                        title="View Questions"
+                                      >
+                                        <FileQuestion className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <BookOpen className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">Select a subject to view details</p>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* Modal */}
+      <AnimatePresence>
+        {modalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"
+            onClick={closeModal}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[50vw] max-h-[90vh] overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                  {modalType === 'video' && 'Video'}
+                  {modalType === 'notes' && 'Notes'}
+                  {modalType === 'pdf' && 'Questions PDF'}
+                </h3>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => openInNewTab(modalContent)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Open in new tab"
+                  >
+                    <ExternalLink className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button
+                    onClick={closeModal}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-hidden">
+                {modalType === 'video' && (
+                  <iframe
+                    src={modalContent}
+                    className="w-full h-full"
+                    allowFullScreen
+                    title="Video Player"
+                  />
+                )}
+                {(modalType === 'notes' || modalType === 'pdf') && (
+                  <iframe
+                    src={modalContent}
+                    className="w-full h-full"
+                    title="Document Viewer"
+                  />
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

@@ -5,7 +5,7 @@ import { supabase } from '../utils/supabase.js';
 // Get all semesters for a coordinator
 export async function listSemesters(req, res) {
   try {
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     const semesters = await Semester.find({ coordinatorId }).sort({ order: 1 }).lean();
     res.json({ count: semesters.length, semesters });
   } catch (err) {
@@ -20,7 +20,7 @@ export async function createSemester(req, res) {
     const { semesterName, semesterDescription } = req.body;
     if (!semesterName) throw new HttpError(400, 'Semester name is required');
     
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     
     // Get max order for this coordinator
     const maxSemester = await Semester.findOne({ coordinatorId }).sort({ order: -1 }).select('order').lean();
@@ -47,7 +47,7 @@ export async function updateSemester(req, res) {
   try {
     const { id } = req.params;
     const { semesterName, semesterDescription } = req.body;
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     
     const semester = await Semester.findOne({ _id: id, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
@@ -68,7 +68,7 @@ export async function updateSemester(req, res) {
 export async function deleteSemester(req, res) {
   try {
     const { id } = req.params;
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     
     const semester = await Semester.findOneAndDelete({ _id: id, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
@@ -87,7 +87,7 @@ export async function reorderSemesters(req, res) {
     const { semesterIds } = req.body;
     if (!Array.isArray(semesterIds)) throw new HttpError(400, 'semesterIds must be an array');
     
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     
     const updates = semesterIds.map((id, index) => 
       Semester.updateOne({ _id: id, coordinatorId }, { order: index })
@@ -110,9 +110,19 @@ export async function addSubject(req, res) {
     
     if (!subjectName) throw new HttpError(400, 'Subject name is required');
     
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
+    
+    // Check for duplicate subject (case-insensitive)
+    const normalizedName = subjectName.toLowerCase().trim();
+    const duplicate = semester.subjects.find(s => 
+      s.subjectName.toLowerCase().trim() === normalizedName
+    );
+    
+    if (duplicate) {
+      return res.status(400).json({ error: 'Subject already exists' });
+    }
     
     const order = semester.subjects.length;
     semester.subjects.push({
@@ -137,7 +147,7 @@ export async function updateSubject(req, res) {
     const { semesterId, subjectId } = req.params;
     const { subjectName, subjectDescription } = req.body;
     
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
@@ -160,7 +170,7 @@ export async function updateSubject(req, res) {
 export async function deleteSubject(req, res) {
   try {
     const { semesterId, subjectId } = req.params;
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
@@ -184,7 +194,7 @@ export async function reorderSubjects(req, res) {
     
     if (!Array.isArray(subjectIds)) throw new HttpError(400, 'subjectIds must be an array');
     
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
@@ -212,7 +222,7 @@ export async function addChapter(req, res) {
     
     if (!chapterName) throw new HttpError(400, 'Chapter name is required');
     
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
@@ -242,7 +252,7 @@ export async function updateChapter(req, res) {
     const { semesterId, subjectId, chapterId } = req.params;
     const { chapterName, importanceLevel } = req.body;
     
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
@@ -268,7 +278,7 @@ export async function updateChapter(req, res) {
 export async function deleteChapter(req, res) {
   try {
     const { semesterId, subjectId, chapterId } = req.params;
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
@@ -295,7 +305,7 @@ export async function reorderChapters(req, res) {
     
     if (!Array.isArray(chapterIds)) throw new HttpError(400, 'chapterIds must be an array');
     
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
@@ -321,12 +331,16 @@ export async function reorderChapters(req, res) {
 // Add a topic to a chapter
 export async function addTopic(req, res) {
   try {
+    console.log('[addTopic] Request params:', req.params);
+    console.log('[addTopic] Request body:', req.body);
+    console.log('[addTopic] Request files:', req.files);
+    
     const { semesterId, subjectId, chapterId } = req.params;
-    const { topicName, difficulty, links } = req.body;
+    const { topicName, difficulty } = req.body;
     
     if (!topicName) throw new HttpError(400, 'Topic name is required');
     
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
@@ -336,13 +350,24 @@ export async function addTopic(req, res) {
     const chapter = subject.chapters.id(chapterId);
     if (!chapter) throw new HttpError(404, 'Chapter not found');
     
+    // Handle links - can be string, array, or multiple form fields
+    let topicVideoLink = '';
+    let notesLink = '';
+    
+    if (req.body.links) {
+      const linksArray = Array.isArray(req.body.links) ? req.body.links : [req.body.links];
+      topicVideoLink = linksArray[0] || '';
+      notesLink = linksArray[1] || '';
+    }
+    
     let questionPDF = null;
-    if (req.file) {
-      const fileName = `${Date.now()}-${req.file.originalname}`;
+    const pdfFile = req.files?.questionPDF?.[0];
+    if (pdfFile) {
+      const fileName = `${Date.now()}-${pdfFile.originalname}`;
       const { data, error } = await supabase.storage
         .from('question-pdfs')
-        .upload(fileName, req.file.buffer, {
-          contentType: req.file.mimetype
+        .upload(fileName, pdfFile.buffer, {
+          contentType: pdfFile.mimetype
         });
       
       if (error) throw new HttpError(500, 'Failed to upload PDF');
@@ -357,18 +382,23 @@ export async function addTopic(req, res) {
     const order = chapter.topics.length;
     chapter.topics.push({
       topicName,
-      difficulty: difficulty || 'medium',
-      links: links || [],
+      difficultyLevel: difficulty || 'medium',
+      topicVideoLink,
+      notesLink,
       questionPDF,
       order
     });
     
+    console.log('[addTopic] Topic added, saving semester...');
     await semester.save();
+    console.log('[addTopic] Semester saved successfully');
     res.status(201).json(semester);
   } catch (err) {
-    console.error('Error adding topic:', err);
-    if (err instanceof HttpError) throw err;
-    res.status(500).json({ error: 'Failed to add topic' });
+    console.error('[addTopic] Error:', err);
+    if (err instanceof HttpError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    res.status(500).json({ error: 'Failed to add topic', details: err.message });
   }
 }
 
@@ -376,9 +406,9 @@ export async function addTopic(req, res) {
 export async function updateTopic(req, res) {
   try {
     const { semesterId, subjectId, chapterId, topicId } = req.params;
-    const { topicName, difficulty, links } = req.body;
+    const { topicName, difficultyLevel, topicVideoLink, notesLink } = req.body;
     
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
@@ -391,16 +421,20 @@ export async function updateTopic(req, res) {
     const topic = chapter.topics.id(topicId);
     if (!topic) throw new HttpError(404, 'Topic not found');
     
+    // Update fields
     if (topicName !== undefined) topic.topicName = topicName;
-    if (difficulty !== undefined) topic.difficulty = difficulty;
-    if (links !== undefined) topic.links = links;
+    if (difficultyLevel !== undefined) topic.difficultyLevel = difficultyLevel;
+    if (topicVideoLink !== undefined) topic.topicVideoLink = topicVideoLink;
+    if (notesLink !== undefined) topic.notesLink = notesLink;
     
-    if (req.file) {
-      const fileName = `${Date.now()}-${req.file.originalname}`;
+    // Handle PDF upload if provided
+    const pdfFile = req.files?.questionPDF?.[0];
+    if (pdfFile) {
+      const fileName = `${Date.now()}-${pdfFile.originalname}`;
       const { data, error } = await supabase.storage
         .from('question-pdfs')
-        .upload(fileName, req.file.buffer, {
-          contentType: req.file.mimetype
+        .upload(fileName, pdfFile.buffer, {
+          contentType: pdfFile.mimetype
         });
       
       if (error) throw new HttpError(500, 'Failed to upload PDF');
@@ -412,6 +446,7 @@ export async function updateTopic(req, res) {
       topic.questionPDF = urlData.publicUrl;
     }
     
+    console.log('[updateTopic] Topic updated successfully');
     await semester.save();
     res.json(semester);
   } catch (err) {
@@ -425,7 +460,7 @@ export async function updateTopic(req, res) {
 export async function deleteTopic(req, res) {
   try {
     const { semesterId, subjectId, chapterId, topicId } = req.params;
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
@@ -455,7 +490,7 @@ export async function reorderTopics(req, res) {
     
     if (!Array.isArray(topicIds)) throw new HttpError(400, 'topicIds must be an array');
     
-    const coordinatorId = req.user.coordinatorId;
+    const coordinatorId = req.user._id;
     const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
