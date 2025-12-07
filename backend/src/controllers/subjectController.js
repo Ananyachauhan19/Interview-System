@@ -77,8 +77,23 @@ export async function deleteSemester(req, res) {
   try {
     const { id } = req.params;
     const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
+    
+    console.log('Deleting semester:', { id, role: req.user.role, ownerFilter });
+    
+    // First check if semester exists at all
+    const semesterExists = await Semester.findById(id).lean();
+    if (semesterExists) {
+      console.log('Semester exists with coordinatorId:', semesterExists.coordinatorId);
+    } else {
+      console.log('Semester does not exist in database');
+    }
+    
     const semester = await Semester.findOneAndDelete({ _id: id, ...ownerFilter });
-    if (!semester) throw new HttpError(404, 'Semester not found');
+    
+    if (!semester) {
+      console.log('Semester not found with filter:', { _id: id, ...ownerFilter });
+      throw new HttpError(404, 'Semester not found or you do not have permission to delete it');
+    }
     
     res.json({ message: 'Semester deleted successfully' });
   } catch (err) {

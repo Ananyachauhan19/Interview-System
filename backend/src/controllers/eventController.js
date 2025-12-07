@@ -252,6 +252,7 @@ function normalizeSpecialEventRow(row) {
     branch: row.branch || row.Branch || row.BRANCH || '',
     course: row.course || row.Course || row.COURSE || '',
     college: row.college || row.College || row.COLLEGE || '',
+    semester: row.semester || row.Semester || row.SEMESTER || '',
     password: row.password || row.Password || row.PASSWORD || '',
   };
 }
@@ -414,7 +415,7 @@ export async function createSpecialEvent(req, res) {
   const createdStudents = []; // For async email sending
 
   for (const row of normalizedRows) {
-    const { course, name, email, studentid, password, branch, college } = row;
+    const { course, name, email, studentid, password, branch, college, semester } = row;
 
     // Skip completely empty rows
     if (!email && !studentid && !name) continue;
@@ -514,6 +515,7 @@ export async function createSpecialEvent(req, res) {
             branch: existingUser.branch || branch,
             course: existingUser.course || course,
             college: existingUser.college || college,
+            semester: existingUser.semester,
             events: [event._id],
             passwordHash: existingUser.passwordHash,
             mustChangePassword: existingUser.mustChangePassword,
@@ -591,6 +593,7 @@ export async function createSpecialEvent(req, res) {
           branch,
           course: course || undefined,
           college: college || undefined,
+          semester: semester || undefined,
           events: [event._id],
           passwordHash,
           mustChangePassword: true,

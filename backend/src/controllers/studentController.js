@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
 import User from '../models/User.js';
+import Event from '../models/Event.js';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { sendOnboardingEmail } from '../utils/mailer.js';
 import SpecialStudent from '../models/SpecialStudent.js';
@@ -343,12 +344,32 @@ export async function listAllSpecialStudents(req, res) {
     }
     
     const specialStudents = await SpecialStudent.find(query)
-      .populate('events', 'name isSpecial')
+      .populate({
+        path: 'events',
+        select: 'name isSpecial coordinatorId',
+        populate: {
+          path: 'coordinatorId',
+          select: 'name email'
+        }
+      })
       .select('name email studentId course branch college semester events createdAt')
       .sort({ createdAt: -1 })
       .lean();
     
-    res.json({ count: specialStudents.length, students: specialStudents });
+    // Extract coordinator info from events and add to each student
+    const studentsWithCoordinator = specialStudents.map(student => {
+      // Get the first event's coordinator (most special students have one event)
+      const firstEvent = student.events && student.events.length > 0 ? student.events[0] : null;
+      const coordinator = firstEvent?.coordinatorId;
+      
+      return {
+        ...student,
+        teacherId: coordinator?.name || '-',
+        coordinatorEmail: coordinator?.email || '-'
+      };
+    });
+    
+    res.json({ count: studentsWithCoordinator.length, students: studentsWithCoordinator });
   } catch (err) {
     console.error('Error listing special students:', err);
     res.status(500).json({ error: 'Failed to fetch special students' });
@@ -360,12 +381,25 @@ export async function listSpecialStudentsByEvent(req, res) {
   try {
     const { eventId } = req.params;
     
+    // First get the event to find its coordinator
+    const event = await Event.findById(eventId)
+      .populate('coordinatorId', 'name email')
+      .lean();
+    
     const specialStudents = await SpecialStudent.find({ events: eventId })
       .select('name email studentId course branch college semester createdAt')
       .sort({ createdAt: -1 })
       .lean();
     
-    res.json({ count: specialStudents.length, students: specialStudents });
+    // Add coordinator info to each student
+    const coordinator = event?.coordinatorId;
+    const studentsWithCoordinator = specialStudents.map(student => ({
+      ...student,
+      teacherId: coordinator?.name || '-',
+      coordinatorEmail: coordinator?.email || '-'
+    }));
+    
+    res.json({ count: studentsWithCoordinator.length, students: studentsWithCoordinator });
   } catch (err) {
     console.error('Error listing special students by event:', err);
     res.status(500).json({ error: 'Failed to fetch special students for event' });

@@ -105,22 +105,32 @@ export const getAllSemestersForStudent = async (req, res) => {
       })
     }));
 
+    console.log('[Learning] Total semesters before filtering:', result.length);
+    result.forEach(sem => {
+      console.log(`  - ${sem.semesterName}: ${sem.subjects.length} subjects`);
+    });
+
     // Filter by student semester if user is a student
     let filteredResult = result;
     if (studentSemester !== null && studentSemester !== undefined) {
+      console.log('[Learning] Filtering for student semester:', studentSemester);
       filteredResult = result.filter(sem => {
         // Extract semester number from semester name (e.g., "Semester 1" -> 1)
         const match = sem.semesterName.match(/\d+/);
         if (match) {
           const semNum = parseInt(match[0]);
-          return semNum <= studentSemester;
+          const include = semNum <= studentSemester;
+          console.log(`  - ${sem.semesterName}: extracted ${semNum}, ${include ? 'INCLUDE' : 'EXCLUDE'}`);
+          return include;
         }
         // If no number found, include it (edge case)
+        console.log(`  - ${sem.semesterName}: no number found, INCLUDE`);
         return true;
       });
       console.log(`[Learning] Filtered ${result.length} semesters to ${filteredResult.length} for student semester ${studentSemester}`);
     }
 
+    console.log('[Learning] Returning filtered result:', filteredResult.length, 'semesters');
     res.json(filteredResult);
   } catch (error) {
     console.error('Error fetching semesters for student:', error);
@@ -136,7 +146,12 @@ export const getCoordinatorSubjects = async (req, res) => {
     const semesters = await Semester.find({ coordinatorId }).sort('order');
 
     // Fetch the coordinator user for name/email
-    const coordUser = await User.findOne({ $or: [ { coordinatorId }, { _id: coordinatorId } ] }).select('_id name email coordinatorId');
+    // Try by business coordinatorId first (string), then by _id if it's a valid ObjectId
+    let coordUser = await User.findOne({ coordinatorId }).select('_id name email coordinatorId');
+    if (!coordUser && coordinatorId.match(/^[0-9a-fA-F]{24}$/)) {
+      // If not found and looks like ObjectId, try _id
+      coordUser = await User.findById(coordinatorId).select('_id name email coordinatorId');
+    }
 
     // Flatten all subjects from all semesters
     const allSubjects = [];
@@ -181,7 +196,12 @@ export const getSubjectDetails = async (req, res) => {
     }
 
     // Lookup coordinator details
-    const coordUser = await User.findOne({ $or: [ { coordinatorId: semester.coordinatorId }, { _id: semester.coordinatorId } ] }).select('name email coordinatorId');
+    // Try by business coordinatorId first (string), then by _id if it's a valid ObjectId
+    let coordUser = await User.findOne({ coordinatorId: semester.coordinatorId }).select('name email coordinatorId');
+    if (!coordUser && semester.coordinatorId.match(/^[0-9a-fA-F]{24}$/)) {
+      // If not found and looks like ObjectId, try _id
+      coordUser = await User.findById(semester.coordinatorId).select('name email coordinatorId');
+    }
 
     const response = {
       semesterId: semester._id,
