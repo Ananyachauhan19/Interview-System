@@ -195,13 +195,13 @@ export default function LearningDetail() {
 
   const getDifficultyBadge = (difficulty) => {
     const colors = {
-      easy: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
-      medium: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
-      hard: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+      easy: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300',
+      medium: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300',
+      hard: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
     };
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[difficulty] || colors.medium}`}>
-        {difficulty || 'Medium'}
+      <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[difficulty] || colors.medium}`}>
+        {difficulty ? difficulty.charAt(0).toUpperCase() + difficulty.slice(1) : 'Medium'}
       </span>
     );
   };
@@ -221,33 +221,33 @@ export default function LearningDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+      <div className="min-h-screen bg-white dark:bg-gray-900 pt-20 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-sky-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
+    <div className="min-h-screen bg-white dark:bg-gray-900 pt-16">
       <div className="flex h-[calc(100vh-4rem)]">
         {/* Sidebar */}
         <motion.aside
           initial={false}
-          animate={{ width: sidebarOpen ? 320 : 0 }}
-          className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden"
+          animate={{ width: sidebarOpen ? 280 : 0 }}
+          className="bg-white dark:bg-gray-800 border-r border-slate-200 dark:border-gray-700 overflow-hidden shadow-sm"
         >
           <div className="h-full overflow-y-auto p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-gray-900 dark:text-gray-100">Subjects</h2>
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200 dark:border-gray-700">
+              <h2 className="text-base font-bold text-slate-800 dark:text-gray-100">My Subjects</h2>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                className="lg:hidden p-1.5 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 text-slate-600 dark:text-gray-400" />
               </button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {allSubjects.map((subject) => {
                 const isSelected = selectedSubject?.subjectId === subject.subjectId;
                 const progressPercent = getSubjectProgressPercentage(subject.subjectId);
@@ -256,29 +256,42 @@ export default function LearningDetail() {
                   <div key={subject.subjectId}>
                     <button
                       onClick={() => handleSubjectClick(subject)}
-                      className={`w-full text-left p-3 rounded-lg transition-all ${
+                      className={`w-full text-left p-3 rounded-lg transition-all border ${
                         isSelected
-                          ? 'bg-indigo-50 dark:bg-indigo-900 border-indigo-200 dark:border-indigo-600 border'
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
+                          ? 'bg-sky-50 dark:bg-sky-900/20 border-sky-300 dark:border-sky-600 shadow-sm'
+                          : 'bg-slate-50 dark:bg-gray-700 border-slate-200 dark:border-gray-600 hover:bg-slate-100 dark:hover:bg-gray-600 hover:border-slate-300 dark:hover:border-gray-500'
                       }`}
                     >
                       <div className="flex items-center space-x-2 mb-2">
-                        <BookOpen className={`w-4 h-4 ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'}`} />
-                        <span className={`font-medium text-sm ${isSelected ? 'text-indigo-900 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          isSelected ? 'bg-sky-100 dark:bg-sky-800' : 'bg-slate-200 dark:bg-gray-600'
+                        }`}>
+                          <BookOpen className={`w-4 h-4 ${
+                            isSelected ? 'text-sky-600 dark:text-sky-400' : 'text-slate-500 dark:text-gray-400'
+                          }`} />
+                        </div>
+                        <span className={`font-semibold text-sm truncate ${
+                          isSelected ? 'text-slate-800 dark:text-gray-100' : 'text-slate-700 dark:text-gray-300'
+                        }`}>
                           {subject.subjectName}
                         </span>
                       </div>
                       
                       {/* Progress Bar */}
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                      <div className="w-full bg-slate-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden mb-1.5">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${progressPercent}%` }}
                           transition={{ duration: 0.5, ease: 'easeOut' }}
-                          className="h-full bg-gradient-to-r from-indigo-500 to-purple-600"
+                          className="h-full bg-sky-500 dark:bg-sky-600 rounded-full"
                         />
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{progressPercent}% complete</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium text-slate-600 dark:text-gray-400">{progressPercent}% Complete</p>
+                        {progressPercent === 100 && (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        )}
+                      </div>
                     </button>
                   </div>
                 );
@@ -288,67 +301,67 @@ export default function LearningDetail() {
         </motion.aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-gray-900">
           {/* Toggle Sidebar Button */}
           {!sidebarOpen && (
             <button
               onClick={() => setSidebarOpen(true)}
-              className="fixed left-4 top-20 z-10 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="fixed left-4 top-20 z-10 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg hover:bg-slate-50 dark:hover:bg-gray-700 border border-slate-200 dark:border-gray-700 transition-all"
             >
-              <Menu className="w-5 h-5 dark:text-gray-300" />
+              <Menu className="w-5 h-5 text-slate-700 dark:text-gray-300" />
             </button>
           )}
 
           {subjectDetails ? (
             <div className="max-w-5xl mx-auto p-6">
               {/* Header */}
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 p-5">
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 mb-2">
                   {subjectDetails.subjectName}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">{subjectDetails.subjectDescription}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  Taught by <span className="font-medium dark:text-gray-300">
-                    {currentCoordinatorName || subjectDetails?.coordinatorName || initialCoordinatorName || 'Teacher'}
+                <p className="text-sm text-slate-600 dark:text-gray-400 mb-3">{subjectDetails.subjectDescription}</p>
+                <div className="flex items-center space-x-2 text-xs">
+                  <span className="px-2 py-1 bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300 rounded font-medium">
+                    Instructor: {currentCoordinatorName || subjectDetails?.coordinatorName || initialCoordinatorName || 'Teacher'}
                   </span>
-                </p>
+                </div>
               </div>
 
               {/* Chapters */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {subjectDetails.chapters.map((chapter, chapterIdx) => (
-                  <div key={chapter._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+                  <div key={chapter._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden">
                     {/* Chapter Header */}
                     <div
                       onClick={() => toggleChapter(chapter._id)}
-                      className="flex items-center justify-between p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                      <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-3 flex-1">
                         <div className="flex items-center space-x-2">
                           {expandedChapters[chapter._id] ? (
-                            <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                            <ChevronDown className="w-4 h-4 text-slate-600 dark:text-gray-400" />
                           ) : (
-                            <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                            <ChevronRight className="w-4 h-4 text-slate-600 dark:text-gray-400" />
                           )}
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                          <h3 className="font-bold text-sm text-slate-800 dark:text-gray-100">
                             Chapter {chapterIdx + 1}: {chapter.chapterName}
                           </h3>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center space-x-0.5">
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Star
                               key={i}
-                              className={`w-4 h-4 ${
+                              className={`w-3.5 h-3.5 ${
                                 i < (chapter.importanceLevel || 3)
-                                  ? 'text-yellow-400 fill-yellow-400'
-                                  : 'text-gray-300'
+                                  ? 'text-yellow-500 fill-yellow-500'
+                                  : 'text-slate-300 dark:text-gray-600'
                               }`}
                             />
                           ))}
                         </div>
                       </div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {chapter.topics.length} {chapter.topics.length === 1 ? 'topic' : 'topics'}
+                      <span className="text-xs font-medium px-2 py-1 bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-400 rounded">
+                        {chapter.topics.length} {chapter.topics.length === 1 ? 'Topic' : 'Topics'}
                       </span>
                     </div>
 
@@ -359,33 +372,34 @@ export default function LearningDetail() {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          className="border-t border-gray-100 dark:border-gray-700"
+                          transition={{ duration: 0.2 }}
+                          className="border-t border-slate-200 dark:border-gray-700"
                         >
-                          <div className="p-5">
-                            <div className="space-y-3">
+                          <div className="p-4 bg-slate-50 dark:bg-gray-900">
+                            <div className="space-y-2">
                               {chapter.topics.map((topic) => (
                                 <div
                                   key={topic._id}
-                                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                                  className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 hover:border-sky-300 dark:hover:border-sky-600 transition-all"
                                 >
-                                  <div className="flex items-center space-x-3 flex-1">
+                                  <div className="flex items-center space-x-2.5 flex-1 min-w-0">
                                     {isTopicCompleted(topic._id) ? (
                                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                                     ) : (
-                                      <Circle className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                                      <Circle className="w-5 h-5 text-slate-400 dark:text-gray-500 flex-shrink-0" />
                                     )}
-                                    <div className="text-gray-700 dark:text-gray-200 font-medium flex-1">
+                                    <div className="text-slate-800 dark:text-gray-200 font-semibold text-sm flex-1 truncate">
                                       {topic.topicName}
                                     </div>
                                     {getDifficultyBadge(topic.difficultyLevel)}
                                   </div>
 
-                                  <div className="flex items-center space-x-2 ml-4">
+                                  <div className="flex items-center space-x-1.5 ml-3 flex-shrink-0">
                                     {/* Video Button */}
                                     {topic.topicVideoLink && (
                                       <button
                                         onClick={() => openModal('video', topic.topicVideoLink, { ...topic, chapterId: chapter._id })}
-                                        className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                        className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-sm"
                                         title="Watch Video"
                                       >
                                         <Video className="w-4 h-4" />
@@ -396,7 +410,7 @@ export default function LearningDetail() {
                                     {topic.notesPDF && (
                                       <button
                                         onClick={() => openModal('pdf', topic.notesPDF, topic)}
-                                        className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                        className="p-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors shadow-sm"
                                         title="View Notes PDF"
                                       >
                                         <FileText className="w-4 h-4" />
@@ -407,7 +421,7 @@ export default function LearningDetail() {
                                     {topic.questionPDF && (
                                       <button
                                         onClick={() => openModal('pdf', topic.questionPDF, topic)}
-                                        className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                                        className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm"
                                         title="View Questions"
                                       >
                                         <FileQuestion className="w-4 h-4" />
@@ -428,8 +442,10 @@ export default function LearningDetail() {
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <BookOpen className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">Select a subject to view details</p>
+                <div className="w-16 h-16 bg-slate-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <BookOpen className="w-8 h-8 text-slate-400 dark:text-gray-500" />
+                </div>
+                <p className="text-sm text-slate-600 dark:text-gray-400 font-medium">Select a subject to view details</p>
               </div>
             </div>
           )}
@@ -444,47 +460,47 @@ export default function LearningDetail() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={closeModal}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
+              initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              exit={{ scale: 0.9, opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-[60vw] max-w-4xl h-auto max-h-[80vh] bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col"
+              className="w-[65vw] max-w-4xl h-auto max-h-[85vh] bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col"
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {modalType === 'video' && 'Video'}
-                  {modalType === 'notes' && 'Notes'}
-                  {modalType === 'pdf' && 'Questions PDF'}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <h3 className="text-base font-bold text-slate-800 dark:text-gray-100">
+                  {modalType === 'video' && '📹 Video Lesson'}
+                  {modalType === 'notes' && '📄 Study Notes'}
+                  {modalType === 'pdf' && '📝 Practice Questions'}
                 </h3>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1.5">
                   <button
                     onClick={() => openInNewTab(modalContent)}
-                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     title="Open in new tab"
                   >
-                    <ExternalLink className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                    <ExternalLink className="w-4 h-4 text-slate-600 dark:text-gray-400" />
                   </button>
                   <button
                     onClick={closeModal}
-                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
-                    <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                    <X className="w-4 h-4 text-slate-600 dark:text-gray-400" />
                   </button>
                 </div>
               </div>
 
               {/* Modal Content */}
-              <div className="flex-1 overflow-hidden p-4">
+              <div className="flex-1 overflow-hidden p-4 bg-slate-50 dark:bg-gray-900">
                 {modalType === 'video' && (
                   <iframe
                     src={modalContent}
-                    className="w-full h-[500px] rounded-lg"
+                    className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700"
                     allowFullScreen
                     title="Video Player"
                   />
@@ -492,7 +508,7 @@ export default function LearningDetail() {
                 {(modalType === 'notes' || modalType === 'pdf') && (
                   <iframe
                     src={modalContent}
-                    className="w-full h-[500px] rounded-lg"
+                    className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700"
                     title="Document Viewer"
                   />
                 )}

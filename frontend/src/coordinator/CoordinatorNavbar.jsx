@@ -59,7 +59,7 @@ export function CoordinatorNavbar() {
     { path: "/coordinator", label: "Scheduled Events", Icon: CalendarDays },
     { path: "/coordinator/event/create", label: "Create Event", Icon: CalendarDays },
     { path: "/coordinator/students", label: "My Students", Icon: Users },
-    { path: "/coordinator/subjects", label: "Semesters", Icon: BookOpen },
+    { path: "/coordinator/subjects", label: "Learning Modules", Icon: BookOpen },
     { path: "/coordinator/feedback", label: "Feedback", Icon: MessageSquare },
   ];
 

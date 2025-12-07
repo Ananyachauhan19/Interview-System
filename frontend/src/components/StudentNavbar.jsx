@@ -60,7 +60,7 @@ export function StudentNavbar() {
 
   const navItems = [
     { path: "/student/dashboard", label: "Dashboard", Icon: BookOpenCheck },
-    { path: "/student/learning", label: "Learning", Icon: GraduationCap },
+    { path: "/student/learning", label: "Learning Modules", Icon: GraduationCap },
     { path: "/student/session", label: "Feedback", Icon: CalendarDays },
   ];
 
