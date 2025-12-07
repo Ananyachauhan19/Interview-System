@@ -181,3 +181,82 @@ export async function listFeedbackForMe(req, res) {
     submittedAt: f.createdAt,
   })));
 }
+
+// Coordinator: list feedback for assigned students only
+export async function listCoordinatorFeedback(req, res) {
+  const { college, eventId } = req.query;
+  
+  // Get students assigned to this coordinator
+  const assignedStudents = await User.find({ 
+    teacherId: req.user.coordinatorId,
+    role: 'student' 
+  }, '_id');
+  
+  const studentIds = assignedStudents.map(s => s._id);
+  
+  const filter = { to: { $in: studentIds } };
+  if (eventId) filter.event = eventId;
+  if (college) {
+    const users = await User.find({ 
+      college: new RegExp(`^${college}$`, 'i'),
+      _id: { $in: studentIds }
+    }, '_id');
+    const ids = users.map(u => u._id);
+    filter.to = { $in: ids };
+  }
+  
+  const list = await Feedback.find(filter)
+    .populate('from to event pair');
+  res.json(list.map(f => ({
+    id: f._id,
+    eventId: f.event?._id,
+    event: f.event?.name,
+    pair: f.pair?._id,
+    interviewer: f.from?.name || f.from?.email,
+    interviewee: f.to?.name || f.to?.email,
+    intervieweeCollege: f.to?.college,
+    marks: f.marks,
+    comments: f.comments,
+    submittedAt: f.createdAt,
+  })));
+}
+
+// Coordinator: export filtered feedback for assigned students
+export async function exportCoordinatorFeedback(req, res) {
+  const { college, eventId } = req.query;
+  
+  // Get students assigned to this coordinator
+  const assignedStudents = await User.find({ 
+    teacherId: req.user.coordinatorId,
+    role: 'student' 
+  }, '_id');
+  
+  const studentIds = assignedStudents.map(s => s._id);
+  
+  const filter = { to: { $in: studentIds } };
+  if (eventId) filter.event = eventId;
+  if (college) {
+    const users = await User.find({ 
+      college: new RegExp(`^${college}$`, 'i'),
+      _id: { $in: studentIds }
+    }, '_id');
+    const ids = users.map(u => u._id);
+    filter.to = { $in: ids };
+  }
+  
+  const list = await Feedback.find(filter).populate('from to event');
+  const header = 'event,interviewer,interviewee,college,marks,comments,submittedAt\n';
+  const rows = list.map(f => [
+    (f.event?.name || ''),
+    (f.from?.name || f.from?.email || f.from?._id || ''),
+    (f.to?.name || f.to?.email || f.to?._id || ''),
+    (f.to?.college || ''),
+    (f.marks ?? ''),
+    JSON.stringify(f.comments || ''),
+    f.createdAt ? new Date(f.createdAt).toISOString() : ''
+  ].join(','));
+  const csv = header + rows.join('\n');
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="coordinator_feedback_filtered.csv"');
+  res.send(csv);
+}
