@@ -346,29 +346,50 @@ export async function listAllSpecialStudents(req, res) {
     const specialStudents = await SpecialStudent.find(query)
       .populate({
         path: 'events',
-        select: 'name isSpecial coordinatorId',
-        populate: {
-          path: 'coordinatorId',
-          select: 'name email'
-        }
+        select: 'name isSpecial coordinatorId'
       })
       .select('name email studentId course branch college semester events createdAt')
       .sort({ createdAt: -1 })
       .lean();
-    
+
+    // Get all unique coordinator IDs from events
+    const coordinatorIds = new Set();
+    specialStudents.forEach(student => {
+      student.events?.forEach(event => {
+        if (event.coordinatorId) {
+          coordinatorIds.add(event.coordinatorId);
+        }
+      });
+    });
+
+    // Fetch all coordinators at once
+    const coordinators = await User.find({
+      $or: [
+        { coordinatorId: { $in: Array.from(coordinatorIds) } },
+        { _id: { $in: Array.from(coordinatorIds).filter(id => id.match(/^[0-9a-fA-F]{24}$/)) } }
+      ]
+    }).select('_id name email coordinatorId').lean();
+
+    // Create a map for quick lookup
+    const coordMap = new Map();
+    coordinators.forEach(coord => {
+      if (coord.coordinatorId) coordMap.set(coord.coordinatorId, coord);
+      coordMap.set(coord._id.toString(), coord);
+    });
+
     // Extract coordinator info from events and add to each student
     const studentsWithCoordinator = specialStudents.map(student => {
       // Get the first event's coordinator (most special students have one event)
       const firstEvent = student.events && student.events.length > 0 ? student.events[0] : null;
-      const coordinator = firstEvent?.coordinatorId;
-      
+      const coordId = firstEvent?.coordinatorId;
+      const coordinator = coordId ? coordMap.get(coordId) : null;
       return {
         ...student,
-        teacherId: coordinator?.name || '-',
+        teacherId: coordinator?.coordinatorId || coordinator?.name || '-',
         coordinatorEmail: coordinator?.email || '-'
       };
     });
-    
+
     res.json({ count: studentsWithCoordinator.length, students: studentsWithCoordinator });
   } catch (err) {
     console.error('Error listing special students:', err);
@@ -383,8 +404,27 @@ export async function listSpecialStudentsByEvent(req, res) {
     
     // First get the event to find its coordinator
     const event = await Event.findById(eventId)
-      .populate('coordinatorId', 'name email')
+      .select('coordinatorId')
       .lean();
+    
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    
+    // Fetch coordinator details
+    let coordinator = null;
+    if (event.coordinatorId) {
+      coordinator = await User.findOne({ coordinatorId: event.coordinatorId })
+        .select('name email coordinatorId')
+        .lean();
+      
+      // If not found by coordinatorId, try by _id if it looks like ObjectId
+      if (!coordinator && event.coordinatorId.match(/^[0-9a-fA-F]{24}$/)) {
+        coordinator = await User.findById(event.coordinatorId)
+          .select('name email coordinatorId')
+          .lean();
+      }
+    }
     
     const specialStudents = await SpecialStudent.find({ events: eventId })
       .select('name email studentId course branch college semester createdAt')
@@ -392,10 +432,9 @@ export async function listSpecialStudentsByEvent(req, res) {
       .lean();
     
     // Add coordinator info to each student
-    const coordinator = event?.coordinatorId;
     const studentsWithCoordinator = specialStudents.map(student => ({
       ...student,
-      teacherId: coordinator?.name || '-',
+      teacherId: coordinator?.coordinatorId || coordinator?.name || '-',
       coordinatorEmail: coordinator?.email || '-'
     }));
     

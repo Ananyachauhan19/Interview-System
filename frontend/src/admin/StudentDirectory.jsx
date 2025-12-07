@@ -237,9 +237,7 @@ export default function StudentDirectory() {
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Semester</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">College</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Coordinator Assigned</th>
-                    {activeTab === "special" && (
-                      <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Events</th>
-                    )}
+                    
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
@@ -266,23 +264,7 @@ export default function StudentDirectory() {
                         <td className="px-4 py-2 text-slate-600 text-sm">{s.semester || "-"}</td>
                         <td className="px-4 py-2 text-slate-600 text-sm max-w-[200px]"><span className="truncate block">{s.college || "-"}</span></td>
                         <td className="px-4 py-2 text-slate-700 text-sm">{s.teacherId || "-"}</td>
-                        {activeTab === "special" && (
-                          <td className="px-4 py-2 text-slate-700 text-sm">
-                            <div className="flex flex-wrap gap-1">
-                              {s.events && s.events.length > 0 ? (
-                                s.events.map((evt, idx) => (
-                                  <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
-                                    {evt?.name || "Unknown Event"}
-                                  </span>
-                                ))
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                                  No Events
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                        )}
+                        
                       </tr>
                     );
                   })}
