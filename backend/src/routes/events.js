@@ -15,8 +15,8 @@ const multi = upload.fields([
 
 router.get('/', requireAuth, listEvents);
 router.post('/', requireAuth, requireAdminOrCoordinator, upload.single('template'), createEvent);
-router.post('/special/check-csv', requireAuth, requireAdmin, upload.single('csv'), checkSpecialEventCsv);
-router.post('/special', requireAuth, requireAdmin, multi, createSpecialEvent);
+router.post('/special/check-csv', requireAuth, requireAdminOrCoordinator, upload.single('csv'), checkSpecialEventCsv);
+router.post('/special', requireAuth, requireAdminOrCoordinator, multi, createSpecialEvent);
 router.get('/:id', requireAuth, requireAdminOrCoordinator, getEvent);
 router.post('/:id/join', requireAuth, joinEvent);
 router.post('/:id/template', requireAuth, requireAdmin, upload.single('template'), replaceEventTemplate);

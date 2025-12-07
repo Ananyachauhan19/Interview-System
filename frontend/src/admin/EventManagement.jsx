@@ -66,6 +66,7 @@ export default function EventManagement() {
         r.status === 'missing_fields' || 
         r.status === 'invalid_email' || 
         r.status === 'duplicate_in_file' ||
+        r.status === 'student_not_assigned_to_you' ||
         r.status === 'error'
       );
       
@@ -96,9 +97,10 @@ export default function EventManagement() {
     
     if (errorRows.length === 0) return;
     
-    const headers = ['Row', 'Email', 'Student ID', 'Status', 'Details'];
+    const headers = ['Row', 'Name', 'Email', 'Student ID', 'Status', 'Details'];
     const rows = errorRows.map(r => [
       r.row || '',
+      r.name || '',
       r.email || '',
       r.studentid || '',
       r.status || '',
@@ -184,6 +186,7 @@ export default function EventManagement() {
         r.status === 'missing_fields' || 
         r.status === 'invalid_email' || 
         r.status === 'duplicate_in_file' ||
+        r.status === 'Student_not_assigned_to_you' ||
         r.status === 'error'
       );
       
@@ -629,6 +632,7 @@ export default function EventManagement() {
                     <thead>
                       <tr className="bg-slate-50 text-left text-slate-700">
                         <th className="py-2 px-3 text-xs font-semibold w-16">Row</th>
+                        <th className="py-2 px-3 text-xs font-semibold min-w-[120px]">Name</th>
                         <th className="py-2 px-3 text-xs font-semibold min-w-[180px]">Email</th>
                         <th className="py-2 px-3 text-xs font-semibold w-24">Student ID</th>
                         <th className="py-2 px-3 text-xs font-semibold w-32">Status</th>
@@ -644,6 +648,7 @@ export default function EventManagement() {
                           }`}
                         >
                           <td className="py-2 px-3 text-xs text-slate-600">{r.row || '-'}</td>
+                          <td className="py-2 px-3 text-xs text-slate-800">{r.name || '-'}</td>
                           <td className="py-2 px-3 text-xs text-slate-800">{r.email || '-'}</td>
                           <td className="py-2 px-3 text-xs text-slate-800">{r.studentid || '-'}</td>
                           <td className={`py-2 px-3 text-xs font-medium ${

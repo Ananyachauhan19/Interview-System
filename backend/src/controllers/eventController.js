@@ -248,7 +248,7 @@ function normalizeSpecialEventRow(row) {
   return {
     name: row.name || row.Name || row.NAME || '',
     email: (row.email || row.Email || row.EMAIL || '').trim().toLowerCase(),
-    studentid: (row.studentid || row.studentId || row.StudentId || row.STUDENTID || row.studentID || row.student_id || '').toString().trim(),
+    studentid: (row.studentid || row.studentId || row.StudentId || row.Studentid || row.STUDENTID || row.studentID || row.student_id || '').toString().trim(),
     branch: row.branch || row.Branch || row.BRANCH || '',
     course: row.course || row.Course || row.COURSE || '',
     college: row.college || row.College || row.COLLEGE || '',
@@ -275,6 +275,20 @@ export async function checkSpecialEventCsv(req, res) {
   // Track duplicates inside the CSV
   const seenEmails = new Set();
   const seenStudentIds = new Set();
+
+  // For coordinators, get their assigned students
+  let assignedStudents = null;
+  if (req.user?.role === 'coordinator') {
+    const coordinatorId = req.user.coordinatorId;
+    if (!coordinatorId) {
+      return res.status(400).json({ error: 'Coordinator ID missing' });
+    }
+    // Get all students assigned to this coordinator
+    assignedStudents = await User.find({ 
+      role: 'student', 
+      teacherId: coordinatorId 
+    }).select('email studentId name');
+  }
 
   const normalizedRows = rows.map((r, idx) => ({ ...normalizeSpecialEventRow(r), __row: idx + 2 }));
 
@@ -312,8 +326,28 @@ export async function checkSpecialEventCsv(req, res) {
     seenEmails.add(email);
     seenStudentIds.add(studentid);
 
+    // For coordinators, validate that student is assigned to them
+    if (assignedStudents !== null) {
+      const isAssigned = assignedStudents.some(s => 
+        s.email.toLowerCase() === email.toLowerCase() && 
+        s.studentId === studentid
+      );
+      
+      if (!isAssigned) {
+        results.push({ 
+          row: row.__row, 
+          name,
+          email, 
+          studentid, 
+          status: 'not_assigned_to_coordinator',
+          message: `Student "${name}" (${studentid}) is not assigned to you`
+        });
+        continue;
+      }
+    }
+
     // Mark as ready to create (no database checks shown to user)
-    results.push({ row: row.__row, email, studentid, status: 'ready' });
+    results.push({ row: row.__row, name, email, studentid, status: 'ready' });
   }
 
   res.json({ count: results.length, results });
@@ -330,6 +364,21 @@ export async function createSpecialEvent(req, res) {
   if (start && start.getTime() < now) throw new HttpError(400, 'Start date cannot be in the past');
   if (start && end && end.getTime() < start.getTime()) throw new HttpError(400, 'End date must be the same or after start date');
   if (!req.files?.csv?.[0]) throw new HttpError(400, 'CSV file required');
+
+  // Get coordinatorId if coordinator is creating the event
+  let coordinatorId = undefined;
+  let assignedStudents = null;
+  if (req.user?.role === 'coordinator') {
+    coordinatorId = req.user.coordinatorId;
+    if (!coordinatorId) {
+      return res.status(400).json({ success: false, message: 'Coordinator ID missing on user' });
+    }
+    // Get all students assigned to this coordinator for validation
+    assignedStudents = await User.find({ 
+      role: 'student', 
+      teacherId: coordinatorId 
+    }).select('email studentId name');
+  }
 
   // Parse CSV
   let rows;
@@ -352,6 +401,7 @@ export async function createSpecialEvent(req, res) {
     isSpecial: true,
     allowedParticipants: [], // Will be filled with SpecialStudent IDs
     participants: [], // Will be filled with SpecialStudent IDs
+    coordinatorId, // Add coordinatorId for coordinator-created special events
   });
 
   // Process CSV and create SpecialStudent records
@@ -396,6 +446,26 @@ export async function createSpecialEvent(req, res) {
     }
     seenEmails.add(email);
     seenStudentIds.add(studentid);
+
+    // For coordinators, validate that student is assigned to them
+    if (assignedStudents !== null) {
+      const isAssigned = assignedStudents.some(s => 
+        s.email.toLowerCase() === email.toLowerCase() && 
+        s.studentId === studentid
+      );
+      
+      if (!isAssigned) {
+        results.push({ 
+          row: row.__row, 
+          name,
+          email, 
+          studentid, 
+          status: 'not_assigned_to_coordinator',
+          error: `Student "${name}" (${studentid}) is not assigned to you`
+        });
+        continue;
+      }
+    }
 
     // Create or update SpecialStudent
     try {
@@ -717,8 +787,8 @@ export async function listEvents(req, res) {
   }
   
   const visible = events.filter(e => {
-    // Admins see all events
-    if (isAdmin) return true;
+    // Admins and coordinators see all their events (no filtering needed)
+    if (isAdmin || req.user?.role === 'coordinator') return true;
     
     // Students should only see events created after their registration
     // Filter out events created before the student was registered
