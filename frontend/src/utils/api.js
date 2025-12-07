@@ -124,4 +124,30 @@ export const api = {
   exportFilteredFeedbackCsv: (qs='') => request(`/feedback/admin/export.csv${qs ? '?' + qs : ''}`),
   myFeedback: (eventId) => request(`/feedback/mine${eventId ? ('?eventId=' + eventId) : ''}`),
   feedbackForMe: (eventId) => request(`/feedback/for-me${eventId ? ('?eventId=' + eventId) : ''}`),
+
+  // Semesters, Subjects, Chapters, and Topics (Coordinator only)
+  listSemesters: () => request('/subjects'),
+  createSemester: (semesterName, semesterDescription) => request('/subjects', { method: 'POST', body: { semesterName, semesterDescription } }),
+  updateSemester: (id, data) => request(`/subjects/${id}`, { method: 'PUT', body: data }),
+  deleteSemester: (id) => request(`/subjects/${id}`, { method: 'DELETE' }),
+  reorderSemesters: (semesterIds) => request('/subjects/reorder', { method: 'POST', body: { semesterIds } }),
+  
+  addSubject: (semesterId, subjectName, subjectDescription) => request(`/subjects/${semesterId}/subjects`, { method: 'POST', body: { subjectName, subjectDescription } }),
+  updateSubject: (semesterId, subjectId, data) => request(`/subjects/${semesterId}/subjects/${subjectId}`, { method: 'PUT', body: data }),
+  deleteSubject: (semesterId, subjectId) => request(`/subjects/${semesterId}/subjects/${subjectId}`, { method: 'DELETE' }),
+  reorderSubjects: (semesterId, subjectIds) => request(`/subjects/${semesterId}/subjects/reorder`, { method: 'POST', body: { subjectIds } }),
+  
+  addChapter: (semesterId, subjectId, chapterName, importanceLevel) => request(`/subjects/${semesterId}/subjects/${subjectId}/chapters`, { method: 'POST', body: { chapterName, importanceLevel } }),
+  updateChapter: (semesterId, subjectId, chapterId, data) => request(`/subjects/${semesterId}/subjects/${subjectId}/chapters/${chapterId}`, { method: 'PUT', body: data }),
+  deleteChapter: (semesterId, subjectId, chapterId) => request(`/subjects/${semesterId}/subjects/${subjectId}/chapters/${chapterId}`, { method: 'DELETE' }),
+  reorderChapters: (semesterId, subjectId, chapterIds) => request(`/subjects/${semesterId}/subjects/${subjectId}/chapters/reorder`, { method: 'POST', body: { chapterIds } }),
+  
+  addTopic: (semesterId, subjectId, chapterId, formData) => {
+    return request(`/subjects/${semesterId}/subjects/${subjectId}/chapters/${chapterId}/topics`, { method: 'POST', formData });
+  },
+  updateTopic: (semesterId, subjectId, chapterId, topicId, formData) => {
+    return request(`/subjects/${semesterId}/subjects/${subjectId}/chapters/${chapterId}/topics/${topicId}`, { method: 'PUT', formData });
+  },
+  deleteTopic: (semesterId, subjectId, chapterId, topicId) => request(`/subjects/${semesterId}/subjects/${subjectId}/chapters/${chapterId}/topics/${topicId}`, { method: 'DELETE' }),
+  reorderTopics: (semesterId, subjectId, chapterId, topicIds) => request(`/subjects/${semesterId}/subjects/${subjectId}/chapters/${chapterId}/topics/reorder`, { method: 'POST', body: { topicIds } }),
 };

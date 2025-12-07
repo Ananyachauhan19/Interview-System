@@ -6,6 +6,7 @@ import pairingRoutes from './pairing.js';
 import scheduleRoutes from './schedule.js';
 import feedbackRoutes from './feedback.js';
 import coordinatorRoutes from './coordinators.js';
+import subjectRoutes from './subjects.js';
 
 const router = Router();
 router.use('/auth', authRoutes);
@@ -15,5 +16,6 @@ router.use('/pairing', pairingRoutes);
 router.use('/schedule', scheduleRoutes);
 router.use('/feedback', feedbackRoutes);
 router.use('/coordinators', coordinatorRoutes);
+router.use('/subjects', subjectRoutes);
 
 export default router;
