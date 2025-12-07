@@ -122,6 +122,8 @@ export const api = {
   exportFeedbackCsv: (eventId) => request(`/feedback/event/${eventId}.csv`),
   listFeedback: (qs='') => request(`/feedback/admin/list${qs ? '?' + qs : ''}`),
   exportFilteredFeedbackCsv: (qs='') => request(`/feedback/admin/export.csv${qs ? '?' + qs : ''}`),
+  listCoordinatorFeedback: (qs='') => request(`/feedback/coordinator/list${qs ? '?' + qs : ''}`),
+  exportCoordinatorFeedbackCsv: (qs='') => request(`/feedback/coordinator/export.csv${qs ? '?' + qs : ''}`),
   myFeedback: (eventId) => request(`/feedback/mine${eventId ? ('?eventId=' + eventId) : ''}`),
   feedbackForMe: (eventId) => request(`/feedback/for-me${eventId ? ('?eventId=' + eventId) : ''}`),
 

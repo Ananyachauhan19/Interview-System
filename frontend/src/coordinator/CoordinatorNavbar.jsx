@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, Users, CalendarDays, User, Lock, ChevronDown, LayoutDashboard, BookOpen } from "lucide-react";
+import { LogOut, Menu, X, Users, CalendarDays, User, Lock, ChevronDown, LayoutDashboard, BookOpen, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../utils/api";
 
@@ -60,6 +60,7 @@ export function CoordinatorNavbar() {
     { path: "/coordinator/event/create", label: "Create Event", Icon: CalendarDays },
     { path: "/coordinator/students", label: "My Students", Icon: Users },
     { path: "/coordinator/subjects", label: "Semesters", Icon: BookOpen },
+    { path: "/coordinator/feedback", label: "Feedback", Icon: MessageSquare },
   ];
 
   return (

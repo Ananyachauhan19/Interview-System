@@ -29,6 +29,7 @@ import CoordinatorStudents from "./coordinator/CoordinatorStudents";
 import CoordinatorChangePassword from "./coordinator/CoordinatorChangePassword";
 import CoordinatorEventDetail from "./coordinator/CoordinatorEventDetail";
 import SemesterManagement from "./coordinator/SemesterManagement";
+import CoordinatorFeedback from "./coordinator/CoordinatorFeedback";
 import CoordinatorProtectedRoute from "./coordinator/CoordinatorProtectedRoute";
 import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
 import { CoordinatorNavbar } from "./coordinator/CoordinatorNavbar";
@@ -93,6 +94,7 @@ function AppContent() {
         <Route path="/coordinator" element={<CoordinatorProtectedRoute><CoordinatorDashboard /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/students" element={<CoordinatorProtectedRoute><CoordinatorStudents /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/subjects" element={<CoordinatorProtectedRoute><SemesterManagement /></CoordinatorProtectedRoute>} />
+        <Route path="/coordinator/feedback" element={<CoordinatorProtectedRoute><CoordinatorFeedback /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/event/create" element={<CoordinatorProtectedRoute><EventManagement /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/event/:id" element={<CoordinatorProtectedRoute><CoordinatorEventDetail /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/change-password" element={<CoordinatorProtectedRoute><CoordinatorChangePassword /></CoordinatorProtectedRoute>} />
