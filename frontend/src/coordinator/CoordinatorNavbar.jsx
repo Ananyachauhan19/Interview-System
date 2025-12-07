@@ -56,7 +56,7 @@ export function CoordinatorNavbar() {
   };
 
   const navItems = [
-    { path: "/coordinator", label: "Dashboard", Icon: LayoutDashboard },
+    { path: "/coordinator", label: "Scheduled Events", Icon: CalendarDays },
     { path: "/coordinator/event/create", label: "Create Event", Icon: CalendarDays },
     { path: "/coordinator/students", label: "My Students", Icon: Users },
     { path: "/coordinator/subjects", label: "Semesters", Icon: BookOpen },

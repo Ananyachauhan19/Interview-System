@@ -46,7 +46,7 @@ export default function CoordinatorChangePassword() {
       await api.changePassword(currentPassword, newPassword);
       setSuccess("Password changed successfully! Redirecting...");
       setTimeout(() => {
-        navigate("/coordinator/dashboard", { replace: true });
+        navigate("/coordinator", { replace: true });
       }, 1500);
     } catch (err) {
       setError(err.message || "Failed to change password");

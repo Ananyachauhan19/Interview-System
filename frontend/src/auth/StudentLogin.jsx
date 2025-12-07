@@ -231,7 +231,7 @@ export default function StudentLoginPage() {
         if (res.user?.mustChangePassword) {
           navigate('/coordinator/change-password', { replace: true });
         } else {
-          navigate('/coordinator/dashboard', { replace: true });
+          navigate('/coordinator', { replace: true });
         }
       } else {
         localStorage.removeItem('isAdmin');
