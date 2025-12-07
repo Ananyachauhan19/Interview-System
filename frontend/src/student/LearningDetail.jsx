@@ -18,6 +18,31 @@ import {
 import { api } from '../utils/api';
 import toast from 'react-hot-toast';
 
+// Convert YouTube URL to embed format
+const convertToEmbedUrl = (url) => {
+  if (!url) return url;
+  
+  // Already an embed URL
+  if (url.includes('youtube.com/embed/')) {
+    return url;
+  }
+  
+  // Standard YouTube URL: https://www.youtube.com/watch?v=VIDEO_ID
+  const standardMatch = url.match(/[?&]v=([^&]+)/);
+  if (standardMatch) {
+    return `https://www.youtube.com/embed/${standardMatch[1]}`;
+  }
+  
+  // Short YouTube URL: https://youtu.be/VIDEO_ID
+  const shortMatch = url.match(/youtu\.be\/([^?]+)/);
+  if (shortMatch) {
+    return `https://www.youtube.com/embed/${shortMatch[1]}`;
+  }
+  
+  // Return original URL if not YouTube
+  return url;
+};
+
 export default function LearningDetail() {
   const { semester, subject, teacherId } = useParams();
   const location = useLocation();
@@ -118,7 +143,9 @@ export default function LearningDetail() {
 
   const openModal = async (type, content, topic) => {
     setModalType(type);
-    setModalContent(content);
+    // Convert YouTube URLs to embed format
+    const embedContent = type === 'video' ? convertToEmbedUrl(content) : content;
+    setModalContent(embedContent);
     setModalOpen(true);
 
     // Start backend tracking if it's a video (no frontend timer needed)
@@ -417,7 +444,7 @@ export default function LearningDetail() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
             onClick={closeModal}
           >
             <motion.div
@@ -426,11 +453,11 @@ export default function LearningDetail() {
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[50vw] max-h-[90vh] overflow-hidden flex flex-col"
+              className="w-[60vw] max-w-4xl h-auto max-h-[80vh] bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col"
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {modalType === 'video' && 'Video'}
                   {modalType === 'notes' && 'Notes'}
                   {modalType === 'pdf' && 'Questions PDF'}
@@ -438,14 +465,14 @@ export default function LearningDetail() {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => openInNewTab(modalContent)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     title="Open in new tab"
                   >
                     <ExternalLink className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                   </button>
                   <button
                     onClick={closeModal}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
                     <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                   </button>
@@ -453,11 +480,11 @@ export default function LearningDetail() {
               </div>
 
               {/* Modal Content */}
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 overflow-hidden p-4">
                 {modalType === 'video' && (
                   <iframe
                     src={modalContent}
-                    className="w-full h-full"
+                    className="w-full h-[500px] rounded-lg"
                     allowFullScreen
                     title="Video Player"
                   />
@@ -465,7 +492,7 @@ export default function LearningDetail() {
                 {(modalType === 'notes' || modalType === 'pdf') && (
                   <iframe
                     src={modalContent}
-                    className="w-full h-full"
+                    className="w-full h-[500px] rounded-lg"
                     title="Document Viewer"
                   />
                 )}
