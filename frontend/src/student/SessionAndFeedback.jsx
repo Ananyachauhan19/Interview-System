@@ -90,7 +90,7 @@ export default function SessionAndFeedback() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="hidden lg:block lg:w-80"
           >
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 h-[calc(100vh-8rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               <h2 className="text-xl font-bold text-gray-800 mb-4">Scheduled Sessions</h2>
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
@@ -271,7 +271,7 @@ export default function SessionAndFeedback() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="flex-1"
           >
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8 lg:p-10 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8 lg:p-10 h-[calc(100vh-8rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               {activePair ? (
                 <div className="space-y-6">
                   <motion.div

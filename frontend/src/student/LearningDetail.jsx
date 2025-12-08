@@ -162,22 +162,19 @@ export default function LearningDetail() {
           return;
         }
 
-        await api.startVideoTracking(
+        const result = await api.startVideoTracking(
           topic._id,
           subjectDetails.semesterId,
           subjectDetails.subjectId,
           topic.chapterId,
           coordId
         );
-        console.log('[Video] Backend tracking started');
+        console.log('[Video] Backend tracking started and completed:', result);
         
-        // Refresh progress after 3 minutes + 5 seconds buffer
-        setTimeout(async () => {
-          await loadSubjectProgress(subjectDetails.subjectId);
-          // Also reload subject details to update chapter/topic completion states
-          await loadSubjectDetails(subjectDetails.semesterId, subjectDetails.subjectId);
-          toast.success('Topic completed! 🎉');
-        }, 185000); // 3:05 minutes
+        // Refresh progress immediately after tracking is complete
+        await loadSubjectProgress(subjectDetails.subjectId);
+        await loadSubjectDetails(subjectDetails.semesterId, subjectDetails.subjectId);
+        toast.success('Topic marked as watched! 🎉');
       } catch (error) {
         console.error('Error starting video tracking:', error);
         toast.error('Failed to start video tracking');

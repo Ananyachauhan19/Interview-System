@@ -412,24 +412,17 @@ export const startVideoTracking = async (req, res) => {
     progress.lastAccessedAt = new Date();
     await progress.save();
 
-    // Auto-complete after 3 minutes (180 seconds)
-    setTimeout(async () => {
-      try {
-        const p = await Progress.findOne({ studentId, topicId });
-        if (p && !p.completed && p.lastAccessedAt.getTime() === progress.lastAccessedAt.getTime()) {
-          p.completed = true;
-          p.completedAt = new Date();
-          p.videoWatchedSeconds = 180;
-          await p.save();
-          console.log('[startVideoTracking] Auto-completed topic:', topicId);
-        }
-      } catch (err) {
-        console.error('[startVideoTracking] Auto-complete error:', err);
-      }
-    }, 180000); // 3 minutes
+    // Set video watched to 180 seconds and mark as completed immediately
+    // This ensures progress is saved even if the server restarts
+    progress.videoWatchedSeconds = 180;
+    progress.completed = true;
+    progress.completedAt = new Date();
+    await progress.save();
+    
+    console.log('[startVideoTracking] Topic marked as completed:', topicId);
 
     res.json({
-      message: 'Video tracking started',
+      message: 'Video tracking started and completed',
       progress
     });
   } catch (error) {

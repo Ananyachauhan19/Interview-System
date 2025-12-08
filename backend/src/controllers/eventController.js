@@ -767,8 +767,20 @@ export async function listEvents(req, res) {
     }
     const events = await Event.find(query).sort({ createdAt: -1 }).lean();
   
-  console.log('[listEvents] Total events:', events.length);
-  console.log('[listEvents] Special events:', events.filter(e => e.isSpecial).map(e => ({
+  // Populate coordinator names for events that have coordinatorId
+  const eventsWithCoordinator = await Promise.all(events.map(async (event) => {
+    if (event.coordinatorId) {
+      const coordinator = await User.findOne({ coordinatorId: event.coordinatorId }).lean();
+      return {
+        ...event,
+        coordinatorName: coordinator?.name || 'Unknown Coordinator'
+      };
+    }
+    return event;
+  }));
+  
+  console.log('[listEvents] Total events:', eventsWithCoordinator.length);
+  console.log('[listEvents] Special events:', eventsWithCoordinator.filter(e => e.isSpecial).map(e => ({
     id: e._id.toString(),
     name: e.name,
     allowedParticipants: e.allowedParticipants?.map(p => p.toString())
@@ -789,7 +801,7 @@ export async function listEvents(req, res) {
     }
   }
   
-  const visible = events.filter(e => {
+  const visible = eventsWithCoordinator.filter(e => {
     // Admins and coordinators see all their events (no filtering needed)
     if (isAdmin || req.user?.role === 'coordinator') return true;
     

@@ -38,6 +38,11 @@ const EventCard = ({ event, isActive, onClick }) => (
         <div className="text-xs text-slate-600 mt-1">
           <p>{new Date(event.startDate).toLocaleDateString()}</p>
         </div>
+        {event.coordinatorName && (
+          <div className="mt-1 text-xs text-slate-500">
+            <span className="font-medium">Coordinator:</span> {event.coordinatorName}
+          </div>
+        )}
         {event.isSpecial && (
           <span className="inline-block mt-1 text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">
             Special
@@ -312,7 +317,7 @@ export default function EventDetail() {
                     : "relative"
                 }`}
               >
-                <div className="bg-white rounded-lg border border-slate-200 p-4 h-full overflow-y-auto">
+                <div className="bg-white rounded-lg border border-slate-200 p-4 h-[calc(100vh-8rem)] overflow-y-auto">
                                     <h2 className="text-lg font-semibold text-slate-800 mb-3">Scheduled Interviews</h2>
                   
                   <EventSearchFilter 
@@ -343,7 +348,7 @@ export default function EventDetail() {
             )}
           </AnimatePresence>          {/* Main Content */}
           <div className="flex-1">
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <div className="bg-white rounded-lg border border-slate-200 p-4 h-[calc(100vh-8rem)] overflow-y-auto">
               {event ? (
                 <div className="space-y-4">
                   {/* Header */}

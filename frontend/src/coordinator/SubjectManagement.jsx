@@ -602,9 +602,21 @@ export default function SubjectManagement() {
                         <input
                           type="file"
                           accept=".pdf"
-                          onChange={(e) => setEditingTopic({ ...editingTopic, questionPDF: e.target.files[0] })}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const maxSize = 1 * 1024 * 1024; // 1MB in bytes
+                              if (file.size > maxSize) {
+                                toast.error('File size must be less than 1MB');
+                                e.target.value = '';
+                                return;
+                              }
+                            }
+                            setEditingTopic({ ...editingTopic, questionPDF: file });
+                          }}
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
                         />
+                        <p className="text-xs text-slate-500 mt-1">Maximum file size: 1MB</p>
                       </div>
                     </div>
                   </div>
@@ -739,9 +751,21 @@ export default function SubjectManagement() {
               <input
                 type="file"
                 accept=".pdf"
-                onChange={(e) => setNewTopic({ ...newTopic, questionPDF: e.target.files[0] })}
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const maxSize = 1 * 1024 * 1024; // 1MB in bytes
+                    if (file.size > maxSize) {
+                      toast.error('File size must be less than 1MB');
+                      e.target.value = '';
+                      return;
+                    }
+                  }
+                  setNewTopic({ ...newTopic, questionPDF: file });
+                }}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
               />
+              <p className="text-xs text-slate-500 mt-1">Maximum file size: 1MB</p>
             </div>
             <div className="flex gap-2">
               <button

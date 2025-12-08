@@ -67,6 +67,22 @@ export default function AdminLearning() {
       toast.error('Semester name is required');
       return;
     }
+    
+    // Validate semester format: must contain "Semester" followed by a whole number
+    const semesterPattern = /^Semester\s+(\d+)$/i;
+    const match = newSemester.semesterName.trim().match(semesterPattern);
+    
+    if (!match) {
+      toast.error('Invalid format! Use: "Semester 1", "Semester 2", etc.');
+      return;
+    }
+    
+    const semesterNumber = parseInt(match[1]);
+    if (!Number.isInteger(semesterNumber) || semesterNumber < 1 || semesterNumber > 12) {
+      toast.error('Semester number must be a whole number between 1 and 12');
+      return;
+    }
+    
     try {
       await api.createSemester(newSemester.semesterName, newSemester.semesterDescription);
       toast.success('Semester added successfully');

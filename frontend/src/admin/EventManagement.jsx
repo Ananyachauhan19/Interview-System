@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,6 +20,7 @@ export default function EventManagement() {
   const [showValidationPopup, setShowValidationPopup] = useState(false);
   const [csvError, setCsvError] = useState("");
   const [userRole, setUserRole] = useState(null);
+  const csvInputRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,6 +43,10 @@ export default function EventManagement() {
     setCsvValidationResults(null);
     setShowValidationPopup(false);
     setCsvError("");
+    // Reset the file input
+    if (csvInputRef.current) {
+      csvInputRef.current.value = '';
+    }
   };
 
   // Handle CSV file selection and validate
@@ -488,6 +493,7 @@ export default function EventManagement() {
                       <span className="text-slate-700 text-sm font-medium">Upload CSV File</span>
                     </div>
                     <input
+                      ref={csvInputRef}
                       type="file"
                       accept=".csv"
                       onChange={handleCsvChange}
@@ -497,9 +503,27 @@ export default function EventManagement() {
                   </label>
                   {csvFile && (
                     <div className="mt-2 space-y-2">
-                      <div className="flex items-center gap-2 p-2 bg-white rounded border border-sky-200">
-                        <FileText className="w-4 h-4 text-sky-600" />
-                        <span className="text-sky-800 text-sm">{csvFile.name}</span>
+                      <div className="flex items-center justify-between gap-2 p-2 bg-white rounded border border-sky-200">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-sky-600" />
+                          <span className="text-sky-800 text-sm">{csvFile.name}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCsvFile(null);
+                            setCsvValidationResults(null);
+                            setCsvError("");
+                            setShowValidationPopup(false);
+                            if (csvInputRef.current) {
+                              csvInputRef.current.value = '';
+                            }
+                          }}
+                          className="p-1 hover:bg-red-50 rounded transition-colors"
+                          title="Remove file"
+                        >
+                          <X className="w-4 h-4 text-red-600" />
+                        </button>
                       </div>
                       {csvValidationResults && (
                         <button

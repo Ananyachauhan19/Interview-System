@@ -312,7 +312,7 @@ export default function CoordinatorEventDetail() {
                     : "relative"
                 }`}
               >
-                <div className="bg-white rounded-lg border border-slate-200 p-4 h-full overflow-y-auto">
+                <div className="bg-white rounded-lg border border-slate-200 p-4 h-[calc(100vh-8rem)] overflow-y-auto">
                   <h2 className="text-lg font-semibold text-slate-800 mb-3">Scheduled Interviews</h2>
                   
                   <EventSearchFilter 
@@ -345,7 +345,7 @@ export default function CoordinatorEventDetail() {
 
           {/* Main Content */}
           <div className="flex-1">
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <div className="bg-white rounded-lg border border-slate-200 p-4 h-[calc(100vh-8rem)] overflow-y-auto">
               {event ? (
                 <div className="space-y-4">
                   {/* Header */}

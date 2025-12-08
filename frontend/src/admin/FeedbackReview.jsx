@@ -206,7 +206,7 @@ export default function FeedbackReview() {
       {/* Left Sidebar - Events List */}
       <div
         ref={sidebarRef}
-        style={{ width: `${sidebarWidth}px` }}
+        style={{ width: `${sidebarWidth}px`, height: 'calc(100vh - 3.5rem)' }}
         className="bg-white border-r border-slate-200 flex flex-col relative"
       >
         {/* Sidebar Header */}
@@ -286,7 +286,7 @@ export default function FeedbackReview() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 3.5rem)' }}>
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {/* Header */}
           <motion.div
