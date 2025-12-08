@@ -370,11 +370,11 @@ export default function StudentDashboard() {
         lowerMsg.includes("scheduled") ||
         lowerMsg.includes("copied")) {
       return {
-        bg: "bg-emerald-50",
-        text: "text-emerald-800",
-        border: "border-emerald-200",
+        bg: "bg-emerald-50 dark:bg-emerald-900/30",
+        text: "text-emerald-800 dark:text-emerald-300",
+        border: "border-emerald-200 dark:border-emerald-700",
         icon: CheckCircle,
-        iconColor: "text-emerald-600"
+        iconColor: "text-emerald-600 dark:text-emerald-400"
       };
     }
     
@@ -385,11 +385,11 @@ export default function StudentDashboard() {
         lowerMsg.includes("partner") ||
         lowerMsg.includes("propose")) {
       return {
-        bg: "bg-blue-50",
-        text: "text-blue-800",
-        border: "border-blue-200",
+        bg: "bg-blue-50 dark:bg-blue-900/30",
+        text: "text-blue-800 dark:text-blue-300",
+        border: "border-blue-200 dark:border-blue-700",
         icon: Info,
-        iconColor: "text-blue-600"
+        iconColor: "text-blue-600 dark:text-blue-400"
       };
     }
     
@@ -399,11 +399,11 @@ export default function StudentDashboard() {
         lowerMsg.includes("before") ||
         lowerMsg.includes("after")) {
       return {
-        bg: "bg-amber-50",
-        text: "text-amber-800",
-        border: "border-amber-200",
+        bg: "bg-amber-50 dark:bg-amber-900/30",
+        text: "text-amber-800 dark:text-amber-300",
+        border: "border-amber-200 dark:border-amber-700",
         icon: AlertCircle,
-        iconColor: "text-amber-600"
+        iconColor: "text-amber-600 dark:text-amber-400"
       };
     }
     
@@ -414,21 +414,21 @@ export default function StudentDashboard() {
         lowerMsg.includes("cannot") ||
         lowerMsg.includes("unable")) {
       return {
-        bg: "bg-red-50",
-        text: "text-red-800",
-        border: "border-red-200",
+        bg: "bg-red-50 dark:bg-red-900/30",
+        text: "text-red-800 dark:text-red-300",
+        border: "border-red-200 dark:border-red-700",
         icon: AlertCircle,
-        iconColor: "text-red-600"
+        iconColor: "text-red-600 dark:text-red-400"
       };
     }
     
     // Default to info style
     return {
-      bg: "bg-slate-50",
-      text: "text-slate-800",
-      border: "border-slate-200",
+      bg: "bg-slate-50 dark:bg-gray-700",
+      text: "text-slate-800 dark:text-gray-200",
+      border: "border-slate-200 dark:border-gray-600",
       icon: Info,
-      iconColor: "text-slate-600"
+      iconColor: "text-slate-600 dark:text-gray-400"
     };
   };
 
@@ -815,12 +815,12 @@ export default function StudentDashboard() {
         {statsData.map((stat) => (
           <div
             key={stat.label}
-            className="bg-white rounded-lg border border-slate-200 p-3"
+            className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-3"
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-lg font-semibold text-slate-800">{stat.value}</div>
-                <div className="text-xs text-slate-600">{stat.label}</div>
+                <div className="text-lg font-semibold text-slate-800 dark:text-gray-100">{stat.value}</div>
+                <div className="text-xs text-slate-600 dark:text-gray-400">{stat.label}</div>
               </div>
               <div className={`p-1.5 bg-${stat.color}-50 rounded`}>
                 <stat.icon className={`w-3 h-3 text-${stat.color}-600`} />
@@ -833,7 +833,7 @@ export default function StudentDashboard() {
   }, [stats]);
 
   const EventList = () => (
-    <div className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 h-[calc(100vh-5rem)] sm:h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-3 sm:p-4 h-[calc(100vh-5rem)] sm:h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
       {/* Show stats only when no event is selected on mobile */}
       {!selectedEvent && (
         <div className="lg:hidden mb-3 sm:mb-4">
@@ -844,10 +844,10 @@ export default function StudentDashboard() {
       {/* Header with close button when event is selected */}
       {selectedEvent ? (
         <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-base sm:text-lg font-semibold text-slate-800">Selected Interview</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-gray-100">Selected Interview</h2>
           <button
             onClick={handleCloseEvent}
-            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors"
+            className="p-1.5 rounded-lg bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 text-slate-700 dark:text-gray-200 hover:text-slate-900 dark:hover:text-gray-100 transition-colors"
             title="Close and show all events"
           >
             <X className="w-4 h-4" />
@@ -856,7 +856,7 @@ export default function StudentDashboard() {
       ) : (
         <>
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h2 className="text-base sm:text-lg font-semibold text-slate-800">Interviews</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-gray-100">Interviews</h2>
             <span className="px-2 py-0.5 bg-sky-500 text-white rounded text-xs font-medium">
               {filteredEvents.length}
             </span>
@@ -893,7 +893,7 @@ export default function StudentDashboard() {
                         : tab.id === "special"
                         ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-md"
                         : "bg-gradient-to-br from-slate-500 to-slate-600 text-white shadow-md"
-                      : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:shadow-sm"
+                      : "bg-white dark:bg-gray-700 text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-gray-600 hover:border-slate-300 dark:hover:border-gray-500 hover:shadow-sm"
                   }`}
                 >
                   {tab.label}
@@ -920,8 +920,8 @@ export default function StudentDashboard() {
                     }}
                     className={`flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all ${
                       isActive
-                        ? "bg-slate-800 text-white shadow-sm"
-                        : "bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                        ? "bg-slate-800 dark:bg-gray-600 text-white shadow-sm"
+                        : "bg-slate-50 dark:bg-gray-700 text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-600 hover:text-slate-800 dark:hover:text-gray-100"
                     }`}
                   >
                     {filter.label}
@@ -936,13 +936,13 @@ export default function StudentDashboard() {
       {/* Search - Hide when event is selected */}
       {!selectedEvent && (
         <div className="relative mb-3">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500" />
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500 dark:text-gray-400" />
           <input
             type="text"
             placeholder="Search interviews..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-7 pr-3 py-1.5 bg-slate-50 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
+            className="w-full pl-7 pr-3 py-1.5 bg-slate-50 dark:bg-gray-700 rounded border border-slate-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm text-slate-900 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500"
           />
         </div>
       )}
@@ -983,13 +983,13 @@ export default function StudentDashboard() {
                   className={`w-full text-left p-3 rounded-lg transition-colors border ${
                     active
                       ? isSpecial
-                        ? "border-purple-300 bg-purple-50"
-                        : "border-sky-300 bg-sky-50"
-                      : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300"
+                        ? "border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20"
+                        : "border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/20"
+                      : "border-slate-200 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 hover:border-slate-300 dark:hover:border-gray-600"
                   } ${event.joined 
                       ? isSpecial 
-                        ? "ring-1 ring-purple-200" 
-                        : "ring-1 ring-emerald-200" 
+                        ? "ring-1 ring-purple-200 dark:ring-purple-700" 
+                        : "ring-1 ring-emerald-200 dark:ring-emerald-700" 
                       : ""
                   }`}
                 >
@@ -1009,7 +1009,7 @@ export default function StudentDashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-medium text-slate-800 truncate text-sm">{event.name}</h3>
+                        <h3 className="font-medium text-slate-800 dark:text-gray-100 truncate text-sm">{event.name}</h3>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {isSpecial && (
                             <span className="px-1.5 py-0.5 text-xs rounded bg-purple-100 text-purple-700 font-medium">
@@ -1037,7 +1037,7 @@ export default function StudentDashboard() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-600 flex-wrap">
+                      <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-600 dark:text-gray-400 flex-wrap">
                         <div className="flex items-center gap-1">
                           <Clock size={12} />
                           <span>{fmt(event.startDate)}</span>
@@ -1057,13 +1057,13 @@ export default function StudentDashboard() {
                 {active && event.joined && (interviewerPair || intervieweePair) && (
                   <div className="relative pl-4">
                     {/* Vertical line connecting to parent event */}
-                    <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-300"></div>
+                    <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-300 dark:bg-gray-600"></div>
                     
                     <div className="space-y-1">
                       {interviewerPair && (
                         <div className="relative">
                           {/* Horizontal branch line */}
-                          <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300"></div>
+                          <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300 dark:bg-gray-600"></div>
                           
                           <button
                             onClick={(e) => {
@@ -1075,30 +1075,30 @@ export default function StudentDashboard() {
                             }}
                             className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ml-3 ${
                               selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
-                                ? "bg-indigo-100 border-indigo-300 text-indigo-900"
-                                : "bg-white border-slate-200 hover:border-indigo-200 text-slate-700"
+                                ? "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-900 dark:text-indigo-300"
+                                : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-600 text-slate-700 dark:text-gray-300"
                             }`}
                           >
                             <div className="flex items-center gap-2">
                               <User className="w-3 h-3 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
                                 <div className="font-medium">Interviewer</div>
-                            <div className="text-xs text-slate-600 mt-0.5 truncate">
+                            <div className="text-xs text-slate-600 dark:text-gray-400 mt-0.5 truncate">
                               {event.name}
                             </div>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
                                 interviewerPair.status === "completed"
-                                  ? "bg-blue-100 text-blue-700"
+                                  ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
                                   : interviewerPair.status === "scheduled"
-                                  ? "bg-emerald-100 text-emerald-700"
+                                  ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
                                   : interviewerPair.status === "rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-amber-100 text-amber-700"
+                                  ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                                  : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
                               }`}>
                                 {interviewerPair.status === "completed" ? "Finished" : interviewerPair.status === "scheduled" ? "Scheduled" : interviewerPair.status === "rejected" ? "Rejected" : "Pending"}
                               </span>
-                              <span className="text-xs text-slate-500 truncate">
+                              <span className="text-xs text-slate-500 dark:text-gray-400 truncate">
                                 {interviewerPair.interviewer?.name || interviewerPair.interviewer?.email || "N/A"} ➜ {interviewerPair.interviewee?.name || interviewerPair.interviewee?.email || "N/A"}
                               </span>
                             </div>
@@ -1110,7 +1110,7 @@ export default function StudentDashboard() {
                       {intervieweePair && (
                         <div className="relative">
                           {/* Horizontal branch line */}
-                          <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300"></div>
+                          <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300 dark:bg-gray-600"></div>
                           
                           <button
                             onClick={(e) => {
@@ -1122,30 +1122,30 @@ export default function StudentDashboard() {
                             }}
                             className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ml-3 ${
                               selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
-                                ? "bg-indigo-100 border-indigo-300 text-indigo-900"
-                                : "bg-white border-slate-200 hover:border-indigo-200 text-slate-700"
+                                ? "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-900 dark:text-indigo-300"
+                                : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-600 text-slate-700 dark:text-gray-300"
                             }`}
                           >
                             <div className="flex items-center gap-2">
                               <User className="w-3 h-3 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
                                 <div className="font-medium">Candidate</div>
-                            <div className="text-xs text-slate-600 mt-0.5 truncate">
+                            <div className="text-xs text-slate-600 dark:text-gray-400 mt-0.5 truncate">
                               {event.name}
                             </div>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
                                 intervieweePair.status === "completed"
-                                  ? "bg-blue-100 text-blue-700"
+                                  ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
                                   : intervieweePair.status === "scheduled"
-                                  ? "bg-emerald-100 text-emerald-700"
+                                  ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
                                   : intervieweePair.status === "rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-amber-100 text-amber-700"
+                                  ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                                  : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
                               }`}>
                                 {intervieweePair.status === "completed" ? "Finished" : intervieweePair.status === "scheduled" ? "Scheduled" : intervieweePair.status === "rejected" ? "Rejected" : "Pending"}
                               </span>
-                              <span className="text-xs text-slate-500 truncate">
+                              <span className="text-xs text-slate-500 dark:text-gray-400 truncate">
                                 {intervieweePair.interviewer?.name || intervieweePair.interviewer?.email || "N/A"} ➜ {intervieweePair.interviewee?.name || intervieweePair.interviewee?.email || "N/A"}
                               </span>
                             </div>
@@ -1196,13 +1196,13 @@ export default function StudentDashboard() {
                   className={`w-full text-left p-3 rounded-lg transition-colors border ${
                     active
                       ? isSpecial
-                        ? "border-purple-300 bg-purple-50"
-                        : "border-sky-300 bg-sky-50"
-                      : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300"
+                        ? "border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20"
+                        : "border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/20"
+                      : "border-slate-200 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 hover:border-slate-300 dark:hover:border-gray-600"
                   } ${event.joined 
                       ? isSpecial 
-                        ? "ring-1 ring-purple-200" 
-                        : "ring-1 ring-emerald-200" 
+                        ? "ring-1 ring-purple-200 dark:ring-purple-700" 
+                        : "ring-1 ring-emerald-200 dark:ring-emerald-700" 
                       : ""
                   }`}
                 >
@@ -1222,7 +1222,7 @@ export default function StudentDashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-medium text-slate-800 truncate text-sm">{event.name}</h3>
+                        <h3 className="font-medium text-slate-800 dark:text-gray-100 truncate text-sm">{event.name}</h3>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {event.joined && (
                             <CheckCircle size={12} className={`${
@@ -1251,13 +1251,13 @@ export default function StudentDashboard() {
                           <span className={`text-xs px-1.5 py-0.5 rounded ${
                             isSpecial
                               ? isActive
-                                ? "bg-purple-100 text-purple-700"
-                                : "bg-purple-50 text-purple-600"
+                                ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300"
+                                : "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
                               : isActive 
-                              ? "bg-emerald-100 text-emerald-700" 
+                              ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" 
                               : isPast
-                              ? "bg-slate-100 text-slate-600"
-                              : "bg-amber-100 text-amber-700"
+                              ? "bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-400"
+                              : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
                           }`}>
                             {isActive ? "Active" : isPast ? "Past" : "Upcoming"}
                           </span>
@@ -1281,28 +1281,28 @@ export default function StudentDashboard() {
                         }}
                         className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ${
                           selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
-                            ? "bg-sky-100 border-sky-300 text-sky-900"
-                            : "bg-white border-slate-200 hover:border-sky-200 text-slate-700"
+                            ? "bg-sky-100 dark:bg-sky-900/30 border-sky-300 dark:border-sky-700 text-sky-900 dark:text-sky-300"
+                            : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 hover:border-sky-200 dark:hover:border-sky-600 text-slate-700 dark:text-gray-300"
                         }`}
                       >
                         <div className="flex items-center gap-2">
                           <User className="w-3 h-3" />
                           <div className="flex-1">
                             <div className="font-medium">Interviewer Name</div>
-                            <div className="text-xs text-slate-600 mt-0.5">
+                            <div className="text-xs text-slate-600 dark:text-gray-400 mt-0.5">
                               {event.name}
                             </div>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
                                 interviewerPair.status === "scheduled"
-                                  ? "bg-emerald-100 text-emerald-700"
+                                  ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
                                   : interviewerPair.status === "rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-amber-100 text-amber-700"
+                                  ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                                  : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
                               }`}>
                                 {interviewerPair.status === "scheduled" ? "Scheduled" : interviewerPair.status === "rejected" ? "Rejected" : "Pending"}
                               </span>
-                              <span className="text-xs text-slate-500 truncate">
+                              <span className="text-xs text-slate-500 dark:text-gray-400 truncate">
                                 {interviewerPair.interviewer?.name || interviewerPair.interviewer?.email || "N/A"} ➜ {interviewerPair.interviewee?.name || interviewerPair.interviewee?.email || "N/A"}
                               </span>
                             </div>
@@ -1321,28 +1321,28 @@ export default function StudentDashboard() {
                         }}
                         className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ${
                           selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
-                            ? "bg-emerald-100 border-emerald-300 text-emerald-900"
-                            : "bg-white border-slate-200 hover:border-emerald-200 text-slate-700"
+                            ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-300"
+                            : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-600 text-slate-700 dark:text-gray-300"
                         }`}
                       >
                         <div className="flex items-center gap-2">
                           <UserCheck className="w-3 h-3" />
                           <div className="flex-1">
                             <div className="font-medium">Candidate Name</div>
-                            <div className="text-xs text-slate-600 mt-0.5">
+                            <div className="text-xs text-slate-600 dark:text-gray-400 mt-0.5">
                               {event.name}
                             </div>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
                                 intervieweePair.status === "scheduled"
-                                  ? "bg-emerald-100 text-emerald-700"
+                                  ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
                                   : intervieweePair.status === "rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-amber-100 text-amber-700"
+                                  ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                                  : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
                               }`}>
                                 {intervieweePair.status === "scheduled" ? "Scheduled" : intervieweePair.status === "rejected" ? "Rejected" : "Pending"}
                               </span>
-                              <span className="text-xs text-slate-500 truncate">
+                              <span className="text-xs text-slate-500 dark:text-gray-400 truncate">
                                 {intervieweePair.interviewer?.name || intervieweePair.interviewer?.email || "N/A"} ➜ {intervieweePair.interviewee?.name || intervieweePair.interviewee?.email || "N/A"}
                               </span>
                             </div>
@@ -1363,19 +1363,19 @@ export default function StudentDashboard() {
   const PairingDetails = () => (
     <div className="space-y-3 sm:space-y-4 md:space-y-6">
       {/* Mobile Back Button */}
-      <div className="lg:hidden flex items-center gap-2 -mt-2 mb-3 sm:mb-4 pb-3 border-b border-slate-200 sticky top-0 bg-white z-10">
+      <div className="lg:hidden flex items-center gap-2 -mt-2 mb-3 sm:mb-4 pb-3 border-b border-slate-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10">
         <button
           onClick={() => {
             setSelectedPairRole(null);
             setSelectedPair(null);
           }}
-          className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 transition-colors touch-manipulation"
+          className="p-2 rounded-lg bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 active:bg-slate-300 dark:active:bg-gray-600 transition-colors touch-manipulation"
         >
-          <ChevronLeft className="w-5 h-5 text-slate-700" />
+          <ChevronLeft className="w-5 h-5 text-slate-700 dark:text-gray-300" />
         </button>
         <div className="flex-1">
-          <div className="text-xs text-slate-500">Back to event details</div>
-          <div className="font-medium text-slate-800 text-sm">
+          <div className="text-xs text-slate-500 dark:text-gray-400">Back to event details</div>
+          <div className="font-medium text-slate-800 dark:text-gray-200 text-sm">
             {isInterviewer ? "Interviewer" : "Candidate"} View
           </div>
         </div>
@@ -1383,18 +1383,18 @@ export default function StudentDashboard() {
 
       <div className="flex flex-col items-center justify-center gap-3 mb-6">
         <div className="text-center">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900 mb-3 break-words">
-            <span className="text-sky-600">Interviewer:</span> {selectedPair.interviewer?.name || selectedPair.interviewer?.email}
-            <span className="mx-3 text-slate-400">➜</span>
-            <span className="text-emerald-600">Candidate:</span> {selectedPair.interviewee?.name || selectedPair.interviewee?.email}
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900 dark:text-gray-100 mb-3 break-words">
+            <span className="text-sky-600 dark:text-sky-400">Interviewer:</span> {selectedPair.interviewer?.name || selectedPair.interviewer?.email}
+            <span className="mx-3 text-slate-400 dark:text-gray-500">➜</span>
+            <span className="text-emerald-600 dark:text-emerald-400">Candidate:</span> {selectedPair.interviewee?.name || selectedPair.interviewee?.email}
           </h2>
 
           <div className="flex flex-wrap gap-2 mb-3 justify-center">
             <span
               className={`text-xs px-2 py-1 rounded font-medium ${
                 isInterviewer
-                  ? "bg-sky-100 text-sky-800"
-                  : "bg-emerald-100 text-emerald-800"
+                  ? "bg-sky-100 dark:bg-sky-900/40 text-sky-800 dark:text-sky-300"
+                  : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300"
               }`}
             >
               You are the{" "}
@@ -1404,10 +1404,10 @@ export default function StudentDashboard() {
             <span
               className={`text-xs px-2 py-1 rounded font-medium ${
                 selectedPair.status === "scheduled"
-                  ? "bg-emerald-100 text-emerald-800"
+                  ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300"
                   : selectedPair.status === "rejected"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-slate-100 text-slate-700"
+                  ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                  : "bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300"
               }`}
             >
               {selectedPair.status || "Pending"}
@@ -1417,7 +1417,7 @@ export default function StudentDashboard() {
       </div>
 
       {isLocked && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200 text-sm flex items-start">
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-700 text-sm flex items-start">
           <CheckCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
           <div>
             <div className="font-medium">
@@ -1436,15 +1436,15 @@ export default function StudentDashboard() {
       {/* Single Page Time Slot Interface */}
       <div className="space-y-4">
         {/* Default Time Slot Display */}
-        <div className="bg-gradient-to-br from-indigo-50 to-sky-50 rounded-xl p-4 border border-indigo-200">
+        <div className="bg-gradient-to-br from-indigo-50 to-sky-50 dark:from-indigo-950/40 dark:to-sky-950/40 rounded-xl p-4 border border-indigo-200 dark:border-indigo-700">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-slate-900">Interview Time Slot</h3>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-gray-100">Interview Time Slot</h3>
             {/* Past Time Slots Button (right side) */}
             <div className="relative" ref={pastDropdownRef}>
               <button
                 type="button"
                 onClick={() => setShowPastDropdown(v => !v)}
-                className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white hover:bg-slate-50 shadow-sm flex items-center gap-2"
+                className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700 shadow-sm flex items-center gap-2 text-slate-700 dark:text-gray-200"
               >
                 Past Time Allotment
                 {(() => {
@@ -1452,17 +1452,17 @@ export default function StudentDashboard() {
                     ? currentProposals.pastTimeSlots.length
                     : ((currentProposals?.minePastEntries || []).length + (currentProposals?.partnerPastEntries || []).length);
                   return count > 0 ? (
-                    <span className="inline-flex items-center justify-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-white min-w-[18px]">
+                    <span className="inline-flex items-center justify-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 dark:bg-slate-600 text-white min-w-[18px]">
                       {count}
                     </span>
                   ) : null;
                 })()}
               </button>
               {showPastDropdown && (
-                <div className="absolute right-0 mt-2 w-96 z-10 bg-white border border-slate-200 rounded-lg shadow-lg">
+                <div className="absolute right-0 mt-2 w-96 z-10 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg">
                   <div className="p-4">
-                    <div className="text-xs font-semibold text-slate-700 mb-2">Past Time Slots History</div>
-                    <div className="text-[10px] text-slate-500 mb-3">Detailed history of expired, rejected, and replaced proposals</div>
+                    <div className="text-xs font-semibold text-slate-700 dark:text-gray-200 mb-2">Past Time Slots History</div>
+                    <div className="text-[10px] text-slate-500 dark:text-gray-400 mb-3">Detailed history of expired, rejected, and replaced proposals</div>
                     {(() => {
                       // Collect all past entries from both users
                       const entries = Array.isArray(currentProposals?.pastTimeSlots)
@@ -1483,7 +1483,7 @@ export default function StudentDashboard() {
                       
                       if (!filteredEntries || filteredEntries.length === 0) {
                         return (
-                          <div className="text-sm text-slate-500 py-4 text-center">No past time slots yet.</div>
+                          <div className="text-sm text-slate-500 dark:text-gray-400 py-4 text-center">No past time slots yet.</div>
                         );
                       }
                       
@@ -1494,9 +1494,9 @@ export default function StudentDashboard() {
                       };
                       
                       const color = (r) => {
-                        if (r === 'rejected') return 'bg-red-50 border-red-200';
-                        if (r === 'expired') return 'bg-amber-50 border-amber-200';
-                        return 'bg-slate-50 border-slate-200';
+                        if (r === 'rejected') return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700';
+                        if (r === 'expired') return 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700';
+                        return 'bg-slate-50 dark:bg-gray-800 border-slate-200 dark:border-gray-700';
                       };
                       
                       const getRoleLabel = (user) => {
@@ -1516,34 +1516,34 @@ export default function StudentDashboard() {
                             <li key={`${e.time}-${idx}`} className={`text-xs px-3 py-3 rounded-lg border ${color(e.reason)}`}>
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <div className="flex-1">
-                                  <div className="font-semibold text-slate-900 mb-1">{fmt(e.time)}</div>
+                                  <div className="font-semibold text-slate-900 dark:text-gray-100 mb-1">{fmt(e.time)}</div>
                                   {e.proposedBy && (
-                                    <div className="text-[10px] text-slate-600 mb-1">
+                                    <div className="text-[10px] text-slate-600 dark:text-gray-400 mb-1">
                                       <span className="font-medium">Proposed by:</span>{' '}
-                                      <span className="text-indigo-700 font-semibold">
+                                      <span className="text-indigo-700 dark:text-indigo-400 font-semibold">
                                         {getRoleLabel(e.proposedBy)}
                                       </span>
                                       {e.proposedBy.name && (
-                                        <span className="text-slate-500"> ({e.proposedBy.name})</span>
+                                        <span className="text-slate-500 dark:text-gray-500"> ({e.proposedBy.name})</span>
                                       )}
                                     </div>
                                   )}
                                   {e.reason === 'rejected' && e.replacedBy && (
-                                    <div className="text-[10px] text-red-700">
+                                    <div className="text-[10px] text-red-700 dark:text-red-400">
                                       <span className="font-medium">Declined by:</span>{' '}
                                       <span className="font-semibold">{getRoleLabel(e.replacedBy)}</span>
                                       {e.replacedBy.name && <span> ({e.replacedBy.name})</span>}
                                     </div>
                                   )}
                                   {e.reason === 'superseded' && e.replacedBy && (
-                                    <div className="text-[10px] text-slate-600">
+                                    <div className="text-[10px] text-slate-600 dark:text-gray-400">
                                       <span className="font-medium">Replaced by:</span>{' '}
                                       <span className="font-semibold">{getRoleLabel(e.replacedBy)}</span>
                                       {e.replacedBy.name && <span> ({e.replacedBy.name})</span>}
                                     </div>
                                   )}
                                   {e.replacedAt && (
-                                    <div className="text-[9px] text-slate-500 mt-1">
+                                    <div className="text-[9px] text-slate-500 dark:text-gray-500 mt-1">
                                       {new Date(e.replacedAt).toLocaleString(undefined, {
                                         month: 'short',
                                         day: 'numeric',
@@ -1554,9 +1554,9 @@ export default function StudentDashboard() {
                                   )}
                                 </div>
                                 <div className={`text-[9px] font-bold uppercase px-2 py-1 rounded whitespace-nowrap ${
-                                  e.reason === 'expired' ? 'bg-amber-200 text-amber-900' :
-                                  e.reason === 'rejected' ? 'bg-red-200 text-red-900' :
-                                  'bg-slate-300 text-slate-900'
+                                  e.reason === 'expired' ? 'bg-amber-200 dark:bg-amber-900/40 text-amber-900 dark:text-amber-300' :
+                                  e.reason === 'rejected' ? 'bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-300' :
+                                  'bg-slate-300 dark:bg-gray-700 text-slate-900 dark:text-gray-300'
                                 }`}>
                                   {toLabel(e.reason)}
                                 </div>
@@ -1577,8 +1577,8 @@ export default function StudentDashboard() {
             isScheduledTimeExpired ? (
               /* Expired Scheduled Time UI */
               <div className="text-center py-4">
-                <div className="max-w-lg mx-auto rounded-xl border-2 border-red-300 bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 shadow-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-red-500 to-orange-500 px-4 py-2">
+                <div className="max-w-lg mx-auto rounded-xl border-2 border-red-300 dark:border-red-700 bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 dark:from-red-950/40 dark:via-orange-950/40 dark:to-amber-950/40 shadow-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-red-500 to-orange-500 dark:from-red-600 dark:to-orange-600 px-4 py-2">
                     <div className="flex items-center justify-center gap-2 text-white">
                       <AlertCircle className="w-5 h-5" />
                       <span className="font-bold text-base">Scheduled Time Expired</span>
@@ -1586,35 +1586,35 @@ export default function StudentDashboard() {
                   </div>
                   <div className="px-6 py-4">
                     <div className="flex items-start gap-3 mb-4">
-                      <div className="p-3 rounded-full bg-red-100">
-                        <Clock className="w-7 h-7 text-red-600" />
+                      <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/40">
+                        <Clock className="w-7 h-7 text-red-600 dark:text-red-400" />
                       </div>
                       <div className="flex-1 text-left">
-                        <p className="text-sm font-semibold text-red-900 mb-2">Your scheduled time has expired.</p>
-                        <p className="text-xs text-red-700 leading-relaxed mb-3">
+                        <p className="text-sm font-semibold text-red-900 dark:text-red-300 mb-2">Your scheduled time has expired.</p>
+                        <p className="text-xs text-red-700 dark:text-red-400 leading-relaxed mb-3">
                           The meeting time that was scheduled has now passed. To continue with your interview, please propose a new time that works for both you and your partner.
                         </p>
-                        <div className="bg-white rounded-lg px-4 py-3 border border-red-200 mb-4">
-                          <div className="text-xs text-slate-500 mb-1">Previous Time:</div>
+                        <div className="bg-white dark:bg-gray-800 rounded-lg px-4 py-3 border border-red-200 dark:border-red-700 mb-4">
+                          <div className="text-xs text-slate-500 dark:text-gray-400 mb-1">Previous Time:</div>
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-slate-700 line-through">
+                            <span className="text-sm font-medium text-slate-700 dark:text-gray-300 line-through">
                               {fmt(selectedPair.scheduledAt)}
                             </span>
-                            <span className="text-[10px] font-bold uppercase tracking-wide text-red-700 bg-red-100 px-2 py-1 rounded">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/40 px-2 py-1 rounded">
                               Expired
                             </span>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-sky-50 border border-sky-200 rounded-lg px-4 py-3 mb-4">
+                    <div className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700 rounded-lg px-4 py-3 mb-4">
                       <div className="flex items-start gap-2">
-                        <div className="p-1 rounded bg-sky-200">
-                          <span className="text-sky-700 text-xs font-bold">📝</span>
+                        <div className="p-1 rounded bg-sky-200 dark:bg-sky-800">
+                          <span className="text-sky-700 dark:text-sky-300 text-xs font-bold">📝</span>
                         </div>
                         <div className="flex-1 text-left">
-                          <p className="text-xs font-semibold text-sky-900 mb-1">Next Steps:</p>
-                          <p className="text-xs text-sky-800 leading-relaxed">
+                          <p className="text-xs font-semibold text-sky-900 dark:text-sky-300 mb-1">Next Steps:</p>
+                          <p className="text-xs text-sky-800 dark:text-sky-400 leading-relaxed">
                             Please propose a new time below. Your partner will be notified and can accept or suggest alternatives.
                           </p>
                         </div>
@@ -1632,15 +1632,15 @@ export default function StudentDashboard() {
             ) : (
               /* Active Scheduled Time UI */
               <div className="text-center py-4">
-                <div className="inline-flex flex-col items-center gap-2 px-6 py-4 bg-white rounded-xl border-2 border-emerald-300 shadow-lg">
-                  <CheckCircle className="w-8 h-8 text-emerald-600" />
+                <div className="inline-flex flex-col items-center gap-2 px-6 py-4 bg-white dark:bg-gray-800 rounded-xl border-2 border-emerald-300 dark:border-emerald-700 shadow-lg">
+                  <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
                   <div>
-                    <div className="text-sm font-medium text-slate-600 mb-1">Your interview time:</div>
-                    <div className="text-xl font-bold text-emerald-700">
+                    <div className="text-sm font-medium text-slate-600 dark:text-gray-400 mb-1">Your interview time:</div>
+                    <div className="text-xl font-bold text-emerald-700 dark:text-emerald-400">
                       {fmt(selectedPair.scheduledAt)}
                     </div>
                     {bothReachedLimit && (
-                      <div className="mt-3 text-xs text-emerald-700 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200 font-medium">
+                      <div className="mt-3 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-4 py-2 rounded-lg border border-emerald-200 dark:border-emerald-700 font-medium">
                         ✓ Automatically confirmed after both parties reached proposal limit
                       </div>
                     )}
@@ -1661,16 +1661,16 @@ export default function StudentDashboard() {
                   return (
                     <div>
                       <div className="text-center mb-3">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-100 rounded-lg border border-sky-300">
-                          <Clock className="w-5 h-5 text-sky-600" />
-                          <span className="text-sm font-medium text-sky-900">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-100 dark:bg-sky-900/30 rounded-lg border border-sky-300 dark:border-sky-700">
+                          <Clock className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                          <span className="text-sm font-medium text-sky-900 dark:text-sky-300">
                             Default Time Slot Assigned
                           </span>
                         </div>
                       </div>
-                      <div className="bg-white rounded-lg p-4 border-2 border-sky-200 shadow-md text-center">
-                        <div className="text-xs text-slate-600 mb-2">Your scheduled time:</div>
-                        <div className="text-lg font-semibold text-slate-900 mb-3">
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-sky-200 dark:border-sky-700 shadow-md text-center">
+                        <div className="text-xs text-slate-600 dark:text-gray-400 mb-2">Your scheduled time:</div>
+                        <div className="text-lg font-semibold text-slate-900 dark:text-gray-100 mb-3">
                           {fmt(mySlots[0])}
                         </div>
                         <div className="flex gap-3 justify-center flex-wrap">
@@ -1719,29 +1719,29 @@ export default function StudentDashboard() {
                   return (
                     <div>
                       <div className="text-center mb-3">
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-200">
-                          <Clock className="w-5 h-5 text-indigo-600" />
-                          <span className="text-sm font-medium text-indigo-900">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-200 dark:border-indigo-700">
+                          <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                          <span className="text-sm font-medium text-indigo-900 dark:text-indigo-300">
                             Current Proposal
                           </span>
-                          <span className="inline-flex items-center justify-center min-w-[42px] px-2 py-1 bg-indigo-600 text-white text-xs font-bold rounded">
+                          <span className="inline-flex items-center justify-center min-w-[42px] px-2 py-1 bg-indigo-600 dark:bg-indigo-700 text-white text-xs font-bold rounded">
                             {totalProposals}/3
                           </span>
                         </div>
-                        <div className="mt-2 text-xs text-slate-600">
-                          Proposed by <span className="font-semibold text-indigo-700">{proposerName}</span>
+                        <div className="mt-2 text-xs text-slate-600 dark:text-gray-400">
+                          Proposed by <span className="font-semibold text-indigo-700 dark:text-indigo-400">{proposerName}</span>
                           {proposedByMe && <span className="ml-1">(awaiting {isInterviewer ? 'candidate' : 'interviewer'} response)</span>}
                         </div>
                         {bothReachedLimit && (
-                          <div className="mt-3 text-xs text-amber-800 bg-amber-50 px-4 py-2 rounded-lg border border-amber-300 inline-block font-medium">
+                          <div className="mt-3 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-4 py-2 rounded-lg border border-amber-300 dark:border-amber-700 inline-block font-medium">
                             ⚠ Maximum of 3 combined proposals reached. This time will be automatically confirmed.
                           </div>
                         )}
                       </div>
                       
-                      <div className="bg-white rounded-lg p-4 border-2 border-indigo-300 shadow-md text-center">
-                        <div className="text-xs font-semibold text-indigo-700 mb-2">Proposed Time</div>
-                        <div className="text-xl font-bold text-slate-900 mb-3 px-4 py-2 bg-indigo-50 rounded-lg">
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-indigo-300 dark:border-indigo-700 shadow-md text-center">
+                        <div className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 mb-2">Proposed Time</div>
+                        <div className="text-xl font-bold text-slate-900 dark:text-gray-100 mb-3 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
                           {fmt(displaySlot)}
                         </div>
                         
@@ -1795,21 +1795,21 @@ export default function StudentDashboard() {
                     {selectedPair?.defaultTimeExpired ? (
                       <div className="text-center py-6">
                         <div className="max-w-md mx-auto">
-                          <div className="rounded-xl border border-amber-300 bg-gradient-to-br from-amber-50 to-amber-100 px-6 py-5 shadow-sm">
+                          <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-950/30 px-6 py-5 shadow-sm">
                             <div className="flex items-start gap-3">
-                              <div className="p-2 rounded-lg bg-amber-200/60">
-                                <Clock className="w-6 h-6 text-amber-700" />
+                              <div className="p-2 rounded-lg bg-amber-200/60 dark:bg-amber-900/40">
+                                <Clock className="w-6 h-6 text-amber-700 dark:text-amber-400" />
                               </div>
                               <div className="flex-1">
-                                <div className="text-sm font-semibold text-amber-800 tracking-wide mb-1">Previous Default Time Expired</div>
-                                <div className="text-xs text-amber-700 mb-3 leading-relaxed">
+                                <div className="text-sm font-semibold text-amber-800 dark:text-amber-300 tracking-wide mb-1">Previous Default Time Expired</div>
+                                <div className="text-xs text-amber-700 dark:text-amber-400 mb-3 leading-relaxed">
                                   The originally suggested time has passed and is no longer valid. Please select a new time to keep the scheduling moving forward.
                                 </div>
                                 <div className="inline-flex items-center gap-2 mb-4">
-                                  <span className="text-sm font-medium text-slate-600 line-through">
+                                  <span className="text-sm font-medium text-slate-600 dark:text-gray-400 line-through">
                                     {fmt(selectedPair.defaultTimeSlot)}
                                   </span>
-                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-200 px-2 py-1 rounded">Expired</span>
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300 bg-amber-200 dark:bg-amber-900/40 px-2 py-1 rounded">Expired</span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-3">
                                   <button
@@ -1826,9 +1826,9 @@ export default function StudentDashboard() {
                       </div>
                     ) : (
                       <div className="text-center py-4">
-                        <div className="inline-flex items-center gap-2 px-5 py-3 bg-slate-100 rounded-lg border border-slate-300 mb-3">
-                          <Clock className="w-5 h-5 text-slate-500" />
-                          <div className="text-sm font-medium text-slate-700">
+                        <div className="inline-flex items-center gap-2 px-5 py-3 bg-slate-100 dark:bg-gray-800 rounded-lg border border-slate-300 dark:border-gray-700 mb-3">
+                          <Clock className="w-5 h-5 text-slate-500 dark:text-gray-400" />
+                          <div className="text-sm font-medium text-slate-700 dark:text-gray-300">
                             No time slot scheduled yet
                           </div>
                         </div>
@@ -1849,19 +1849,19 @@ export default function StudentDashboard() {
 
         {/* Propose New Time Form (shown when user clicks "Propose a new time") */}
         {showProposeForm && !isLocked && (
-          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-slate-200 dark:border-gray-700 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="font-semibold text-slate-900">
+                <h3 className="font-semibold text-slate-900 dark:text-gray-100">
                   {isInterviewer ? 'Propose Interview Time' : 'Propose Alternative Time'}
                 </h3>
                 <div className="text-xs mt-1">
                   {combinedRemainingProposals > 0 ? (
-                    <span className="text-slate-600">
-                      <span className="font-semibold text-emerald-600">{combinedRemainingProposals}</span> of 3 combined proposals remaining
+                    <span className="text-slate-600 dark:text-gray-400">
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{combinedRemainingProposals}</span> of 3 combined proposals remaining
                     </span>
                   ) : (
-                    <span className="text-red-600 font-medium">⚠ Maximum combined proposals reached (3/3)</span>
+                    <span className="text-red-600 dark:text-red-400 font-medium">⚠ Maximum combined proposals reached (3/3)</span>
                   )}
                 </div>
               </div>
@@ -1870,7 +1870,7 @@ export default function StudentDashboard() {
                   setShowProposeForm(false);
                   setSlots([""]);
                 }}
-                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600"
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 text-slate-600 dark:text-gray-300"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1943,7 +1943,7 @@ export default function StudentDashboard() {
                     setMessage("");
                   }}
                   disabled={isLoadingPairs}
-                  className="flex-1 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 bg-slate-200 dark:bg-gray-700 hover:bg-slate-300 dark:hover:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -1957,16 +1957,16 @@ export default function StudentDashboard() {
                     }
                   }}
                   disabled={isLoadingPairs}
-                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 dark:from-sky-600 dark:to-sky-700 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 dark:hover:from-sky-700 dark:hover:to-sky-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isLoadingPairs && <span className="animate-spin">⏳</span>}
                   {isLoadingPairs ? 'Processing...' : 'Propose Time'}
                 </button>
               </div>
 
-              <div className="mt-3 p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs text-blue-800 text-center">
-                  <Info className="w-3.5 h-3.5 inline mr-1" />
+              <div className="mt-3 p-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                <p className="text-xs text-blue-800 dark:text-blue-300 text-center">
+                  <Info className="w-3.5 h-3.5 inline mr-1 dark:text-blue-400" />
                   Each party can propose up to 3 different times. If all proposals expire, the last proposed time will be automatically scheduled.
                 </p>
               </div>
@@ -1975,23 +1975,23 @@ export default function StudentDashboard() {
       </div>
 
       {isLocked && selectedPair.meetingLink && (
-        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-            <span className="font-semibold text-indigo-900 text-sm">
+            <span className="font-semibold text-indigo-900 dark:text-indigo-300 text-sm">
               Meeting Details
             </span>
-            <span className="text-xs text-slate-600 bg-white px-2 py-1 rounded border w-fit">
+            <span className="text-xs text-slate-600 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 py-1 rounded border border-slate-200 dark:border-gray-700 w-fit">
               Jitsi Meet
             </span>
           </div>
           
           {isCompleted ? (
-            <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 text-center">
-              <div className="flex items-center justify-center gap-2 text-blue-800 mb-2">
-                <CheckCircle className="w-5 h-5" />
+            <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center gap-2 text-blue-800 dark:text-blue-300 mb-2">
+                <CheckCircle className="w-5 h-5 dark:text-blue-400" />
                 <span className="font-semibold">Session Completed</span>
               </div>
-              <p className="text-sm text-blue-700">
+              <p className="text-sm text-blue-700 dark:text-blue-400">
                 This interview session has been finished. Feedback has been submitted.
               </p>
             </div>
@@ -2086,25 +2086,25 @@ export default function StudentDashboard() {
       ) : (
         <>
           {/* Mobile Header */}
-          <div className="lg:hidden flex items-center gap-2 mb-3 sm:mb-4 p-2.5 sm:p-3 bg-white border-b border-slate-200 sticky top-0 z-10">
+          <div className="lg:hidden flex items-center gap-2 mb-3 sm:mb-4 p-2.5 sm:p-3 bg-white dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 sticky top-0 z-10">
             <button
               onClick={() => {
                 setSelectedEvent(null);
                 setSelectedPairRole(null);
                 setSelectedPair(null);
               }}
-              className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 active:bg-slate-300 transition-colors"
+              className="p-1.5 rounded bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 active:bg-slate-300 dark:active:bg-gray-500 transition-colors"
             >
-              <ChevronLeft size={18} className="text-slate-700" />
+              <ChevronLeft size={18} className="text-slate-700 dark:text-gray-300" />
             </button>
-            <h2 className="text-base sm:text-lg font-semibold text-slate-800 truncate">{selectedEvent.name}</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-gray-100 truncate">{selectedEvent.name}</h2>
           </div>
 
       <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             {selectedEvent.isSpecial && (
-              <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 rounded text-xs font-medium">
                 <Award size={12} />
                 <span>Special Interview</span>
               </div>
@@ -2112,45 +2112,45 @@ export default function StudentDashboard() {
             {selectedEvent.joined && (
               <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
                 selectedEvent.isSpecial
-                  ? "bg-purple-100 text-purple-700"
+                  ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300"
                   : new Date(selectedEvent.startDate) > new Date()
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-emerald-100 text-emerald-700"
+                  ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                  : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
               }`}>
                 <CheckCircle size={12} />
                 <span>Joined</span>
               </div>
             )}
             {!selectedEvent.isSpecial && (
-              <span className="px-2 py-0.5 bg-sky-100 text-sky-700 rounded text-xs font-medium">
+              <span className="px-2 py-0.5 bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 rounded text-xs font-medium">
                 {new Date(selectedEvent.startDate) > new Date() ? 'Upcoming' : 
                  new Date(selectedEvent.endDate) < new Date() ? 'Past' : 'Active'}
               </span>
             )}
           </div>
           
-          <h2 className="hidden lg:block text-lg sm:text-xl font-semibold text-slate-800 mb-2 sm:mb-3">
+          <h2 className="hidden lg:block text-lg sm:text-xl font-semibold text-slate-800 dark:text-gray-100 mb-2 sm:mb-3">
             {selectedEvent.name}
           </h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2 sm:mb-3">
-            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded">
-              <Clock className="w-4 h-4 text-sky-500 flex-shrink-0" />
+            <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-gray-700 rounded">
+              <Clock className="w-4 h-4 text-sky-500 dark:text-sky-400 flex-shrink-0" />
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-slate-500">Start Time</div>
-                <div className="font-medium text-slate-800 text-sm truncate">{fmt(selectedEvent.startDate)}</div>
+                <div className="text-xs text-slate-500 dark:text-gray-400">Start Time</div>
+                <div className="font-medium text-slate-800 dark:text-gray-100 text-sm truncate">{fmt(selectedEvent.startDate)}</div>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded">
-              <Clock className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+            <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-gray-700 rounded">
+              <Clock className="w-4 h-4 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-slate-500">End Time</div>
-                <div className="font-medium text-slate-800 text-sm truncate">{fmt(selectedEvent.endDate)}</div>
+                <div className="text-xs text-slate-500 dark:text-gray-400">End Time</div>
+                <div className="font-medium text-slate-800 dark:text-gray-100 text-sm truncate">{fmt(selectedEvent.endDate)}</div>
               </div>
             </div>
           </div>
           
-          <p className="text-slate-700 text-sm bg-slate-50 p-3 rounded">
+          <p className="text-slate-700 dark:text-gray-300 text-sm bg-slate-50 dark:bg-gray-700 p-3 rounded">
             {selectedEvent.description}
           </p>
         </div>
@@ -2164,7 +2164,7 @@ export default function StudentDashboard() {
                 onClick={handleJoinEvent}
                 disabled={joinDisabled}
                 className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg font-medium text-white text-sm transition-colors ${
-                  joinDisabled ? "bg-slate-400 cursor-not-allowed" : "bg-sky-500 hover:bg-sky-600 active:bg-sky-700"
+                  joinDisabled ? "bg-slate-400 dark:bg-gray-600 cursor-not-allowed" : "bg-sky-500 hover:bg-sky-600 active:bg-sky-700 dark:bg-sky-600 dark:hover:bg-sky-700 dark:active:bg-sky-800"
                 }`}
               >
                 {joinDisabled ? "Participation Closed" : "Join Interview"}
@@ -2176,14 +2176,14 @@ export default function StudentDashboard() {
 
       {/* Template Section */}
       {selectedEvent && (
-        <div className="bg-sky-50 rounded-lg p-3 border border-sky-200 mb-3">
+        <div className="bg-sky-50 dark:bg-sky-900/20 rounded-lg p-3 border border-sky-200 dark:border-sky-700 mb-3">
           <div className="flex items-center gap-2 mb-2">
-            <div className="p-1.5 bg-sky-500 rounded">
+            <div className="p-1.5 bg-sky-500 dark:bg-sky-600 rounded">
               <Info className="w-3 h-3 text-white" />
             </div>
-            <h3 className="font-medium text-slate-800 text-sm">Interview Preparation</h3>
+            <h3 className="font-medium text-slate-800 dark:text-gray-100 text-sm">Interview Preparation</h3>
           </div>
-          <p className="text-slate-700 text-xs mb-2">
+          <p className="text-slate-700 dark:text-gray-300 text-xs mb-2">
             Review the template to prepare for this session.
           </p>
           <div className="flex justify-end">
@@ -2192,8 +2192,8 @@ export default function StudentDashboard() {
               disabled={!selectedEvent.templateUrl}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
                 !selectedEvent.templateUrl 
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                  : 'bg-white border border-sky-300 text-sky-600 hover:bg-sky-50'
+                  ? 'bg-slate-100 dark:bg-gray-700 text-slate-400 dark:text-gray-500 cursor-not-allowed' 
+                  : 'bg-white dark:bg-gray-800 border border-sky-300 dark:border-sky-600 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-700'
               }`}
             >
               <BookOpen size={12} />
@@ -2215,14 +2215,14 @@ export default function StudentDashboard() {
           if (!interviewerPair && !intervieweePair) return null;
           
           return (
-            <div className="lg:hidden bg-indigo-50 rounded-lg p-3 border border-indigo-200 mb-3">
+            <div className="lg:hidden bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-200 dark:border-indigo-700 mb-3">
               <div className="flex items-center gap-2 mb-3">
-                <div className="p-1.5 bg-indigo-500 rounded">
+                <div className="p-1.5 bg-indigo-500 dark:bg-indigo-600 rounded">
                   <Users className="w-3 h-3 text-white" />
                 </div>
-                <h3 className="font-medium text-slate-800 text-sm">Your Pairing Details</h3>
+                <h3 className="font-medium text-slate-800 dark:text-gray-100 text-sm">Your Pairing Details</h3>
               </div>
-              <p className="text-slate-700 text-xs mb-3">
+              <p className="text-slate-700 dark:text-gray-300 text-xs mb-3">
                 View your role as Interviewer or Candidate and manage scheduling.
               </p>
               
@@ -2239,8 +2239,8 @@ export default function StudentDashboard() {
                     }}
                     className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border-2 touch-manipulation ${
                       selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
-                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg"
-                        : "bg-white border-indigo-200 hover:border-indigo-400 text-slate-700 hover:bg-indigo-50 active:bg-indigo-100"
+                        ? "bg-indigo-600 dark:bg-indigo-700 border-indigo-600 dark:border-indigo-600 text-white shadow-lg"
+                        : "bg-white dark:bg-gray-800 border-indigo-200 dark:border-indigo-700 hover:border-indigo-400 dark:hover:border-indigo-600 text-slate-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 active:bg-indigo-100 dark:active:bg-indigo-900/50"
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -2254,15 +2254,15 @@ export default function StudentDashboard() {
                           <span className={`text-xs px-2 py-0.5 rounded ${
                             interviewerPair.status === "scheduled"
                               ? selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
-                                ? "bg-white/20 text-white"
-                                : "bg-emerald-100 text-emerald-700"
+                                ? "bg-white/20 dark:bg-white/30 text-white"
+                                : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
                               : interviewerPair.status === "rejected"
                               ? selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
-                                ? "bg-white/20 text-white"
-                                : "bg-red-100 text-red-700"
+                                ? "bg-white/20 dark:bg-white/30 text-white"
+                                : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
                               : selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
-                                ? "bg-white/20 text-white"
-                                : "bg-amber-100 text-amber-700"
+                                ? "bg-white/20 dark:bg-white/30 text-white"
+                                : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
                           }`}>
                             {interviewerPair.status === "scheduled" ? "Scheduled" : interviewerPair.status === "rejected" ? "Rejected" : "Pending"}
                           </span>
@@ -2284,12 +2284,12 @@ export default function StudentDashboard() {
                     }}
                     className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border-2 touch-manipulation ${
                       selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
-                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg"
-                        : "bg-white border-indigo-200 hover:border-indigo-400 text-slate-700 hover:bg-indigo-50 active:bg-indigo-100"
+                        ? "bg-indigo-600 dark:bg-indigo-700 border-indigo-600 dark:border-indigo-600 text-white shadow-lg"
+                        : "bg-white dark:bg-gray-800 border-indigo-200 dark:border-indigo-700 hover:border-indigo-400 dark:hover:border-indigo-600 text-slate-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 active:bg-indigo-100 dark:active:bg-indigo-900/50"
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <User className={`w-4 h-4 ${selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id ? 'text-white' : 'text-indigo-600'}`} />
+                      <User className={`w-4 h-4 ${selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`} />
                       <div className="flex-1">
                         <div className="font-semibold">Candidate Name</div>
                         <div className="text-xs mt-1 opacity-90">
@@ -2299,15 +2299,15 @@ export default function StudentDashboard() {
                           <span className={`text-xs px-2 py-0.5 rounded ${
                             intervieweePair.status === "scheduled"
                               ? selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
-                                ? "bg-white/20 text-white"
-                                : "bg-emerald-100 text-emerald-700"
+                                ? "bg-white/20 dark:bg-white/30 text-white"
+                                : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
                               : intervieweePair.status === "rejected"
                               ? selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
-                                ? "bg-white/20 text-white"
-                                : "bg-red-100 text-red-700"
+                                ? "bg-white/20 dark:bg-white/30 text-white"
+                                : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
                               : selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
-                                ? "bg-white/20 text-white"
-                                : "bg-amber-100 text-amber-700"
+                                ? "bg-white/20 dark:bg-white/30 text-white"
+                                : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
                           }`}>
                             {intervieweePair.status === "scheduled" ? "Scheduled" : intervieweePair.status === "rejected" ? "Rejected" : "Pending"}
                           </span>
@@ -2319,7 +2319,7 @@ export default function StudentDashboard() {
                 )}
               </div>
               
-              <p className="text-xs text-slate-600 mt-3 p-2 bg-white rounded border border-indigo-100">
+              <p className="text-xs text-slate-600 dark:text-gray-300 mt-3 p-2 bg-white dark:bg-gray-800 rounded border border-indigo-100 dark:border-indigo-700">
                 <Info className="w-3 h-3 inline mr-1" />
                 Tap a role to view scheduling details and propose time slots.
               </p>
@@ -2420,10 +2420,10 @@ export default function StudentDashboard() {
       <div className="flex-1 flex flex-col p-6 sm:p-8">
         {/* Welcome Message */}
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-gray-100 mb-2">
             Welcome back, {user?.name || me?.name || "Student"}! 👋
           </h1>
-          <p className="text-slate-600 text-sm sm:text-base">
+          <p className="text-slate-600 dark:text-gray-300 text-sm sm:text-base">
             Ready to ace your next interview? Select an interview from the left to get started.
           </p>
         </div>
@@ -2434,7 +2434,7 @@ export default function StudentDashboard() {
             <BookOpen className="w-10 h-10 text-white" />
           </div>
           
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-8 text-center">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 mb-8 text-center">
             Interview Sessions
           </h2>
 
@@ -2449,12 +2449,12 @@ export default function StudentDashboard() {
                 transition={{ duration: 0.5 }}
                 className="w-full"
               >
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-500 p-4 sm:p-6 rounded-r-lg shadow-sm">
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 border-l-4 border-indigo-500 dark:border-indigo-400 p-4 sm:p-6 rounded-r-lg shadow-sm">
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
                       <span className="text-white text-sm font-bold">💡</span>
                     </div>
-                    <p className="text-slate-700 text-sm sm:text-base leading-relaxed flex-1">
+                    <p className="text-slate-700 dark:text-gray-200 text-sm sm:text-base leading-relaxed flex-1">
                       {interviewTips[currentTipIndex]}
                     </p>
                   </div>
@@ -2474,14 +2474,14 @@ export default function StudentDashboard() {
 
   return (
     <RequirePasswordChange user={user}>
-      <div className="min-h-screen w-full bg-slate-50 flex flex-col pt-16">
+      <div className="min-h-screen w-full bg-slate-50 dark:bg-gray-900 flex flex-col pt-16">
         <div className="flex-1 w-full mx-auto px-2 sm:px-4 py-2 sm:py-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3">
             <div className={`${selectedEvent ? 'hidden' : 'block'} lg:block lg:col-span-3`}>
               <EventList />
             </div>
             <div className={`${selectedEvent ? 'block' : 'hidden'} lg:block lg:col-span-9`}>
-              <div className="bg-white rounded-lg border border-slate-200 p-2 sm:p-4 h-[calc(100vh-5rem)] sm:h-[calc(100vh-4rem)] flex flex-col overflow-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-2 sm:p-4 h-[calc(100vh-5rem)] sm:h-[calc(100vh-4rem)] flex flex-col overflow-auto">
                 {selectedEvent ? <EventDetails /> : <Placeholder />}
               </div>
             </div>

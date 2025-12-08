@@ -10,11 +10,11 @@ import {
 import { useToast } from '../components/CustomToast';
 
 const difficultyColors = {
-  'easy': 'bg-emerald-100 text-emerald-700',
-  'easy-medium': 'bg-lime-100 text-lime-700',
-  'medium': 'bg-amber-100 text-amber-700',
-  'medium-hard': 'bg-orange-100 text-orange-700',
-  'hard': 'bg-rose-100 text-rose-700'
+  'easy': 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
+  'easy-medium': 'bg-lime-100 dark:bg-lime-900/40 text-lime-700 dark:text-lime-300',
+  'medium': 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',
+  'medium-hard': 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300',
+  'hard': 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300'
 };
 
 export default function SemesterManagement() {
@@ -188,31 +188,31 @@ export default function SemesterManagement() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64 text-lg">Loading learning modules...</div>;
+    return <div className="flex justify-center items-center h-64 text-lg text-slate-800 dark:text-gray-100">Loading learning modules...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-16">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 pt-16">
       <div className="flex h-[calc(100vh-4rem)]">
         {/* LEFT SIDEBAR - Learning Modules */}
-        <div className={`${getSidebarWidthClass()} transition-all duration-300 overflow-hidden border-r border-slate-200 bg-white shadow-sm`}>
+        <div className={`${getSidebarWidthClass()} transition-all duration-300 overflow-hidden border-r border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm`}>
           <div className="h-full flex flex-col">
             {/* Sidebar Header */}
-            <div className="p-4 border-b border-slate-200 bg-white">
+            <div className="p-4 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-sky-100 flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-sky-600" />
+                  <div className="w-10 h-10 rounded-lg bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-sky-600 dark:text-sky-400" />
                   </div>
-                  <h2 className="text-lg font-semibold text-slate-800">Learning Modules</h2>
+                  <h2 className="text-lg font-semibold text-slate-800 dark:text-gray-100">Learning Modules</h2>
                 </div>
                 <div className="flex gap-1.5">
                   <button
                     onClick={cycleSidebarWidth}
-                    className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                    className="p-2 bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
                     title="Adjust Width"
                   >
-                    <ChevronRight className="w-4 h-4 text-slate-600" />
+                    <ChevronRight className="w-4 h-4 text-slate-600 dark:text-gray-400" />
                   </button>
                   <button
                     onClick={() => setShowAddSemester(true)}
@@ -223,7 +223,7 @@ export default function SemesterManagement() {
                   </button>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 font-medium">{semesters.length} learning module{semesters.length !== 1 ? 's' : ''} total</p>
+              <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">{semesters.length} learning module{semesters.length !== 1 ? 's' : ''} total</p>
             </div>
 
             {/* Add Learning Module Modal */}
@@ -231,21 +231,21 @@ export default function SemesterManagement() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-4 bg-sky-50 border-b border-sky-100"
+                className="p-4 bg-sky-50 dark:bg-sky-900/20 border-b border-sky-100 dark:border-sky-800"
               >
-                <h3 className="text-sm font-semibold mb-3 text-slate-800">Add New Semester</h3>
+                <h3 className="text-sm font-semibold mb-3 text-slate-800 dark:text-gray-100">Add New Semester</h3>
                 <input
                   type="text"
                   placeholder="Semester name (e.g., Semester 1)"
                   value={newSemester.semesterName}
                   onChange={(e) => setNewSemester({ ...newSemester, semesterName: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg mb-2 text-sm text-slate-800 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 transition-all"
                 />
                 <textarea
                   placeholder="Description (optional)"
                   value={newSemester.semesterDescription}
                   onChange={(e) => setNewSemester({ ...newSemester, semesterDescription: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-3 text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all resize-none"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg mb-3 text-sm text-slate-800 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 transition-all resize-none"
                   rows="2"
                 />
                 <div className="flex gap-2">
@@ -261,7 +261,7 @@ export default function SemesterManagement() {
                       setNewSemester({ semesterName: '', semesterDescription: '' });
                       setShowAddSemester(false);
                     }}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-200 text-slate-700 px-3 py-2 rounded-lg hover:bg-slate-300 text-sm font-medium transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-3 py-2 rounded-lg hover:bg-slate-300 dark:hover:bg-gray-500 text-sm font-medium transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
                     Cancel
@@ -273,10 +273,10 @@ export default function SemesterManagement() {
             {/* Learning Modules List */}
             <div className="flex-1 overflow-y-auto p-3">
               {semesters.length === 0 ? (
-                <div className="text-center py-12 text-slate-500">
-                  <Calendar className="w-14 h-14 mx-auto mb-3 text-slate-300" />
+                <div className="text-center py-12 text-slate-500 dark:text-gray-400">
+                  <Calendar className="w-14 h-14 mx-auto mb-3 text-slate-300 dark:text-gray-600" />
                   <p className="text-sm font-medium">No learning modules yet</p>
-                  <p className="text-xs text-slate-400 mt-1">Click the + button to add one</p>
+                  <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">Click the + button to add one</p>
                 </div>
               ) : (
                 <Reorder.Group axis="y" values={semesters} onReorder={handleReorderSemesters} className="space-y-2">
@@ -285,14 +285,14 @@ export default function SemesterManagement() {
                       <div
                         className={`p-3 rounded-lg cursor-pointer transition-all border ${
                           selectedSemester?._id === semester._id
-                            ? 'bg-sky-50 border-sky-300 shadow-sm ring-1 ring-sky-200'
-                            : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm'
+                            ? 'bg-sky-50 dark:bg-sky-900/20 border-sky-300 dark:border-sky-600 shadow-sm ring-1 ring-sky-200 dark:ring-sky-700'
+                            : 'bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-600 hover:border-slate-300 dark:hover:border-gray-500 hover:shadow-sm'
                         }`}
                         onClick={() => handleSelectSemester(semester)}
                       >
                         <div className="flex items-start gap-2">
                           <GripVertical
-                            className="w-4 h-4 text-slate-400 cursor-grab active:cursor-grabbing flex-shrink-0 mt-1 hover:text-slate-600"
+                            className="w-4 h-4 text-slate-400 dark:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 mt-1 hover:text-slate-600 dark:hover:text-gray-400"
                             onPointerDown={(e) => e.stopPropagation()}
                           />
                           <div className="flex-1 min-w-0">
@@ -302,12 +302,12 @@ export default function SemesterManagement() {
                                   type="text"
                                   value={editingSemester.semesterName}
                                   onChange={(e) => setEditingSemester({ ...editingSemester, semesterName: e.target.value })}
-                                  className="w-full px-2 py-1.5 border border-slate-300 rounded-lg mb-2 text-sm text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                  className="w-full px-2 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg mb-2 text-sm text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                                 />
                                 <textarea
                                   value={editingSemester.semesterDescription || ''}
                                   onChange={(e) => setEditingSemester({ ...editingSemester, semesterDescription: e.target.value })}
-                                  className="w-full px-2 py-1.5 border border-slate-300 rounded-lg mb-2 text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none"
+                                  className="w-full px-2 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg mb-2 text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none"
                                   rows="2"
                                 />
                                 <div className="flex gap-1.5">
@@ -320,7 +320,7 @@ export default function SemesterManagement() {
                                   </button>
                                   <button
                                     onClick={() => setEditingSemester(null)}
-                                    className="flex-1 flex items-center justify-center gap-1 bg-slate-200 text-slate-700 px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-300 transition-colors"
+                                    className="flex-1 flex items-center justify-center gap-1 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-300 dark:hover:bg-gray-500 transition-colors"
                                   >
                                     <X className="w-3 h-3" />
                                     Cancel
@@ -329,11 +329,11 @@ export default function SemesterManagement() {
                               </div>
                             ) : (
                               <>
-                                <h3 className="font-semibold text-sm text-slate-800 truncate">{semester.semesterName}</h3>
+                                <h3 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">{semester.semesterName}</h3>
                                 {semester.semesterDescription && (
-                                  <p className="text-xs text-slate-500 truncate mt-0.5">{semester.semesterDescription}</p>
+                                  <p className="text-xs text-slate-500 dark:text-gray-400 truncate mt-0.5">{semester.semesterDescription}</p>
                                 )}
-                                <p className="text-xs text-slate-400 mt-1 font-medium">
+                                <p className="text-xs text-slate-400 dark:text-gray-500 mt-1 font-medium">
                                   {semester.subjects?.length || 0} subject{semester.subjects?.length !== 1 ? 's' : ''}
                                 </p>
                               </>
@@ -343,17 +343,17 @@ export default function SemesterManagement() {
                             <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                               <button
                                 onClick={() => setEditingSemester(semester)}
-                                className="p-1.5 hover:bg-sky-100 rounded-lg transition-colors"
+                                className="p-1.5 hover:bg-sky-100 dark:hover:bg-sky-900/40 rounded-lg transition-colors"
                                 title="Edit"
                               >
-                                <Edit2 className="w-3.5 h-3.5 text-sky-600" />
+                                <Edit2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                               </button>
                               <button
                                 onClick={() => handleDeleteSemester(semester._id)}
-                                className="p-1.5 hover:bg-red-100 rounded-lg transition-colors"
+                                className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg transition-colors"
                                 title="Delete"
                               >
-                                <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                                <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                               </button>
                             </div>
                           )}
@@ -368,27 +368,27 @@ export default function SemesterManagement() {
         </div>
 
         {/* MAIN CONTENT - Subjects/Chapters/Topics */}
-        <div className="flex-1 overflow-y-auto bg-slate-50">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
           <div className="p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                  className="p-2 hover:bg-white rounded-lg transition-colors border border-slate-200"
+                  className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors border border-slate-200 dark:border-gray-700"
                   title={isSidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
                 >
-                  {isSidebarOpen ? <ChevronRight className="w-5 h-5 text-slate-600" /> : <Menu className="w-5 h-5 text-slate-600" />}
+                  {isSidebarOpen ? <ChevronRight className="w-5 h-5 text-slate-600 dark:text-gray-400" /> : <Menu className="w-5 h-5 text-slate-600 dark:text-gray-400" />}
                 </button>
-                <div className="w-12 h-12 rounded-lg bg-sky-100 flex items-center justify-center">
-                  <BookOpen className="w-6 h-6 text-sky-600" />
+                <div className="w-12 h-12 rounded-lg bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-sky-600 dark:text-sky-400" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-800">
+                  <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100">
                     {selectedSemester ? selectedSemester.semesterName : 'Select a Learning Module'}
                   </h1>
                   {selectedSemester?.semesterDescription && (
-                    <p className="text-sm text-slate-600 font-medium mt-0.5">{selectedSemester.semesterDescription}</p>
+                    <p className="text-sm text-slate-600 dark:text-gray-400 font-medium mt-0.5">{selectedSemester.semesterDescription}</p>
                   )}
                 </div>
               </div>
@@ -396,12 +396,12 @@ export default function SemesterManagement() {
 
             {/* Content */}
             {!selectedSemester ? (
-              <div className="text-center py-20 text-slate-500">
-                <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                  <Calendar className="w-10 h-10 text-slate-400" />
+              <div className="text-center py-20 text-slate-500 dark:text-gray-400">
+                <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="w-10 h-10 text-slate-400 dark:text-gray-500" />
                 </div>
-                <p className="text-lg font-semibold text-slate-700 mb-1">No Learning Module Selected</p>
-                <p className="text-sm text-slate-500">Choose a learning module from the sidebar to view and manage subjects</p>
+                <p className="text-lg font-semibold text-slate-700 dark:text-gray-300 mb-1">No Learning Module Selected</p>
+                <p className="text-sm text-slate-500 dark:text-gray-400">Choose a learning module from the sidebar to view and manage subjects</p>
               </div>
             ) : (
               <SubjectList
@@ -492,21 +492,21 @@ function SubjectList({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-white p-5 rounded-lg shadow-sm mb-6 border border-slate-200"
+            className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm mb-6 border border-slate-200 dark:border-gray-700"
           >
-            <h4 className="text-base font-semibold mb-4 text-slate-800">New Subject</h4>
+            <h4 className="text-base font-semibold mb-4 text-slate-800 dark:text-gray-100">New Subject</h4>
             <input
               type="text"
               placeholder="Subject name (e.g., Data Structures)"
               value={newSubject.subjectName}
               onChange={(e) => setNewSubject({ ...newSubject, subjectName: e.target.value })}
-              className="w-full px-3 py-2.5 border border-slate-300 rounded-lg mb-3 text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
+              className="w-full px-3 py-2.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg mb-3 text-sm text-slate-800 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
             />
             <textarea
               placeholder="Description (optional)"
               value={newSubject.subjectDescription}
               onChange={(e) => setNewSubject({ ...newSubject, subjectDescription: e.target.value })}
-              className="w-full px-3 py-2.5 border border-slate-300 rounded-lg mb-4 text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all resize-none"
+              className="w-full px-3 py-2.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg mb-4 text-sm text-slate-800 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all resize-none"
               rows="2"
             />
             <div className="flex gap-2">
@@ -522,7 +522,7 @@ function SubjectList({
                   setShowAddSubject(false);
                   setNewSubject({ subjectName: '', subjectDescription: '' });
                 }}
-                className="flex items-center gap-1.5 bg-slate-200 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-300 font-medium transition-colors"
+                className="flex items-center gap-1.5 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-slate-300 dark:hover:bg-gray-500 font-medium transition-colors"
               >
                 <X className="w-4 h-4" />
                 Cancel
@@ -556,10 +556,10 @@ function SubjectList({
           ))}
         </Reorder.Group>
       ) : (
-        <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
-          <BookOpen className="w-14 h-14 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 font-medium">No subjects yet</p>
-          <p className="text-xs text-slate-400 mt-1">Click "Add Subject" to create one</p>
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700">
+          <BookOpen className="w-14 h-14 text-slate-300 dark:text-gray-600 mx-auto mb-3" />
+          <p className="text-slate-500 dark:text-gray-400 font-medium">No subjects yet</p>
+          <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">Click "Add Subject" to create one</p>
         </div>
       )}
     </div>
@@ -645,12 +645,12 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
   };
 
   return (
-    <Reorder.Item value={subject} className="bg-white rounded-lg shadow-sm border border-slate-200 hover:border-slate-300 transition-all">
-      <div className="p-3 bg-white cursor-pointer hover:bg-slate-50 transition-colors" onClick={onToggle}>
+    <Reorder.Item value={subject} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 hover:border-slate-300 dark:hover:border-gray-600 transition-all">
+      <div className="p-3 bg-white dark:bg-gray-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors" onClick={onToggle}>
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-2 flex-1">
             <GripVertical 
-              className="w-4 h-4 text-slate-400 cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5 hover:text-slate-600" 
+              className="w-4 h-4 text-slate-400 dark:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5 hover:text-slate-600 dark:hover:text-gray-400" 
               onPointerDown={(e) => e.stopPropagation()}
             />
             <div className="flex-1">
@@ -660,12 +660,12 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
                     type="text"
                     value={editData.subjectName}
                     onChange={(e) => setEditData({ ...editData, subjectName: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm font-medium text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-sm font-medium text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                   />
                   <textarea
                     value={editData.subjectDescription || ''}
                     onChange={(e) => setEditData({ ...editData, subjectDescription: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none"
                     rows="2"
                   />
                   <div className="flex gap-1.5">
@@ -673,7 +673,7 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
                       <Save className="w-3 h-3" />
                       Save
                     </button>
-                    <button onClick={() => setIsEditing(false)} className="flex items-center gap-1 bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded text-xs font-medium hover:bg-slate-300 transition-colors">
+                    <button onClick={() => setIsEditing(false)} className="flex items-center gap-1 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-2.5 py-1.5 rounded text-xs font-medium hover:bg-slate-300 dark:hover:bg-gray-500 transition-colors">
                       <X className="w-3 h-3" />
                       Cancel
                     </button>
@@ -682,13 +682,13 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
               ) : (
                 <>
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded bg-sky-100 flex items-center justify-center">
-                      <BookOpen className="w-3.5 h-3.5 text-sky-600" />
+                    <div className="w-7 h-7 rounded bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center">
+                      <BookOpen className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                     </div>
-                    <h3 className="text-sm font-semibold text-slate-800">{subject.subjectName}</h3>
+                    <h3 className="text-sm font-semibold text-slate-800 dark:text-gray-100">{subject.subjectName}</h3>
                   </div>
-                  {subject.subjectDescription && <p className="text-slate-600 mt-1.5 text-xs leading-relaxed">{subject.subjectDescription}</p>}
-                  <p className="text-slate-500 text-xs mt-1.5 font-medium">{subject.chapters?.length || 0} chapter{subject.chapters?.length !== 1 ? 's' : ''}</p>
+                  {subject.subjectDescription && <p className="text-slate-600 dark:text-gray-400 mt-1.5 text-xs leading-relaxed">{subject.subjectDescription}</p>}
+                  <p className="text-slate-500 dark:text-gray-500 text-xs mt-1.5 font-medium">{subject.chapters?.length || 0} chapter{subject.chapters?.length !== 1 ? 's' : ''}</p>
                 </>
               )}
             </div>
@@ -696,15 +696,15 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             {!isEditing && (
               <>
-                <button onClick={() => setIsEditing(true)} className="p-1.5 bg-sky-50 text-sky-600 rounded hover:bg-sky-100 transition-colors">
+                <button onClick={() => setIsEditing(true)} className="p-1.5 bg-sky-50 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400 rounded hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors">
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={onDelete} className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors">
+                <button onClick={onDelete} className="p-1.5 bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </>
             )}
-            <div className="p-1.5 bg-slate-50 text-slate-600 rounded border border-slate-200">
+            <div className="p-1.5 bg-slate-50 dark:bg-gray-700 text-slate-600 dark:text-gray-400 rounded border border-slate-200 dark:border-gray-600">
               {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </div>
           </div>
@@ -713,8 +713,8 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
 
       <AnimatePresence>
         {isExpanded && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-slate-200">
-            <div className="p-3 bg-slate-50">
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-slate-200 dark:border-gray-700">
+            <div className="p-3 bg-slate-50 dark:bg-gray-900">
               <button
                 onClick={() => setShowAddChapter(true)}
                 className="flex items-center gap-1.5 bg-sky-500 text-white px-2.5 py-1.5 rounded hover:bg-sky-600 mb-2 text-xs font-medium shadow-sm transition-colors"
@@ -724,23 +724,23 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
               </button>
 
               {showAddChapter && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-white p-3 rounded mb-3 border border-slate-200 shadow-sm">
-                  <h4 className="text-xs font-semibold mb-2 text-slate-800">New Chapter</h4>
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-white dark:bg-gray-800 p-3 rounded mb-3 border border-slate-200 dark:border-gray-700 shadow-sm">
+                  <h4 className="text-xs font-semibold mb-2 text-slate-800 dark:text-gray-100">New Chapter</h4>
                   <input
                     type="text"
                     placeholder="Chapter name"
                     value={newChapter.chapterName}
                     onChange={(e) => setNewChapter({ ...newChapter, chapterName: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded mb-2 text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded mb-2 text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                   />
                   <div className="mb-2">
-                    <label className="block text-xs font-medium mb-1.5 text-slate-700">Importance Level</label>
+                    <label className="block text-xs font-medium mb-1.5 text-slate-700 dark:text-gray-300">Importance Level</label>
                     <div className="flex gap-0.5">
                       {[1, 2, 3, 4, 5].map(level => (
                         <button
                           key={level}
                           onClick={() => setNewChapter({ ...newChapter, importanceLevel: level })}
-                          className={`p-0.5 transition-colors ${level <= newChapter.importanceLevel ? 'text-amber-500' : 'text-slate-300 hover:text-slate-400'}`}
+                          className={`p-0.5 transition-colors ${level <= newChapter.importanceLevel ? 'text-amber-500' : 'text-slate-300 dark:text-gray-600 hover:text-slate-400 dark:hover:text-gray-500'}`}
                         >
                           <Star className="w-4 h-4" fill={level <= newChapter.importanceLevel ? 'currentColor' : 'none'} />
                         </button>
@@ -757,7 +757,7 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
                         setShowAddChapter(false);
                         setNewChapter({ chapterName: '', importanceLevel: 3 });
                       }}
-                      className="flex items-center gap-1 bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded hover:bg-slate-300 text-xs font-medium transition-colors"
+                      className="flex items-center gap-1 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-2.5 py-1.5 rounded hover:bg-slate-300 dark:hover:bg-gray-500 text-xs font-medium transition-colors"
                     >
                       <X className="w-3 h-3" />
                       Cancel
@@ -785,10 +785,10 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
                 </Reorder.Group>
               ) : (
                 <div className="text-center py-6">
-                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 mb-2">
-                    <BookOpen className="w-5 h-5 text-slate-400" />
+                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 dark:bg-gray-700 mb-2">
+                    <BookOpen className="w-5 h-5 text-slate-400 dark:text-gray-500" />
                   </div>
-                  <p className="text-slate-500 text-xs">No chapters added yet</p>
+                  <p className="text-slate-500 dark:text-gray-400 text-xs">No chapters added yet</p>
                 </div>
               )}
             </div>
@@ -903,12 +903,12 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
   };
 
   return (
-    <Reorder.Item value={chapter} className="bg-white rounded border border-slate-200 shadow-sm hover:border-slate-300 transition-all">
-      <div className="p-2 cursor-pointer hover:bg-slate-50 transition-colors" onClick={onToggle}>
+    <Reorder.Item value={chapter} className="bg-white dark:bg-gray-800 rounded border border-slate-200 dark:border-gray-700 shadow-sm hover:border-slate-300 dark:hover:border-gray-600 transition-all">
+      <div className="p-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors" onClick={onToggle}>
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-1.5 flex-1">
             <GripVertical 
-              className="w-3.5 h-3.5 text-slate-400 cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5 hover:text-slate-600" 
+              className="w-3.5 h-3.5 text-slate-400 dark:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5 hover:text-slate-600 dark:hover:text-gray-400" 
               onPointerDown={(e) => e.stopPropagation()}
             />
             <div className="flex-1">
@@ -918,16 +918,16 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                     type="text"
                     value={editData.chapterName}
                     onChange={(e) => setEditData({ ...editData, chapterName: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded font-medium text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded font-medium text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                   />
                   <div>
-                    <label className="block text-xs font-medium mb-1 text-slate-700">Importance Level</label>
+                    <label className="block text-xs font-medium mb-1 text-slate-700 dark:text-gray-300">Importance Level</label>
                     <div className="flex gap-0.5">
                       {[1, 2, 3, 4, 5].map(level => (
                         <button
                           key={level}
                           onClick={() => setEditData({ ...editData, importanceLevel: level })}
-                          className={`p-0.5 transition-colors ${level <= editData.importanceLevel ? 'text-amber-500' : 'text-slate-300 hover:text-slate-400'}`}
+                          className={`p-0.5 transition-colors ${level <= editData.importanceLevel ? 'text-amber-500' : 'text-slate-300 dark:text-gray-600 hover:text-slate-400 dark:hover:text-gray-500'}`}
                         >
                           <Star className="w-3.5 h-3.5" fill={level <= editData.importanceLevel ? 'currentColor' : 'none'} />
                         </button>
@@ -939,7 +939,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                       <Save className="w-3 h-3" />
                       Save
                     </button>
-                    <button onClick={() => setIsEditing(false)} className="flex items-center gap-1 bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded hover:bg-slate-300 text-xs font-medium transition-colors">
+                    <button onClick={() => setIsEditing(false)} className="flex items-center gap-1 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-2.5 py-1.5 rounded hover:bg-slate-300 dark:hover:bg-gray-500 text-xs font-medium transition-colors">
                       <X className="w-3 h-3" />
                       Cancel
                     </button>
@@ -947,16 +947,16 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                 </div>
               ) : (
                 <>
-                  <h4 className="text-sm font-semibold text-slate-800">{chapter.chapterName}</h4>
+                  <h4 className="text-sm font-semibold text-slate-800 dark:text-gray-100">{chapter.chapterName}</h4>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
-                        className={`w-2.5 h-2.5 ${i < chapter.importanceLevel ? 'text-amber-500' : 'text-slate-300'}`}
+                        className={`w-2.5 h-2.5 ${i < chapter.importanceLevel ? 'text-amber-500' : 'text-slate-300 dark:text-gray-600'}`}
                         fill={i < chapter.importanceLevel ? 'currentColor' : 'none'}
                       />
                     ))}
-                    <span className="text-xs text-slate-500 font-medium ml-1">({chapter.topics?.length || 0} topics)</span>
+                    <span className="text-xs text-slate-500 dark:text-gray-400 font-medium ml-1">({chapter.topics?.length || 0} topics)</span>
                   </div>
                 </>
               )}
@@ -965,15 +965,15 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             {!isEditing && (
               <>
-                <button onClick={() => setIsEditing(true)} className="p-1 bg-sky-50 text-sky-600 rounded hover:bg-sky-100 transition-colors">
+                <button onClick={() => setIsEditing(true)} className="p-1 bg-sky-50 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400 rounded hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors">
                   <Edit2 className="w-3 h-3" />
                 </button>
-                <button onClick={onDelete} className="p-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors">
+                <button onClick={onDelete} className="p-1 bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors">
                   <Trash2 className="w-3 h-3" />
                 </button>
               </>
             )}
-            <div className="p-1 bg-slate-50 text-slate-600 rounded border border-slate-200">
+            <div className="p-1 bg-slate-50 dark:bg-gray-700 text-slate-600 dark:text-gray-400 rounded border border-slate-200 dark:border-gray-600">
               {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
             </div>
           </div>
@@ -982,8 +982,8 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
 
       <AnimatePresence>
         {isExpanded && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-slate-200">
-            <div className="px-2 pb-2 pt-2 bg-slate-50">
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-slate-200 dark:border-gray-700">
+            <div className="px-2 pb-2 pt-2 bg-slate-50 dark:bg-gray-900">
               <button
                 onClick={() => setShowAddTopic(true)}
                 className="flex items-center gap-1 bg-sky-500 text-white px-2.5 py-1.5 rounded hover:bg-sky-600 mb-2 text-xs font-medium shadow-sm transition-colors"
@@ -993,25 +993,25 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
               </button>
 
               {showAddTopic && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-white p-2.5 rounded mb-2 border border-slate-200 shadow-sm">
-                  <h5 className="text-xs font-semibold mb-2 text-slate-800">New Topic</h5>
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-white dark:bg-gray-800 p-2.5 rounded mb-2 border border-slate-200 dark:border-gray-700 shadow-sm">
+                  <h5 className="text-xs font-semibold mb-2 text-slate-800 dark:text-gray-100">New Topic</h5>
                   <div className="space-y-2">
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-0.5">Topic Name *</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Topic Name *</label>
                       <input
                         type="text"
                         placeholder="Enter topic name"
                         value={newTopic.topicName}
                         onChange={(e) => setNewTopic({ ...newTopic, topicName: e.target.value })}
-                        className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                        className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-0.5">Difficulty Level</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Difficulty Level</label>
                       <select
                         value={newTopic.difficulty}
                         onChange={(e) => setNewTopic({ ...newTopic, difficulty: e.target.value })}
-                        className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                        className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                       >
                         <option value="easy">Easy</option>
                         <option value="easy-medium">Easy-Medium</option>
@@ -1021,31 +1021,31 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-0.5">Video Link (Optional)</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Video Link (Optional)</label>
                       <input
                         type="url"
                         placeholder="https://example.com/video"
                         value={newTopic.videoLink || ''}
                         onChange={(e) => setNewTopic({ ...newTopic, videoLink: e.target.value })}
-                        className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                        className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-0.5">Notes PDF (Optional)</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Notes PDF (Optional)</label>
                       <input
                         type="file"
                         accept=".pdf"
                         onChange={(e) => setNewTopic({ ...newTopic, notesPDF: e.target.files[0] })}
-                        className="w-full px-2 py-1 border border-slate-300 rounded text-xs text-slate-800 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 file:text-sky-600 hover:file:bg-sky-100"
+                        className="w-full px-2 py-1 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 dark:file:bg-sky-900/40 file:text-sky-600 dark:file:text-sky-400 hover:file:bg-sky-100 dark:hover:file:bg-sky-900/60"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-0.5">Question PDF (Optional)</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Question PDF (Optional)</label>
                       <input
                         type="file"
                         accept=".pdf"
                         onChange={(e) => setNewTopic({ ...newTopic, questionPDF: e.target.files[0] })}
-                        className="w-full px-2 py-1 border border-slate-300 rounded text-xs text-slate-800 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 file:text-sky-600 hover:file:bg-sky-100"
+                        className="w-full px-2 py-1 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 dark:file:bg-sky-900/40 file:text-sky-600 dark:file:text-sky-400 hover:file:bg-sky-100 dark:hover:file:bg-sky-900/60"
                       />
                     </div>
                   </div>
@@ -1059,7 +1059,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                         setShowAddTopic(false);
                         setNewTopic({ topicName: '', difficulty: 'medium', videoLink: '', notesPDF: null, questionPDF: null });
                       }}
-                      className="flex items-center gap-1 bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded hover:bg-slate-300 text-xs font-medium transition-colors"
+                      className="flex items-center gap-1 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-2.5 py-1.5 rounded hover:bg-slate-300 dark:hover:bg-gray-500 text-xs font-medium transition-colors"
                     >
                       <X className="w-3 h-3" />
                       Cancel
@@ -1086,10 +1086,10 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                 </Reorder.Group>
               ) : (
                 <div className="text-center py-4">
-                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 mb-1.5">
-                    <BookOpen className="w-4 h-4 text-slate-400" />
+                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 dark:bg-gray-700 mb-1.5">
+                    <BookOpen className="w-4 h-4 text-slate-400 dark:text-gray-500" />
                   </div>
-                  <p className="text-slate-500 text-xs">No topics added yet</p>
+                  <p className="text-slate-500 dark:text-gray-400 text-xs">No topics added yet</p>
                 </div>
               )}
             </div>
@@ -1134,32 +1134,32 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
   };
 
   return (
-    <Reorder.Item value={topic} className="bg-white p-2 rounded border border-slate-200 hover:border-slate-300 transition-all">
+    <Reorder.Item value={topic} className="bg-white dark:bg-gray-800 p-2 rounded border border-slate-200 dark:border-gray-700 hover:border-slate-300 dark:hover:border-gray-600 transition-all">
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-1.5 flex-1">
           <GripVertical 
-            className="w-3 h-3 text-slate-400 cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5 hover:text-slate-600" 
+            className="w-3 h-3 text-slate-400 dark:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5 hover:text-slate-600 dark:hover:text-gray-400" 
             onPointerDown={(e) => e.stopPropagation()}
           />
           <div className="flex-1">
             {isEditing ? (
               <div className="space-y-2">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-0.5">Topic Name *</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Topic Name *</label>
                   <input
                     type="text"
                     placeholder="Enter topic name"
                     value={editData.topicName}
                     onChange={(e) => setEditData({ ...editData, topicName: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-0.5">Difficulty Level</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Difficulty Level</label>
                   <select
                     value={editData.difficulty}
                     onChange={(e) => setEditData({ ...editData, difficulty: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                   >
                     <option value="easy">Easy</option>
                     <option value="easy-medium">Easy-Medium</option>
@@ -1169,36 +1169,36 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-0.5">Video Link (Optional)</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Video Link (Optional)</label>
                   <input
                     type="url"
                     placeholder="https://example.com/video"
                     value={editData.videoLink}
                     onChange={(e) => setEditData({ ...editData, videoLink: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-0.5">Notes PDF (Optional)</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Notes PDF (Optional)</label>
                   <input
                     type="file"
                     accept=".pdf"
                     onChange={(e) => setEditData({ ...editData, notesPDF: e.target.files[0] })}
-                    className="w-full px-2 py-1 border border-slate-300 rounded text-xs text-slate-800 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 file:text-sky-600 hover:file:bg-sky-100"
+                    className="w-full px-2 py-1 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 dark:file:bg-sky-900/40 file:text-sky-600 dark:file:text-sky-400 hover:file:bg-sky-100 dark:hover:file:bg-sky-900/60"
                   />
                   {topic.notesPDF && (
-                    <a href={topic.notesPDF} target="_blank" rel="noopener noreferrer" className="text-xs text-sky-600 hover:text-sky-700 hover:underline mt-0.5 inline-block font-medium">
+                    <a href={topic.notesPDF} target="_blank" rel="noopener noreferrer" className="text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline mt-0.5 inline-block font-medium">
                       View current PDF
                     </a>
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-0.5">Question PDF (Optional)</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Question PDF (Optional)</label>
                   <input
                     type="file"
                     accept=".pdf"
                     onChange={(e) => setEditData({ ...editData, questionPDF: e.target.files[0] })}
-                    className="w-full px-2 py-1 border border-slate-300 rounded text-xs text-slate-800 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 file:text-sky-600 hover:file:bg-sky-100"
+                    className="w-full px-2 py-1 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 dark:file:bg-sky-900/40 file:text-sky-600 dark:file:text-sky-400 hover:file:bg-sky-100 dark:hover:file:bg-sky-900/60"
                   />
                 </div>
                 <div className="flex gap-1.5">
@@ -1206,7 +1206,7 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
                     <Save className="w-3 h-3" />
                     Save
                   </button>
-                  <button onClick={() => setIsEditing(false)} className="flex items-center gap-1 bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded hover:bg-slate-300 text-xs font-medium transition-colors">
+                  <button onClick={() => setIsEditing(false)} className="flex items-center gap-1 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-2.5 py-1.5 rounded hover:bg-slate-300 dark:hover:bg-gray-500 text-xs font-medium transition-colors">
                     <X className="w-3 h-3" />
                     Cancel
                   </button>
@@ -1215,7 +1215,7 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
             ) : (
               <>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h5 className="font-semibold text-slate-800 text-sm">{topic.topicName}</h5>
+                  <h5 className="font-semibold text-slate-800 dark:text-gray-100 text-sm">{topic.topicName}</h5>
                   <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${difficultyColors[topic.difficulty]}`}>
                     {topic.difficulty}
                   </span>
@@ -1228,7 +1228,7 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
                         href={link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-sky-600 hover:text-sky-700 hover:underline text-xs font-medium"
+                        className="flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline text-xs font-medium"
                       >
                         <LinkIcon className="w-3 h-3" />
                         Link {i + 1}
@@ -1241,7 +1241,7 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
                     href={topic.questionPDF}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:underline mt-2 text-xs font-medium"
+                    className="flex items-center gap-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:underline mt-2 text-xs font-medium"
                   >
                     <FileText className="w-3 h-3" />
                     Question PDF
@@ -1252,7 +1252,7 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
                     href={topic.notesPDF}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-sky-600 hover:text-sky-700 hover:underline mt-2 text-xs font-medium"
+                    className="flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline mt-2 text-xs font-medium"
                   >
                     <FileText className="w-3 h-3" />
                     Notes PDF
@@ -1265,10 +1265,10 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
         <div className="flex items-center gap-1">
           {!isEditing && (
             <>
-              <button onClick={() => setIsEditing(true)} className="p-1 bg-sky-50 text-sky-600 rounded hover:bg-sky-100 transition-colors">
+              <button onClick={() => setIsEditing(true)} className="p-1 bg-sky-50 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400 rounded hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors">
                 <Edit2 className="w-3 h-3" />
               </button>
-              <button onClick={onDelete} className="p-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors">
+              <button onClick={onDelete} className="p-1 bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors">
                 <Trash2 className="w-3 h-3" />
               </button>
             </>

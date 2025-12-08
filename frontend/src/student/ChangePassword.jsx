@@ -57,27 +57,27 @@ export default function ChangePassword() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-2xl">
         {/* Back Button */}
         <button
           onClick={() => navigate('/student/dashboard')}
-          className="mb-6 flex items-center gap-2 text-slate-600 hover:text-sky-600 transition-colors"
+          className="mb-6 flex items-center gap-2 text-slate-600 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm font-medium">Back to Dashboard</span>
         </button>
 
-        <div className="bg-white rounded-xl shadow-lg border-2 border-sky-100 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-sky-100 dark:border-gray-700 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-sky-50 to-blue-100 px-8 py-8 border-b-2 border-sky-200">
+          <div className="bg-gradient-to-r from-sky-50 to-blue-100 dark:from-gray-700 dark:to-gray-700 px-8 py-8 border-b-2 border-sky-200 dark:border-gray-700">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-sky-500 rounded-xl shadow-md">
                 <Lock className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-800">Change Password</h1>
-                <p className="text-slate-600 mt-1">Update your student account credentials</p>
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-gray-100">Change Password</h1>
+                <p className="text-slate-600 dark:text-gray-300 mt-1">Update your student account credentials</p>
               </div>
             </div>
           </div>
@@ -87,7 +87,7 @@ export default function ChangePassword() {
         
             {/* Current Password */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
+              <label className="block text-sm font-bold text-slate-700 dark:text-gray-200 mb-2">
                 Current Password
               </label>
               <div className="relative">
@@ -95,7 +95,7 @@ export default function ChangePassword() {
                   type={showCurrentPassword ? "text" : "password"}
                   value={currentPassword}
                   onChange={e => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-sky-200 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all pr-12 bg-sky-50/30"
+                  className="w-full px-4 py-3 border-2 border-sky-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all pr-12 bg-sky-50/30 dark:bg-gray-700 dark:text-gray-100"
                   placeholder="Enter current password"
                   required
                 />
@@ -111,7 +111,7 @@ export default function ChangePassword() {
 
             {/* New Password */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
+              <label className="block text-sm font-bold text-slate-700 dark:text-gray-200 mb-2">
                 New Password
               </label>
               <div className="relative">
@@ -119,7 +119,7 @@ export default function ChangePassword() {
                   type={showNewPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-sky-200 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all pr-12 bg-sky-50/30"
+                  className="w-full px-4 py-3 border-2 border-sky-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all pr-12 bg-sky-50/30 dark:bg-gray-700 dark:text-gray-100"
                   placeholder="Enter new password"
                   required
                 />
@@ -131,14 +131,14 @@ export default function ChangePassword() {
                   {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              <div className="mt-2 text-xs text-slate-600 bg-sky-50 p-3 rounded-lg border border-sky-100">
+              <div className="mt-2 text-xs text-slate-600 dark:text-gray-300 bg-sky-50 dark:bg-gray-700 p-3 rounded-lg border border-sky-100 dark:border-gray-600">
                 <span>Minimum 6 characters, must include @ or #</span>
               </div>
             </div>
 
             {/* Confirm New Password */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
+              <label className="block text-sm font-bold text-slate-700 dark:text-gray-200 mb-2">
                 Confirm New Password
               </label>
               <div className="relative">
@@ -146,7 +146,7 @@ export default function ChangePassword() {
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-sky-200 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all pr-12 bg-sky-50/30"
+                  className="w-full px-4 py-3 border-2 border-sky-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all pr-12 bg-sky-50/30 dark:bg-gray-700 dark:text-gray-100"
                   placeholder="Confirm new password"
                   required
                 />

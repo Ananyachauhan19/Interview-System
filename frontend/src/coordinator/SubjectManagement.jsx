@@ -154,10 +154,10 @@ export default function SubjectManagement() {
     return (
       <motion.div
         layout
-        className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-slate-200 dark:border-gray-700 overflow-hidden">
       >
         {/* Subject Header */}
-        <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-slate-200">
+        <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-b border-slate-200 dark:border-gray-700">
           <GripVertical className="w-5 h-5 text-slate-400 cursor-move flex-shrink-0" />
           {editingSubject && editingSubject._id === subject._id ? (
             <div className="flex-1 flex flex-col gap-2">
@@ -166,27 +166,27 @@ export default function SubjectManagement() {
                 placeholder="Subject name *"
                 value={editingSubject.subjectName}
                 onChange={(e) => setEditingSubject({ ...editingSubject, subjectName: e.target.value })}
-                className="px-3 py-2 border border-slate-300 rounded-lg"
+                className="px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 autoFocus
               />
               <textarea
                 placeholder="Description (optional)"
                 value={editingSubject.subjectDescription || ''}
                 onChange={(e) => setEditingSubject({ ...editingSubject, subjectDescription: e.target.value })}
-                className="px-3 py-2 border border-slate-300 rounded-lg"
+                className="px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 rows={2}
               />
               <div className="flex gap-2">
                 <button
                   onClick={() => handleUpdateSubject(subject._id)}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-emerald-600 dark:bg-emerald-700 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-800 transition-colors flex items-center gap-2">
                 >
                   <Save className="w-4 h-4" />
                   Save
                 </button>
                 <button
                   onClick={() => setEditingSubject(null)}
-                  className="px-4 py-2 bg-slate-300 text-slate-700 rounded-lg hover:bg-slate-400 transition-colors"
+                  className="px-4 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors">
                 >
                   Cancel
                 </button>
@@ -201,9 +201,9 @@ export default function SubjectManagement() {
                 {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                 <BookOpen className="w-6 h-6 text-emerald-600" />
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-slate-800">{subject.subjectName}</h3>
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100">{subject.subjectName}</h3>
                   {subject.subjectDescription && (
-                    <p className="text-sm text-slate-600">{subject.subjectDescription}</p>
+                    <p className="text-sm text-slate-600 dark:text-gray-400">{subject.subjectDescription}</p>
                   )}
                 </div>
               </button>
@@ -213,13 +213,13 @@ export default function SubjectManagement() {
                   subjectName: subject.subjectName,
                   subjectDescription: subject.subjectDescription || ''
                 })}
-                className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
               >
                 <Edit2 className="w-5 h-5 text-blue-600" />
               </button>
               <button
                 onClick={() => handleDeleteSubject(subject._id)}
-                className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors">
               >
                 <Trash2 className="w-5 h-5 text-red-600" />
               </button>
@@ -319,8 +319,8 @@ export default function SubjectManagement() {
         <Reorder.Group axis="y" values={chapters} onReorder={handleReorderChapters} className="space-y-3">
           {chapters.map((chapter) => (
             <Reorder.Item key={chapter._id} value={chapter}>
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
-                <div className="flex items-center gap-3 p-3 bg-slate-50">
+              <div className="border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-gray-700">
                   <GripVertical className="w-4 h-4 text-slate-400 cursor-move flex-shrink-0" />
                   {editingChapter && editingChapter._id === chapter._id ? (
                     <div className="flex-1 flex items-center gap-2">
@@ -328,7 +328,7 @@ export default function SubjectManagement() {
                         type="text"
                         value={editingChapter.chapterName}
                         onChange={(e) => setEditingChapter({ ...editingChapter, chapterName: e.target.value })}
-                        className="flex-1 px-2 py-1 border border-slate-300 rounded text-sm"
+                        className="flex-1 px-2 py-1 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 rounded text-sm"
                         autoFocus
                       />
                       <div className="flex items-center gap-1">
@@ -350,13 +350,13 @@ export default function SubjectManagement() {
                       </div>
                       <button
                         onClick={() => handleUpdateChapter(chapter._id)}
-                        className="p-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                        className="p-1.5 bg-emerald-600 dark:bg-emerald-700 text-white rounded hover:bg-emerald-700 dark:hover:bg-emerald-800">
                       >
                         <Save className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setEditingChapter(null)}
-                        className="p-1.5 bg-slate-300 text-slate-700 rounded hover:bg-slate-400"
+                        className="p-1.5 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded hover:bg-slate-400 dark:hover:bg-gray-500">
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -373,7 +373,7 @@ export default function SubjectManagement() {
                           <ChevronRight className="w-4 h-4" />
                         )}
                         <div className="flex-1">
-                          <h4 className="font-semibold text-slate-800">{chapter.chapterName}</h4>
+                          <h4 className="font-semibold text-slate-800 dark:text-gray-100">{chapter.chapterName}</h4>
                           <div className="flex items-center gap-1 mt-1">
                             {renderStars(chapter.importanceLevel)}
                           </div>
@@ -381,13 +381,13 @@ export default function SubjectManagement() {
                       </button>
                       <button
                         onClick={() => setEditingChapter({ _id: chapter._id, chapterName: chapter.chapterName, importanceLevel: chapter.importanceLevel })}
-                        className="p-1 hover:bg-blue-100 rounded transition-colors"
+                        className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors">
                       >
                         <Edit2 className="w-4 h-4 text-blue-600" />
                       </button>
                       <button
                         onClick={() => handleDeleteChapter(chapter._id)}
-                        className="p-1 hover:bg-red-100 rounded transition-colors"
+                        className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors">
                       >
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
@@ -401,7 +401,7 @@ export default function SubjectManagement() {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      className="p-3 bg-white"
+                      className="p-3 bg-white dark:bg-gray-800">
                     >
                       <TopicsList subject={subject} chapter={chapter} />
                     </motion.div>
@@ -414,16 +414,16 @@ export default function SubjectManagement() {
 
         {/* Add Chapter Button */}
         {showAddChapter ? (
-          <div className="border border-emerald-300 rounded-lg p-3 bg-emerald-50">
+          <div className="border border-emerald-300 dark:border-emerald-800 rounded-lg p-3 bg-emerald-50 dark:bg-emerald-900/20">
             <input
               type="text"
               placeholder="Chapter name"
               value={newChapter.chapterName}
               onChange={(e) => setNewChapter({ ...newChapter, chapterName: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg mb-2 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium">Importance:</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Importance:</span>
               {[1, 2, 3, 4, 5].map((level) => (
                 <button
                   key={level}
@@ -443,13 +443,13 @@ export default function SubjectManagement() {
             <div className="flex gap-2">
               <button
                 onClick={handleAddChapter}
-                className="flex-1 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                className="flex-1 px-3 py-2 bg-emerald-600 dark:bg-emerald-700 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-800 transition-colors"
               >
                 Add Chapter
               </button>
               <button
                 onClick={() => setShowAddChapter(false)}
-                className="px-3 py-2 bg-slate-300 text-slate-700 rounded-lg hover:bg-slate-400 transition-colors"
+                className="px-3 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors"
               >
                 Cancel
               </button>
@@ -458,7 +458,7 @@ export default function SubjectManagement() {
         ) : (
           <button
             onClick={() => setShowAddChapter(true)}
-            className="w-full px-3 py-2 border-2 border-dashed border-emerald-300 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center gap-2"
+            className="w-full px-3 py-2 border-2 border-dashed border-emerald-300 dark:border-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Add Chapter
@@ -567,26 +567,26 @@ export default function SubjectManagement() {
           {topics.map((topic) => (
             <Reorder.Item key={topic._id} value={topic}>
               {editingTopic && editingTopic._id === topic._id ? (
-                <div className="border border-blue-300 rounded-lg p-3 bg-blue-50 space-y-2">
+                <div className="border border-blue-300 dark:border-blue-800 rounded-lg p-3 bg-blue-50 dark:bg-blue-900/20 space-y-2">
                   <div className="flex items-start gap-2">
                     <GripVertical className="w-4 h-4 text-slate-400 cursor-move flex-shrink-0 mt-2" />
                     <div className="flex-1 space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Topic Name *</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Topic Name *</label>
                         <input
                           type="text"
                           placeholder="Enter topic name"
                           value={editingTopic.topicName}
                           onChange={(e) => setEditingTopic({ ...editingTopic, topicName: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                          className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty Level</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Difficulty Level</label>
                         <select
                           value={editingTopic.difficultyLevel}
                           onChange={(e) => setEditingTopic({ ...editingTopic, difficultyLevel: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                          className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
                         >
                           <option value="easy">Easy</option>
                           <option value="easy-medium">Easy-Medium</option>
@@ -596,27 +596,27 @@ export default function SubjectManagement() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Video Link (Optional)</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Video Link (Optional)</label>
                         <input
                           type="url"
                           placeholder="https://example.com/video"
                           value={editingTopic.topicVideoLink || ''}
                           onChange={(e) => setEditingTopic({ ...editingTopic, topicVideoLink: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                          className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Notes Link (Optional)</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Notes Link (Optional)</label>
                         <input
                           type="url"
                           placeholder="https://example.com/notes"
                           value={editingTopic.notesLink || ''}
                           onChange={(e) => setEditingTopic({ ...editingTopic, notesLink: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                          className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Question PDF (Optional)</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Question PDF (Optional)</label>
                         <input
                           type="file"
                           accept=".pdf"
@@ -632,33 +632,33 @@ export default function SubjectManagement() {
                             }
                             setEditingTopic({ ...editingTopic, questionPDF: file });
                           }}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                          className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
                         />
-                        <p className="text-xs text-slate-500 mt-1">Maximum file size: 1MB</p>
+                        <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Maximum file size: 1MB</p>
                       </div>
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleUpdateTopic(topic._id)}
-                      className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center gap-1"
+                      className="flex-1 px-3 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-sm flex items-center justify-center gap-1"
                     >
                       <Save className="w-4 h-4" />
                       Update
                     </button>
                     <button
                       onClick={() => setEditingTopic(null)}
-                      className="px-3 py-2 bg-slate-300 text-slate-700 rounded-lg hover:bg-slate-400 transition-colors text-sm"
+                      className="px-3 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors text-sm"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-2 p-2 border border-slate-200 rounded bg-white hover:bg-slate-50">
+                <div className="flex items-start gap-2 p-2 border border-slate-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700">
                   <GripVertical className="w-4 h-4 text-slate-400 cursor-move flex-shrink-0 mt-1" />
                   <div className="flex-1">
-                    <h5 className="font-medium text-slate-800">{topic.topicName}</h5>
+                    <h5 className="font-medium text-slate-800 dark:text-gray-100">{topic.topicName}</h5>
                     <div className="flex flex-wrap gap-2 mt-1">
                       <span className={`text-xs px-2 py-1 rounded ${difficultyColors[topic.difficultyLevel]}`}>
                         {topic.difficultyLevel}
@@ -668,7 +668,7 @@ export default function SubjectManagement() {
                           href={topic.topicVideoLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded flex items-center gap-1 hover:bg-blue-200"
+                          className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded flex items-center gap-1 hover:bg-blue-200 dark:hover:bg-blue-900/50"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Video className="w-3 h-3" /> Video
@@ -679,14 +679,14 @@ export default function SubjectManagement() {
                           href={topic.notesLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded flex items-center gap-1 hover:bg-purple-200"
+                          className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded flex items-center gap-1 hover:bg-purple-200 dark:hover:bg-purple-900/50"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <FileText className="w-3 h-3" /> Notes
                         </a>
                       )}
                       {topic.questionPDF && (
-                        <span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded flex items-center gap-1">
+                          <span className="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded flex items-center gap-1">
                           <File className="w-3 h-3" /> PDF
                         </span>
                       )}
@@ -701,13 +701,13 @@ export default function SubjectManagement() {
                       difficultyLevel: topic.difficultyLevel,
                       questionPDF: null
                     })}
-                    className="p-1 hover:bg-blue-100 rounded transition-colors flex-shrink-0"
+                    className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors flex-shrink-0"
                   >
                     <Edit2 className="w-3 h-3 text-blue-600" />
                   </button>
                   <button
                     onClick={() => handleDeleteTopic(topic._id)}
-                    className="p-1 hover:bg-red-100 rounded transition-colors flex-shrink-0"
+                    className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors flex-shrink-0"
                   >
                     <Trash2 className="w-3 h-3 text-red-600" />
                   </button>
@@ -719,23 +719,23 @@ export default function SubjectManagement() {
 
         {/* Add Topic Form */}
         {showAddTopic ? (
-          <div className="border border-blue-300 rounded-lg p-3 bg-blue-50 space-y-3">
+          <div className="border border-blue-300 dark:border-blue-800 rounded-lg p-3 bg-blue-50 dark:bg-blue-900/20 space-y-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Topic Name *</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Topic Name *</label>
               <input
                 type="text"
                 placeholder="Enter topic name"
                 value={newTopic.topicName}
                 onChange={(e) => setNewTopic({ ...newTopic, topicName: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty Level</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Difficulty Level</label>
               <select
                 value={newTopic.difficultyLevel}
                 onChange={(e) => setNewTopic({ ...newTopic, difficultyLevel: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
               >
                 <option value="easy">Easy</option>
                 <option value="easy-medium">Easy-Medium</option>
@@ -745,27 +745,27 @@ export default function SubjectManagement() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Video Link (Optional)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Video Link (Optional)</label>
               <input
                 type="url"
                 placeholder="https://example.com/video"
                 value={newTopic.topicVideoLink}
                 onChange={(e) => setNewTopic({ ...newTopic, topicVideoLink: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Notes Link (Optional)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Notes Link (Optional)</label>
               <input
                 type="url"
                 placeholder="https://example.com/notes"
                 value={newTopic.notesLink}
                 onChange={(e) => setNewTopic({ ...newTopic, notesLink: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Question PDF (Optional)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Question PDF (Optional)</label>
               <input
                 type="file"
                 accept=".pdf"
@@ -781,20 +781,20 @@ export default function SubjectManagement() {
                   }
                   setNewTopic({ ...newTopic, questionPDF: file });
                 }}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
               />
-              <p className="text-xs text-slate-500 mt-1">Maximum file size: 1MB</p>
+              <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Maximum file size: 1MB</p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={handleAddTopic}
-                className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                className="flex-1 px-3 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-sm"
               >
                 Add Topic
               </button>
               <button
                 onClick={() => setShowAddTopic(false)}
-                className="px-3 py-2 bg-slate-300 text-slate-700 rounded-lg hover:bg-slate-400 transition-colors text-sm"
+                className="px-3 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors text-sm"
               >
                 Cancel
               </button>
@@ -803,7 +803,7 @@ export default function SubjectManagement() {
         ) : (
           <button
             onClick={() => setShowAddTopic(true)}
-            className="w-full px-2 py-1 border-2 border-dashed border-blue-300 rounded text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center gap-1 text-sm"
+            className="w-full px-2 py-1 border-2 border-dashed border-blue-300 dark:border-blue-800 rounded text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-1 text-sm"
           >
             <Plus className="w-3 h-3" />
             Add Topic
@@ -822,16 +822,16 @@ export default function SubjectManagement() {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4 bg-slate-50">
+    <div className="min-h-screen py-8 px-4 bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
       <div className="max-w-6xl mx-auto mt-16">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Subject Management</h1>
-            <p className="text-slate-600 mt-1">Organize subjects, chapters, and topics</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-gray-100">Subject Management</h1>
+            <p className="text-slate-600 dark:text-gray-400 mt-1">Organize subjects, chapters, and topics</p>
           </div>
           <button
             onClick={() => setShowAddSubject(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 dark:bg-emerald-700 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-800 transition-colors"
           >
             <Plus className="w-5 h-5" />
             Add Subject
@@ -843,27 +843,27 @@ export default function SubjectManagement() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg border border-emerald-200 p-6 mb-6"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-emerald-200 dark:border-emerald-800 p-6 mb-6">
           >
-            <h2 className="text-xl font-bold text-slate-800 mb-4">New Subject</h2>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100 mb-4">New Subject</h2>
             <input
               type="text"
               placeholder="Subject name *"
               value={newSubject.subjectName}
               onChange={(e) => setNewSubject({ ...newSubject, subjectName: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg mb-3"
+              className="w-full px-4 py-3 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg mb-3 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
             <textarea
               placeholder="Description (optional)"
               value={newSubject.subjectDescription}
               onChange={(e) => setNewSubject({ ...newSubject, subjectDescription: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg mb-4"
+              className="w-full px-4 py-3 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg mb-4 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               rows={3}
             />
             <div className="flex gap-3">
               <button
                 onClick={handleAddSubject}
-                className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                className="flex-1 px-4 py-3 bg-emerald-600 dark:bg-emerald-700 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-800 transition-colors"
               >
                 Create Subject
               </button>
@@ -872,7 +872,7 @@ export default function SubjectManagement() {
                   setShowAddSubject(false);
                   setNewSubject({ subjectName: '', subjectDescription: '' });
                 }}
-                className="px-4 py-3 bg-slate-300 text-slate-700 rounded-lg hover:bg-slate-400 transition-colors"
+                className="px-4 py-3 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors"
               >
                 Cancel
               </button>
@@ -882,9 +882,9 @@ export default function SubjectManagement() {
 
         {/* Subjects List with Drag and Drop */}
         {subjects.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl shadow-md border border-slate-200">
+          <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-slate-200 dark:border-gray-700">
             <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500 text-lg">No subjects yet. Add your first subject to get started!</p>
+            <p className="text-slate-500 dark:text-gray-400 text-lg">No subjects yet. Add your first subject to get started!</p>
           </div>
         ) : (
           <Reorder.Group axis="y" values={subjects} onReorder={handleReorderSubjects} className="space-y-4">

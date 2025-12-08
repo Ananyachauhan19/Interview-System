@@ -385,7 +385,7 @@ export default function PairingAndScheduling() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col pt-16">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex flex-col pt-16">
       <div className="flex-1 w-full mx-auto px-4 py-4">
         <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] gap-3">
           {/* Desktop Sidebar */}
@@ -394,17 +394,17 @@ export default function PairingAndScheduling() {
             animate={{ opacity: 1, x: 0 }}
             className="hidden lg:block lg:w-96"
           >
-            <div className="bg-white rounded-lg border border-slate-200 p-4 h-full overflow-y-auto">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-4 h-full overflow-y-auto">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-gray-100 mb-4">
                 Interview Pairs
               </h2>
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 mb-3"></div>
-                  <p className="text-slate-500 text-sm">Loading pairs...</p>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 dark:border-sky-500 mb-3"></div>
+                  <p className="text-slate-500 dark:text-gray-400 text-sm">Loading pairs...</p>
                 </div>
               ) : pairs.length === 0 ? (
-                <div className="text-slate-500 text-sm text-center py-6">
+                <div className="text-slate-500 dark:text-gray-400 text-sm text-center py-6">
                   No pairs found
                 </div>
               ) : (
@@ -423,8 +423,8 @@ export default function PairingAndScheduling() {
                         transition={{ delay: idx * 0.05 }}
                         className={`py-2 px-3 rounded-lg border transition-colors cursor-pointer ${
                           selectedPair?._id === p._id
-                            ? "border-sky-300 bg-sky-50"
-                            : "border-slate-200 bg-white hover:bg-slate-50"
+                            ? "border-sky-300 dark:border-sky-600 bg-sky-50 dark:bg-sky-900/20"
+                            : "border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-slate-50 dark:hover:bg-gray-600"
                         }`}
                         onClick={() => setSelectedPair(p)}
                       >
@@ -432,8 +432,8 @@ export default function PairingAndScheduling() {
                           <div
                             className={`p-1 rounded ${
                               userRole === "interviewer"
-                                ? "bg-sky-100 text-sky-600"
-                                : "bg-emerald-100 text-emerald-600"
+                                ? "bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400"
+                                : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400"
                             }`}
                           >
                             {userRole === "interviewer" ? (
@@ -445,7 +445,7 @@ export default function PairingAndScheduling() {
 
                           <div className="flex-1">
                             <div className="flex items-start justify-between gap-2">
-                              <p className="font-medium text-slate-900 text-sm truncate">
+                              <p className="font-medium text-slate-900 dark:text-gray-100 text-sm truncate">
                                 {p.event.name}
                               </p>
                               <div className="text-right space-y-3">
@@ -517,18 +517,18 @@ export default function PairingAndScheduling() {
           </motion.div>
 
           {/* Mobile Sidebar Toggle */}
-          <div className="lg:hidden sticky top-16 z-20 bg-white border-b border-slate-200 py-3 px-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">
+          <div className="lg:hidden sticky top-16 z-20 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700 py-3 px-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-gray-100">
               Interview Pairs
             </h2>
             <button
               onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-              className="p-1.5 rounded bg-slate-100 hover:bg-slate-200"
+              className="p-1.5 rounded bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700"
             >
               {isMobileSidebarOpen ? (
-                <X className="w-4 h-4 text-slate-600" />
+                <X className="w-4 h-4 text-slate-600 dark:text-gray-300" />
               ) : (
-                <Users className="w-4 h-4 text-sky-500" />
+                <Users className="w-4 h-4 text-sky-500 dark:text-sky-400" />
               )}
             </button>
           </div>
@@ -540,16 +540,16 @@ export default function PairingAndScheduling() {
                 initial={{ x: "-100%" }}
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
-                className="lg:hidden fixed inset-0 top-28 z-30 bg-white p-4 overflow-y-auto"
+                className="lg:hidden fixed inset-0 top-28 z-30 bg-white dark:bg-gray-900 p-4 overflow-y-auto"
               >
                 <div className="space-y-2">
                   {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 mb-3"></div>
-                      <p className="text-slate-500 text-sm">Loading pairs...</p>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 dark:border-sky-500 mb-3"></div>
+                      <p className="text-slate-500 dark:text-gray-400 text-sm">Loading pairs...</p>
                     </div>
                   ) : pairs.length === 0 ? (
-                    <div className="text-slate-500 text-sm text-center py-6">
+                    <div className="text-slate-500 dark:text-gray-400 text-sm text-center py-6">
                       No pairs found
                     </div>
                   ) : (
@@ -562,7 +562,7 @@ export default function PairingAndScheduling() {
                       return (
                         <div
                           key={p._id}
-                          className="py-2 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer"
+                          className="py-2 px-3 rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700 cursor-pointer"
                           onClick={() => {
                             setSelectedPair(p);
                             setIsMobileSidebarOpen(false);
@@ -572,8 +572,8 @@ export default function PairingAndScheduling() {
                             <div
                               className={`p-1 rounded ${
                                 userRole === "interviewer"
-                                  ? "bg-sky-100 text-sky-600"
-                                  : "bg-emerald-100 text-emerald-600"
+                                  ? "bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400"
+                                  : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400"
                               }`}
                             >
                               {userRole === "interviewer" ? (
@@ -654,12 +654,12 @@ export default function PairingAndScheduling() {
             animate={{ opacity: 1, x: 0 }}
             className="flex-1"
           >
-            <div className="bg-white rounded-lg border border-slate-200 p-6 h-full overflow-y-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-6 h-full overflow-y-auto">
               {selectedPair ? (
                 <div className="space-y-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h2 className="text-xl font-semibold text-slate-900 mb-2">
+                      <h2 className="text-xl font-semibold text-slate-900 dark:text-gray-100 mb-2">
                         {selectedPair.interviewer?.name ||
                           selectedPair.interviewer?.email}{" "}
                         ➜{" "}
@@ -671,8 +671,8 @@ export default function PairingAndScheduling() {
                         <span
                           className={`text-xs px-2 py-1 rounded font-medium ${
                             isInterviewer
-                              ? "bg-sky-100 text-sky-800"
-                              : "bg-emerald-100 text-emerald-800"
+                              ? "bg-sky-100 dark:bg-sky-900/40 text-sky-800 dark:text-sky-300"
+                              : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300"
                           }`}
                         >
                           You are the{" "}
@@ -682,11 +682,11 @@ export default function PairingAndScheduling() {
                         <span
                           className={`text-xs px-2 py-1 rounded font-medium ${
                             getEventStatus(selectedPair.event) === "active"
-                              ? "bg-emerald-100 text-emerald-800"
+                              ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300"
                               : getEventStatus(selectedPair.event) ===
                                 "upcoming"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-slate-100 text-slate-700"
+                              ? "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300"
+                              : "bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300"
                           }`}
                         >
                           Event:{" "}
@@ -699,10 +699,10 @@ export default function PairingAndScheduling() {
                         <span
                           className={`text-xs px-2 py-1 rounded font-medium ${
                             selectedPair.status === "scheduled"
-                              ? "bg-emerald-100 text-emerald-800"
+                              ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300"
                               : selectedPair.status === "rejected"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-slate-100 text-slate-700"
+                              ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400"
+                              : "bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300"
                           }`}
                         >
                           {selectedPair.status || "Pending"}
@@ -712,13 +712,13 @@ export default function PairingAndScheduling() {
 
                     <button
                       onClick={() => setSelectedPair(null)}
-                      className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 lg:hidden"
+                      className="p-1.5 rounded bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 lg:hidden"
                     >
-                      <X className="w-4 h-4 text-slate-600" />
+                      <X className="w-4 h-4 text-slate-600 dark:text-gray-300" />
                     </button>
                   </div>
 
-                  <p className="text-sm text-slate-700 leading-relaxed">
+                  <p className="text-sm text-slate-700 dark:text-gray-300 leading-relaxed">
                     Interviewer proposes available time slots. Interviewee can accept a proposed slot 
                     or suggest up to 3 alternative time slots for consideration.
                   </p>
@@ -726,18 +726,18 @@ export default function PairingAndScheduling() {
                   {isLocked && (
                     isScheduledTimeExpired ? (
                       /* Expired Scheduled Time */
-                      <div className="bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 border-2 border-red-300 rounded-lg p-5 shadow-md">
+                      <div className="bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 dark:from-red-900/20 dark:via-orange-900/20 dark:to-amber-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-5 shadow-md">
                         <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-full bg-red-100">
-                            <AlertCircle className="w-5 h-5 text-red-600" />
+                          <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/40">
+                            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
                           </div>
                           <div className="flex-1">
-                            <div className="font-semibold text-red-900 mb-1">Your scheduled time has expired.</div>
-                            <div className="text-sm text-red-700 mb-3">Please propose a new time.</div>
+                            <div className="font-semibold text-red-900 dark:text-red-300 mb-1">Your scheduled time has expired.</div>
+                            <div className="text-sm text-red-700 dark:text-red-400 mb-3">Please propose a new time.</div>
                             {selectedPair?.scheduledAt && (
-                              <div className="bg-white rounded-lg px-3 py-2 border border-red-200 inline-flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-slate-500" />
-                                <span className="text-sm text-slate-700 line-through">
+                              <div className="bg-white dark:bg-gray-800 rounded-lg px-3 py-2 border border-red-200 dark:border-red-700 inline-flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-slate-500 dark:text-gray-400" />
+                                <span className="text-sm text-slate-700 dark:text-gray-300 line-through">
                                   {new Date(selectedPair.scheduledAt).toLocaleString()}
                                 </span>
                                 <span className="text-[10px] font-bold uppercase text-red-700 bg-red-100 px-2 py-0.5 rounded">Expired</span>
@@ -813,7 +813,7 @@ export default function PairingAndScheduling() {
                           <button
                             type="button"
                             onClick={() => setShowPastDropdown((v) => !v)}
-                            className="px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 shadow-sm flex items-center gap-2"
+                            className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700 shadow-sm flex items-center gap-2 text-slate-700 dark:text-gray-200"
                           >
                             Past Time Slots
                             {(() => {
@@ -821,17 +821,17 @@ export default function PairingAndScheduling() {
                                 ? currentProposals.pastTimeSlots.length
                                 : ((currentProposals?.minePastEntries || []).length + (currentProposals?.partnerPastEntries || []).length);
                               return (
-                                <span className="inline-flex items-center justify-center text-[11px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-white min-w-[20px]">
+                                <span className="inline-flex items-center justify-center text-[11px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 dark:bg-slate-600 text-white min-w-[20px]">
                                   {count}
                                 </span>
                               );
                             })()}
                           </button>
                           {showPastDropdown && (
-                            <div className="absolute left-0 mt-2 w-80 z-10 bg-white border border-slate-200 rounded-lg shadow-md">
+                            <div className="absolute left-0 mt-2 w-80 z-10 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg shadow-md">
                               <div className="p-3">
-                                <div className="text-xs font-semibold text-slate-700 mb-1">Past Time Slots</div>
-                                <div className="text-[10px] text-slate-500 mb-3">Only shows expired, rejected, and replaced dates</div>
+                                <div className="text-xs font-semibold text-slate-700 dark:text-gray-200 mb-1">Past Time Slots</div>
+                                <div className="text-[10px] text-slate-500 dark:text-gray-400 mb-3">Only shows expired, rejected, and replaced dates</div>
                                 {(() => {
                                   // Collect all past entries from both users
                                   const entries = Array.isArray(currentProposals?.pastTimeSlots)
@@ -852,7 +852,7 @@ export default function PairingAndScheduling() {
                                   
                                   if (!filteredEntries || filteredEntries.length === 0) {
                                     return (
-                                      <div className="text-sm text-slate-500 py-4 text-center">No past time slots yet</div>
+                                      <div className="text-sm text-slate-500 dark:text-gray-400 py-4 text-center">No past time slots yet</div>
                                     );
                                   }
                                   
@@ -863,9 +863,9 @@ export default function PairingAndScheduling() {
                                   };
                                   
                                   const color = (r) => {
-                                    if (r === 'rejected') return 'bg-red-100 text-red-700 border-red-200';
-                                    if (r === 'expired') return 'bg-amber-100 text-amber-800 border-amber-200';
-                                    return 'bg-slate-100 text-slate-700 border-slate-200';
+                                    if (r === 'rejected') return 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700';
+                                    if (r === 'expired') return 'bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-700';
+                                    return 'bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 border-slate-200 dark:border-gray-700';
                                   };
                                   
                                   return (
@@ -877,9 +877,9 @@ export default function PairingAndScheduling() {
                                             <span className="text-[10px] uppercase tracking-wide mt-0.5 font-semibold">{toLabel(e.reason)}</span>
                                           </div>
                                           <div className={`text-[9px] font-bold uppercase px-2 py-1 rounded ${
-                                            e.reason === 'expired' ? 'bg-amber-200 text-amber-900' :
-                                            e.reason === 'rejected' ? 'bg-red-200 text-red-900' :
-                                            'bg-slate-200 text-slate-900'
+                                            e.reason === 'expired' ? 'bg-amber-200 dark:bg-amber-900/40 text-amber-900 dark:text-amber-300' :
+                                            e.reason === 'rejected' ? 'bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-300' :
+                                            'bg-slate-200 dark:bg-gray-700 text-slate-900 dark:text-gray-300'
                                           }`}>
                                             {toLabel(e.reason)}
                                           </div>
@@ -908,15 +908,15 @@ export default function PairingAndScheduling() {
                           // Show expired message if default time has passed
                           if (hasDefaultTimeSlot && (isExpired || isPastTime)) {
                             return (
-                              <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                              <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-700 rounded-lg p-6 text-center">
                                 <div className="inline-flex flex-col items-center gap-3">
-                                  <Clock className="w-8 h-8 text-red-600" />
+                                  <Clock className="w-8 h-8 text-red-600 dark:text-red-400" />
                                   <div>
-                                    <div className="text-sm font-medium text-red-900 mb-2">Default Time Slot Expired</div>
-                                    <div className="text-sm text-red-700 mb-1">
+                                    <div className="text-sm font-medium text-red-900 dark:text-red-300 mb-2">Default Time Slot Expired</div>
+                                    <div className="text-sm text-red-700 dark:text-red-400 mb-1">
                                       The default time ({new Date(selectedPair.defaultTimeSlot).toLocaleString()}) has already passed.
                                     </div>
-                                    <div className="text-xs text-red-600 mt-2">Please propose a new time to continue.</div>
+                                    <div className="text-xs text-red-600 dark:text-red-400 mt-2">Please propose a new time to continue.</div>
                                   </div>
                                 </div>
                               </div>
@@ -926,18 +926,18 @@ export default function PairingAndScheduling() {
                           // Show active default time slot if not expired
                           if (hasDefaultTimeSlot && !isExpired && !isPastTime) {
                             return (
-                              <div className="bg-sky-50 border border-sky-200 rounded-lg p-6">
+                              <div className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700 rounded-lg p-6">
                                 <div className="text-center mb-4">
-                                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-100 rounded-lg border border-sky-300">
-                                    <Clock className="w-5 h-5 text-sky-600" />
-                                    <span className="text-sm font-medium text-sky-900">
+                                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-100 dark:bg-sky-900/30 rounded-lg border border-sky-300 dark:border-sky-700">
+                                    <Clock className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                                    <span className="text-sm font-medium text-sky-900 dark:text-sky-300">
                                       Default Time Slot Assigned
                                     </span>
                                   </div>
                                 </div>
                                 <div className="text-center">
-                                  <div className="text-sm text-slate-600 mb-2">Your scheduled time:</div>
-                                  <div className="text-lg font-semibold text-slate-900 mb-4">
+                                  <div className="text-sm text-slate-600 dark:text-gray-400 mb-2">Your scheduled time:</div>
+                                  <div className="text-lg font-semibold text-slate-900 dark:text-gray-100 mb-4">
                                     {new Date(selectedPair.defaultTimeSlot).toLocaleString()}
                                   </div>
                                   <div className="flex gap-3 justify-center flex-wrap">
@@ -976,11 +976,11 @@ export default function PairingAndScheduling() {
                     {/* Proposed Slots Grid */}
                     {!isLocked && (
                       <div className="grid md:grid-cols-2 gap-6">
-                        <div className="bg-slate-50 rounded-lg p-4">
-                          <h4 className="font-semibold text-slate-900 mb-3 text-sm">
+                        <div className="bg-slate-50 dark:bg-gray-800 rounded-lg p-4">
+                          <h4 className="font-semibold text-slate-900 dark:text-gray-100 mb-3 text-sm">
                             Interviewer Proposed Times
                           </h4>
-                          <div className="text-xs text-slate-600 mb-3">
+                          <div className="text-xs text-slate-600 dark:text-gray-400 mb-3">
                             Time slots suggested by interviewer for the interview
                           </div>
                           <ul className="space-y-2">
@@ -992,8 +992,8 @@ export default function PairingAndScheduling() {
                                     key={i}
                                     className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
                                       selectedToAccept === s
-                                        ? "bg-indigo-50 border-indigo-200"
-                                        : "bg-white border-slate-200 hover:bg-slate-50"
+                                        ? "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700"
+                                        : "bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-600"
                                     }`}
                                   >
                                     {!isInterviewer && (
@@ -1003,28 +1003,28 @@ export default function PairingAndScheduling() {
                                         value={s}
                                         checked={selectedToAccept === s}
                                         onChange={() => setSelectedToAccept(s)}
-                                        className="mt-1 text-indigo-600 focus:ring-indigo-500"
+                                        className="mt-1 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500"
                                         disabled={expired}
                                       />
                                     )}
                                     <div className="flex-1">
-                                      <div className="text-sm font-medium text-slate-900">
+                                      <div className="text-sm font-medium text-slate-900 dark:text-gray-100">
                                         {new Date(s).toLocaleString()}
                                       </div>
-                                      <div className="text-xs text-slate-500 mt-1">
+                                      <div className="text-xs text-slate-500 dark:text-gray-400 mt-1">
                                         Proposed by:{" "}
                                         {selectedPair?.interviewer?.name ||
                                           selectedPair?.interviewer?.email}
                                       </div>
                                       {expired && (
-                                        <div className="text-xs font-semibold text-red-600 mt-1">Expired</div>
+                                        <div className="text-xs font-semibold text-red-600 dark:text-red-400 mt-1">Expired</div>
                                       )}
                                     </div>
                                   </li>
                                 );
                               })
                             ) : (
-                              <li className="text-slate-500 text-sm text-center py-4">
+                              <li className="text-slate-500 dark:text-gray-400 text-sm text-center py-4">
                                 No time slots proposed yet
                               </li>
                             )}
@@ -1032,11 +1032,11 @@ export default function PairingAndScheduling() {
                           {/* Past time section moved to global dropdown */}
                         </div>
 
-                        <div className="bg-slate-50 rounded-lg p-4">
-                          <h4 className="font-semibold text-slate-900 mb-3 text-sm">
+                        <div className="bg-slate-50 dark:bg-gray-800 rounded-lg p-4">
+                          <h4 className="font-semibold text-slate-900 dark:text-gray-100 mb-3 text-sm">
                             Interviewee Proposed Times
                           </h4>
-                          <div className="text-xs text-slate-600 mb-3">
+                          <div className="text-xs text-slate-600 dark:text-gray-400 mb-3">
                             Alternative time slots suggested by interviewee
                           </div>
                           <ul className="space-y-2">
@@ -1048,8 +1048,8 @@ export default function PairingAndScheduling() {
                                     key={i}
                                     className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
                                       selectedToAccept === s
-                                        ? "bg-indigo-50 border-indigo-200"
-                                        : "bg-white border-slate-200 hover:bg-slate-50"
+                                        ? "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700"
+                                        : "bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-600"
                                     }`}
                                   >
                                     {isInterviewer && (
@@ -1059,28 +1059,28 @@ export default function PairingAndScheduling() {
                                         value={s}
                                         checked={selectedToAccept === s}
                                         onChange={() => setSelectedToAccept(s)}
-                                        className="mt-1 text-indigo-600 focus:ring-indigo-500"
+                                        className="mt-1 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500"
                                         disabled={expired}
                                       />
                                     )}
                                     <div className="flex-1">
-                                      <div className="text-sm font-medium text-slate-900">
+                                      <div className="text-sm font-medium text-slate-900 dark:text-gray-100">
                                         {new Date(s).toLocaleString()}
                                       </div>
-                                      <div className="text-xs text-slate-500 mt-1">
+                                      <div className="text-xs text-slate-500 dark:text-gray-400 mt-1">
                                         Proposed by:{" "}
                                         {selectedPair?.interviewee?.name ||
                                           selectedPair?.interviewee?.email}
                                       </div>
                                       {expired && (
-                                        <div className="text-xs font-semibold text-red-600 mt-1">Expired</div>
+                                        <div className="text-xs font-semibold text-red-600 dark:text-red-400 mt-1">Expired</div>
                                       )}
                                     </div>
                                   </li>
                                 );
                               })
                             ) : (
-                              <li className="text-slate-500 text-sm text-center py-4">
+                              <li className="text-slate-500 dark:text-gray-400 text-sm text-center py-4">
                                 No alternative slots proposed
                               </li>
                             )}
@@ -1092,8 +1092,8 @@ export default function PairingAndScheduling() {
                   </div>
 
                   {currentProposals.common && (
-                    <div className="p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-200 text-sm flex items-center">
-                      <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-700 text-sm flex items-center">
+                      <Clock className="w-4 h-4 mr-2 flex-shrink-0 dark:text-blue-400" />
                       <div>
                         <span className="font-medium">Common slot identified: </span>
                         {new Date(currentProposals.common).toLocaleString()}

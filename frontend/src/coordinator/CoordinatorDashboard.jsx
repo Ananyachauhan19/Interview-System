@@ -40,7 +40,7 @@ export default function CoordinatorDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 py-6 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 py-6 px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -48,38 +48,38 @@ export default function CoordinatorDashboard() {
       >
         {/* Header */}
         <div className="mb-8 mt-16">
-          <h1 className="text-3xl font-bold text-slate-900">Coordinator Dashboard</h1>
-          <p className="text-slate-600 mt-2">Manage your assigned students and create interview events</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-gray-100">Coordinator Dashboard</h1>
+          <p className="text-slate-600 dark:text-gray-400 mt-2">Manage your assigned students and create interview events</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 p-6"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-sky-600" />
+              <div className="w-12 h-12 bg-sky-100 dark:bg-sky-900 rounded-lg flex items-center justify-center">
+                <Users className="w-6 h-6 text-sky-600 dark:text-sky-400" />
               </div>
               <div>
-                <p className="text-slate-600 text-sm">Assigned Students</p>
-                <p className="text-2xl font-bold text-slate-900">{students.length}</p>
+                <p className="text-slate-600 dark:text-gray-400 text-sm">Assigned Students</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-gray-100">{students.length}</p>
               </div>
             </div>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 p-6"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-emerald-600" />
+              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-slate-600 text-sm">Active Events</p>
-                <p className="text-2xl font-bold text-slate-900">{events.length}</p>
+                <p className="text-slate-600 dark:text-gray-400 text-sm">Active Events</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-gray-100">{events.length}</p>
               </div>
             </div>
           </motion.div>
@@ -102,16 +102,16 @@ export default function CoordinatorDashboard() {
         </div>
 
         {/* Events Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-slate-900">My Events</h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-gray-100">My Events</h2>
             
           </div>
 
           {loading ? (
-            <div className="text-center py-12 text-slate-500">Loading...</div>
+            <div className="text-center py-12 text-slate-500 dark:text-gray-400">Loading...</div>
           ) : events.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">No events created yet</div>
+            <div className="text-center py-12 text-slate-500 dark:text-gray-400">No events created yet</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {events.map((event) => (
@@ -119,11 +119,11 @@ export default function CoordinatorDashboard() {
                   key={event._id}
                   whileHover={{ scale: 1.02 }}
                   onClick={() => navigate(`/coordinator/event/${event._id}`)}
-                  className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  className="border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                 >
-                  <h3 className="font-semibold text-slate-900 mb-2">{event.name}</h3>
-                  <p className="text-sm text-slate-600 mb-3 line-clamp-2">{event.description}</p>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
+                  <h3 className="font-semibold text-slate-900 dark:text-gray-100 mb-2">{event.name}</h3>
+                  <p className="text-sm text-slate-600 dark:text-gray-400 mb-3 line-clamp-2">{event.description}</p>
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-gray-400">
                     <span>{event.participants?.length || 0} participants</span>
                     <span>{new Date(event.createdAt).toLocaleDateString()}</span>
                   </div>

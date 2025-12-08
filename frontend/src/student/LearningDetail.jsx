@@ -217,7 +217,9 @@ export default function LearningDetail() {
   const getDifficultyBadge = (difficulty) => {
     const colors = {
       easy: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300',
+      'easy-medium': 'bg-lime-100 dark:bg-lime-900/40 text-lime-700 dark:text-lime-300',
       medium: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300',
+      'medium-hard': 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300',
       hard: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
     };
     return (
@@ -530,7 +532,7 @@ export default function LearningDetail() {
                 {modalType === 'video' && (
                   <iframe
                     src={modalContent}
-                    className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700"
+                    className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-black"
                     allowFullScreen
                     title="Video Player"
                   />
@@ -538,7 +540,7 @@ export default function LearningDetail() {
                 {(modalType === 'notes' || modalType === 'pdf') && (
                   <iframe
                     src={modalContent}
-                    className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700"
+                    className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                     title="Document Viewer"
                   />
                 )}

@@ -92,7 +92,7 @@ export default function StudentProfile() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col pt-16">
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex flex-col pt-16">
         <div className="w-full max-w-3xl mx-auto px-4 py-12">
           <p className="text-slate-600">Loading profile...</p>
         </div>
@@ -101,9 +101,9 @@ export default function StudentProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col pt-16">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col pt-16">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full px-6 py-8">
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-6">
           {/* Avatar Section */}
           <div className="flex items-center gap-4 mb-6">
             {user.avatarUrl ? (
@@ -114,7 +114,7 @@ export default function StudentProfile() {
               </div>
             )}
             <div>
-              <label className="text-xs text-slate-500">Profile Picture</label>
+              <label className="text-xs text-slate-500 dark:text-gray-400">Profile Picture</label>
               <div className="flex items-center gap-3 mt-1">
                 <input type="file" accept="image/*" onChange={onAvatarChange} className="text-sm" />
                 <button onClick={onUploadAvatar} disabled={avatarUploading || !avatarFile} className="px-3 py-2 text-sm rounded-md bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-60">
@@ -125,8 +125,8 @@ export default function StudentProfile() {
           </div>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-slate-800">My Profile</h2>
-              <p className="text-slate-600 text-sm">Information uploaded by admin is visible by default. You can only update your profile picture.</p>
+              <h2 className="text-xl font-semibold text-slate-800 dark:text-gray-100">My Profile</h2>
+              <p className="text-slate-600 dark:text-gray-300 text-sm">Information uploaded by admin is visible by default. You can only update your profile picture.</p>
             </div>
           </div>
 
@@ -135,43 +135,43 @@ export default function StudentProfile() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-slate-500">Name</label>
-              <div className="mt-1 text-slate-800">{user.name || '-'}</div>
+              <label className="text-xs text-slate-500 dark:text-gray-400">Name</label>
+              <div className="mt-1 text-slate-800 dark:text-gray-200">{user.name || '-'}</div>
             </div>
             <div>
-              <label className="text-xs text-slate-500">Student ID</label>
-              <div className="mt-1 text-slate-800">{user.studentId || '-'}</div>
+              <label className="text-xs text-slate-500 dark:text-gray-400">Student ID</label>
+              <div className="mt-1 text-slate-800 dark:text-gray-200">{user.studentId || '-'}</div>
             </div>
             <div>
-              <label className="text-xs text-slate-500">Email</label>
-              <div className="mt-1 text-slate-800">{user.email || '-'}</div>
+              <label className="text-xs text-slate-500 dark:text-gray-400">Email</label>
+              <div className="mt-1 text-slate-800 dark:text-gray-200">{user.email || '-'}</div>
             </div>
             <div>
-              <label className="text-xs text-slate-500">Course</label>
-              <div className="mt-1 text-slate-800">{user.course || '-'}</div>
+              <label className="text-xs text-slate-500 dark:text-gray-400">Course</label>
+              <div className="mt-1 text-slate-800 dark:text-gray-200">{user.course || '-'}</div>
             </div>
             <div>
-              <label className="text-xs text-slate-500">Branch</label>
-              <div className="mt-1 text-slate-800">{user.branch || '-'}</div>
+              <label className="text-xs text-slate-500 dark:text-gray-400">Branch</label>
+              <div className="mt-1 text-slate-800 dark:text-gray-200">{user.branch || '-'}</div>
             </div>
             <div>
-              <label className="text-xs text-slate-500">Semester</label>
-              <div className="mt-1 text-slate-800">{user.semester || '-'}</div>
+              <label className="text-xs text-slate-500 dark:text-gray-400">Semester</label>
+              <div className="mt-1 text-slate-800 dark:text-gray-200">{user.semester || '-'}</div>
             </div>
             <div>
-              <label className="text-xs text-slate-500">College</label>
-              <div className="mt-1 text-slate-800">{user.college || '-'}</div>
+              <label className="text-xs text-slate-500 dark:text-gray-400">College</label>
+              <div className="mt-1 text-slate-800 dark:text-gray-200">{user.college || '-'}</div>
             </div>
             <div>
-              <label className="text-xs text-slate-500">Coordinator Assigned</label>
-              <div className="mt-1 text-slate-800">{user.teacherId || 'Not Assigned'}</div>
+              <label className="text-xs text-slate-500 dark:text-gray-400">Coordinator Assigned</label>
+              <div className="mt-1 text-slate-800 dark:text-gray-200">{user.teacherId || 'Not Assigned'}</div>
             </div>
           </div>
 
             {/* No text field editing allowed */}
 
             {/* Contribution Calendar on white background with blue intensity */}
-            <div className="mt-8 rounded-lg p-4 border border-slate-200 bg-white">
+            <div className="mt-8 rounded-lg p-4 border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               {loadingActivity ? (
                 <div className="text-center py-8 text-slate-500">Loading activity...</div>
               ) : (

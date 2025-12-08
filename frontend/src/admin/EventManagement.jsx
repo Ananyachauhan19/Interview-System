@@ -289,28 +289,28 @@ export default function EventManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col pt-16">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col pt-16">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="flex-1 w-full max-w-2xl mx-auto px-4 py-4"
       >
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-4">
           {/* Header Section */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-indigo-800 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-indigo-800 dark:bg-indigo-600 rounded-lg flex items-center justify-center">
               <Calendar className="text-white w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-slate-800">Create Interview</h2>
-              <p className="text-slate-600 text-sm">Set up a new interview practice session</p>
+              <h2 className="text-xl font-semibold text-slate-800 dark:text-gray-100">Create Interview</h2>
+              <p className="text-slate-600 dark:text-gray-400 text-sm">Set up a new interview practice session</p>
             </div>
           </div>
 
           {/* Modern Sliding Switch for Interview Type */}
           <div className="flex justify-center mb-6">
-            <div className="relative inline-flex items-center bg-slate-200 rounded-full p-1.5 w-full max-w-[15rem] sm:max-w-[18rem]">
+            <div className="relative inline-flex items-center bg-slate-200 dark:bg-gray-700 rounded-full p-1.5 w-full max-w-[15rem] sm:max-w-[18rem]">
               <div
                 className={`absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] bg-gradient-to-r transition-all duration-300 ease-in-out rounded-full shadow-lg ${
                   specialMode
@@ -324,7 +324,7 @@ export default function EventManagement() {
                 className={`relative z-10 flex-1 px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 ${
                   !specialMode
                     ? 'text-white'
-                    : 'text-slate-600 hover:text-slate-800'
+                    : 'text-slate-600 dark:text-gray-300 hover:text-slate-800 dark:hover:text-gray-100'
                 }`}
               >
                 Regular Interview
@@ -335,7 +335,7 @@ export default function EventManagement() {
                 className={`relative z-10 flex-1 px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 ${
                   specialMode
                     ? 'text-white'
-                    : 'text-slate-600 hover:text-slate-800'
+                    : 'text-slate-600 dark:text-gray-300 hover:text-slate-800 dark:hover:text-gray-100'
                 }`}
               >
                 Special Interview
@@ -347,25 +347,25 @@ export default function EventManagement() {
             <div className="space-y-3">
               {/* Event Title */}
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">Interview Title</label>
+                <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-1">Interview Title</label>
                 <input
                   type="text"
                   placeholder="Enter interview title..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
+                  className="w-full bg-white dark:bg-gray-700 border border-slate-300 dark:border-gray-600 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 text-slate-700 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm"
                   required
                 />
               </div>
 
               {/* Event Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">Interview Description</label>
+                <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-1">Interview Description</label>
                 <textarea
                   placeholder="Describe the interview purpose and format..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-white border border-slate-300 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-slate-700 text-sm"
+                  className="w-full bg-white dark:bg-gray-700 border border-slate-300 dark:border-gray-600 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 text-slate-700 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm"
                   rows="3"
                   required
                 />
@@ -374,7 +374,7 @@ export default function EventManagement() {
               {/* Date & Time */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">Start Date & Time</label>
+                  <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-1">Start Date & Time</label>
                   <DateTimePicker
                     value={startDate}
                     onChange={(isoDateTime) => {
@@ -405,10 +405,10 @@ export default function EventManagement() {
                     placeholder="Select start date and time"
                     className="text-sm"
                   />
-                  <p className="text-xs text-slate-500 mt-1">Past dates are disabled. Select current or future time only.</p>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Past dates are disabled. Select current or future time only.</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">End Date & Time</label>
+                  <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-1">End Date & Time</label>
                   <DateTimePicker
                     value={endDate}
                     onChange={(isoDateTime) => {
@@ -435,7 +435,7 @@ export default function EventManagement() {
                     placeholder="Select end date and time"
                     className="text-sm"
                   />
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
                     {!startDate ? 'Select start date first' : 'Must be after or equal to start time'}
                   </p>
                 </div>
@@ -443,10 +443,10 @@ export default function EventManagement() {
 
               {/* Template Upload */}
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">Interview Template (Optional)</label>
-                <label className="flex items-center justify-center w-full p-3 bg-white rounded-lg border border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer">
-                  <Upload className="w-4 h-4 text-sky-500 mr-2" />
-                  <span className="text-slate-700 text-sm font-medium">Upload Template File</span>
+                <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-1">Interview Template (Optional)</label>
+                <label className="flex items-center justify-center w-full p-3 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-600 transition-colors cursor-pointer">
+                  <Upload className="w-4 h-4 text-sky-500 dark:text-sky-400 mr-2" />
+                  <span className="text-slate-700 dark:text-gray-200 text-sm font-medium">Upload Template File</span>
                   <input
                     type="file"
                     onChange={(e) => setTemplate(e.target.files?.[0] || null)}
@@ -457,28 +457,28 @@ export default function EventManagement() {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex items-center gap-2 mt-2 p-2 bg-sky-50 rounded border border-sky-200"
+                    className="flex items-center gap-2 mt-2 p-2 bg-sky-50 dark:bg-sky-900/30 rounded border border-sky-200 dark:border-sky-700"
                   >
-                    <FileText className="w-4 h-4 text-sky-600" />
-                    <span className="text-sky-800 text-sm font-medium">{template.name}</span>
+                    <FileText className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                    <span className="text-sky-800 dark:text-sky-300 text-sm font-medium">{template.name}</span>
                   </motion.div>
                 )}
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
                   Upload a template file for interview questions or guidelines (optional)
                 </p>
               </div>
 
               {/* Special Mode CSV Upload */}
               {specialMode && (
-                <div className="bg-sky-50 border border-sky-200 rounded-lg p-3">
-                  <label className="block text-sm font-medium text-slate-800 mb-2">
-                    <FileText className="w-4 h-4 inline mr-1 text-sky-600" />
+                <div className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700 rounded-lg p-3">
+                  <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-2">
+                    <FileText className="w-4 h-4 inline mr-1 text-sky-600 dark:text-sky-400" />
                     Allowed Participants CSV
                   </label>
-                  <label className="flex items-center justify-center w-full p-3 bg-white rounded border border-sky-300 hover:bg-sky-50 cursor-pointer border-dashed">
+                  <label className="flex items-center justify-center w-full p-3 bg-white dark:bg-gray-700 rounded border border-sky-300 dark:border-sky-600 hover:bg-sky-50 dark:hover:bg-gray-600 cursor-pointer border-dashed">
                     <div className="text-center">
-                      <FileText className="w-6 h-6 text-sky-500 mx-auto mb-1" />
-                      <span className="text-slate-700 text-sm font-medium">Upload CSV File</span>
+                      <FileText className="w-6 h-6 text-sky-500 dark:text-sky-400 mx-auto mb-1" />
+                      <span className="text-slate-700 dark:text-gray-200 text-sm font-medium">Upload CSV File</span>
                     </div>
                     <input
                       ref={csvInputRef}
@@ -491,7 +491,7 @@ export default function EventManagement() {
                   </label>
                   {csvFile && (
                     <div className="mt-2 space-y-2">
-                      <div className="flex items-center justify-between gap-2 p-2 bg-white rounded border border-sky-200">
+                      <div className="flex items-center justify-between gap-2 p-2 bg-white dark:bg-gray-700 rounded border border-sky-200 dark:border-sky-700">
                         <div className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-sky-600" />
                           <span className="text-sky-800 text-sm">{csvFile.name}</span>
@@ -507,17 +507,17 @@ export default function EventManagement() {
                               csvInputRef.current.value = '';
                             }
                           }}
-                          className="p-1 hover:bg-red-50 rounded transition-colors"
+                          className="p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
                           title="Remove file"
                         >
-                          <X className="w-4 h-4 text-red-600" />
+                          <X className="w-4 h-4 text-red-600 dark:text-red-400" />
                         </button>
                       </div>
                       {csvValidationResults && (
                         <button
                           type="button"
                           onClick={() => setShowValidationPopup(true)}
-                          className="text-xs text-sky-600 hover:text-sky-700 underline"
+                          className="text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 underline"
                         >
                           View validation results ({csvValidationResults.count} rows)
                         </button>
@@ -525,11 +525,11 @@ export default function EventManagement() {
                     </div>
                   )}
                   {csvError && (
-                    <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                    <div className="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
                       {csvError}
                     </div>
                   )}
-                  <p className="text-xs text-slate-600 mt-2">
+                  <p className="text-xs text-slate-600 dark:text-gray-400 mt-2">
                     CSV headers: name, email, studentid, branch (required). Optional: course, college, password.
                   </p>
                 </div>
@@ -540,15 +540,15 @@ export default function EventManagement() {
                 type="submit"
                 className={`w-full p-3 rounded-lg font-medium text-white text-sm transition-colors ${
                   specialMode
-                    ? 'bg-indigo-800 hover:bg-indigo-900'
-                    : 'bg-sky-500 hover:bg-sky-600'
+                    ? 'bg-indigo-800 dark:bg-indigo-700 hover:bg-indigo-900 dark:hover:bg-indigo-800'
+                    : 'bg-sky-500 dark:bg-sky-600 hover:bg-sky-600 dark:hover:bg-sky-700'
                 }`}
               >
                 {specialMode ? 'Create Special Interview' : 'Create Interview'}
               </button>
 
               {/* Help Text */}
-              <p className="text-xs text-slate-500 text-center">
+              <p className="text-xs text-slate-500 dark:text-gray-400 text-center">
                 {specialMode
                   ? 'Pairs are auto-generated among invited participants'
                   : 'Pairs are auto-generated among all students'}
@@ -565,8 +565,8 @@ export default function EventManagement() {
                 exit={{ opacity: 0, y: 5 }}
                 className={`flex items-center justify-center text-sm p-3 rounded-lg mt-3 ${
                   msg.toLowerCase().includes('success') || msg.toLowerCase().includes('created')
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-red-50 text-red-700 border border-red-200'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                    : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
                 }`}
               >
                 {msg.toLowerCase().includes('success') || msg.toLowerCase().includes('created') ? (
@@ -588,7 +588,7 @@ export default function EventManagement() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4"
             onClick={() => setShowValidationPopup(false)}
           >
             <motion.div
@@ -596,14 +596,14 @@ export default function EventManagement() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
             >
               {/* Header */}
-              <div className="bg-sky-500 text-white px-6 py-4 flex items-center justify-between">
+              <div className="bg-sky-500 dark:bg-sky-600 text-white px-6 py-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold">CSV Validation Results</h2>
                 <button
                   onClick={() => setShowValidationPopup(false)}
-                  className="text-white hover:text-sky-100"
+                  className="text-white hover:text-sky-100 dark:hover:text-sky-200"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -613,17 +613,17 @@ export default function EventManagement() {
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
                 {/* Summary */}
                 <div className="mb-4 flex gap-4">
-                  <div className="flex-1 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-emerald-700">
+                  <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                       {csvValidationResults.results?.filter(r => r.status === 'ready').length || 0}
                     </div>
-                    <div className="text-xs text-emerald-600">Ready to create</div>
+                    <div className="text-xs text-emerald-600 dark:text-emerald-500">Ready to create</div>
                   </div>
-                  <div className="flex-1 bg-red-50 border border-red-200 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-red-700">
+                  <div className="flex-1 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-red-700 dark:text-red-400">
                       {csvValidationResults.results?.filter(r => r.status !== 'ready').length || 0}
                     </div>
-                    <div className="text-xs text-red-600">Errors</div>
+                    <div className="text-xs text-red-600 dark:text-red-500">Errors</div>
                   </div>
                 </div>
 
@@ -631,7 +631,7 @@ export default function EventManagement() {
                 {csvValidationResults.results?.some(r => r.status !== 'ready') && (
                   <button
                     onClick={downloadCsvErrors}
-                    className="mb-4 flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                    className="mb-4 flex items-center gap-2 px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded hover:bg-red-600 dark:hover:bg-red-700 text-sm"
                   >
                     <Download className="w-4 h-4" />
                     Download Errors CSV
@@ -640,9 +640,9 @@ export default function EventManagement() {
 
                 {/* Results Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm border border-slate-200 rounded-lg">
+                  <table className="w-full text-sm border border-slate-200 dark:border-gray-700 rounded-lg">
                     <thead>
-                      <tr className="bg-slate-50 text-left text-slate-700">
+                      <tr className="bg-slate-50 dark:bg-gray-700 text-left text-slate-700 dark:text-gray-300">
                         <th className="py-2 px-3 text-xs font-semibold w-16">Row</th>
                         <th className="py-2 px-3 text-xs font-semibold min-w-[120px]">Name</th>
                         <th className="py-2 px-3 text-xs font-semibold min-w-[180px]">Email</th>
@@ -655,20 +655,20 @@ export default function EventManagement() {
                       {csvValidationResults.results.map((r, i) => (
                         <tr
                           key={i}
-                          className={`border-t border-slate-100 ${
-                            r.status !== 'ready' ? 'bg-red-50' : 'hover:bg-slate-50'
+                          className={`border-t border-slate-100 dark:border-gray-700 ${
+                            r.status !== 'ready' ? 'bg-red-50 dark:bg-red-900/20' : 'hover:bg-slate-50 dark:hover:bg-gray-700'
                           }`}
                         >
-                          <td className="py-2 px-3 text-xs text-slate-600">{r.row || '-'}</td>
-                          <td className="py-2 px-3 text-xs text-slate-800">{r.name || '-'}</td>
-                          <td className="py-2 px-3 text-xs text-slate-800">{r.email || '-'}</td>
-                          <td className="py-2 px-3 text-xs text-slate-800">{r.studentid || '-'}</td>
+                          <td className="py-2 px-3 text-xs text-slate-600 dark:text-gray-400">{r.row || '-'}</td>
+                          <td className="py-2 px-3 text-xs text-slate-800 dark:text-gray-200">{r.name || '-'}</td>
+                          <td className="py-2 px-3 text-xs text-slate-800 dark:text-gray-200">{r.email || '-'}</td>
+                          <td className="py-2 px-3 text-xs text-slate-800 dark:text-gray-200">{r.studentid || '-'}</td>
                           <td className={`py-2 px-3 text-xs font-medium ${
-                            r.status === 'ready' ? 'text-emerald-600' : 'text-red-600'
+                            r.status === 'ready' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
                           }`}>
                             {r.status}
                           </td>
-                          <td className="py-2 px-3 text-xs text-slate-600">
+                          <td className="py-2 px-3 text-xs text-slate-600 dark:text-gray-400">
                             {r.missing ? `Missing: ${r.missing.join(', ')}` : r.message || '-'}
                           </td>
                         </tr>
@@ -679,10 +679,10 @@ export default function EventManagement() {
               </div>
 
               {/* Footer */}
-              <div className="bg-slate-50 px-6 py-4 flex justify-end gap-3 border-t border-slate-200">
+              <div className="bg-slate-50 dark:bg-gray-700 px-6 py-4 flex justify-end gap-3 border-t border-slate-200 dark:border-gray-600">
                 <button
                   onClick={() => setShowValidationPopup(false)}
-                  className="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 text-sm"
+                  className="px-4 py-2 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded hover:bg-slate-300 dark:hover:bg-gray-500 text-sm"
                 >
                   Close
                 </button>

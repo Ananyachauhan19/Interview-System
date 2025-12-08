@@ -57,27 +57,27 @@ export default function AdminChangePassword() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-2xl">
         {/* Back Button */}
         <button
           onClick={() => navigate('/admin/event')}
-          className="mb-6 flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors"
+          className="mb-6 flex items-center gap-2 text-slate-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm font-medium">Back to Dashboard</span>
         </button>
 
-        <div className="bg-white rounded-xl shadow-lg border-2 border-blue-100 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-blue-100 dark:border-gray-700 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-8 py-8 border-b-2 border-blue-200">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-700 px-8 py-8 border-b-2 border-blue-200 dark:border-gray-600">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-500 rounded-xl shadow-md">
+              <div className="p-3 bg-blue-500 dark:bg-blue-600 rounded-xl shadow-md">
                 <Lock className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-800">Change Password</h1>
-                <p className="text-slate-600 mt-1">Update your admin account credentials</p>
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-gray-100">Change Password</h1>
+                <p className="text-slate-600 dark:text-gray-400 mt-1">Update your admin account credentials</p>
               </div>
             </div>
           </div>
@@ -86,7 +86,7 @@ export default function AdminChangePassword() {
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
             {/* Current Password */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
+              <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2">
                 Current Password
               </label>
               <div className="relative">
@@ -94,14 +94,14 @@ export default function AdminChangePassword() {
                   type={showCurrentPassword ? "text" : "password"}
                   value={currentPassword}
                   onChange={e => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all pr-12 bg-blue-50/30"
+                  className="w-full px-4 py-3 border-2 border-blue-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 focus:border-blue-400 dark:focus:border-blue-600 transition-all pr-12 bg-blue-50/30 dark:bg-gray-700 text-slate-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   placeholder="Enter current password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 hover:text-blue-700 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                 >
                   {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -110,7 +110,7 @@ export default function AdminChangePassword() {
 
             {/* New Password */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
+              <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2">
                 New Password
               </label>
               <div className="relative">
@@ -118,26 +118,26 @@ export default function AdminChangePassword() {
                   type={showNewPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all pr-12 bg-blue-50/30"
+                  className="w-full px-4 py-3 border-2 border-blue-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 focus:border-blue-400 dark:focus:border-blue-600 transition-all pr-12 bg-blue-50/30 dark:bg-gray-700 text-slate-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   placeholder="Enter new password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 hover:text-blue-700 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                 >
                   {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              <div className="mt-2 text-xs text-slate-600 bg-blue-50 p-3 rounded-lg border border-blue-100">
+              <div className="mt-2 text-xs text-slate-600 dark:text-gray-400 bg-blue-50 dark:bg-gray-700 p-3 rounded-lg border border-blue-100 dark:border-gray-600">
                 <span>Minimum 6 characters, must include @ or #</span>
               </div>
             </div>
 
             {/* Confirm New Password */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
+              <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2">
                 Confirm New Password
               </label>
               <div className="relative">
@@ -145,14 +145,14 @@ export default function AdminChangePassword() {
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all pr-12 bg-blue-50/30"
+                  className="w-full px-4 py-3 border-2 border-blue-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 focus:border-blue-400 dark:focus:border-blue-600 transition-all pr-12 bg-blue-50/30 dark:bg-gray-700 text-slate-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   placeholder="Confirm new password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 hover:text-blue-700 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -161,20 +161,20 @@ export default function AdminChangePassword() {
 
             {/* Error/Success Messages */}
             {error && (
-              <div className="flex items-start gap-3 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-semibold text-red-800 text-sm">Error</div>
-                  <div className="text-red-700 text-sm mt-0.5">{error}</div>
+                  <div className="font-semibold text-red-800 dark:text-red-300 text-sm">Error</div>
+                  <div className="text-red-700 dark:text-red-400 text-sm mt-0.5">{error}</div>
                 </div>
               </div>
             )}
             {success && (
-              <div className="flex items-start gap-3 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-semibold text-green-800 text-sm">Success</div>
-                  <div className="text-green-700 text-sm mt-0.5">{success}</div>
+                  <div className="font-semibold text-green-800 dark:text-green-300 text-sm">Success</div>
+                  <div className="text-green-700 dark:text-green-400 text-sm mt-0.5">{success}</div>
                 </div>
               </div>
             )}
@@ -185,7 +185,7 @@ export default function AdminChangePassword() {
               <button
                 type="button"
                 onClick={() => navigate('/admin/event')}
-                className="flex-1 py-3 px-4 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-all border-2 border-slate-200"
+                className="flex-1 py-3 px-4 bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-gray-600 transition-all border-2 border-slate-200 dark:border-gray-600"
               >
                 Cancel
               </button>
@@ -194,7 +194,7 @@ export default function AdminChangePassword() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 dark:hover:from-blue-700 dark:hover:to-blue-800 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">

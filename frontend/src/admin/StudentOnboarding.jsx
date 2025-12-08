@@ -287,21 +287,21 @@ export default function StudentOnboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center py-6 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col items-center py-6 px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-7xl bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col"
+        className="w-full max-w-7xl bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 p-6 flex flex-col"
       >
         {/* Header Section - Logo Left, Text Right */}
         <div className="flex items-center gap-4 mb-6 mt-10">
-          <div className="flex-shrink-0 w-12 h-12 bg-indigo-800 rounded-lg flex items-center justify-center shadow-sm">
+          <div className="flex-shrink-0 w-12 h-12 bg-indigo-800 dark:bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
             <Users className="text-white w-6 h-6" />
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-slate-900">Add Students</h1>
-            <p className="text-slate-600 text-sm mt-1">
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-gray-100">Add Students</h1>
+            <p className="text-slate-600 dark:text-gray-400 text-sm mt-1">
               Efficiently onboard students via bulk CSV upload or individual entry with real-time validation.
             </p>
           </div>
@@ -312,13 +312,13 @@ export default function StudentOnboarding() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6"
+          className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg p-4 mb-6"
         >
           <div className="flex items-start gap-3">
-            <BookOpen className="w-4 h-4 text-slate-600 mt-0.5 flex-shrink-0" />
+            <BookOpen className="w-4 h-4 text-slate-600 dark:text-gray-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-slate-800 mb-2">CSV Upload Guidelines</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700">
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-gray-200 mb-2">CSV Upload Guidelines</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700 dark:text-gray-300">
                 <div className="space-y-1">
                   <p><strong>Required columns:</strong> Name, Email, Student ID, Branch, Teacher ID</p>
                   <p><strong>Optional columns:</strong> Course, College, Password</p>
@@ -339,7 +339,7 @@ export default function StudentOnboarding() {
             whileTap={{ scale: 0.98 }}
             href="/sample-students.csv"
             download
-            className="flex items-center px-4 py-2 bg-emerald-500 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-emerald-600 transition-all duration-200"
+            className="flex items-center px-4 py-2 bg-emerald-500 dark:bg-emerald-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-emerald-600 dark:hover:bg-emerald-700 transition-all duration-200"
           >
             <Download className="w-4 h-4 mr-2" />
             Download Sample CSV
@@ -348,7 +348,7 @@ export default function StudentOnboarding() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowSingleForm(!showSingleForm)}
-            className="flex items-center px-4 py-2 bg-sky-500 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-sky-600 transition-all duration-200"
+            className="flex items-center px-4 py-2 bg-sky-500 dark:bg-sky-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-sky-600 dark:hover:bg-sky-700 transition-all duration-200"
           >
             <Plus className="w-4 h-4 mr-2" />
             {showSingleForm ? 'Hide Single Entry' : 'Add Single Student'}
@@ -361,9 +361,9 @@ export default function StudentOnboarding() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-slate-50 p-4 rounded-lg mb-6 border border-slate-200"
+            className="bg-slate-50 dark:bg-gray-700 p-4 rounded-lg mb-6 border border-slate-200 dark:border-gray-600"
           >
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Add Individual Student</h3>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-gray-100 mb-4">Add Individual Student</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {[
                 { key: 'name', label: 'Full Name *', placeholder: 'John Doe' },
@@ -377,13 +377,13 @@ export default function StudentOnboarding() {
                 { key: 'password', label: 'Password (defaults to Student ID)', placeholder: '••••••••', type: 'password' },
               ].map(({ key, label, placeholder, type }) => (
                 <div key={key} className="flex flex-col">
-                  <label className="text-xs font-medium text-slate-700 mb-1">{label}</label>
+                  <label className="text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">{label}</label>
                   <input
                     type={type || 'text'}
                     value={singleForm[key]}
                     onChange={(e) => handleSingleChange(key, e.target.value)}
                     placeholder={placeholder}
-                    className="p-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-transparent transition-all duration-200 bg-white"
+                    className="p-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   />
                 </div>
               ))}
@@ -393,7 +393,7 @@ export default function StudentOnboarding() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => { setShowSingleForm(false); setSingleMsg(''); }}
-                className="px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-all duration-200"
+                className="px-4 py-2 bg-white dark:bg-gray-700 border border-slate-300 dark:border-gray-600 text-slate-700 dark:text-gray-200 text-sm font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-gray-600 transition-all duration-200"
               >
                 Cancel
               </motion.button>
@@ -404,8 +404,8 @@ export default function StudentOnboarding() {
                 disabled={!isSingleValid() || singleLoading}
                 className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   !isSingleValid() || singleLoading
-                    ? 'bg-slate-300 text-slate-600 cursor-not-allowed'
-                    : 'bg-sky-500 text-white hover:bg-sky-600'
+                    ? 'bg-slate-300 dark:bg-gray-600 text-slate-600 dark:text-gray-400 cursor-not-allowed'
+                    : 'bg-sky-500 dark:bg-sky-600 text-white hover:bg-sky-600 dark:hover:bg-sky-700'
                 }`}
               >
                 {singleLoading ? (
@@ -424,8 +424,8 @@ export default function StudentOnboarding() {
                 animate={{ opacity: 1 }}
                 className={`mt-3 p-2 rounded text-xs font-medium ${
                   /success|added|created/i.test(singleMsg)
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-red-50 text-red-700 border border-red-200'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                    : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
                 }`}
               >
                 {singleMsg}
@@ -444,8 +444,8 @@ export default function StudentOnboarding() {
           <div
             className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
               dragActive 
-                ? 'border-sky-400 bg-sky-50' 
-                : 'border-slate-300 bg-slate-50 hover:border-sky-300 hover:bg-sky-50'
+                ? 'border-sky-400 dark:border-sky-500 bg-sky-50 dark:bg-sky-900/20' 
+                : 'border-slate-300 dark:border-gray-600 bg-slate-50 dark:bg-gray-700 hover:border-sky-300 dark:hover:border-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -459,14 +459,14 @@ export default function StudentOnboarding() {
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
             <div className="space-y-3">
-              <div className="w-12 h-12 bg-sky-500 rounded-lg flex items-center justify-center mx-auto shadow-sm">
+              <div className="w-12 h-12 bg-sky-500 dark:bg-sky-600 rounded-lg flex items-center justify-center mx-auto shadow-sm">
                 <Upload className="text-white w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-800 mb-1">
+                <p className="text-sm font-medium text-slate-800 dark:text-gray-100 mb-1">
                   {dragActive ? 'Drop your CSV file here' : 'Upload student CSV file'}
                 </p>
-                <p className="text-slate-600 text-xs">
+                <p className="text-slate-600 dark:text-gray-400 text-xs">
                   Drag and drop the CSV file here, or click to browse.
                 </p>
               </div>
@@ -476,11 +476,11 @@ export default function StudentOnboarding() {
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 mt-3 p-2 bg-sky-50 rounded border border-sky-200"
+              className="flex items-center gap-2 mt-3 p-2 bg-sky-50 dark:bg-sky-900/30 rounded border border-sky-200 dark:border-sky-700"
             >
-              <FileText className="w-4 h-4 text-sky-600" />
-              <span className="text-sky-800 text-sm font-medium">{csvFile.name}</span>
-                <span className="text-sky-600 text-xs">({(csvFile.size / 1024).toFixed(1)} KB)</span>
+              <FileText className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+              <span className="text-sky-800 dark:text-sky-300 text-sm font-medium">{csvFile.name}</span>
+                <span className="text-sky-600 dark:text-sky-400 text-xs">({(csvFile.size / 1024).toFixed(1)} KB)</span>
             </motion.div>
           )}
         </motion.div>
@@ -493,29 +493,29 @@ export default function StudentOnboarding() {
             transition={{ delay: 0.3 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
           >
-            <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-600 text-sm">Total Students</p>
-                  <p className="text-2xl font-semibold text-slate-900">{students.length}</p>
+                  <p className="text-slate-600 dark:text-gray-400 text-sm">Total Students</p>
+                  <p className="text-2xl font-semibold text-slate-900 dark:text-gray-100">{students.length}</p>
                 </div>
                 <Users className="text-indigo-600 w-6 h-6" />
               </div>
             </div>
-            <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-600 text-sm">Valid records</p>
-                  <p className="text-2xl font-semibold text-slate-900">{students.length - clientErrors.length}</p>
+                  <p className="text-slate-600 dark:text-gray-400 text-sm">Valid records</p>
+                  <p className="text-2xl font-semibold text-slate-900 dark:text-gray-100">{students.length - clientErrors.length}</p>
                 </div>
                 <CheckCircle className="text-emerald-500 w-6 h-6" />
               </div>
             </div>
-            <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-600 text-sm">Errors found</p>
-                  <p className="text-2xl font-semibold text-slate-900">{clientErrors.length}</p>
+                  <p className="text-slate-600 dark:text-gray-400 text-sm">Errors found</p>
+                  <p className="text-2xl font-semibold text-slate-900 dark:text-gray-100">{clientErrors.length}</p>
                 </div>
                 <AlertCircle className="text-red-400 w-6 h-6" />
               </div>
@@ -530,7 +530,7 @@ export default function StudentOnboarding() {
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
-              className="flex items-center gap-2 text-red-700 mb-4 text-sm bg-red-50 p-3 rounded-lg border border-red-200"
+              className="flex items-center gap-2 text-red-700 dark:text-red-400 mb-4 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800"
             >
               <AlertCircle className="w-4 h-4" />
                     {error}
@@ -541,7 +541,7 @@ export default function StudentOnboarding() {
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
-              className="flex items-center gap-2 text-emerald-700 mb-4 text-sm bg-emerald-50 p-3 rounded-lg border border-emerald-200"
+              className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 mb-4 text-sm bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-200 dark:border-emerald-800"
             >
               <CheckCircle className="w-4 h-4" />
                     {success}
@@ -558,10 +558,10 @@ export default function StudentOnboarding() {
             className="flex-1 flex flex-col"
           >
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 p-4 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600">
               <div>
-                <h3 className="text-lg font-semibold text-slate-800">Student Records</h3>
-                <p className="text-slate-600 text-sm">{students.length} records loaded • {clientErrors.length} errors to fix</p>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-gray-100">Student Records</h3>
+                <p className="text-slate-600 dark:text-gray-400 text-sm">{students.length} records loaded • {clientErrors.length} errors to fix</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <motion.button
@@ -579,8 +579,8 @@ export default function StudentOnboarding() {
                     isUploading || 
                     uploadSuccess || 
                     (uploadResult?.results && uploadResult.results.every(r => r.status === 'exists'))
-                      ? 'bg-slate-300 text-slate-600 cursor-not-allowed'
-                      : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                      ? 'bg-slate-300 dark:bg-gray-600 text-slate-600 dark:text-gray-400 cursor-not-allowed'
+                      : 'bg-emerald-500 dark:bg-emerald-600 text-white hover:bg-emerald-600 dark:hover:bg-emerald-700'
                   }`}
                 >
                   {isUploading ? (
@@ -604,8 +604,8 @@ export default function StudentOnboarding() {
                   disabled={clientErrors.length === 0}
                   className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     clientErrors.length === 0 
-                      ? 'bg-slate-200 text-slate-500 cursor-not-allowed' 
-                      : 'bg-red-400 text-white hover:bg-red-500'
+                      ? 'bg-slate-200 dark:bg-gray-600 text-slate-500 dark:text-gray-400 cursor-not-allowed' 
+                      : 'bg-red-400 dark:bg-red-500 text-white hover:bg-red-500 dark:hover:bg-red-600'
                   }`}
                 >
                   Download Errors CSV
@@ -614,7 +614,7 @@ export default function StudentOnboarding() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => { setStudents([]); setCsvFile(null); setClientErrors([]); setUploadResult(null); setError(''); setSuccess(''); setUploadSuccess(false); }}
-                  className="px-3 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-all duration-200"
+                  className="px-3 py-2 bg-white dark:bg-gray-700 border border-slate-300 dark:border-gray-600 text-slate-700 dark:text-gray-200 text-sm font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-gray-600 transition-all duration-200"
                 >
                   Clear All
                 </motion.button>
@@ -628,15 +628,15 @@ export default function StudentOnboarding() {
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 5 }}
-                  className="mb-6 bg-white p-4 rounded-lg border border-slate-200 shadow-sm"
+                  className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg border border-slate-200 dark:border-gray-700 shadow-sm"
                 >
-                  <h3 className="text-sm font-semibold text-slate-700 mb-3">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-gray-200 mb-3">
                     Existing Records - {uploadResult.count} records processed
                   </h3>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm border border-slate-200 rounded-lg bg-white">
+                    <table className="w-full text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
                       <thead>
-                        <tr className="bg-slate-50 text-left text-slate-700">
+                        <tr className="bg-slate-50 dark:bg-gray-700 text-left text-slate-700 dark:text-gray-300">
                           <th className="py-2 px-3 whitespace-nowrap text-xs font-semibold w-16">Row</th>
                           <th className="py-2 px-3 whitespace-nowrap text-xs font-semibold min-w-[180px]">Email</th>
                           <th className="py-2 px-3 whitespace-nowrap text-xs font-semibold w-24">Student ID</th>
@@ -645,12 +645,12 @@ export default function StudentOnboarding() {
                       </thead>
                       <tbody>
                         {uploadResult.results.map((r, i) => (
-                          <tr key={i} className="border-t border-slate-100 hover:bg-slate-50">
-                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-600">{r.row || '-'}</td>
-                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-800">{r.email || '-'}</td>
-                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-800">{r.studentid || '-'}</td>
+                          <tr key={i} className="border-t border-slate-100 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-700">
+                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-600 dark:text-gray-400">{r.row || '-'}</td>
+                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-800 dark:text-gray-200">{r.email || '-'}</td>
+                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-800 dark:text-gray-200">{r.studentid || '-'}</td>
                             <td className={`py-2 px-3 whitespace-nowrap text-xs font-medium ${
-                              r.status === 'created' ? 'text-emerald-500' : 'text-amber-500'
+                              r.status === 'created' ? 'text-emerald-500 dark:text-emerald-400' : 'text-amber-500 dark:text-amber-400'
                             }`}>
                               {r.status}
                             </td>
@@ -668,15 +668,15 @@ export default function StudentOnboarding() {
               <motion.div
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6 bg-red-50 border border-red-200 p-4 rounded-lg shadow-sm"
+                className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg shadow-sm"
               >
-                <h3 className="font-semibold text-red-800 mb-3 text-sm">
+                <h3 className="font-semibold text-red-800 dark:text-red-300 mb-3 text-sm">
                   CSV Validation Errors ({clientErrors.length} errors found)
                 </h3>
                 <div className="max-h-48 overflow-y-auto">
-                  <ul className="text-xs text-red-700 space-y-2">
+                  <ul className="text-xs text-red-700 dark:text-red-400 space-y-2">
                     {clientErrors.map((ce, i) => (
-                      <li key={i} className="p-2 bg-red-100 rounded border border-red-200 max-w-full break-words">
+                      <li key={i} className="p-2 bg-red-100 dark:bg-red-900/30 rounded border border-red-200 dark:border-red-800 max-w-full break-words">
                         <span className="font-medium">Row {ce.row}:</span> {ce.error}
                         {ce.details ? ` (${Array.isArray(ce.details) ? ce.details.join(', ') : ce.details})` : ''}
                       </li>
@@ -688,7 +688,7 @@ export default function StudentOnboarding() {
 
             {/* Selected Student Tabs */}
             {openTabs.length > 0 && (
-              <div className="mb-4 bg-white border border-slate-200 rounded-lg shadow-sm">
+              <div className="mb-4 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg shadow-sm">
                 {/* Tab bar */}
                 <div className="flex items-center gap-2 overflow-x-auto px-3 pt-3">
                   {openTabs.map((t) => (
@@ -696,34 +696,34 @@ export default function StudentOnboarding() {
                       key={t.key}
                       onClick={() => setActiveTab(t.key)}
                       className={`group inline-flex items-center gap-2 px-3 py-2 rounded-t-lg border-b-2 text-sm whitespace-nowrap ${
-                        activeTab === t.key ? 'border-sky-500 text-slate-900 bg-sky-50' : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        activeTab === t.key ? 'border-sky-500 dark:border-sky-400 text-slate-900 dark:text-gray-100 bg-sky-50 dark:bg-sky-900/30' : 'border-transparent text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-100 hover:bg-slate-50 dark:hover:bg-gray-700'
                       }`}
                       title={t.label}
                     >
                       <span className="font-medium truncate max-w-[180px]">{t.label}</span>
                       <X
                         onClick={(e) => { e.stopPropagation(); closeTab(t.key); }}
-                        className="w-4 h-4 text-slate-400 hover:text-slate-700"
+                        className="w-4 h-4 text-slate-400 dark:text-gray-500 hover:text-slate-700 dark:hover:text-gray-200"
                       />
                     </button>
                   ))}
                 </div>
                 {/* Active tab content */}
                 {activeTab && (
-                  <div className="px-4 pb-4 pt-3 border-t border-slate-200">
+                  <div className="px-4 pb-4 pt-3 border-t border-slate-200 dark:border-gray-700">
                     {(() => {
                       const t = openTabs.find(tt => tt.key === activeTab);
                       const data = t?.data || {};
                       const keys = Object.keys(data).filter(k => k !== '__row');
                       return (
                         <div>
-                          <h4 className="text-sm font-semibold text-slate-800 mb-3">Student Details</h4>
+                          <h4 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-3">Student Details</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {keys.map((k) => (
-                              <div key={k} className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                                <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1">{k}</div>
-                                <div className="text-sm text-slate-800 break-words font-mono">
-                                  {String(data[k] ?? '') || <span className="italic text-slate-400">empty</span>}
+                              <div key={k} className="p-3 rounded-lg border border-slate-200 dark:border-gray-600 bg-slate-50 dark:bg-gray-700">
+                                <div className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-1">{k}</div>
+                                <div className="text-sm text-slate-800 dark:text-gray-200 break-words font-mono">
+                                  {String(data[k] ?? '') || <span className="italic text-slate-400 dark:text-gray-500">empty</span>}
                                 </div>
                               </div>
                             ))}
@@ -737,61 +737,61 @@ export default function StudentOnboarding() {
             )}
 
             {/* Data Table */}
-            <div className="overflow-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="overflow-auto rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
               <table className="min-w-full">
-                <thead className="bg-slate-50">
+                <thead className="bg-slate-50 dark:bg-gray-700">
                   <tr>
                     {Object.keys(students[0]).filter(k => k !== '__row').map((k) => (
                       <th
                         key={k}
-                        className="py-3 px-4 border-b text-left text-xs font-semibold text-slate-700 uppercase tracking-wider whitespace-nowrap"
+                        className="py-3 px-4 border-b border-slate-200 dark:border-gray-600 text-left text-xs font-semibold text-slate-700 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap"
                       >
                         {k.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                       </th>
                     ))}
-                    <th className="py-3 px-4 border-b text-left text-xs font-semibold text-slate-700 uppercase tracking-wider whitespace-nowrap">
+                    <th className="py-3 px-4 border-b border-slate-200 dark:border-gray-600 text-left text-xs font-semibold text-slate-700 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                       Status
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-slate-200 dark:divide-gray-700">
                   {students.map((student, idx) => (
                     <motion.tr
                       key={idx}
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 + idx * 0.03 }}
-                      className="hover:bg-slate-50 transition-colors duration-150 cursor-pointer"
+                      className="hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors duration-150 cursor-pointer"
                       onClick={() => handleRowClick(student, idx)}
                     >
                       {Object.keys(students[0]).filter(k => k !== '__row').map((k) => (
                         <td
                           key={k}
-                          className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap"
+                          className="py-3 px-4 text-sm text-slate-600 dark:text-gray-300 whitespace-nowrap"
                         >
                           {student[k] || (
-                            <span className="text-slate-400 italic">empty</span>
+                            <span className="text-slate-400 dark:text-gray-500 italic">empty</span>
                           )}
                         </td>
                       ))}
                       <td className="py-3 px-4 text-sm whitespace-nowrap">
                         {(errorsByRow[student.__row] || []).length > 0 ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
                             <AlertCircle className="w-3 h-3 mr-1" />
                             {errorsByRow[student.__row].length} error(s)
                           </span>
                         ) : uploadResult?.results?.[idx]?.status === 'exists' ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
                             <AlertCircle className="w-3 h-3 mr-1" />
                             Already exists
                           </span>
                         ) : uploadResult?.results?.[idx]?.status === 'ready' ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Ready to add
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Valid
                           </span>

@@ -14,6 +14,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import DarkModeToggle from "./DarkModeToggle";
 
 export function StudentNavbar() {
   const location = useLocation();
@@ -92,7 +93,7 @@ export function StudentNavbar() {
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white shadow-sm"
+      className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm"
     >
       <div className="w-full flex items-center justify-between h-14 px-4">
         {/* Brand Logo */}
@@ -131,8 +132,8 @@ export function StudentNavbar() {
                   <div
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors mx-0.5 ${
                       isActive 
-                        ? "bg-sky-50 text-sky-600" 
-                        : "text-gray-600 hover:text-sky-500 hover:bg-sky-50"
+                        ? "bg-sky-50 dark:bg-sky-900 text-sky-600 dark:text-sky-400" 
+                        : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
                     }`}
                   >
                     <Icon className="w-3 h-3" />
@@ -143,18 +144,21 @@ export function StudentNavbar() {
             })}
           </div>
 
+          {/* Dark Mode Toggle */}
+          <DarkModeToggle className="hidden md:flex ml-1" />
+
           {/* Desktop Profile */}
           <div className="relative profile-container ml-1">
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 hover:bg-sky-50 text-gray-700 transition-all duration-200 border border-gray-200"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-sky-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all duration-200 border border-gray-200 dark:border-gray-700"
               >
                 <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white font-semibold text-sm">
                   {studentName.charAt(0).toUpperCase()}
                 </div>
                 <div className="text-left hidden lg:block">
-                  <div className="font-semibold text-sm text-slate-800">{studentName}</div>
-                  <div className="text-xs text-slate-500">Student</div>
+                  <div className="font-semibold text-sm text-slate-800 dark:text-slate-200">{studentName}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Student</div>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -166,17 +170,17 @@ export function StudentNavbar() {
                     initial="closed"
                     animate="open"
                     exit="closed"
-                    className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50"
+                    className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-slate-200 dark:border-gray-700 overflow-hidden z-50"
                   >
                     {/* Profile Header */}
-                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 px-4 py-3 border-b border-gray-200">
+                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/30 dark:to-blue-900/30 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold">
                           {studentName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-slate-900 truncate">{studentName}</div>
-                          <div className="text-xs text-slate-600 truncate">{studentEmail}</div>
+                          <div className="font-semibold text-slate-900 dark:text-slate-100 truncate">{studentName}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400 truncate">{studentEmail}</div>
                         </div>
                       </div>
                     </div>
@@ -206,7 +210,7 @@ export function StudentNavbar() {
                         </div>
                         <div className="flex-1">
                           <div className="text-sm font-medium">Change Password</div>
-                          <div className="text-xs text-slate-500">Update your account password</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">Update your account password</div>
                         </div>
                       </Link>
 
@@ -315,12 +319,12 @@ export function StudentNavbar() {
           {/* Mobile Menu Toggle */}
           <button
             onClick={toggleMenu}
-            className="md:hidden flex items-center justify-center w-8 h-8 rounded bg-gray-100 hover:bg-gray-200 transition-colors"
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             {isMenuOpen ? (
-              <X className="text-gray-700 w-4 h-4" />
+              <X className="text-gray-700 dark:text-gray-300 w-4 h-4" />
             ) : (
-              <Menu className="text-gray-700 w-4 h-4" />
+              <Menu className="text-gray-700 dark:text-gray-300 w-4 h-4" />
             )}
           </button>
         </div>

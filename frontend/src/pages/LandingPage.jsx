@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from '../components/Footer';
+import DarkModeToggle from '../components/DarkModeToggle';
 import { 
   Users, ArrowRight, Video, MessageCircle, Target, Calendar, Shield, 
   BookOpen, TrendingUp, Bell, Clock, FileText, Star, Award, 
@@ -55,7 +56,7 @@ export default function LandingPage() {
   const isInView = (sectionId) => visibleSections.has(sectionId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div 
@@ -70,7 +71,7 @@ export default function LandingPage() {
       </div>
 
       {/* Navbar - Sleek and Professional */}
-      <nav className={`z-50 bg-white/95 backdrop-blur-md border-b border-gray-200/50 sticky top-0 transition-all duration-700 shadow-sm ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+      <nav className={`z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 sticky top-0 transition-all duration-700 shadow-sm ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-12">
@@ -80,19 +81,22 @@ export default function LandingPage() {
                 className="h-28 w-auto object-contain"
               />
               <div className="hidden md:flex items-center space-x-8">
-                <a href="#features" className="text-sm font-medium text-slate-700 hover:text-indigo-600 transition-colors duration-200">Features</a>
-                <a href="#platform" className="text-sm font-medium text-slate-700 hover:text-indigo-600 transition-colors duration-200">Platform</a>
-                <a href="#system" className="text-sm font-medium text-slate-700 hover:text-indigo-600 transition-colors duration-200">System</a>
+                <a href="#features" className="text-sm font-medium text-slate-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">Features</a>
+                <a href="#platform" className="text-sm font-medium text-slate-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">Platform</a>
+                <a href="#system" className="text-sm font-medium text-slate-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">System</a>
               </div>
             </div>
 
-            <button 
-              onClick={handleLoginClick} 
-              className="group px-7 py-2.5 bg-gradient-to-r from-indigo-600 to-sky-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
-            >
-              Get Started
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-            </button>
+            <div className="flex items-center gap-3">
+              <DarkModeToggle />
+              <button 
+                onClick={handleLoginClick} 
+                className="group px-7 py-2.5 bg-gradient-to-r from-indigo-600 to-sky-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+              >
+                Get Started
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -104,10 +108,10 @@ export default function LandingPage() {
             {/* Left Content */}
             <div className="space-y-8">
               <div 
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-sky-50 backdrop-blur-sm rounded-full px-5 py-2.5 border border-indigo-200/60 shadow-sm"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-sky-50 dark:from-gray-800 dark:to-gray-700 backdrop-blur-sm rounded-full px-5 py-2.5 border border-indigo-200/60 dark:border-gray-600 shadow-sm"
                 style={{ animation: 'fadeInUp 0.6s ease-out' }}
               >
-                <Sparkles className="w-4 h-4 text-indigo-600" />
+                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 <span className="text-sm font-semibold bg-gradient-to-r from-indigo-600 to-sky-600 bg-clip-text text-transparent">
                   Complete Interview Preparation Platform
                 </span>
@@ -115,7 +119,7 @@ export default function LandingPage() {
 
               <div className="space-y-6">
                 <h1 
-                  className="text-5xl lg:text-6xl font-bold text-slate-900 leading-tight"
+                  className="text-5xl lg:text-6xl font-bold text-slate-900 dark:text-gray-100 leading-tight"
                   style={{ animation: 'fadeInUp 0.8s ease-out 0.2s backwards' }}
                 >
                   Transform Your
@@ -125,7 +129,7 @@ export default function LandingPage() {
                 </h1>
 
                 <p 
-                  className="text-lg text-slate-600 leading-relaxed max-w-xl"
+                  className="text-lg text-slate-600 dark:text-gray-300 leading-relaxed max-w-xl"
                   style={{ animation: 'fadeInUp 1s ease-out 0.4s backwards' }}
                 >
                   A comprehensive platform featuring mock interviews, skill exchange, live discussions, personalized learning paths, and intelligent feedback systems designed to accelerate your career growth.
@@ -145,7 +149,7 @@ export default function LandingPage() {
                 </button>
                 <button 
                   onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
-                  className="px-10 py-4 bg-white text-slate-700 rounded-xl font-semibold border-2 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-300 flex items-center justify-center gap-2"
+                  className="px-10 py-4 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 rounded-xl font-semibold border-2 border-slate-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all duration-300 flex items-center justify-center gap-2"
                 >
                   Explore Features
                   <PlayCircle className="w-5 h-5" />
@@ -172,7 +176,7 @@ export default function LandingPage() {
               <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-2xl blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
               
               <div className="relative bg-gradient-to-br from-indigo-600 via-sky-600 to-blue-600 rounded-3xl p-1 shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105">
-                <div className="bg-white rounded-2xl p-8 backdrop-blur-xl">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 backdrop-blur-xl">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
@@ -180,18 +184,18 @@ export default function LandingPage() {
                         <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
                         <div className="absolute inset-0 w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
                       </div>
-                      <span className="text-sm font-semibold text-slate-700">Live Mock Interview</span>
+                      <span className="text-sm font-semibold text-slate-700 dark:text-gray-200">Live Mock Interview</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
-                      <Clock className="w-3 h-3 text-slate-600" />
-                      <span className="text-xs font-medium text-slate-600">15:42</span>
+                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg">
+                      <Clock className="w-3 h-3 text-slate-600 dark:text-gray-300" />
+                      <span className="text-xs font-medium text-slate-600 dark:text-gray-300">15:42</span>
                     </div>
                   </div>
                   
                   {/* Main Content */}
                   <div className="space-y-6">
                     {/* Video Area */}
-                    <div className="bg-gradient-to-br from-indigo-50 via-sky-50 to-blue-50 rounded-2xl p-8 border-2 border-indigo-100">
+                    <div className="bg-gradient-to-br from-indigo-50 via-sky-50 to-blue-50 dark:from-gray-700 dark:via-gray-700 dark:to-gray-700 rounded-2xl p-8 border-2 border-indigo-100 dark:border-gray-600">
                       <div className="flex justify-center items-center gap-6">
                         {/* Interviewer */}
                         <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300">
@@ -202,8 +206,8 @@ export default function LandingPage() {
                             <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white"></div>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm font-bold text-slate-800">Interviewer</p>
-                            <p className="text-xs text-slate-500">Sarah M.</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-gray-200">Interviewer</p>
+                            <p className="text-xs text-slate-500 dark:text-gray-400">Sarah M.</p>
                           </div>
                         </div>
 
@@ -223,8 +227,8 @@ export default function LandingPage() {
                             <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white"></div>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm font-bold text-slate-800">Candidate</p>
-                            <p className="text-xs text-slate-500">Alex K.</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-gray-200">Candidate</p>
+                            <p className="text-xs text-slate-500 dark:text-gray-400">Alex K.</p>
                           </div>
                         </div>
                       </div>
@@ -232,32 +236,32 @@ export default function LandingPage() {
 
                     {/* Features Bar */}
                     <div className="flex items-center justify-center gap-3 pt-2">
-                      <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-lg">
-                        <MessageCircle className="w-4 h-4 text-indigo-600" />
-                        <span className="text-xs font-medium text-indigo-700">Live Feedback</span>
+                      <div className="flex items-center gap-2 bg-indigo-50 dark:bg-gray-700 px-4 py-2 rounded-lg">
+                        <MessageCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        <span className="text-xs font-medium text-indigo-700 dark:text-gray-200">Live Feedback</span>
                       </div>
-                      <div className="flex items-center gap-2 bg-sky-50 px-4 py-2 rounded-lg">
-                        <BarChart3 className="w-4 h-4 text-sky-600" />
-                        <span className="text-xs font-medium text-sky-700">Analytics</span>
+                      <div className="flex items-center gap-2 bg-sky-50 dark:bg-gray-700 px-4 py-2 rounded-lg">
+                        <BarChart3 className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                        <span className="text-xs font-medium text-sky-700 dark:text-gray-200">Analytics</span>
                       </div>
                     </div>
 
                     {/* Controls */}
                     <div className="flex justify-center gap-3 pt-2">
-                      <button className="w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-200 transform hover:scale-110 transition-all duration-200 shadow-sm">
-                        <div className="w-5 h-5 bg-slate-600 rounded-sm"></div>
+                      <button className="w-11 h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
+                        <div className="w-5 h-5 bg-slate-600 dark:bg-gray-300 rounded-sm"></div>
                       </button>
-                      <button className="w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-200 transform hover:scale-110 transition-all duration-200 shadow-sm">
-                        <div className="w-5 h-5 bg-slate-600 rounded-sm"></div>
+                      <button className="w-11 h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
+                        <div className="w-5 h-5 bg-slate-600 dark:bg-gray-300 rounded-sm"></div>
                       </button>
                       <button className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center hover:from-red-600 hover:to-red-700 transform hover:scale-110 transition-all duration-200 shadow-lg">
                         <div className="w-6 h-6 bg-white rounded-sm"></div>
                       </button>
-                      <button className="w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-200 transform hover:scale-110 transition-all duration-200 shadow-sm">
-                        <div className="w-5 h-5 bg-slate-600 rounded-sm"></div>
+                      <button className="w-11 h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
+                        <div className="w-5 h-5 bg-slate-600 dark:bg-gray-300 rounded-sm"></div>
                       </button>
-                      <button className="w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-200 transform hover:scale-110 transition-all duration-200 shadow-sm">
-                        <div className="w-5 h-5 bg-slate-600 rounded-sm"></div>
+                      <button className="w-11 h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
+                        <div className="w-5 h-5 bg-slate-600 dark:bg-gray-300 rounded-sm"></div>
                       </button>
                     </div>
                   </div>
@@ -269,12 +273,12 @@ export default function LandingPage() {
       </section>
 
       {/* Core Features Overview */}
-      <section id="features" className="relative z-10 py-24 bg-gradient-to-br from-white via-indigo-50/30 to-sky-50/40" data-animate>
+      <section id="features" className="relative z-10 py-24 bg-gradient-to-br from-white via-indigo-50/30 to-sky-50/40 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" data-animate>
         <div className="max-w-7xl mx-auto px-6">
           <div className={`text-center mb-16 transition-all duration-1000 ${isInView('features') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-sky-100 rounded-full px-5 py-2 mb-6">
-              <Zap className="w-4 h-4 text-indigo-600" />
-              <span className="text-sm font-semibold text-indigo-700">Core Platform Features</span>
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-sky-100 dark:from-gray-800 dark:to-gray-700 rounded-full px-5 py-2 mb-6">
+              <Zap className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-sm font-semibold text-indigo-700 dark:text-gray-200">Core Platform Features</span>
             </div>
             <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
               Complete Interview
@@ -282,7 +286,7 @@ export default function LandingPage() {
                 Preparation Ecosystem
               </span>
             </h2>
-            <p className="text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg text-slate-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Comprehensive suite of tools and features designed to transform your interview skills and accelerate career success
             </p>
           </div>
@@ -293,81 +297,81 @@ export default function LandingPage() {
                 icon: Video,
                 title: 'Mock Interview System',
                 description: 'Live video interviews with real-time collaboration, role assignment, and professional meeting environments',
-                bgColor: 'from-indigo-50 to-indigo-100/50',
+                bgColor: 'from-indigo-50 to-indigo-100/50 dark:from-gray-800 dark:to-gray-700',
                 iconBg: 'from-indigo-600 to-indigo-700',
-                borderColor: 'border-indigo-200',
+                borderColor: 'border-indigo-200 dark:border-gray-600',
                 delay: '0s'
               },
               {
                 icon: Users,
                 title: 'Intelligent Pairing',
                 description: 'Advanced rotation algorithm ensuring unique, fair matches with automated role distribution',
-                bgColor: 'from-sky-50 to-sky-100/50',
+                bgColor: 'from-sky-50 to-sky-100/50 dark:from-gray-800 dark:to-gray-700',
                 iconBg: 'from-sky-600 to-sky-700',
-                borderColor: 'border-sky-200',
+                borderColor: 'border-sky-200 dark:border-gray-600',
                 delay: '0.1s'
               },
               {
                 icon: Calendar,
                 title: 'Smart Scheduling',
                 description: 'Time slot proposals, automated matching, meeting link generation with calendar integration',
-                bgColor: 'from-blue-50 to-blue-100/50',
+                bgColor: 'from-blue-50 to-blue-100/50 dark:from-gray-800 dark:to-gray-700',
                 iconBg: 'from-blue-600 to-blue-700',
-                borderColor: 'border-blue-200',
+                borderColor: 'border-blue-200 dark:border-gray-600',
                 delay: '0.2s'
               },
-              {
-                icon: MessageCircle,
-                title: 'Comprehensive Feedback',
-                description: 'Multi-criteria rating system with detailed analytics and constructive insights',
-                bgColor: 'from-teal-50 to-teal-100/50',
-                iconBg: 'from-teal-600 to-teal-700',
-                borderColor: 'border-teal-200',
+                {
+                  icon: MessageCircle,
+                  title: 'Comprehensive Feedback',
+                  description: 'Multi-criteria rating system with detailed analytics and constructive insights',
+                  bgColor: 'from-teal-50 to-teal-100/50 dark:from-gray-800 dark:to-gray-700',
+                  iconBg: 'from-teal-600 to-teal-700',
+                  borderColor: 'border-teal-200 dark:border-gray-600',
                 delay: '0.3s'
               },
-              {
-                icon: BookOpen,
-                title: 'Learning Management',
-                description: 'Structured content hierarchy with progress tracking, video modules, and question banks',
-                bgColor: 'from-purple-50 to-purple-100/50',
-                iconBg: 'from-purple-600 to-purple-700',
-                borderColor: 'border-purple-200',
+                {
+                  icon: BookOpen,
+                  title: 'Learning Management',
+                  description: 'Structured content hierarchy with progress tracking, video modules, and question banks',
+                  bgColor: 'from-purple-50 to-purple-100/50 dark:from-gray-800 dark:to-gray-700',
+                  iconBg: 'from-purple-600 to-purple-700',
+                  borderColor: 'border-purple-200 dark:border-gray-600',
                 delay: '0.4s'
               },
               {
                 icon: Target,
                 title: 'Event Management',
                 description: 'Complete event lifecycle with templates, analytics, and participant management',
-                bgColor: 'from-pink-50 to-pink-100/50',
+                bgColor: 'from-pink-50 to-pink-100/50 dark:from-gray-800 dark:to-gray-700',
                 iconBg: 'from-pink-600 to-pink-700',
-                borderColor: 'border-pink-200',
+                borderColor: 'border-pink-200 dark:border-gray-600',
                 delay: '0.5s'
               },
-              {
-                icon: TrendingUp,
-                title: 'Progress Analytics',
-                description: 'Track performance metrics, topic completion, and skill development over time',
-                bgColor: 'from-emerald-50 to-emerald-100/50',
-                iconBg: 'from-emerald-600 to-emerald-700',
-                borderColor: 'border-emerald-200',
+                {
+                  icon: TrendingUp,
+                  title: 'Progress Analytics',
+                  description: 'Track performance metrics, topic completion, and skill development over time',
+                  bgColor: 'from-emerald-50 to-emerald-100/50 dark:from-gray-800 dark:to-gray-700',
+                  iconBg: 'from-emerald-600 to-emerald-700',
+                  borderColor: 'border-emerald-200 dark:border-gray-600',
                 delay: '0.6s'
               },
               {
                 icon: Bell,
                 title: 'Smart Notifications',
                 description: 'Automated reminders, email notifications, and real-time updates for all activities',
-                bgColor: 'from-orange-50 to-orange-100/50',
+                bgColor: 'from-orange-50 to-orange-100/50 dark:from-gray-800 dark:to-gray-700',
                 iconBg: 'from-orange-600 to-orange-700',
-                borderColor: 'border-orange-200',
+                borderColor: 'border-orange-200 dark:border-gray-600',
                 delay: '0.7s'
               },
               {
                 icon: Shield,
                 title: 'Secure Authentication',
                 description: 'Multi-role access control with JWT tokens and mandatory password security',
-                bgColor: 'from-slate-50 to-slate-100/50',
+                bgColor: 'from-slate-50 to-slate-100/50 dark:from-gray-800 dark:to-gray-700',
                 iconBg: 'from-slate-600 to-slate-700',
-                borderColor: 'border-slate-200',
+                borderColor: 'border-slate-200 dark:border-gray-600',
                 delay: '0.8s'
               }
             ].map((feature, index) => (
@@ -377,15 +381,15 @@ export default function LandingPage() {
                 className={`group relative bg-gradient-to-br ${feature.bgColor} rounded-2xl border-2 ${feature.borderColor} p-7 transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-500 ${isInView('features') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
                 style={{ transitionDelay: isInView('features') ? feature.delay : '0s' }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-gray-600/20 dark:to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <div className="relative">
                   <div className={`w-14 h-14 bg-gradient-to-br ${feature.iconBg} rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg`}>
                     <feature.icon className="w-7 h-7 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-700 transition-colors duration-300">
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-gray-100 mb-3 group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors duration-300">
                     {feature.title}
                   </h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
+                  <p className="text-sm text-slate-600 dark:text-gray-300 leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -396,14 +400,14 @@ export default function LandingPage() {
       </section>
 
       {/* Platform Capabilities */}
-      <section id="platform" className="relative z-10 py-24 bg-gradient-to-br from-slate-50 to-white" data-animate>
+      <section id="platform" className="relative z-10 py-24 bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800" data-animate>
         <div className="max-w-7xl mx-auto px-6">
           <div className={`text-center mb-16 transition-all duration-1000 ${isInView('platform') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-100 to-blue-100 rounded-full px-5 py-2 mb-6">
-              <Layers className="w-4 h-4 text-sky-600" />
-              <span className="text-sm font-semibold text-sky-700">Platform Capabilities</span>
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-100 to-blue-100 dark:from-gray-800 dark:to-gray-700 rounded-full px-5 py-2 mb-6">
+              <Layers className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+              <span className="text-sm font-semibold text-sky-700 dark:text-gray-200">Platform Capabilities</span>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
+            <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-gray-100 mb-6">
               Advanced Features for
               <span className="block bg-gradient-to-r from-sky-600 to-blue-600 bg-clip-text text-transparent">
                 Every Learning Need
@@ -413,14 +417,14 @@ export default function LandingPage() {
 
           {/* User Management */}
           <div className={`mb-16 transition-all duration-1000 delay-200 ${isInView('platform') ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'}`}>
-            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 lg:p-12 hover:shadow-2xl transition-all duration-500">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-slate-200 dark:border-gray-700 p-8 lg:p-12 hover:shadow-2xl transition-all duration-500">
               <div className="flex flex-col lg:flex-row gap-8 items-center">
                 <div className="lg:w-1/3">
                   <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl mb-6">
                     <UserCheck className="w-10 h-10 text-white" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-4">User Management</h3>
-                  <p className="text-slate-600 leading-relaxed">
+                  <h3 className="text-3xl font-bold text-slate-900 dark:text-gray-100 mb-4">User Management</h3>
+                  <p className="text-slate-600 dark:text-gray-300 leading-relaxed">
                     Comprehensive system for managing students, coordinators, and administrators with role-based access
                   </p>
                 </div>
@@ -433,9 +437,9 @@ export default function LandingPage() {
                     { icon: Target, text: 'Teacher-student linking system' },
                     { icon: Award, text: 'Special student support' }
                   ].map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3 bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-xl hover:scale-105 transition-transform duration-300">
-                      <item.icon className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm font-medium text-slate-700">{item.text}</span>
+                    <div key={idx} className="flex items-start gap-3 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 p-4 rounded-xl hover:scale-105 transition-transform duration-300">
+                      <item.icon className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm font-medium text-slate-700 dark:text-gray-200">{item.text}</span>
                     </div>
                   ))}
                 </div>
@@ -445,14 +449,14 @@ export default function LandingPage() {
 
           {/* Event & Scheduling */}
           <div className={`mb-16 transition-all duration-1000 delay-300 ${isInView('platform') ? 'translate-x-0 opacity-100' : 'translate-x-12 opacity-0'}`}>
-            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 lg:p-12 hover:shadow-2xl transition-all duration-500">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-slate-200 dark:border-gray-700 p-8 lg:p-12 hover:shadow-2xl transition-all duration-500">
               <div className="flex flex-col lg:flex-row-reverse gap-8 items-center">
                 <div className="lg:w-1/3">
                   <div className="w-20 h-20 bg-gradient-to-br from-sky-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl mb-6">
                     <Calendar className="w-10 h-10 text-white" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-4">Event & Scheduling</h3>
-                  <p className="text-slate-600 leading-relaxed">
+                  <h3 className="text-3xl font-bold text-slate-900 dark:text-gray-100 mb-4">Event & Scheduling</h3>
+                  <p className="text-slate-600 dark:text-gray-300 leading-relaxed">
                     Complete event lifecycle management with intelligent scheduling and automated coordination
                   </p>
                 </div>
@@ -465,9 +469,9 @@ export default function LandingPage() {
                     { icon: Mail, text: 'ICS calendar file generation' },
                     { icon: BarChart3, text: 'Event analytics & export' }
                   ].map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3 bg-gradient-to-br from-sky-50 to-blue-50 p-4 rounded-xl hover:scale-105 transition-transform duration-300">
-                      <item.icon className="w-5 h-5 text-sky-600 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm font-medium text-slate-700">{item.text}</span>
+                    <div key={idx} className="flex items-start gap-3 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 p-4 rounded-xl hover:scale-105 transition-transform duration-300">
+                      <item.icon className="w-5 h-5 text-sky-600 dark:text-sky-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm font-medium text-slate-700 dark:text-gray-200">{item.text}</span>
                     </div>
                   ))}
                 </div>
@@ -477,14 +481,14 @@ export default function LandingPage() {
 
           {/* Learning System */}
           <div className={`transition-all duration-1000 delay-400 ${isInView('platform') ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'}`}>
-            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 lg:p-12 hover:shadow-2xl transition-all duration-500">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-slate-200 dark:border-gray-700 p-8 lg:p-12 hover:shadow-2xl transition-all duration-500">
               <div className="flex flex-col lg:flex-row gap-8 items-center">
                 <div className="lg:w-1/3">
                   <div className="w-20 h-20 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl mb-6">
                     <BookOpen className="w-10 h-10 text-white" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-4">Learning System</h3>
-                  <p className="text-slate-600 leading-relaxed">
+                  <h3 className="text-3xl font-bold text-slate-900 dark:text-gray-100 mb-4">Learning System</h3>
+                  <p className="text-slate-600 dark:text-gray-300 leading-relaxed">
                     Structured learning paths with comprehensive content management and progress tracking
                   </p>
                 </div>
@@ -497,9 +501,9 @@ export default function LandingPage() {
                     { icon: Star, text: 'Importance & difficulty levels' },
                     { icon: RefreshCw, text: 'Drag-and-drop reordering' }
                   ].map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 rounded-xl hover:scale-105 transition-transform duration-300">
-                      <item.icon className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm font-medium text-slate-700">{item.text}</span>
+                    <div key={idx} className="flex items-start gap-3 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-700 dark:to-gray-600 p-4 rounded-xl hover:scale-105 transition-transform duration-300">
+                      <item.icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm font-medium text-slate-700 dark:text-gray-200">{item.text}</span>
                     </div>
                   ))}
                 </div>
@@ -510,14 +514,14 @@ export default function LandingPage() {
       </section>
 
       {/* System Features */}
-      <section id="system" className="relative z-10 py-24 bg-gradient-to-br from-indigo-50/40 via-white to-sky-50/30" data-animate>
+      <section id="system" className="relative z-10 py-24 bg-gradient-to-br from-indigo-50/40 via-white to-sky-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" data-animate>
         <div className="max-w-7xl mx-auto px-6">
           <div className={`text-center mb-16 transition-all duration-1000 ${isInView('system') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full px-5 py-2 mb-6">
-              <GitBranch className="w-4 h-4 text-purple-600" />
-              <span className="text-sm font-semibold text-purple-700">System Features</span>
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-gray-800 dark:to-gray-700 rounded-full px-5 py-2 mb-6">
+              <GitBranch className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span className="text-sm font-semibold text-purple-700 dark:text-gray-200">System Features</span>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
+            <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-gray-100 mb-6">
               Enterprise-Grade
               <span className="block bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Infrastructure
@@ -559,17 +563,17 @@ export default function LandingPage() {
               <div
                 key={index}
                 data-animate
-                className={`group bg-gradient-to-br ${system.bgGradient} rounded-2xl border-2 border-slate-200 p-6 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 ${isInView('system') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+                className={`group bg-gradient-to-br ${system.bgGradient} dark:from-gray-800 dark:to-gray-700 rounded-2xl border-2 border-slate-200 dark:border-gray-600 p-6 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 ${isInView('system') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
                 style={{ transitionDelay: isInView('system') ? `${index * 0.1}s` : '0s' }}
               >
                 <div className={`w-14 h-14 bg-gradient-to-br ${system.gradient} rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg`}>
                   <system.icon className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-4">{system.title}</h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-gray-100 mb-4">{system.title}</h3>
                 <ul className="space-y-2">
                   {system.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-slate-600">
-                      <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <li key={idx} className="flex items-start gap-2 text-sm text-slate-600 dark:text-gray-300">
+                      <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -586,11 +590,11 @@ export default function LandingPage() {
               { icon: BarChart3, label: 'Analytics Dashboard', color: 'from-purple-600 to-purple-700' },
               { icon: Lightbulb, label: 'Smart Insights', color: 'from-amber-600 to-amber-700' }
             ].map((item, idx) => (
-              <div key={idx} className="group bg-white rounded-xl border-2 border-slate-200 p-6 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div key={idx} className="group bg-white dark:bg-gray-800 rounded-xl border-2 border-slate-200 dark:border-gray-600 p-6 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                 <div className={`w-12 h-12 bg-gradient-to-br ${item.color} rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300`}>
                   <item.icon className="w-6 h-6 text-white" />
                 </div>
-                <p className="text-sm font-semibold text-slate-700">{item.label}</p>
+                <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">{item.label}</p>
               </div>
             ))}
           </div>
@@ -630,8 +634,8 @@ export default function LandingPage() {
               { icon: TrendingUp, label: 'Track Progress' },
               { icon: Award, label: 'Get Certified' }
             ].map((item, idx) => (
-              <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105">
-                <item.icon className="w-8 h-8 text-sky-300 mx-auto mb-2" />
+              <div key={idx} className="bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/20 dark:border-white/10 hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300 hover:scale-105">
+                <item.icon className="w-8 h-8 text-sky-300 dark:text-sky-400 mx-auto mb-2" />
                 <p className="text-sm font-medium text-white">{item.label}</p>
               </div>
             ))}
@@ -648,7 +652,7 @@ export default function LandingPage() {
             </button>
             <button 
               onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
-              className="px-12 py-5 bg-white/10 backdrop-blur-sm text-white rounded-2xl font-semibold text-lg border-2 border-white/30 hover:bg-white/20 transition-all duration-300 flex items-center gap-3"
+              className="px-12 py-5 bg-white/10 dark:bg-white/5 backdrop-blur-sm text-white rounded-2xl font-semibold text-lg border-2 border-white/30 dark:border-white/20 hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300 flex items-center gap-3"
             >
               Learn More
               <Lightbulb className="w-5 h-5" />
@@ -656,7 +660,7 @@ export default function LandingPage() {
           </div>
 
           {/* Trust Indicators */}
-          <div className="mt-12 flex flex-wrap justify-center items-center gap-8 text-indigo-300">
+          <div className="mt-12 flex flex-wrap justify-center items-center gap-8 text-indigo-300 dark:text-indigo-400">
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5" />
               <span className="text-sm font-medium">Secure Platform</span>

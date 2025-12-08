@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Lock, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../utils/api";
+import DarkModeToggle from "./DarkModeToggle";
 
 export function AdminNavbar() {
   const location = useLocation();
@@ -118,7 +119,7 @@ export function AdminNavbar() {
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white shadow-sm"
+      className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm"
     >
       <div className="w-full flex items-center justify-between h-14 px-3 sm:px-4">
         {/* Brand Logo */}
@@ -164,8 +165,8 @@ export function AdminNavbar() {
                     whileTap="tap"
                     className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-colors ${
                       isActive
-                        ? "bg-sky-50 text-sky-600"
-                        : "text-gray-600 hover:text-sky-500 hover:bg-sky-50"
+                        ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
+                        : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -174,7 +175,7 @@ export function AdminNavbar() {
                     {isActive && (
                       <motion.div
                         layoutId="activeIndicator"
-                        className="absolute inset-0 border-2 border-white/40 rounded-xl"
+                        className="absolute inset-0 border-2 border-white/40 dark:border-gray-600/40 rounded-xl"
                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                       />
                     )}
@@ -183,6 +184,9 @@ export function AdminNavbar() {
               );
             })}
 
+            {/* Dark Mode Toggle */}
+            <DarkModeToggle className="ml-1" />
+
             {/* Desktop Profile Dropdown */}
             <div className="relative ml-1.5 profile-container">
               <motion.button
@@ -190,16 +194,16 @@ export function AdminNavbar() {
                 whileHover="hover"
                 whileTap="tap"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-gray-50 hover:bg-sky-50 text-gray-700 transition-all duration-200 border border-gray-200"
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-gray-50 dark:bg-gray-800 hover:bg-sky-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all duration-200 border border-gray-200 dark:border-gray-700"
               >
                 <div className="w-7 h-7 rounded-full bg-sky-500 flex items-center justify-center text-white font-semibold text-xs">
                   {adminName.charAt(0).toUpperCase()}
                 </div>
                 <div className="text-left hidden lg:block">
-                  <div className="font-semibold text-[11px] text-slate-800">{adminName}</div>
-                  <div className="text-[9px] text-slate-500">Admin</div>
+                  <div className="font-semibold text-[11px] text-slate-800 dark:text-gray-200">{adminName}</div>
+                  <div className="text-[9px] text-slate-500 dark:text-gray-400">Admin</div>
                 </div>
-                <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3 h-3 text-slate-500 dark:text-gray-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
               </motion.button>
 
               <AnimatePresence>
@@ -209,17 +213,17 @@ export function AdminNavbar() {
                     initial="closed"
                     animate="open"
                     exit="closed"
-                    className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50"
+                    className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-slate-200 dark:border-gray-700 overflow-hidden z-50"
                   >
                     {/* Profile Header */}
-                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 px-3 py-2 border-b border-gray-200">
+                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-700 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold text-xs">
                           {adminName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-xs text-slate-900 truncate">{adminName}</div>
-                          <div className="text-[10px] text-slate-600 truncate">{adminEmail}</div>
+                          <div className="font-semibold text-xs text-slate-900 dark:text-gray-100 truncate">{adminName}</div>
+                          <div className="text-[10px] text-slate-600 dark:text-gray-400 truncate">{adminEmail}</div>
                         </div>
                       </div>
                     </div>
@@ -229,14 +233,14 @@ export function AdminNavbar() {
                       <Link
                         to="/admin/change-password"
                         onClick={() => setIsProfileOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-sky-50 transition-colors group"
+                        className="flex items-center gap-2 px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
                       >
-                        <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
-                          <Lock className="w-3.5 h-3.5 text-sky-600" />
+                        <div className="w-7 h-7 rounded-lg bg-sky-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-gray-600 transition-colors">
+                          <Lock className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                         </div>
                         <div className="flex-1">
                           <div className="text-xs font-medium">Change Password</div>
-                          <div className="text-[10px] text-slate-500">Update your account password</div>
+                          <div className="text-[10px] text-slate-500 dark:text-gray-400">Update your account password</div>
                         </div>
                       </Link>
 
@@ -245,14 +249,14 @@ export function AdminNavbar() {
                           setIsProfileOpen(false);
                           handleLogout();
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-red-50 transition-colors group"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors group"
                       >
-                        <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                          <LogOut className="w-3.5 h-3.5 text-red-600" />
+                        <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
+                          <LogOut className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                         </div>
                         <div className="flex-1 text-left">
-                          <div className="text-xs font-medium text-red-600">Logout</div>
-                          <div className="text-[10px] text-slate-500">Sign out of your account</div>
+                          <div className="text-xs font-medium text-red-600 dark:text-red-400">Logout</div>
+                          <div className="text-[10px] text-slate-500 dark:text-gray-400">Sign out of your account</div>
                         </div>
                       </button>
                     </div>
@@ -281,17 +285,17 @@ export function AdminNavbar() {
                   initial="closed"
                   animate="open"
                   exit="closed"
-                  className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50"
+                  className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-slate-200 dark:border-gray-700 overflow-hidden z-50"
                 >
                   {/* Profile Header */}
-                  <div className="bg-gradient-to-r from-sky-50 to-blue-50 px-3 py-2 border-b border-gray-200">
+                  <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-700 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold text-xs">
                         {adminName.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-xs text-slate-900 truncate">{adminName}</div>
-                        <div className="text-[10px] text-slate-600 truncate">{adminEmail}</div>
+                        <div className="font-semibold text-xs text-slate-900 dark:text-gray-100 truncate">{adminName}</div>
+                        <div className="text-[10px] text-slate-600 dark:text-gray-400 truncate">{adminEmail}</div>
                       </div>
                     </div>
                   </div>
@@ -301,14 +305,14 @@ export function AdminNavbar() {
                     <Link
                       to="/admin/change-password"
                       onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-sky-50 transition-colors group"
+                      className="flex items-center gap-2 px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
                     >
-                      <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
-                        <Lock className="w-3.5 h-3.5 text-sky-600" />
+                      <div className="w-7 h-7 rounded-lg bg-sky-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-gray-600 transition-colors">
+                        <Lock className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                       </div>
                       <div className="flex-1">
                         <div className="text-xs font-medium">Change Password</div>
-                        <div className="text-[10px] text-slate-500">Update your account password</div>
+                        <div className="text-[10px] text-slate-500 dark:text-gray-400">Update your account password</div>
                       </div>
                     </Link>
 
@@ -317,13 +321,13 @@ export function AdminNavbar() {
                         setIsProfileOpen(false);
                         handleLogout();
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-red-50 transition-colors group"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors group"
                     >
-                      <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                        <LogOut className="w-3.5 h-3.5 text-red-600" />
+                      <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
+                        <LogOut className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                       </div>
                       <div className="flex-1 text-left">
-                        <div className="text-xs font-medium text-red-600">Logout</div>
+                        <div className="text-xs font-medium text-red-600 dark:text-red-400">Logout</div>
                         <div className="text-[10px] text-slate-500">Sign out of your account</div>
                       </div>
                     </button>
@@ -337,12 +341,12 @@ export function AdminNavbar() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={toggleMenu}
-            className="md:hidden flex items-center justify-center w-8 h-8 rounded-md bg-gray-100 hover:bg-gray-200 transition-colors duration-200 border border-gray-200"
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 border border-gray-200 dark:border-gray-700"
           >
             {isMenuOpen ? (
-              <X className="text-gray-700 w-4 h-4" />
+              <X className="text-gray-700 dark:text-gray-300 w-4 h-4" />
             ) : (
-              <Menu className="text-gray-700 w-4 h-4" />
+              <Menu className="text-gray-700 dark:text-gray-300 w-4 h-4" />
             )}
           </motion.button>
         </div>
@@ -369,9 +373,9 @@ export function AdminNavbar() {
               exit="closed"
               className="md:hidden fixed top-14 right-0 bottom-0 z-50 w-80 max-w-full"
             >
-              <div className="bg-white h-full rounded-l-2xl shadow-2xl border-l border-slate-200 p-4 flex flex-col">
+              <div className="bg-white dark:bg-gray-900 h-full rounded-l-2xl shadow-2xl border-l border-slate-200 dark:border-gray-700 p-4 flex flex-col">
                 {/* Mobile Menu Header */}
-                <div className="flex items-center pb-4 mb-3 border-b border-gray-200">
+                <div className="flex items-center pb-4 mb-3 border-b border-gray-200 dark:border-gray-700">
                   <img 
                     src="/images/logo.png" 
                     alt="PeerPrep Logo" 
@@ -391,14 +395,14 @@ export function AdminNavbar() {
                         onClick={() => setActive(path)}
                         className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors ${
                           isActive
-                            ? "bg-sky-50 text-sky-600"
-                            : "text-gray-600 hover:text-sky-500 hover:bg-sky-50"
+                            ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
+                            : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5" />
                         <span className="font-medium text-xs">{label}</span>
                         {isActive && (
-                          <div className="ml-auto w-1.5 h-1.5 bg-sky-500 rounded-full" />
+                          <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />
                         )}
                       </Link>
                     );
@@ -406,19 +410,19 @@ export function AdminNavbar() {
                 </div>
 
                 {/* Mobile Menu Footer Actions */}
-                <div className="mt-auto space-y-1.5 pt-3 border-t border-gray-200">
+                <div className="mt-auto space-y-1.5 pt-3 border-t border-gray-200 dark:border-gray-700">
                   <Link
                     to="/admin/change-password"
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-md text-gray-700 hover:bg-sky-50 transition-colors group"
+                    className="flex items-center gap-2 px-3 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-800 transition-colors group"
                   >
-                    <Lock className="w-3.5 h-3.5 text-sky-600" />
+                    <Lock className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                     <span className="font-medium text-xs">Change Password</span>
                   </Link>
                   
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span className="font-medium text-xs">Logout</span>
