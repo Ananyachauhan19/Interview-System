@@ -56,12 +56,15 @@ export default function ContributionCalendar({
         <div className="flex items-center gap-3">
           <h3 className="text-base font-semibold text-slate-800">{title}</h3>
           {stats && (
-            <div className="flex items-center gap-3 text-xs text-slate-600">
+            <div className="flex items-center gap-2 flex-wrap text-xs text-slate-700">
               <span className="bg-blue-50 px-2 py-1 rounded">
-                <strong>{stats.totalSessions}</strong> sessions
+                Active Days: <strong>{stats.totalActiveDays}</strong> / {stats.totalDaysInYear}
               </span>
-              <span className="bg-green-50 px-2 py-1 rounded">
-                <strong>{stats.totalCompletions}</strong> completions
+              <span className="bg-violet-50 px-2 py-1 rounded">
+                Current Streak: <strong>{stats.currentStreak || 0}</strong>
+              </span>
+              <span className="bg-amber-50 px-2 py-1 rounded">
+                Best Streak: <strong>{stats.bestStreak || 0}</strong>
               </span>
             </div>
           )}
@@ -114,7 +117,22 @@ export default function ContributionCalendar({
         </div>
       </div>
       {/* Legend */}
-      <div className="flex items-center justify-end gap-2 mt-3">
+      <div className="flex items-center justify-between gap-2 mt-3">
+        {stats && (
+          <div className="text-xs text-slate-700 flex gap-3 flex-wrap">
+            <span className="bg-indigo-50 px-2 py-1 rounded">
+              Courses Enrolled: <strong>{stats.totalCoursesEnrolled || 0}</strong>
+            </span>
+            <span className="bg-pink-50 px-2 py-1 rounded">
+              Problems Solved: <strong>{stats.totalProblemsSolved || 0}</strong>
+            </span>
+            <span className="bg-teal-50 px-2 py-1 rounded">
+              Videos Watched: <strong>{stats.totalVideosWatched || 0}</strong>/{stats.totalVideosTotal || 0}
+            </span>
+          </div>
+        )}
+        
+        {/* Intensity legend */}
         <span className="text-xs text-slate-500">Less</span>
         <div className="flex gap-1">
           <div className="w-2.5 h-2.5 bg-slate-100 rounded-sm" title="No activity" />
