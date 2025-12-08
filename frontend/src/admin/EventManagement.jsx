@@ -228,22 +228,18 @@ export default function EventManagement() {
       }
     }
     
-    let toastId;
     try {
       let ev;
       const payloadStart = startDate ? new Date(parseLocalDateTime(startDate)).toISOString() : undefined;
       const payloadEnd = endDate ? new Date(parseLocalDateTime(endDate)).toISOString() : undefined;
-
-      // Show an immediate loading toast so user sees feedback instantly
-      toastId = toast.loading('Creating your interview...');
 
       if (specialMode) {
         const res = await api.createSpecialEvent({ name: title, description, startDate: payloadStart, endDate: payloadEnd, template, csv: csvFile });
         const eventName = res.name || title;
         const newId = res._id || res.eventId;
         
-        // Update toast to success and navigate immediately
-        toast.update(toastId, { render: `Interview "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
+        // Show success toast
+        toast.success(`Interview "${eventName}" created successfully!`);
         setMsg(''); // Clear any error messages
         resetForm();
         
@@ -251,17 +247,15 @@ export default function EventManagement() {
         const redirectPath = userRole === 'coordinator' ? `/coordinator/event/${newId}` : `/admin/event/${newId}`;
         if (newId) navigate(redirectPath, { state: { eventCreated: true } });
         
-        // Show email notification after a delay (emails are being sent in background)
-        setTimeout(() => {
-          toast.info('Invitation emails are being sent to participants...', { autoClose: 5000 });
-        }, 2000);
+        // Show email notification
+        toast.info('Invitation emails are being sent to participants...');
         
       } else {
         ev = await api.createEvent({ name: title, description, startDate: payloadStart, endDate: payloadEnd, template });
         const eventName = ev.name || title;
         
-        // Update toast to success and navigate immediately
-        toast.update(toastId, { render: `Interview "${eventName}" created successfully!`, type: 'success', isLoading: false, autoClose: 3000 });
+        // Show success toast
+        toast.success(`Interview "${eventName}" created successfully!`);
         setMsg(''); // Clear any error messages
         resetForm();
         
@@ -269,10 +263,8 @@ export default function EventManagement() {
         const redirectPath = userRole === 'coordinator' ? `/coordinator/event/${ev._id}` : `/admin/event/${ev._id}`;
         if (ev && ev._id) navigate(redirectPath, { state: { eventCreated: true } });
         
-        // Show email notification after a delay (emails are being sent in background)
-        setTimeout(() => {
-          toast.info('Notification emails are being sent to all students...', { autoClose: 5000 });
-        }, 2000);
+        // Show email notification
+        toast.info('Notification emails are being sent to all students...');
       }
     } catch (err) {
       const errorMessage = err?.message || 'Failed to create interview';
@@ -291,12 +283,7 @@ export default function EventManagement() {
         userFriendlyError = 'There was an issue with the participant CSV file. Please check the format and try again.';
       }
       
-      // Update the loading toast if present; otherwise show error toast
-      if (toastId) {
-        toast.update(toastId, { render: userFriendlyError, type: 'error', isLoading: false, autoClose: 5000 });
-      } else {
-        toast.error(userFriendlyError);
-      }
+      toast.error(userFriendlyError);
       setMsg(userFriendlyError);
     }
   };
