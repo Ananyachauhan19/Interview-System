@@ -89,6 +89,26 @@ export async function changeAdminPassword(req, res) {
   
   res.json({ message: 'Admin password changed successfully', email: user.email });
 }
+<<<<<<< Updated upstream
+||||||| Stash base
+import User from '../models/User.js';
+import SpecialStudent from '../models/SpecialStudent.js';
+import { signToken } from '../utils/jwt.js';
+import { HttpError } from '../utils/errors.js';
+import crypto from 'crypto';
+import { sendPasswordResetEmail } from '../utils/mailer.js';
+import { uploadAvatar, deleteAvatar, isCloudinaryConfigured } from '../utils/cloudinary.js';
+=======
+import User from '../models/User.js';
+import SpecialStudent from '../models/SpecialStudent.js';
+import { signToken } from '../utils/jwt.js';
+import { HttpError } from '../utils/errors.js';
+import crypto from 'crypto';
+import { sendPasswordResetEmail } from '../utils/mailer.js';
+import { uploadAvatar, deleteAvatar, isCloudinaryConfigured } from '../utils/cloudinary.js';
+import { logActivity } from './adminActivityController.js';
+import { logStudentActivity } from './activityController.js';
+>>>>>>> Stashed changes
 
 export async function seedAdminIfNeeded() {
   const email = process.env.ADMIN_EMAIL;
