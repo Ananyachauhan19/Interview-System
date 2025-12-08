@@ -44,8 +44,14 @@ router.delete('/:semesterId/subjects/:subjectId/chapters/:chapterId', requireAut
 router.post('/:semesterId/subjects/:subjectId/chapters/reorder', requireAuth, requireAdminOrCoordinator, reorderChapters);
 
 // Topic routes (nested under chapter) - with file upload support
-router.post('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics', requireAuth, requireAdminOrCoordinator, upload.fields([{ name: 'questionPDF', maxCount: 1 }]), addTopic);
-router.put('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics/:topicId', requireAuth, requireAdminOrCoordinator, upload.fields([{ name: 'questionPDF', maxCount: 1 }]), updateTopic);
+router.post('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics', requireAuth, requireAdminOrCoordinator, upload.fields([
+  { name: 'notesPDF', maxCount: 1 },
+  { name: 'questionPDF', maxCount: 1 }
+]), addTopic);
+router.put('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics/:topicId', requireAuth, requireAdminOrCoordinator, upload.fields([
+  { name: 'notesPDF', maxCount: 1 },
+  { name: 'questionPDF', maxCount: 1 }
+]), updateTopic);
 router.delete('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics/:topicId', requireAuth, requireAdminOrCoordinator, deleteTopic);
 router.post('/:semesterId/subjects/:subjectId/chapters/:chapterId/topics/reorder', requireAuth, requireAdminOrCoordinator, reorderTopics);
 
