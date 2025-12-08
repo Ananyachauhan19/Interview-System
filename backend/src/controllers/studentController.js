@@ -348,7 +348,7 @@ export async function listAllSpecialStudents(req, res) {
         path: 'events',
         select: 'name isSpecial coordinatorId'
       })
-      .select('name email studentId course branch college semester events createdAt')
+      .select('name email studentId course branch college semester events createdAt teacherId')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -377,15 +377,31 @@ export async function listAllSpecialStudents(req, res) {
       coordMap.set(coord._id.toString(), coord);
     });
 
+    // As a fallback, fetch matching regular Users to derive teacherId when missing
+    const allEmails = specialStudents.map(s => s.email).filter(Boolean);
+    const allSids = specialStudents.map(s => s.studentId).filter(Boolean);
+    const userRecords = await User.find({ $or: [ { email: { $in: allEmails } }, { studentId: { $in: allSids } } ] })
+      .select('email studentId teacherId name')
+      .lean();
+    const userMapByEmail = new Map(userRecords.map(u => [String(u.email).toLowerCase(), u]));
+    const userMapBySid = new Map(userRecords.map(u => [String(u.studentId), u]));
+
     // Extract coordinator info from events and add to each student
     const studentsWithCoordinator = specialStudents.map(student => {
       // Get the first event's coordinator (most special students have one event)
       const firstEvent = student.events && student.events.length > 0 ? student.events[0] : null;
       const coordId = firstEvent?.coordinatorId;
       const coordinator = coordId ? coordMap.get(coordId) : null;
+      const teacherFromStudent = student.teacherId;
+      // Fallback to matching regular User.teacherId if available
+      let teacherFromUser = null;
+      const u1 = student.email ? userMapByEmail.get(String(student.email).toLowerCase()) : null;
+      const u2 = !u1 && student.studentId ? userMapBySid.get(String(student.studentId)) : null;
+      teacherFromUser = (u1?.teacherId || u2?.teacherId) || null;
       return {
         ...student,
-        teacherId: coordinator?.coordinatorId || coordinator?.name || '-',
+        // Prefer teacherId stored on student (from CSV/admin), fallback to event coordinator mapping, then User.teacherId
+        teacherId: teacherFromStudent || coordinator?.coordinatorId || coordinator?.name || teacherFromUser || '-',
         coordinatorEmail: coordinator?.email || '-'
       };
     });
@@ -427,14 +443,14 @@ export async function listSpecialStudentsByEvent(req, res) {
     }
     
     const specialStudents = await SpecialStudent.find({ events: eventId })
-      .select('name email studentId course branch college semester createdAt')
+      .select('name email studentId course branch college semester createdAt teacherId')
       .sort({ createdAt: -1 })
       .lean();
     
     // Add coordinator info to each student
     const studentsWithCoordinator = specialStudents.map(student => ({
       ...student,
-      teacherId: coordinator?.coordinatorId || coordinator?.name || '-',
+      teacherId: student.teacherId || coordinator?.coordinatorId || coordinator?.name || '-',
       coordinatorEmail: coordinator?.email || '-'
     }));
     
