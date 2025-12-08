@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../utils/api';
 import { ChevronDown, ChevronRight, BookOpen, X, GraduationCap, Edit2, Trash2, Plus, Save } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { useToast } from '../components/CustomToast';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminLearning() {
@@ -15,6 +15,7 @@ export default function AdminLearning() {
   const [showAddSemester, setShowAddSemester] = useState(false);
   const [newSemester, setNewSemester] = useState({ semesterName: '', semesterDescription: '' });
   const navigate = useNavigate();
+  const toast = useToast();
 
   useEffect(() => {
     loadSemesters();

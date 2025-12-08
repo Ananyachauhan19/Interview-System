@@ -33,8 +33,8 @@ import CoordinatorFeedback from "./coordinator/CoordinatorFeedback";
 import CoordinatorProtectedRoute from "./coordinator/CoordinatorProtectedRoute";
 import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
 import { CoordinatorNavbar } from "./coordinator/CoordinatorNavbar";
-import { ToastContainer } from 'react-toastify';
 import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './components/CustomToast';
 
 const gradientBg = "bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100";
 
@@ -107,10 +107,11 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <AppContent />
-        <ToastContainer position="top-right" autoClose={3000} />
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

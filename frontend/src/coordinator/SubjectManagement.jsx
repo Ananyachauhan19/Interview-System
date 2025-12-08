@@ -5,7 +5,7 @@ import {
   BookOpen, Plus, ChevronDown, ChevronRight, Edit2, Trash2, Save, X,
   Star, Upload, Link as LinkIcon, FileText, GripVertical, Video, File
 } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { useToast } from '../components/CustomToast';
 
 const difficultyColors = {
   'easy': 'bg-green-100 text-green-800',
@@ -16,6 +16,7 @@ const difficultyColors = {
 };
 
 export default function SubjectManagement() {
+  const toast = useToast();
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedSubjects, setExpandedSubjects] = useState(new Set());

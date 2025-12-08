@@ -6,7 +6,7 @@ import {
   BookOpen, Plus, ChevronDown, ChevronRight, Edit2, Trash2, Save, X,
   Star, Upload, Link as LinkIcon, FileText, GripVertical, Video, File, Calendar, Menu, ArrowLeft
 } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { useToast } from '../components/CustomToast';
 
 const difficultyColors = {
   'easy': 'bg-emerald-100 text-emerald-700',
@@ -18,6 +18,7 @@ const difficultyColors = {
 
 export default function SemesterManagement() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [semesters, setSemesters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSemester, setSelectedSemester] = useState(null);

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, AlertCircle, ToggleRight, ToggleLeft, Calendar, FileText, Upload, X, Download } from "lucide-react";
-import { toast } from 'react-toastify';
+import { useToast } from '../components/CustomToast';
 import DateTimePicker from "../components/DateTimePicker";
 
 export default function EventManagement() {
@@ -22,6 +22,7 @@ export default function EventManagement() {
   const [userRole, setUserRole] = useState(null);
   const csvInputRef = useRef(null);
   const navigate = useNavigate();
+  const toast = useToast();
 
   useEffect(() => {
     // Determine user role from current path
