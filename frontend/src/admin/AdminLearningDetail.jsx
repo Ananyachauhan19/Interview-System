@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown,
@@ -17,7 +17,8 @@ import {
   Plus,
   Edit2,
   Trash2,
-  GripVertical
+  GripVertical,
+  ArrowLeft
 } from 'lucide-react';
 import { api } from '../utils/api';
 import toast from 'react-hot-toast';
@@ -50,6 +51,7 @@ const convertToEmbedUrl = (url) => {
 export default function AdminLearningDetail() {
   const { semester, subject, teacherId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { semesterId, subjectId, coordinatorName: initialCoordinatorName, coordinatorId: initialCoordinatorId } = location.state || {};
 
   const [allSubjects, setAllSubjects] = useState([]);
@@ -352,10 +354,19 @@ export default function AdminLearningDetail() {
             <div className="max-w-5xl mx-auto p-6">
               {/* Header */}
               <div className="mb-8 flex items-start justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                    {subjectDetails.subjectName}
-                  </h1>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                      {subjectDetails.subjectName}
+                    </h1>
+                    <button
+                      onClick={() => navigate('/admin/learning')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Back
+                    </button>
+                  </div>
                   <p className="text-gray-600 dark:text-gray-400">{subjectDetails.subjectDescription}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                     Taught by <span className="font-medium dark:text-gray-300">
@@ -365,7 +376,7 @@ export default function AdminLearningDetail() {
                 </div>
                 <button
                   onClick={openCreateChapterModal}
-                  className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors ml-4"
                 >
                   <Plus className="w-5 h-5" />
                   <span>Add Chapter</span>

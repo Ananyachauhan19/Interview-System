@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown,
@@ -13,7 +13,8 @@ import {
   ExternalLink,
   Menu,
   CheckCircle2,
-  Circle
+  Circle,
+  ArrowLeft
 } from 'lucide-react';
 import { api } from '../utils/api';
 import toast from 'react-hot-toast';
@@ -46,6 +47,7 @@ const convertToEmbedUrl = (url) => {
 export default function LearningDetail() {
   const { semester, subject, teacherId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { semesterId, subjectId, coordinatorName: initialCoordinatorName, coordinatorId: initialCoordinatorId } = location.state || {};
 
   const [allSubjects, setAllSubjects] = useState([]);
@@ -316,9 +318,18 @@ export default function LearningDetail() {
             <div className="max-w-5xl mx-auto p-6">
               {/* Header */}
               <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 p-5">
-                <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 mb-2">
-                  {subjectDetails.subjectName}
-                </h1>
+                <div className="flex items-start justify-between mb-2">
+                  <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100">
+                    {subjectDetails.subjectName}
+                  </h1>
+                  <button
+                    onClick={() => navigate('/student/learning')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                  </button>
+                </div>
                 <p className="text-sm text-slate-600 dark:text-gray-400 mb-3">{subjectDetails.subjectDescription}</p>
                 <div className="flex items-center space-x-2 text-xs">
                   <span className="px-2 py-1 bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300 rounded font-medium">

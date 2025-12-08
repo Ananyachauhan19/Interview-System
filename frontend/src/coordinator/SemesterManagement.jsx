@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { api } from '../utils/api';
 import {
   BookOpen, Plus, ChevronDown, ChevronRight, Edit2, Trash2, Save, X,
-  Star, Upload, Link as LinkIcon, FileText, GripVertical, Video, File, Calendar, Menu
+  Star, Upload, Link as LinkIcon, FileText, GripVertical, Video, File, Calendar, Menu, ArrowLeft
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -16,6 +17,7 @@ const difficultyColors = {
 };
 
 export default function SemesterManagement() {
+  const navigate = useNavigate();
   const [semesters, setSemesters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSemester, setSelectedSemester] = useState(null);

@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { api } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -14,7 +14,9 @@ import {
   School,
   Star,
   MessageSquare,
-  X
+  X,
+  Calendar,
+  ChevronRight
 } from 'lucide-react';
 
 // Feedback Card Component for Mobile
@@ -33,7 +35,7 @@ const FeedbackCard = ({ feedback }) => (
       </div>
       <div className="flex items-center gap-1 bg-sky-50 px-1.5 py-0.5 rounded">
         <Star className="w-3 h-3 text-sky-500" />
-        <span className="text-xs font-semibold text-sky-700">{feedback.marks}</span>
+        <span className="text-xs font-semibold text-sky-700">{feedback.marks}/25</span>
       </div>
     </div>
 
@@ -203,10 +205,13 @@ const FilterSection = ({
 export default function CoordinatorFeedback() {
   const [feedback, setFeedback] = useState([]);
   const [events, setEvents] = useState([]);
-  const [eventId, setEventId] = useState('');
+  const [selectedEventId, setSelectedEventId] = useState('');
   const [college, setCollege] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef(null);
 
   const loadEvents = async () => {
     try { 
@@ -221,7 +226,7 @@ export default function CoordinatorFeedback() {
     setLoading(true);
     try {
       const qs = new URLSearchParams();
-      if (eventId) qs.set('eventId', eventId);
+      if (selectedEventId) qs.set('eventId', selectedEventId);
       if (college) qs.set('college', college.trim());
       const list = await api.listCoordinatorFeedback(qs.toString());
       setFeedback(list);
@@ -231,7 +236,7 @@ export default function CoordinatorFeedback() {
     } finally {
       setLoading(false);
     }
-  }, [eventId, college]);
+  }, [selectedEventId, college]);
 
   useEffect(() => { 
     loadEvents(); 
@@ -241,13 +246,13 @@ export default function CoordinatorFeedback() {
     load(); 
   }, [load]);
 
-  const applyFilters = (e) => { 
-    if (e) e.preventDefault(); 
-    load(); 
+  const handleEventClick = (eventId) => {
+    setSelectedEventId(eventId);
+    setCollege('');
   };
 
   const reset = () => { 
-    setEventId(''); 
+    setSelectedEventId(''); 
     setCollege(''); 
     setTimeout(load, 0); 
   };
@@ -255,21 +260,58 @@ export default function CoordinatorFeedback() {
   const downloadCsv = async () => {
     try {
       const qs = new URLSearchParams();
-      if (eventId) qs.set('eventId', eventId);
+      if (selectedEventId) qs.set('eventId', selectedEventId);
       if (college) qs.set('college', college.trim());
       const csv = await api.exportCoordinatorFeedbackCsv(qs.toString());
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; 
-      a.download = `coordinator_feedback_${new Date().toISOString().split('T')[0]}.csv`; 
+      a.href = url;
+      const eventName = selectedEventId 
+        ? events.find(e => e._id === selectedEventId)?.name || 'feedback'
+        : 'all_feedback';
+      a.download = `${eventName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`; 
       a.click();
       URL.revokeObjectURL(url);
       setMsg('CSV exported successfully');
+      setTimeout(() => setMsg(''), 3000);
     } catch (e) { 
       setMsg(e.message || 'Failed to export CSV'); 
+      setTimeout(() => setMsg(''), 3000);
     }
   };
+
+  // Resizable sidebar logic
+  const startResizing = useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback(
+    (e) => {
+      if (isResizing) {
+        const newWidth = e.clientX;
+        if (newWidth >= 200 && newWidth <= 500) {
+          setSidebarWidth(newWidth);
+        }
+      }
+    },
+    [isResizing]
+  );
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', resize);
+      window.addEventListener('mouseup', stopResizing);
+      return () => {
+        window.removeEventListener('mousemove', resize);
+        window.removeEventListener('mouseup', stopResizing);
+      };
+    }
+  }, [isResizing, resize, stopResizing]);
 
   const stats = {
     total: feedback.length,
@@ -279,114 +321,255 @@ export default function CoordinatorFeedback() {
     uniqueColleges: new Set(feedback.filter(f => f.intervieweeCollege).map(f => f.intervieweeCollege)).size
   };
 
+  const selectedEvent = events.find(e => e._id === selectedEventId);
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col pt-16">
-      <div className="flex-1 w-full mx-auto px-4 py-4">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4"
-        >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-sky-600 rounded-lg flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-slate-800">Student Feedback</h1>
-                <p className="text-slate-600 text-sm">Review feedback for your assigned students</p>
-              </div>
+    <div className="min-h-screen bg-slate-50 flex pt-14">
+      {/* Left Sidebar - Events List */}
+      <div
+        ref={sidebarRef}
+        style={{ width: `${sidebarWidth}px` }}
+        className="bg-white border-r border-slate-200 flex flex-col relative"
+      >
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-slate-200">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-white" />
             </div>
-            
-            {/* Stats */}
-            <div className="flex gap-3">
-              <div className="text-center">
-                <div className="text-lg font-semibold text-sky-600">{stats.total}</div>
-                <div className="text-xs text-slate-500">Total</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-semibold text-emerald-600">{stats.averageScore}</div>
-                <div className="text-xs text-slate-500">Avg Score</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-semibold text-indigo-600">{stats.uniqueColleges}</div>
-                <div className="text-xs text-slate-500">Colleges</div>
-              </div>
-            </div>
+            <h2 className="text-sm font-bold text-slate-800">Events</h2>
           </div>
-        </motion.div>
+          <p className="text-xs text-slate-500">Select an event to view feedback</p>
+        </div>
 
-        {/* Filters */}
-        <FilterSection
-          events={events}
-          eventId={eventId}
-          setEventId={setEventId}
-          college={college}
-          setCollege={setCollege}
-          loading={loading}
-          onApplyFilters={applyFilters}
-          onReset={reset}
-          onReload={load}
-          onDownload={downloadCsv}
-        />
-
-        {/* Message */}
-        <AnimatePresence>
-          {msg && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              className={`p-2 rounded-lg mb-3 text-sm ${
-                msg.includes('success') 
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                  : 'bg-sky-50 text-sky-700 border border-sky-200'
-              }`}
-            >
-              <div className="flex items-center gap-1.5">
-                <FileText className="w-3 h-3" />
-                {msg}
+        {/* Events List */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {/* All Events Option */}
+          <motion.button
+            onClick={() => handleEventClick('')}
+            className={`w-full text-left p-3 rounded-lg border transition-all ${
+              selectedEventId === ''
+                ? 'bg-sky-50 border-sky-300 shadow-sm'
+                : 'bg-white border-slate-200 hover:border-sky-200 hover:bg-sky-50'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs font-semibold text-slate-900 truncate">
+                  All Events
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  View all feedback
+                </p>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Content */}
-        {loading ? (
-          <div className="flex justify-center items-center py-8">
-            <RefreshCw className="w-6 h-6 text-sky-500 animate-spin" />
-          </div>
-        ) : (
-          <>
-            {/* Mobile View - Cards */}
-            <div className="lg:hidden space-y-2">
-              {feedback.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 bg-white rounded-lg border border-slate-300">
-                  <GraduationCap className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                  <p className="text-sm">No feedback records found</p>
-                  <p className="text-xs mt-0.5">Try adjusting your filters</p>
-                </div>
-              ) : (
-                feedback.map((f, index) => (
-                  <FeedbackCard key={f.id} feedback={f} index={index} />
-                ))
+              {selectedEventId === '' && (
+                <ChevronRight className="w-4 h-4 text-sky-500 flex-shrink-0" />
               )}
             </div>
+          </motion.button>
 
-            {/* Desktop View - Table */}
-            <div className="hidden lg:block">
+          {/* Individual Events */}
+          {events.map((event, idx) => (
+            <motion.button
+              key={event._id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              onClick={() => handleEventClick(event._id)}
+              className={`w-full text-left p-3 rounded-lg border transition-all ${
+                selectedEventId === event._id
+                  ? 'bg-sky-50 border-sky-300 shadow-sm'
+                  : 'bg-white border-slate-200 hover:border-sky-200 hover:bg-sky-50'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs font-semibold text-slate-900 truncate">
+                    {event.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {new Date(event.startDate).toLocaleDateString()}
+                  </p>
+                </div>
+                {selectedEventId === event._id && (
+                  <ChevronRight className="w-4 h-4 text-sky-500 flex-shrink-0" />
+                )}
+              </div>
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Resize Handle */}
+        <div
+          className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-sky-400 transition-colors"
+          onMouseDown={startResizing}
+          style={{ cursor: isResizing ? 'col-resize' : 'ew-resize' }}
+        />
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4"
+          >
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-sky-600 rounded-lg flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-semibold text-slate-800">
+                    {selectedEvent ? selectedEvent.name : 'All Student Feedback'}
+                  </h1>
+                  <p className="text-slate-600 text-sm">
+                    {selectedEvent 
+                      ? `Reviews for ${selectedEvent.name}`
+                      : 'Review feedback for your assigned students'
+                    }
+                  </p>
+                </div>
+              </div>
+            
+              {/* Stats */}
+              <div className="flex gap-3">
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-sky-600">{stats.total}</div>
+                  <div className="text-xs text-slate-500">Total</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-emerald-600">{stats.averageScore}/25</div>
+                  <div className="text-xs text-slate-500">Avg Score</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-indigo-600">{stats.uniqueColleges}</div>
+                  <div className="text-xs text-slate-500">Colleges</div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Filters Section */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-sky-50 rounded-lg border border-sky-200 p-4 mb-4"
+          >
+            <div className="flex flex-col lg:flex-row lg:items-end gap-3">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Candidate College
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500" />
+                  <input 
+                    value={college}
+                    onChange={(e) => setCollege(e.target.value)}
+                    placeholder="Search by college name..."
+                    className="w-full bg-white border border-slate-300 rounded-lg pl-7 pr-7 py-2 text-slate-700 text-sm focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
+                  />
+                  {college && (
+                    <button
+                      type="button"
+                      onClick={() => setCollege('')}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg font-medium text-sm hover:bg-slate-200 transition-colors"
+                >
+                  Clear Filters
+                </button>
+
+                <button
+                  type="button"
+                  onClick={load}
+                  disabled={loading}
+                  className="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium text-sm flex items-center gap-1 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                  {loading ? 'Loading...' : 'Refresh'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={downloadCsv}
+                  className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg font-medium text-sm flex items-center gap-1 hover:bg-emerald-600 transition-colors"
+                >
+                  <Download className="w-3 h-3" />
+                  Download CSV
+                </button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Message */}
+          <AnimatePresence>
+            {msg && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="bg-white rounded-lg border border-slate-200 overflow-hidden"
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className={`p-2 rounded-lg mb-3 text-sm ${
+                  msg.includes('success') 
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                    : 'bg-sky-50 text-sky-700 border border-sky-200'
+                }`}
               >
+                <div className="flex items-center gap-1.5">
+                  <FileText className="w-3 h-3" />
+                  {msg}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Content */}
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <RefreshCw className="w-6 h-6 text-sky-500 animate-spin" />
+            </div>
+          ) : (
+            <>
+              {/* Mobile View - Cards */}
+              <div className="lg:hidden space-y-2">
                 {feedback.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">
-                    <GraduationCap className="w-12 h-12 text-slate-400 mx-auto mb-2" />
-                    <p className="text-sm">No feedback records found for your assigned students</p>
-                    <p className="text-xs mt-0.5">Try adjusting your search filters</p>
+                  <div className="text-center py-8 text-slate-500 bg-white rounded-lg border border-slate-300">
+                    <GraduationCap className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                    <p className="text-sm">No feedback records found</p>
+                    <p className="text-xs mt-0.5">Try adjusting your filters</p>
                   </div>
+                ) : (
+                  feedback.map((f, index) => (
+                    <FeedbackCard key={f.id || index} feedback={f} />
+                  ))
+                )}
+              </div>
+
+              {/* Desktop View - Table */}
+              <div className="hidden lg:block">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="bg-white rounded-lg border border-slate-200 overflow-hidden"
+                >
+                  {feedback.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500">
+                      <GraduationCap className="w-12 h-12 text-slate-400 mx-auto mb-2" />
+                      <p className="text-sm">No feedback records found for your assigned students</p>
+                      <p className="text-xs mt-0.5">Try adjusting your search filters or select a different event</p>
+                    </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -418,7 +601,7 @@ export default function CoordinatorFeedback() {
                       <tbody className="divide-y divide-slate-200">
                         {feedback.map((f, index) => (
                           <motion.tr
-                            key={f.id}
+                            key={f.id || index}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: index * 0.05 }}
@@ -440,12 +623,12 @@ export default function CoordinatorFeedback() {
                               <div className="flex items-center gap-1">
                                 <Star className="w-3 h-3 text-amber-500" />
                                 <span className="text-sm font-semibold text-slate-800">
-                                  {f.marks}
+                                  {f.marks}/25
                                 </span>
                               </div>
                             </td>
                             <td className="py-2 px-3 text-sm text-slate-700 max-w-xs">
-                              <div className="line-clamp-2">{f.comments}</div>
+                              <div className="line-clamp-2">{f.comments || '-'}</div>
                             </td>
                             <td className="py-2 px-3 text-sm text-slate-500">
                               {new Date(f.submittedAt).toLocaleDateString()}
@@ -454,12 +637,13 @@ export default function CoordinatorFeedback() {
                         ))}
                       </tbody>
                     </table>
-                  </div>
-                )}
-              </motion.div>
-            </div>
-          </>
-        )}
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
