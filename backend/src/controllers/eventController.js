@@ -254,6 +254,7 @@ function normalizeSpecialEventRow(row) {
     college: row.college || row.College || row.COLLEGE || '',
     semester: row.semester || row.Semester || row.SEMESTER || '',
     password: row.password || row.Password || row.PASSWORD || '',
+    teacherid: (row.teacherid || row.teacherId || row.TeacherId || row.TEACHERID || row.teacher_id || row.coordinatorId || row.CoordinatorId || '').toString().trim(),
   };
 }
 
@@ -415,7 +416,9 @@ export async function createSpecialEvent(req, res) {
   const createdStudents = []; // For async email sending
 
   for (const row of normalizedRows) {
-    const { course, name, email, studentid, password, branch, college, semester } = row;
+    const { course, name, email, studentid, password, branch, college, semester, teacherid } = row;
+    // Derive teacher to assign: coordinator who created the event, otherwise CSV-provided teacherid
+    const effectiveTeacherId = (coordinatorId && String(coordinatorId)) || (teacherid || undefined);
 
     // Skip completely empty rows
     if (!email && !studentid && !name) continue;
@@ -487,6 +490,10 @@ export async function createSpecialEvent(req, res) {
           // SpecialStudent record exists - just add event if not already added
           if (!specialStudent.events.includes(event._id)) {
             specialStudent.events.push(event._id);
+            // Set/patch teacherId if provided
+            if (effectiveTeacherId && (!specialStudent.teacherId || specialStudent.teacherId !== effectiveTeacherId)) {
+              specialStudent.teacherId = effectiveTeacherId;
+            }
             await specialStudent.save();
             results.push({ 
               row: row.__row, 
@@ -519,6 +526,7 @@ export async function createSpecialEvent(req, res) {
             events: [event._id],
             passwordHash: existingUser.passwordHash,
             mustChangePassword: existingUser.mustChangePassword,
+            teacherId: effectiveTeacherId || undefined,
           });
           
           results.push({ 
@@ -552,6 +560,9 @@ export async function createSpecialEvent(req, res) {
         // SpecialStudent exists - add event if not already added
         if (!specialStudent.events.includes(event._id)) {
           specialStudent.events.push(event._id);
+          if (effectiveTeacherId && (!specialStudent.teacherId || specialStudent.teacherId !== effectiveTeacherId)) {
+            specialStudent.teacherId = effectiveTeacherId;
+          }
           await specialStudent.save();
           
           results.push({ 
@@ -597,6 +608,7 @@ export async function createSpecialEvent(req, res) {
           events: [event._id],
           passwordHash,
           mustChangePassword: true,
+          teacherId: effectiveTeacherId || undefined,
         });
         
         results.push({ row: row.__row, id: specialStudent._id, email, studentid, status: 'created' });
