@@ -8,6 +8,7 @@ import feedbackRoutes from './feedback.js';
 import coordinatorRoutes from './coordinators.js';
 import subjectRoutes from './subjects.js';
 import learningRoutes from './learning.js';
+import activityRoutes from './activity.js';
 
 const router = Router();
 router.use('/auth', authRoutes);
@@ -19,5 +20,6 @@ router.use('/feedback', feedbackRoutes);
 router.use('/coordinators', coordinatorRoutes);
 router.use('/subjects', subjectRoutes);
 router.use('/learning', learningRoutes);
+router.use('/activity', activityRoutes);
 
 export default router;

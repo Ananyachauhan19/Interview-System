@@ -539,9 +539,10 @@ export default function LearningDetail() {
                 )}
                 {(modalType === 'notes' || modalType === 'pdf') && (
                   <iframe
-                    src={modalContent}
+                    src={`${modalContent}#toolbar=0&navpanes=0&scrollbar=0`}
                     className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                     title="Document Viewer"
+                    sandbox="allow-scripts allow-same-origin"
                   />
                 )}
               </div>

@@ -24,6 +24,7 @@ import FeedbackReview from "./admin/FeedbackReview";
 import CoordinatorOnboarding from "./admin/CoordinatorOnboarding";
 import CoordinatorDirectory from "./admin/CoordinatorDirectory";
 import AdminChangePassword from "./admin/AdminChangePassword";
+import AdminActivity from "./admin/AdminActivity";
 import AdminProtectedRoute from "./admin/AdminProtectedRoute";
 import CoordinatorDashboard from "./coordinator/CoordinatorDashboard";
 import CoordinatorStudents from "./coordinator/CoordinatorStudents";
@@ -32,6 +33,7 @@ import CoordinatorEventDetail from "./coordinator/CoordinatorEventDetail";
 import CoordinatorProfile from "./coordinator/CoordinatorProfile";
 import SemesterManagement from "./coordinator/SemesterManagement";
 import CoordinatorFeedback from "./coordinator/CoordinatorFeedback";
+import CoordinatorActivity from "./coordinator/CoordinatorActivity";
 import CoordinatorProtectedRoute from "./coordinator/CoordinatorProtectedRoute";
 import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
 import { CoordinatorNavbar } from "./coordinator/CoordinatorNavbar";
@@ -91,6 +93,7 @@ function AppContent() {
         <Route path="/admin/change-password" element={<AdminProtectedRoute><AdminChangePassword /></AdminProtectedRoute>} />
         <Route path="/admin/learning" element={<AdminProtectedRoute><AdminLearning /></AdminProtectedRoute>} />
         <Route path="/admin/learning/:semester/:subject/:teacherId" element={<AdminProtectedRoute><AdminLearningDetail /></AdminProtectedRoute>} />
+        <Route path="/admin/activity" element={<AdminProtectedRoute><AdminActivity /></AdminProtectedRoute>} />
         
         {/* Coordinator Routes - Protected */}
         <Route path="/coordinator" element={<CoordinatorProtectedRoute><CoordinatorEventDetail /></CoordinatorProtectedRoute>} />
@@ -101,6 +104,7 @@ function AppContent() {
         <Route path="/coordinator/event/create" element={<CoordinatorProtectedRoute><EventManagement /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/profile" element={<CoordinatorProtectedRoute><CoordinatorProfile /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/change-password" element={<CoordinatorProtectedRoute><CoordinatorChangePassword /></CoordinatorProtectedRoute>} />
+        <Route path="/coordinator/activity" element={<CoordinatorProtectedRoute><CoordinatorActivity /></CoordinatorProtectedRoute>} />
       </Routes>
       
       {!isLoginPage && !isFeedbackForm && !isPublicPage && <Footer />}

@@ -10,6 +10,7 @@ import path from 'path';
 import { Readable } from 'stream';
 import { HttpError } from '../utils/errors.js';
 import { supabase } from '../utils/supabase.js';
+import { logActivity } from './adminActivityController.js';
 
 // Fisher-Yates shuffle algorithm for random array shuffling
 function shuffleArray(array) {
@@ -91,6 +92,19 @@ export async function updateEventJoinDisable(req, res) {
     event.joinDisableTime = joinDisableTime ? new Date(joinDisableTime) : null;
   }
   await event.save();
+  
+  // Log activity
+  logActivity({
+    userEmail: req.user.email,
+    userRole: req.user.role,
+    actionType: 'UPDATE',
+    targetType: 'EVENT',
+    targetId: event._id.toString(),
+    description: `Updated event join settings: ${event.name}`,
+    metadata: { joinDisabled: event.joinDisabled },
+    req
+  });
+  
   res.json(event);
 }
 
@@ -170,6 +184,18 @@ export async function createEvent(req, res) {
       allowedParticipants: finalAllowed,
       coordinatorId,
     });
+
+  // Log activity
+  logActivity({
+    userEmail: req.user.email,
+    userRole: req.user.role,
+    actionType: 'CREATE',
+    targetType: 'EVENT',
+    targetId: event._id.toString(),
+    description: `Created event: ${name}`,
+    metadata: { hasTemplate: !!tpl, coordinatorId },
+    req
+  });
   
   // Send response immediately - emails will be sent asynchronously
   res.status(201).json(event);
@@ -930,6 +956,19 @@ export async function exportJoinedCsv(req, res) {
   const header = 'name,email,studentId,course,branch,college\n';
   const rows = event.participants.map(s => [s.name, s.email, s.studentId, s.course, s.branch, s.college].join(','));
   const csv = header + rows.join('\n');
+
+  // Log activity
+  logActivity({
+    userEmail: req.user.email,
+    userRole: req.user.role,
+    actionType: 'EXPORT',
+    targetType: 'EVENT',
+    targetId: event._id.toString(),
+    description: `Exported ${event.participants.length} participants for event: ${event.name}`,
+    metadata: { eventId: event._id.toString(), participantCount: event.participants.length },
+    req
+  });
+
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', `attachment; filename="event_${event._id}_participants.csv"`);
   res.send(csv);

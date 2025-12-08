@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Lock, ChevronDown } from "lucide-react";
+import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Lock, ChevronDown, UserPlus, Database, Activity } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../utils/api";
 import DarkModeToggle from "./DarkModeToggle";
@@ -11,6 +11,8 @@ export function AdminNavbar() {
   const [active, setActive] = useState(location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
+  const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
   const [adminName, setAdminName] = useState(localStorage.getItem("adminName") || "Admin");
   const [adminEmail, setAdminEmail] = useState(localStorage.getItem("adminEmail") || "admin@example.com");
 
@@ -38,22 +40,30 @@ export function AdminNavbar() {
     fetchAdminProfile();
   }, []);
 
-  // Close mobile menu and profile dropdown when route changes
+  // Close mobile menu and all dropdowns when route changes
   useEffect(() => {
     setIsMenuOpen(false);
     setIsProfileOpen(false);
+    setIsAddMembersOpen(false);
+    setIsDatabaseOpen(false);
   }, [location.pathname]);
 
-  // Close profile dropdown on outside click (for desktop and mobile)
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isProfileOpen && !event.target.closest(".profile-container")) {
         setIsProfileOpen(false);
       }
+      if (isAddMembersOpen && !event.target.closest(".addmembers-container")) {
+        setIsAddMembersOpen(false);
+      }
+      if (isDatabaseOpen && !event.target.closest(".database-container")) {
+        setIsDatabaseOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isProfileOpen]);
+  }, [isProfileOpen, isAddMembersOpen, isDatabaseOpen]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -68,14 +78,20 @@ export function AdminNavbar() {
   };
 
   const navItems = [
-    { path: "/admin/onboarding", label: "Add Students", Icon: Users },
-    { path: "/admin/coordinators", label: "Add Coordinator", Icon: User },
-    { path: "/admin/coordinator-directory", label: "Coordinator Database", Icon: Users },
-    { path: "/admin/students", label: "Student Database", Icon: User },
     { path: "/admin/event", label: "Create Interview", Icon: CalendarDays },
     { path: "/admin/event/:id", label: "Scheduled Interviews", Icon: BookOpen },
     { path: "/admin/feedback", label: "Feedback Review", Icon: GraduationCap },
     { path: "/admin/learning", label: "Learning Modules", Icon: BookOpen },
+  ];
+
+  const addMembersItems = [
+    { path: "/admin/onboarding", label: "Add Students", Icon: Users },
+    { path: "/admin/coordinators", label: "Add Coordinator", Icon: User },
+  ];
+
+  const databaseItems = [
+    { path: "/admin/coordinator-directory", label: "Coordinator Database", Icon: Users },
+    { path: "/admin/students", label: "Student Database", Icon: User },
   ];
 
   // Animation variants
@@ -121,10 +137,10 @@ export function AdminNavbar() {
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm"
     >
-      <div className="w-full flex items-center justify-between h-14 px-3 sm:px-4">
-        {/* Brand Logo */}
+      <div className="w-full h-16 px-6 flex items-center justify-between">
+        {/* Left: Brand Logo */}
         <motion.div
-          className="hidden sm:flex items-center"
+          className="flex items-center min-w-[200px]"
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
         >
@@ -136,144 +152,253 @@ export function AdminNavbar() {
           />
         </motion.div>
 
-        {/* Center: Mobile Logo */}
-        <div className="flex-1 flex justify-center sm:hidden">
-          <img 
-            src="/images/logo.png" 
-            alt="PeerPrep Logo" 
-            className="w-auto object-contain"
-            style={{ height: '75px' }}
-          />
-        </div>
-
-        {/* Right Side: Desktop Navigation + Mobile Buttons */}
-        <div className="flex items-center gap-2">
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-0.5">
-            {navItems.map(({ path, label, Icon }) => {
-              const isActive = active === path || location.pathname === path || location.pathname.startsWith(path.replace(":id", ""));
-              return (
-                <Link
-                  key={path}
-                  to={path}
-                  onClick={() => setActive(path)}
-                  className="relative"
-                >
-                  <motion.div
-                    variants={itemHover}
-                    whileHover="hover"
-                    whileTap="tap"
-                    className={`flex items-center gap-1 px-2 py-1.5 rounded-md transition-colors ${
-                      isActive
-                        ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
-                        : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span className="font-medium text-[11px]">{label}</span>
-                    
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="absolute inset-0 border-2 border-white/40 dark:border-gray-600/40 rounded-xl"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                      />
-                    )}
-                  </motion.div>
-                </Link>
-              );
-            })}
-
-            {/* Dark Mode Toggle */}
-            <DarkModeToggle className="ml-1" />
-
-            {/* Desktop Profile Dropdown */}
-            <div className="relative ml-1.5 profile-container">
-              <motion.button
-                variants={itemHover}
-                whileHover="hover"
-                whileTap="tap"
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-gray-50 dark:bg-gray-800 hover:bg-sky-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all duration-200 border border-gray-200 dark:border-gray-700"
+        {/* Center: Desktop Navigation */}
+        <div className="hidden lg:flex items-center justify-center flex-1 gap-1">
+          {navItems.map(({ path, label, Icon }) => {
+            const isActive = active === path || location.pathname === path || location.pathname.startsWith(path.replace(":id", ""));
+            return (
+              <Link
+                key={path}
+                to={path}
+                onClick={() => setActive(path)}
+                className="relative"
               >
-                <div className="w-7 h-7 rounded-full bg-sky-500 flex items-center justify-center text-white font-semibold text-xs">
-                  {adminName.charAt(0).toUpperCase()}
-                </div>
-                <div className="text-left hidden lg:block">
-                  <div className="font-semibold text-[11px] text-slate-800 dark:text-gray-200">{adminName}</div>
-                  <div className="text-[9px] text-slate-500 dark:text-gray-400">Admin</div>
-                </div>
-                <ChevronDown className={`w-3 h-3 text-slate-500 dark:text-gray-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
-              </motion.button>
+                <motion.div
+                  variants={itemHover}
+                  whileHover="hover"
+                  whileTap="tap"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
+                      : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="font-medium text-sm whitespace-nowrap">{label}</span>
+                  
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeIndicator"
+                      className="absolute inset-0 border-2 border-sky-400/30 dark:border-sky-500/30 rounded-lg"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                </motion.div>
+              </Link>
+            );
+          })}
 
-              <AnimatePresence>
-                {isProfileOpen && (
-                  <motion.div
-                    variants={dropdownVariants}
-                    initial="closed"
-                    animate="open"
-                    exit="closed"
-                    className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-slate-200 dark:border-gray-700 overflow-hidden z-50"
-                  >
-                    {/* Profile Header */}
-                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-700 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold text-xs">
-                          {adminName.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-xs text-slate-900 dark:text-gray-100 truncate">{adminName}</div>
-                          <div className="text-[10px] text-slate-600 dark:text-gray-400 truncate">{adminEmail}</div>
-                        </div>
+          {/* Add Members Dropdown */}
+          <div className="relative addmembers-container">
+            <motion.button
+              variants={itemHover}
+              whileHover="hover"
+              whileTap="tap"
+              onClick={() => {
+                setIsAddMembersOpen(!isAddMembersOpen);
+                setIsDatabaseOpen(false);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                isAddMembersOpen || addMembersItems.some(item => location.pathname === item.path)
+                  ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
+                  : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+            >
+              <UserPlus className="w-4 h-4" />
+              <span className="font-medium text-sm whitespace-nowrap">Add Members</span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isAddMembersOpen ? 'rotate-180' : ''}`} />
+            </motion.button>
+
+            <AnimatePresence>
+              {isAddMembersOpen && (
+                <motion.div
+                  variants={dropdownVariants}
+                  initial="closed"
+                  animate="open"
+                  exit="closed"
+                  className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-slate-200 dark:border-gray-700 overflow-hidden z-50"
+                >
+                  {addMembersItems.map(({ path, label, Icon }) => (
+                    <Link
+                      key={path}
+                      to={path}
+                      onClick={() => {
+                        setActive(path);
+                        setIsAddMembersOpen(false);
+                      }}
+                      className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-gray-600 transition-colors">
+                        <Icon className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                       </div>
-                    </div>
-
-                    {/* Menu Items */}
-                    <div className="py-1.5">
-                      <Link
-                        to="/admin/change-password"
-                        onClick={() => setIsProfileOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-sky-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-gray-600 transition-colors">
-                          <Lock className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-xs font-medium">Change Password</div>
-                          <div className="text-[10px] text-slate-500 dark:text-gray-400">Update your account password</div>
-                        </div>
-                      </Link>
-
-                      <button
-                        onClick={() => {
-                          setIsProfileOpen(false);
-                          handleLogout();
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors group"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
-                          <LogOut className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <div className="text-xs font-medium text-red-600 dark:text-red-400">Logout</div>
-                          <div className="text-[10px] text-slate-500 dark:text-gray-400">Sign out of your account</div>
-                        </div>
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                      <span className="text-sm font-medium">{label}</span>
+                    </Link>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Mobile Profile */}
-          <div className="relative profile-container md:hidden">
+          {/* Database Dropdown */}
+          <div className="relative database-container">
+            <motion.button
+              variants={itemHover}
+              whileHover="hover"
+              whileTap="tap"
+              onClick={() => {
+                setIsDatabaseOpen(!isDatabaseOpen);
+                setIsAddMembersOpen(false);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                isDatabaseOpen || databaseItems.some(item => location.pathname === item.path)
+                  ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
+                  : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+            >
+              <Database className="w-4 h-4" />
+              <span className="font-medium text-sm whitespace-nowrap">Database</span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDatabaseOpen ? 'rotate-180' : ''}`} />
+            </motion.button>
+
+            <AnimatePresence>
+              {isDatabaseOpen && (
+                <motion.div
+                  variants={dropdownVariants}
+                  initial="closed"
+                  animate="open"
+                  exit="closed"
+                  className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-slate-200 dark:border-gray-700 overflow-hidden z-50"
+                >
+                  {databaseItems.map(({ path, label, Icon }) => (
+                    <Link
+                      key={path}
+                      to={path}
+                      onClick={() => {
+                        setActive(path);
+                        setIsDatabaseOpen(false);
+                      }}
+                      className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-gray-600 transition-colors">
+                        <Icon className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                      </div>
+                      <span className="text-sm font-medium">{label}</span>
+                    </Link>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Right: Dark Mode Toggle & Profile */}
+        <div className="hidden lg:flex items-center gap-3 min-w-[200px] justify-end">
+          {/* Dark Mode Toggle */}
+          <DarkModeToggle />
+
+          {/* Desktop Profile Dropdown */}
+          <div className="relative profile-container">
             <motion.button
               variants={itemHover}
               whileHover="hover"
               whileTap="tap"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-sky-500 text-white font-semibold text-xs shadow-md"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-sky-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all duration-200 border border-gray-200 dark:border-gray-700"
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                {adminName.charAt(0).toUpperCase()}
+              </div>
+              <div className="text-left">
+                <div className="font-semibold text-sm text-slate-800 dark:text-gray-200">{adminName}</div>
+                <div className="text-xs text-slate-500 dark:text-gray-400">Admin</div>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-slate-500 dark:text-gray-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
+            </motion.button>
+
+            <AnimatePresence>
+              {isProfileOpen && (
+                <motion.div
+                  variants={dropdownVariants}
+                  initial="closed"
+                  animate="open"
+                  exit="closed"
+                  className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-slate-200 dark:border-gray-700 overflow-hidden z-50"
+                >
+                  {/* Profile Header */}
+                  <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                        {adminName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm text-slate-900 dark:text-gray-100 truncate">{adminName}</div>
+                        <div className="text-xs text-slate-600 dark:text-gray-400 truncate">{adminEmail}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="py-2">
+                    <Link
+                      to="/admin/activity"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-purple-100 dark:group-hover:bg-gray-600 transition-colors">
+                        <Activity className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">Activity Log</div>
+                        <div className="text-xs text-slate-500 dark:text-gray-400">View your activity history</div>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/admin/change-password"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-gray-600 transition-colors">
+                        <Lock className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">Change Password</div>
+                        <div className="text-xs text-slate-500 dark:text-gray-400">Update your account password</div>
+                      </div>
+                    </Link>
+
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
+                        <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-medium text-red-600 dark:text-red-400">Logout</div>
+                        <div className="text-xs text-slate-500 dark:text-gray-400">Sign out of your account</div>
+                      </div>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Mobile: Profile + Menu Toggle */}
+        <div className="lg:hidden flex items-center gap-3">
+          {/* Mobile Profile */}
+          <div className="relative profile-container">
+            <motion.button
+              variants={itemHover}
+              whileHover="hover"
+              whileTap="tap"
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-white font-bold text-sm shadow-md"
             >
               {adminName.charAt(0).toUpperCase()}
             </motion.button>
@@ -288,31 +413,31 @@ export function AdminNavbar() {
                   className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-slate-200 dark:border-gray-700 overflow-hidden z-50"
                 >
                   {/* Profile Header */}
-                  <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-700 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold text-xs">
+                  <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
                         {adminName.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-xs text-slate-900 dark:text-gray-100 truncate">{adminName}</div>
-                        <div className="text-[10px] text-slate-600 dark:text-gray-400 truncate">{adminEmail}</div>
+                        <div className="font-semibold text-sm text-slate-900 dark:text-gray-100 truncate">{adminName}</div>
+                        <div className="text-xs text-slate-600 dark:text-gray-400 truncate">{adminEmail}</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Menu Items */}
-                  <div className="py-1.5">
+                  <div className="py-2">
                     <Link
                       to="/admin/change-password"
                       onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
+                      className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
                     >
-                      <div className="w-7 h-7 rounded-lg bg-sky-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-gray-600 transition-colors">
-                        <Lock className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                      <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-gray-600 transition-colors">
+                        <Lock className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                       </div>
                       <div className="flex-1">
-                        <div className="text-xs font-medium">Change Password</div>
-                        <div className="text-[10px] text-slate-500 dark:text-gray-400">Update your account password</div>
+                        <div className="text-sm font-medium">Change Password</div>
+                        <div className="text-xs text-slate-500 dark:text-gray-400">Update your account password</div>
                       </div>
                     </Link>
 
@@ -321,14 +446,14 @@ export function AdminNavbar() {
                         setIsProfileOpen(false);
                         handleLogout();
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors group"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors group"
                     >
-                      <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
-                        <LogOut className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                      <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
+                        <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
                       </div>
                       <div className="flex-1 text-left">
-                        <div className="text-xs font-medium text-red-600 dark:text-red-400">Logout</div>
-                        <div className="text-[10px] text-slate-500">Sign out of your account</div>
+                        <div className="text-sm font-medium text-red-600 dark:text-red-400">Logout</div>
+                        <div className="text-xs text-slate-500 dark:text-gray-400">Sign out of your account</div>
                       </div>
                     </button>
                   </div>
@@ -341,12 +466,12 @@ export function AdminNavbar() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={toggleMenu}
-            className="md:hidden flex items-center justify-center w-8 h-8 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 border border-gray-200 dark:border-gray-700"
+            className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 border border-gray-200 dark:border-gray-700"
           >
             {isMenuOpen ? (
-              <X className="text-gray-700 dark:text-gray-300 w-4 h-4" />
+              <X className="text-gray-700 dark:text-gray-300 w-5 h-5" />
             ) : (
-              <Menu className="text-gray-700 dark:text-gray-300 w-4 h-4" />
+              <Menu className="text-gray-700 dark:text-gray-300 w-5 h-5" />
             )}
           </motion.button>
         </div>
@@ -362,7 +487,7 @@ export function AdminNavbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={toggleMenu}
-              className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+              className="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
             />
             
             {/* Menu Content */}
@@ -371,7 +496,7 @@ export function AdminNavbar() {
               initial="closed"
               animate="open"
               exit="closed"
-              className="md:hidden fixed top-14 right-0 bottom-0 z-50 w-80 max-w-full"
+              className="lg:hidden fixed top-16 right-0 bottom-0 z-50 w-80 max-w-full"
             >
               <div className="bg-white dark:bg-gray-900 h-full rounded-l-2xl shadow-2xl border-l border-slate-200 dark:border-gray-700 p-4 flex flex-col">
                 {/* Mobile Menu Header */}
@@ -407,10 +532,77 @@ export function AdminNavbar() {
                       </Link>
                     );
                   })}
+
+                  {/* Add Members Section */}
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 px-2.5 py-1 text-gray-500 dark:text-gray-400">
+                      <UserPlus className="w-3 h-3" />
+                      <span className="text-[10px] font-semibold uppercase tracking-wider">Add Members</span>
+                    </div>
+                    {addMembersItems.map(({ path, label, Icon }) => {
+                      const isActive = active === path || location.pathname === path;
+                      return (
+                        <Link
+                          key={path}
+                          to={path}
+                          onClick={() => setActive(path)}
+                          className={`flex items-center gap-2 pl-5 pr-2.5 py-1.5 rounded-md transition-colors ${
+                            isActive
+                              ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
+                              : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          <span className="font-medium text-xs">{label}</span>
+                          {isActive && (
+                            <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+
+                  {/* Database Section */}
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 px-2.5 py-1 text-gray-500 dark:text-gray-400">
+                      <Database className="w-3 h-3" />
+                      <span className="text-[10px] font-semibold uppercase tracking-wider">Database</span>
+                    </div>
+                    {databaseItems.map(({ path, label, Icon }) => {
+                      const isActive = active === path || location.pathname === path;
+                      return (
+                        <Link
+                          key={path}
+                          to={path}
+                          onClick={() => setActive(path)}
+                          className={`flex items-center gap-2 pl-5 pr-2.5 py-1.5 rounded-md transition-colors ${
+                            isActive
+                              ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
+                              : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          <span className="font-medium text-xs">{label}</span>
+                          {isActive && (
+                            <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Mobile Menu Footer Actions */}
                 <div className="mt-auto space-y-1.5 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <Link
+                    to="/admin/activity"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-gray-800 transition-colors group"
+                  >
+                    <Activity className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                    <span className="font-medium text-xs">Activity Log</span>
+                  </Link>
+
                   <Link
                     to="/admin/change-password"
                     onClick={() => setIsMenuOpen(false)}

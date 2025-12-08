@@ -113,6 +113,15 @@ export default function SemesterManagement() {
       return;
     }
     
+    // Check for duplicate semester
+    const duplicate = semesters.find(
+      sem => sem.semesterName.toLowerCase() === newSemester.semesterName.trim().toLowerCase()
+    );
+    if (duplicate) {
+      toast.error('This learning module already exists');
+      return;
+    }
+    
     try {
       await api.createSemester(newSemester.semesterName, newSemester.semesterDescription);
       toast.success('Learning module added successfully');
@@ -427,6 +436,7 @@ function SubjectList({
   semester, loadSemesters, expandedSubjects, toggleSubject,
   expandedChapters, toggleChapter, semesters, setSemesters
 }) {
+  const toast = useToast();
   const [showAddSubject, setShowAddSubject] = useState(false);
   const [newSubject, setNewSubject] = useState({ subjectName: '', subjectDescription: '' });
 
@@ -435,6 +445,16 @@ function SubjectList({
       toast.error('Subject name is required');
       return;
     }
+    
+    // Check for duplicate subject
+    const duplicate = semester.subjects?.find(
+      sub => sub.subjectName.toLowerCase() === newSubject.subjectName.trim().toLowerCase()
+    );
+    if (duplicate) {
+      toast.error('A subject with this name already exists in this semester');
+      return;
+    }
+    
     try {
       await api.addSubject(semester._id, newSubject.subjectName, newSubject.subjectDescription);
       toast.success('Subject added successfully');
@@ -566,6 +586,7 @@ function SubjectList({
   );
 }
 function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, loadSemesters, expandedChapters, toggleChapter, semesters, setSemesters }) {
+  const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ ...subject });
   const [showAddChapter, setShowAddChapter] = useState(false);
@@ -595,6 +616,16 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
       toast.error('Chapter name is required');
       return;
     }
+    
+    // Check for duplicate chapter
+    const duplicate = subject.chapters?.find(
+      ch => ch.chapterName.toLowerCase() === newChapter.chapterName.trim().toLowerCase()
+    );
+    if (duplicate) {
+      toast.error('A chapter with this name already exists in this subject');
+      return;
+    }
+    
     try {
       await api.addChapter(semesterId, subject._id, newChapter.chapterName, newChapter.importanceLevel);
       toast.success('Chapter added');
@@ -800,6 +831,7 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
 }
 
 function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onDelete, loadSemesters, semesters, setSemesters }) {
+  const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ ...chapter });
   const [showAddTopic, setShowAddTopic] = useState(false);
@@ -829,6 +861,16 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
       toast.error('Topic name is required');
       return;
     }
+    
+    // Check for duplicate topic
+    const duplicate = chapter.topics?.find(
+      tp => tp.topicName.toLowerCase() === newTopic.topicName.trim().toLowerCase()
+    );
+    if (duplicate) {
+      toast.error('A topic with this name already exists in this chapter');
+      return;
+    }
+    
     try {
       console.log('[handleAddTopic] Creating FormData...');
       const formData = new FormData();
@@ -1101,6 +1143,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
 }
 
 function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSemesters }) {
+  const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ 
     topicName: topic.topicName, 

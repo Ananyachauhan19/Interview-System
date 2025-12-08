@@ -25,6 +25,28 @@ export async function changePassword(req, res) {
     await user.save();
   }
   
+  // Log activity
+  logActivity({
+    userEmail: user.email,
+    userRole: user.role,
+    actionType: 'UPDATE',
+    targetType: user.role === 'student' ? 'STUDENT' : 'COORDINATOR',
+    targetId: user._id.toString(),
+    description: `Changed password`,
+    metadata: {},
+    req
+  });
+  
+  // Log student activity for contribution calendar
+  if (user.role === 'student') {
+    logStudentActivity({
+      studentId: user._id,
+      studentModel: user.isSpecialStudent ? 'SpecialStudent' : 'User',
+      activityType: 'PASSWORD_CHANGED',
+      metadata: {}
+    });
+  }
+  
   res.json({ message: 'Password changed successfully' });
 }
 
@@ -54,6 +76,18 @@ export async function changeAdminPassword(req, res) {
   
   console.log(`[Admin Password Change] Password updated for admin: ${user.email}`);
   
+  // Log activity
+  logActivity({
+    userEmail: user.email,
+    userRole: user.role,
+    actionType: 'UPDATE',
+    targetType: 'ADMIN',
+    targetId: user._id.toString(),
+    description: `Changed admin password`,
+    metadata: {},
+    req
+  });
+  
   res.json({ message: 'Admin password changed successfully', email: user.email });
 }
 import User from '../models/User.js';
@@ -63,6 +97,8 @@ import { HttpError } from '../utils/errors.js';
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '../utils/mailer.js';
 import { uploadAvatar, deleteAvatar, isCloudinaryConfigured } from '../utils/cloudinary.js';
+import { logActivity } from './adminActivityController.js';
+import { logStudentActivity } from './activityController.js';
 
 export async function seedAdminIfNeeded() {
   const email = process.env.ADMIN_EMAIL;
@@ -132,6 +168,27 @@ export async function updateMe(req, res) {
   // Persist on underlying model (User or SpecialStudent)
   Object.assign(u, updates);
   await u.save();
+  
+  // Log activity
+  logActivity({
+    userEmail: u.email,
+    userRole: u.role,
+    actionType: 'UPDATE',
+    targetType: 'STUDENT',
+    targetId: u._id.toString(),
+    description: `Updated profile`,
+    metadata: updates,
+    req
+  });
+  
+  // Log student activity for contribution calendar
+  logStudentActivity({
+    studentId: u._id,
+    studentModel: u.isSpecialStudent ? 'SpecialStudent' : 'User',
+    activityType: 'PROFILE_UPDATED',
+    metadata: updates
+  });
+  
   res.json({ message: 'Profile updated', user: { _id: u._id, name: u.name, email: u.email, studentId: u.studentId, course: u.course, branch: u.branch, college: u.college } });
 }
 
@@ -165,6 +222,28 @@ export async function updateMyAvatar(req, res) {
     // Save on user document (works for User and SpecialStudent via req.user)
     u.avatarUrl = avatarUrl;
     await u.save();
+    
+    // Log activity
+    logActivity({
+      userEmail: u.email,
+      userRole: u.role,
+      actionType: 'UPDATE',
+      targetType: u.role === 'student' ? 'STUDENT' : u.role === 'coordinator' ? 'COORDINATOR' : 'ADMIN',
+      targetId: u._id.toString(),
+      description: `Updated avatar`,
+      metadata: {},
+      req
+    });
+    
+    // Log student activity for contribution calendar
+    if (u.role === 'student') {
+      logStudentActivity({
+        studentId: u._id,
+        studentModel: u.isSpecialStudent ? 'SpecialStudent' : 'User',
+        activityType: 'PROFILE_UPDATED',
+        metadata: { action: 'avatar_update' }
+      });
+    }
     
     res.json({ message: 'Avatar updated', avatarUrl });
   } catch (e) {
@@ -203,6 +282,15 @@ export async function login(req, res) {
       email: student.email,
       studentId: student.studentId
     });
+    
+    // Log student login activity
+    logStudentActivity({
+      studentId: student._id,
+      studentModel: 'User',
+      activityType: 'LOGIN',
+      metadata: { email: student.email }
+    });
+    
     return res.json({ token, user: sanitizeUser(student) });
   }
 
@@ -229,6 +317,14 @@ export async function login(req, res) {
       email: specialStudent.email,
       studentId: specialStudent.studentId
     });
+    // Log special student login activity
+    logStudentActivity({
+      studentId: specialStudent._id,
+      studentModel: 'SpecialStudent',
+      activityType: 'LOGIN',
+      metadata: { email: specialStudent.email }
+    });
+    
     return res.json({ 
       token, 
       user: {

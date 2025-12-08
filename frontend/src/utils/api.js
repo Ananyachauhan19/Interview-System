@@ -178,4 +178,8 @@ export const api = {
   getTopicProgress: (topicId) => request(`/learning/topic/${topicId}/progress`),
   getSubjectProgress: (subjectId) => request(`/learning/subject/${subjectId}/progress`),
   getStudentProgress: () => request('/learning/progress'),
+  
+  // Activity Tracking
+  getActivities: (queryString) => request(`/activity${queryString ? '?' + queryString : ''}`),
+  getActivityStats: () => request('/activity/stats'),
 };

@@ -4,6 +4,7 @@ import Event from '../models/Event.js';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { sendOnboardingEmail } from '../utils/mailer.js';
 import SpecialStudent from '../models/SpecialStudent.js';
+import { logActivity } from './adminActivityController.js';
 
 export async function listAllStudents(req, res) {
   try {
@@ -235,6 +236,21 @@ export async function uploadStudentsCsv(req, res) {
     }
   }
 
+  // Log activity for bulk student upload
+  const successCount = results.filter(r => r.status === 'created' || r.status === 'linked_from_special').length;
+  if (successCount > 0 && req.user) {
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'CREATE',
+      targetType: 'STUDENT',
+      targetId: 'bulk-upload',
+      description: `Uploaded ${successCount} students via CSV`,
+      metadata: { totalRows: rows.length, successCount, fileName: req.file?.originalname || 'unknown.csv' },
+      req
+    });
+  }
+
   // Send response immediately
   res.json({ count: results.length, results });
 
@@ -295,6 +311,18 @@ export async function createStudent(req, res) {
         password: defaultPassword,
       });
     }
+
+    // Log activity
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'CREATE',
+      targetType: 'STUDENT',
+      targetId: user._id.toString(),
+      description: `Created student: ${name} (${email})`,
+      metadata: { studentId: studentid, teacherId: teacherid },
+      req
+    });
 
     return res.status(201).json({ id: user._id, email: user.email, studentid: user.studentId, status: 'created' });
   } catch (err) {

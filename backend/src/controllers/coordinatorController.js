@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Event from '../models/Event.js';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
+import { logActivity } from './adminActivityController.js';
 
 export async function listAllCoordinators(req, res) {
   try {
@@ -140,6 +141,18 @@ export async function createCoordinator(req, res) {
         </div>`;
       await sendMail({ to: user.email, subject, html: renderTemplate(html, { name: user.name || 'Coordinator', coordinatorId: user.coordinatorId, email: user.email, password: defaultPassword }) });
     }
+
+    // Log activity
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'CREATE',
+      targetType: 'COORDINATOR',
+      targetId: user._id.toString(),
+      description: `Created coordinator: ${coordinatorName} (${coordinatorEmail})`,
+      metadata: { coordinatorId: coordinatorID },
+      req
+    });
 
     return res.status(201).json({ id: user._id, email: user.email, coordinatorID: user.coordinatorId, status: 'created' });
   } catch (err) {

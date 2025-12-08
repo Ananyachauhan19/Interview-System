@@ -2,6 +2,7 @@ import Semester from '../models/Subject.js';
 import { HttpError } from '../utils/errors.js';
 import { supabase } from '../utils/supabase.js';
 import { io } from '../server.js';
+import { logActivity } from './adminActivityController.js';
 
 // Get all semesters for a coordinator
 export async function listSemesters(req, res) {
@@ -69,6 +70,18 @@ export async function updateSemester(req, res) {
     
     await semester.save();
     
+    // Log activity
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'UPDATE',
+      targetType: 'SEMESTER',
+      targetId: semester._id.toString(),
+      description: `Updated semester: ${semester.semesterName}`,
+      metadata: { coordinatorId: semester.coordinatorId },
+      req
+    });
+    
     // Emit socket event for real-time update
     io.emit('learning-updated', { type: 'semester-updated', data: semester });
     
@@ -102,6 +115,18 @@ export async function deleteSemester(req, res) {
       console.log('Semester not found with filter:', { _id: id, ...ownerFilter });
       throw new HttpError(404, 'Semester not found or you do not have permission to delete it');
     }
+
+    // Log activity
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'DELETE',
+      targetType: 'SEMESTER',
+      targetId: id,
+      description: `Deleted semester: ${semester.semesterName}`,
+      metadata: { coordinatorId: semester.coordinatorId },
+      req
+    });
     
     // Emit socket event for real-time update
     io.emit('learning-updated', { type: 'semester-deleted', data: { id } });
@@ -198,6 +223,18 @@ export async function updateSubject(req, res) {
     
     await semester.save();
     
+    // Log activity
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'UPDATE',
+      targetType: 'SUBJECT',
+      targetId: subject._id.toString(),
+      description: `Updated subject: ${subject.subjectName}`,
+      metadata: { coordinatorId: semester.coordinatorId },
+      req
+    });
+    
     // Emit socket event for real-time update
     io.emit('learning-updated', { type: 'subject-updated', data: semester });
     
@@ -213,13 +250,28 @@ export async function updateSubject(req, res) {
 export async function deleteSubject(req, res) {
   try {
     const { semesterId, subjectId } = req.params;
-    const coordinatorId = req.user._id;
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
     
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
+
+    const subject = semester.subjects.id(subjectId);
+    const subjectName = subject ? subject.subjectName : subjectId;
     
     semester.subjects.pull(subjectId);
     await semester.save();
+
+    // Log activity
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'DELETE',
+      targetType: 'SUBJECT',
+      targetId: subjectId,
+      description: `Deleted subject: ${subjectName}`,
+      metadata: { coordinatorId: semester.coordinatorId },
+      req
+    });
     
     // Emit socket event for real-time update
     io.emit('learning-updated', { type: 'subject-deleted', data: semester });
@@ -320,6 +372,18 @@ export async function updateChapter(req, res) {
     
     await semester.save();
     
+    // Log activity
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'UPDATE',
+      targetType: 'CHAPTER',
+      targetId: chapter._id.toString(),
+      description: `Updated chapter: ${chapter.chapterName}`,
+      metadata: { coordinatorId: semester.coordinatorId },
+      req
+    });
+    
     // Emit socket event for real-time update
     io.emit('learning-updated', { type: 'chapter-updated', data: semester });
     
@@ -335,16 +399,31 @@ export async function updateChapter(req, res) {
 export async function deleteChapter(req, res) {
   try {
     const { semesterId, subjectId, chapterId } = req.params;
-    const coordinatorId = req.user._id;
+    const ownerFilter = req.user.role === 'coordinator' ? { coordinatorId: req.user.coordinatorId } : {};
     
-    const semester = await Semester.findOne({ _id: semesterId, coordinatorId });
+    const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
     const subject = semester.subjects.id(subjectId);
     if (!subject) throw new HttpError(404, 'Subject not found');
+
+    const chapter = subject.chapters.id(chapterId);
+    const chapterName = chapter ? chapter.chapterName : chapterId;
     
     subject.chapters.pull(chapterId);
     await semester.save();
+
+    // Log activity
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'DELETE',
+      targetType: 'CHAPTER',
+      targetId: chapterId,
+      description: `Deleted chapter: ${chapterName}`,
+      metadata: { coordinatorId: semester.coordinatorId },
+      req
+    });
     
     // Emit socket event for real-time update
     io.emit('learning-updated', { type: 'chapter-deleted', data: semester });
@@ -568,6 +647,18 @@ export async function updateTopic(req, res) {
     console.log('[updateTopic] Topic updated successfully');
     await semester.save();
     
+    // Log activity
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'UPDATE',
+      targetType: 'TOPIC',
+      targetId: topic._id.toString(),
+      description: `Updated topic: ${topic.topicName}`,
+      metadata: { coordinatorId: semester.coordinatorId },
+      req
+    });
+    
     // Emit socket event for real-time update
     io.emit('learning-updated', { type: 'topic-updated', data: semester });
     
@@ -592,9 +683,24 @@ export async function deleteTopic(req, res) {
     
     const chapter = subject.chapters.id(chapterId);
     if (!chapter) throw new HttpError(404, 'Chapter not found');
+
+    const topic = chapter.topics.id(topicId);
+    const topicName = topic ? topic.topicName : topicId;
     
     chapter.topics.pull(topicId);
     await semester.save();
+
+    // Log activity
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'DELETE',
+      targetType: 'TOPIC',
+      targetId: topicId,
+      description: `Deleted topic: ${topicName}`,
+      metadata: { coordinatorId: semester.coordinatorId },
+      req
+    });
     
     // Emit socket event for real-time update
     io.emit('learning-updated', { type: 'topic-deleted', data: semester });

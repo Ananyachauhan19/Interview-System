@@ -84,6 +84,16 @@ export default function SubjectManagement() {
       toast.error('Subject name is required');
       return;
     }
+    
+    // Check for duplicate subject name
+    const duplicate = subjects.find(
+      sub => sub.subjectName.toLowerCase() === newSubject.subjectName.trim().toLowerCase()
+    );
+    if (duplicate) {
+      toast.error('A subject with this name already exists');
+      return;
+    }
+    
     try {
       await api.createSubject(newSubject.subjectName, newSubject.subjectDescription);
       toast.success('Subject added successfully');
@@ -259,6 +269,16 @@ export default function SubjectManagement() {
         toast.error('Chapter name is required');
         return;
       }
+      
+      // Check for duplicate chapter name
+      const duplicate = chapters.find(
+        ch => ch.chapterName.toLowerCase() === newChapter.chapterName.trim().toLowerCase()
+      );
+      if (duplicate) {
+        toast.error('A chapter with this name already exists in this subject');
+        return;
+      }
+      
       try {
         await api.addChapter(subject._id, newChapter.chapterName, newChapter.importanceLevel);
         toast.success('Chapter added');
@@ -489,6 +509,16 @@ export default function SubjectManagement() {
         toast.error('Topic name is required');
         return;
       }
+      
+      // Check for duplicate topic name
+      const duplicate = topics.find(
+        tp => tp.topicName.toLowerCase() === newTopic.topicName.trim().toLowerCase()
+      );
+      if (duplicate) {
+        toast.error('A topic with this name already exists in this chapter');
+        return;
+      }
+      
       try {
         const formData = new FormData();
         formData.append('topicName', newTopic.topicName);

@@ -81,11 +81,19 @@ export default function CoordinatorOnboarding() {
                 </div>
               ))}
             </div>
-            <div className="flex gap-3 mt-4 justify-end">
+            <div className="flex gap-3 justify-end pt-4">
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { setShowForm(false); setMsg(''); }} className="px-4 py-2 bg-white dark:bg-gray-700 border border-slate-300 dark:border-gray-600 text-slate-700 dark:text-gray-200 text-sm font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-gray-600">Cancel</motion.button>
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={submit} disabled={!isValid() || loading} className={`px-4 py-2 text-white text-sm font-medium rounded-lg shadow-sm ${isValid() && !loading ? 'bg-sky-600 dark:bg-sky-600 hover:bg-sky-700 dark:hover:bg-sky-700' : 'bg-slate-400 dark:bg-gray-600 cursor-not-allowed'}`}>{loading ? 'Saving...' : 'Save Coordinator'}</motion.button>
             </div>
-            {msg && <p className="mt-3 text-sm text-slate-700 dark:text-gray-300">{msg}</p>}
+            {msg && (
+              <p className={`mt-3 text-sm font-medium ${
+                msg.toLowerCase().includes('exists') || msg.toLowerCase().includes('failed') || msg.toLowerCase().includes('error')
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-green-600 dark:text-green-400'
+              }`}>
+                {msg}
+              </p>
+            )}
           </div>
         )}
       </motion.div>

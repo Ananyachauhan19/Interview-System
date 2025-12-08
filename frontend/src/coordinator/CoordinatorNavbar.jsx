@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, Users, CalendarDays, User, Lock, ChevronDown, LayoutDashboard, BookOpen, MessageSquare } from "lucide-react";
+import { LogOut, Menu, X, Users, CalendarDays, User, Lock, ChevronDown, LayoutDashboard, BookOpen, MessageSquare, Activity } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../utils/api";
 import DarkModeToggle from "../components/DarkModeToggle";
@@ -162,6 +162,20 @@ export function CoordinatorNavbar() {
                       </Link>
 
                       <Link
+                        to="/coordinator/activity"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-purple-100 dark:group-hover:bg-gray-600">
+                          <Activity className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">Activity Log</div>
+                          <div className="text-xs text-slate-500 dark:text-gray-400">View your activity history</div>
+                        </div>
+                      </Link>
+
+                      <Link
                         to="/coordinator/change-password"
                         onClick={() => setIsProfileOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
@@ -236,6 +250,20 @@ export function CoordinatorNavbar() {
                       <div className="flex-1">
                         <div className="text-sm font-medium">Profile</div>
                         <div className="text-xs text-slate-500 dark:text-gray-400">View your profile</div>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/coordinator/activity"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-purple-100 dark:group-hover:bg-gray-600">
+                        <Activity className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">Activity Log</div>
+                        <div className="text-xs text-slate-500 dark:text-gray-400">View your activity history</div>
                       </div>
                     </Link>
 
