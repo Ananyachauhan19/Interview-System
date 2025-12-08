@@ -23,8 +23,7 @@ const progressSchema = new mongoose.Schema({
     required: true
   },
   coordinatorId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true
   },
   completed: {
