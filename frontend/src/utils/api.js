@@ -41,6 +41,13 @@ export const api = {
   updateEventJoinDisable: (eventId, joinDisabled, joinDisableTime) => request(`/events/${eventId}/join-disable`, { method: 'PATCH', body: { joinDisabled, joinDisableTime } }),
   // Auth (unified)
   me: () => request('/auth/me'),
+  updateMyProfile: (body) => request('/auth/me', { method: 'PUT', body }),
+  updateMyAvatar: (file) => {
+    const fd = new FormData();
+    fd.append('avatar', file);
+    return request('/auth/me/avatar', { method: 'PUT', formData: fd });
+  },
+  getStudentActivity: (year) => request(`/auth/activity${year ? '?year=' + year : ''}`),
   login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password } }),
   changePassword: (currentPassword, newPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword: newPassword } }),
   changeStudentPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
@@ -52,6 +59,7 @@ export const api = {
   listAllStudents: (search = '') => request(`/students/list${search ? '?search=' + encodeURIComponent(search) : ''}`),
   listAllSpecialStudents: (search = '') => request(`/students/special${search ? '?search=' + encodeURIComponent(search) : ''}`),
   listSpecialStudentsByEvent: (eventId) => request(`/students/special/${eventId}`),
+  getStudentActivityByAdmin: (studentId, year) => request(`/students/${studentId}/activity${year ? '?year=' + year : ''}`),
   checkStudentsCsv: (file) => {
     const fd = new FormData();
     fd.append('file', file);

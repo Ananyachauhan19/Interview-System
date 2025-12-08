@@ -184,6 +184,19 @@ export function StudentNavbar() {
                     {/* Menu Items */}
                     <div className="py-2">
                       <Link
+                        to="/student/profile"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
+                          <User className="w-4 h-4 text-sky-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">Profile</div>
+                          <div className="text-xs text-slate-500">View and edit your details</div>
+                        </div>
+                      </Link>
+                      <Link
                         to="/student/change-password"
                         onClick={() => setIsProfileOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
@@ -251,6 +264,19 @@ export function StudentNavbar() {
 
                   {/* Menu Items */}
                   <div className="py-2">
+                    <Link
+                      to="/student/profile"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
+                        <User className="w-4 h-4 text-sky-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">Profile</div>
+                        <div className="text-xs text-slate-500">View and edit your details</div>
+                      </div>
+                    </Link>
                     <Link
                       to="/student/change-password"
                       onClick={() => setIsProfileOpen(false)}

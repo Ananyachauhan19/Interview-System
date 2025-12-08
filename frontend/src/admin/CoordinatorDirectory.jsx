@@ -1,9 +1,10 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect, useMemo } from "react";
 import { api } from "../utils/api";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, Users, Loader2, X } from "lucide-react";
 import Fuse from "fuse.js";
+import ContributionCalendar from "../components/ContributionCalendar";
 
 export default function CoordinatorDirectory() {
   const [coordinators, setCoordinators] = useState([]);
@@ -11,6 +12,9 @@ export default function CoordinatorDirectory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedCoordinator, setSelectedCoordinator] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [activity, setActivity] = useState({});
 
   const fuse = useMemo(() => {
     return new Fuse(coordinators, {
@@ -63,6 +67,31 @@ export default function CoordinatorDirectory() {
   const clearSearch = () => {
     setSearchQuery("");
     setFiltered(coordinators);
+  };
+
+  const openCoordinatorProfile = (coordinator) => {
+    setSelectedCoordinator(coordinator);
+    setShowModal(true);
+    
+    // Generate placeholder activity data
+    const map = {};
+    const today = new Date();
+    for (let i = 0; i < 180; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const v = Math.random() < 0.25 ? Math.floor(Math.random() * 6) : 0;
+      if (v) map[key] = v;
+    }
+    setActivity(map);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setTimeout(() => {
+      setSelectedCoordinator(null);
+      setActivity({});
+    }, 300);
   };
 
   return (
@@ -154,7 +183,14 @@ export default function CoordinatorDirectory() {
               <p className="text-slate-500 text-sm">{searchQuery ? "Try adjusting your search query" : "No coordinators have been added yet"}</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <div>
+              <div className="mb-3 px-2">
+                <p className="text-sm text-slate-600 flex items-center gap-2">
+                  <span className="font-medium text-indigo-600">💡 Tip:</span>
+                  Click on a coordinator's name to view their detailed profile
+                </p>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
@@ -173,11 +209,24 @@ export default function CoordinatorDirectory() {
                       <tr key={c._id || c.email} className="hover:bg-slate-50">
                         <td className="px-4 py-2">
                           <div className="flex items-center gap-3 min-w-[220px]">
-                            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-sm">
-                              {initial}
-                            </div>
+                            {c.avatarUrl ? (
+                              <img 
+                                src={c.avatarUrl} 
+                                alt={c.name} 
+                                className="w-8 h-8 rounded-full object-cover border border-slate-200"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-sm">
+                                {initial}
+                              </div>
+                            )}
                             <div className="max-w-[280px]">
-                              <div className="font-medium text-slate-900 truncate text-sm">{c.name || "Unknown"}</div>
+                              <button
+                                onClick={() => openCoordinatorProfile(c)}
+                                className="font-medium text-slate-900 hover:text-indigo-600 truncate text-sm transition-colors text-left"
+                              >
+                                {c.name || "Unknown"}
+                              </button>
                               <div className="text-xs text-slate-500 truncate">{c.coordinatorId || "N/A"}</div>
                             </div>
                           </div>
@@ -207,9 +256,143 @@ export default function CoordinatorDirectory() {
                 </tbody>
               </table>
             </div>
+            </div>
           )}
         </div>
       </motion.div>
+
+      {/* Coordinator Profile Modal */}
+      <AnimatePresence>
+        {showModal && selectedCoordinator && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeModal}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+            
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={closeModal}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              >
+                {/* Header */}
+                <div className="sticky top-0 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {selectedCoordinator.avatarUrl ? (
+                      <img 
+                        src={selectedCoordinator.avatarUrl} 
+                        alt={selectedCoordinator.name} 
+                        className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-2xl border-2 border-white shadow-md">
+                        {selectedCoordinator.name?.charAt(0)?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="text-xl font-semibold text-slate-800">{selectedCoordinator.name || "Unknown"}</h3>
+                      <p className="text-sm text-slate-600">{selectedCoordinator.coordinatorId || "N/A"}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={closeModal}
+                    className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-600" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Personal Information */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Personal Information</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-slate-500">Name</label>
+                          <div className="mt-1 text-slate-800 font-medium">{selectedCoordinator.name || "-"}</div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500">Coordinator ID</label>
+                          <div className="mt-1 text-slate-800 font-medium">{selectedCoordinator.coordinatorId || "-"}</div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500">Email</label>
+                          <div className="mt-1 text-slate-800">{selectedCoordinator.email || "-"}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Statistics */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Statistics</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-slate-500">Events Created</label>
+                          {selectedCoordinator.eventsCreated ? (
+                            <div className="mt-1">
+                              <div className="text-slate-800 font-medium">{selectedCoordinator.eventsCreated.total} Total</div>
+                              <div className="text-xs text-slate-600">{selectedCoordinator.eventsCreated.regular} Regular, {selectedCoordinator.eventsCreated.special} Special</div>
+                            </div>
+                          ) : (
+                            <div className="mt-1 text-slate-800">0</div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500">Students Assigned</label>
+                          <div className="mt-1 text-slate-800 font-medium">{selectedCoordinator.studentsAssigned ?? 0}</div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500">Registered On</label>
+                          <div className="mt-1 text-slate-800">{selectedCoordinator.createdAt ? new Date(selectedCoordinator.createdAt).toLocaleDateString() : "-"}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Institution */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Institution</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-slate-500">Department</label>
+                          <div className="mt-1 text-slate-800">{selectedCoordinator.department || "-"}</div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500">College</label>
+                          <div className="mt-1 text-slate-800">{selectedCoordinator.college || "-"}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4 flex justify-end">
+                  <button
+                    onClick={closeModal}
+                    className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

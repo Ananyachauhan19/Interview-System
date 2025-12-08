@@ -31,7 +31,7 @@ export async function listAllStudents(req, res) {
     }
     
     const students = await User.find(query)
-      .select('name email studentId course branch college semester teacherId createdAt')
+      .select('name email studentId course branch college semester teacherId avatarUrl createdAt')
       .sort({ createdAt: -1 })
       .lean();
     
@@ -348,7 +348,7 @@ export async function listAllSpecialStudents(req, res) {
         path: 'events',
         select: 'name isSpecial coordinatorId'
       })
-      .select('name email studentId course branch college semester events createdAt teacherId')
+      .select('name email studentId course branch college semester events createdAt teacherId avatarUrl')
       .sort({ createdAt: -1 })
       .lean();
 

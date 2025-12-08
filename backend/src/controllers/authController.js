@@ -62,6 +62,7 @@ import { signToken } from '../utils/jwt.js';
 import { HttpError } from '../utils/errors.js';
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '../utils/mailer.js';
+import { uploadAvatar, deleteAvatar, isCloudinaryConfigured } from '../utils/cloudinary.js';
 
 export async function seedAdminIfNeeded() {
   const email = process.env.ADMIN_EMAIL;
@@ -86,8 +87,90 @@ export async function seedAdminIfNeeded() {
 export function me(req, res) {
   const u = req.user;
   if (!u) return res.status(401).json({ error: 'Unauthorized' });
-  // Limit fields returned
-  res.json({ _id: u._id, email: u.email, name: u.name, role: u.role, studentId: u.studentId });
+  // Return fields based on role
+  const response = { 
+    _id: u._id, 
+    email: u.email, 
+    name: u.name, 
+    role: u.role, 
+    avatarUrl: u.avatarUrl 
+  };
+  
+  // Add role-specific fields
+  if (u.role === 'student') {
+    response.studentId = u.studentId;
+    response.course = u.course;
+    response.branch = u.branch;
+    response.college = u.college;
+    response.teacherId = u.teacherId;
+    response.semester = u.semester;
+  } else if (u.role === 'coordinator') {
+    response.teacherId = u.coordinatorId; // Coordinators use coordinatorId as their teacherId
+    response.coordinatorId = u.coordinatorId;
+    response.department = u.department;
+    response.college = u.college;
+  }
+  
+  res.json(response);
+}
+
+// Update current student's profile (name, course, branch, college)
+export async function updateMe(req, res) {
+  const u = req.user;
+  if (!u) return res.status(401).json({ error: 'Unauthorized' });
+  // Only students (regular or special) can update profile
+  if (u.role !== 'student') return res.status(403).json({ error: 'Only students can update profile' });
+  const { name, course, branch, college } = req.body || {};
+  // Basic validation: strings only, trim
+  const trim = (v) => (typeof v === 'string' ? v.trim() : undefined);
+  const updates = {
+    ...(name !== undefined ? { name: trim(name) } : {}),
+    ...(course !== undefined ? { course: trim(course) } : {}),
+    ...(branch !== undefined ? { branch: trim(branch) } : {}),
+    ...(college !== undefined ? { college: trim(college) } : {}),
+  };
+  // Persist on underlying model (User or SpecialStudent)
+  Object.assign(u, updates);
+  await u.save();
+  res.json({ message: 'Profile updated', user: { _id: u._id, name: u.name, email: u.email, studentId: u.studentId, course: u.course, branch: u.branch, college: u.college } });
+}
+
+// Upload/update current user's avatar image
+export async function updateMyAvatar(req, res) {
+  const u = req.user;
+  if (!u) return res.status(401).json({ error: 'Unauthorized' });
+  if (u.role !== 'student' && u.role !== 'coordinator' && u.role !== 'admin') {
+    return res.status(403).json({ error: 'Not allowed' });
+  }
+  
+  const file = req.file; // expecting multer to populate
+  if (!file) throw new HttpError(400, 'Avatar file is required');
+  
+  if (!isCloudinaryConfigured()) {
+    throw new HttpError(500, 'Cloudinary not configured');
+  }
+  
+  // Determine folder based on role
+  const folder = u.role === 'student' ? 'student_profile' : 'teacher_profile';
+  
+  try {
+    // Delete old avatar if exists
+    if (u.avatarUrl) {
+      await deleteAvatar(u.avatarUrl);
+    }
+    
+    // Upload new avatar to Cloudinary
+    const avatarUrl = await uploadAvatar(file.buffer, folder, u._id.toString());
+    
+    // Save on user document (works for User and SpecialStudent via req.user)
+    u.avatarUrl = avatarUrl;
+    await u.save();
+    
+    res.json({ message: 'Avatar updated', avatarUrl });
+  } catch (e) {
+    console.error('[Avatar Upload Error]', e);
+    throw new HttpError(500, 'Failed to upload avatar: ' + (e.message || e));
+  }
 }
 
 // Unified login: accepts either admin email or student email / studentId as 'identifier' (or legacy 'email')

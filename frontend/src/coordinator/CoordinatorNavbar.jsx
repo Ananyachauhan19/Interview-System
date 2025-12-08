@@ -145,7 +145,21 @@ export function CoordinatorNavbar() {
 
                     <div className="py-2">
                       <Link
-                        to="/student/change-password"
+                        to="/coordinator/profile"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100">
+                          <User className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">Profile</div>
+                          <div className="text-xs text-slate-500">View your profile</div>
+                        </div>
+                      </Link>
+
+                      <Link
+                        to="/coordinator/change-password"
                         onClick={() => setIsProfileOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
                       >
@@ -209,7 +223,21 @@ export function CoordinatorNavbar() {
 
                   <div className="py-2">
                     <Link
-                      to="/student/change-password"
+                      to="/coordinator/profile"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100">
+                        <User className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">Profile</div>
+                        <div className="text-xs text-slate-500">View your profile</div>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/coordinator/change-password"
                       onClick={() => setIsProfileOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
                     >

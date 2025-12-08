@@ -1,9 +1,10 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect, useMemo } from "react";
 import { api } from "../utils/api";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, Users, Loader2, X } from "lucide-react";
 import Fuse from "fuse.js";
+import ContributionCalendar from "../components/ContributionCalendar";
 
 export default function StudentDirectory() {
   const [students, setStudents] = useState([]);
@@ -13,6 +14,13 @@ export default function StudentDirectory() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("students"); // "students" or "special"
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [activity, setActivity] = useState({});
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [availableYears, setAvailableYears] = useState([]);
+  const [activityStats, setActivityStats] = useState(null);
+  const [loadingActivity, setLoadingActivity] = useState(false);
 
   // Configure Fuse.js for optimized fuzzy search
   const currentStudents = activeTab === "students" ? students : specialStudents;
@@ -92,6 +100,51 @@ export default function StudentDirectory() {
   const clearSearch = () => {
     setSearchQuery("");
     loadData();
+  };
+
+  const openStudentProfile = async (student) => {
+    setSelectedStudent(student);
+    setShowModal(true);
+    setSelectedYear(new Date().getFullYear());
+    
+    // Load real activity data for current year
+    await loadStudentActivity(student._id, new Date().getFullYear());
+  };
+
+  const loadStudentActivity = async (studentId, year) => {
+    setLoadingActivity(true);
+    try {
+      const data = await api.getStudentActivityByAdmin(studentId, year);
+      setActivity(data.activityByDate || {});
+      setAvailableYears(data.availableYears || []);
+      setActivityStats(data.stats || null);
+    } catch (e) {
+      console.error('Failed to load student activity:', e);
+      // Fall back to empty activity
+      setActivity({});
+      setAvailableYears([]);
+      setActivityStats(null);
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  const handleYearChange = async (year) => {
+    setSelectedYear(year);
+    if (selectedStudent && selectedStudent._id) {
+      await loadStudentActivity(selectedStudent._id, year);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setTimeout(() => {
+      setSelectedStudent(null);
+      setActivity({});
+      setAvailableYears([]);
+      setActivityStats(null);
+      setSelectedYear(new Date().getFullYear());
+    }, 300);
   };
 
   return (
@@ -226,7 +279,14 @@ export default function StudentDirectory() {
             </div>
           ) : (
             // Students Table (no tabs, clear and scannable)
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <div>
+              <div className="mb-3 px-2">
+                <p className="text-sm text-slate-600 flex items-center gap-2">
+                  <span className="font-medium text-sky-600">💡 Tip:</span>
+                  Click on a student's name to view their detailed profile
+                </p>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
@@ -247,13 +307,26 @@ export default function StudentDirectory() {
                       <tr key={s._id} className="hover:bg-slate-50">
                         <td className="px-4 py-2">
                           <div className="flex items-center gap-3 min-w-[220px]">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                              activeTab === "students" ? "bg-sky-100 text-sky-700" : "bg-indigo-100 text-indigo-700"
-                            }`}>
-                              {initial}
-                            </div>
+                            {s.avatarUrl ? (
+                              <img 
+                                src={s.avatarUrl} 
+                                alt={s.name} 
+                                className="w-8 h-8 rounded-full object-cover border border-slate-200"
+                              />
+                            ) : (
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                                activeTab === "students" ? "bg-sky-100 text-sky-700" : "bg-indigo-100 text-indigo-700"
+                              }`}>
+                                {initial}
+                              </div>
+                            )}
                             <div className="max-w-[280px]">
-                              <div className="font-medium text-slate-900 truncate text-sm">{s.name || "Unknown"}</div>
+                              <button
+                                onClick={() => openStudentProfile(s)}
+                                className="font-medium text-slate-900 hover:text-sky-600 truncate text-sm transition-colors text-left"
+                              >
+                                {s.name || "Unknown"}
+                              </button>
                               <div className="text-xs text-slate-500 truncate">{s.studentId || "N/A"}</div>
                             </div>
                           </div>
@@ -271,9 +344,182 @@ export default function StudentDirectory() {
                 </tbody>
               </table>
             </div>
+            </div>
           )}
         </div>
       </motion.div>
+
+      {/* Student Profile Modal */}
+      <AnimatePresence>
+        {showModal && selectedStudent && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeModal}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+            
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={closeModal}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              >
+                {/* Header */}
+                <div className="sticky top-0 bg-gradient-to-r from-sky-50 to-blue-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {selectedStudent.avatarUrl ? (
+                      <img 
+                        src={selectedStudent.avatarUrl} 
+                        alt={selectedStudent.name} 
+                        className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold text-2xl border-2 border-white shadow-md">
+                        {selectedStudent.name?.charAt(0)?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="text-xl font-semibold text-slate-800">{selectedStudent.name || "Unknown"}</h3>
+                      <p className="text-sm text-slate-600">{selectedStudent.studentId || "N/A"}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={closeModal}
+                    className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-600" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Personal Information */}
+                    <div>
+                     
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-slate-500">Name</label>
+                          <div className="mt-1 text-slate-800 font-medium">{selectedStudent.name || "-"}</div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500">Student ID</label>
+                          <div className="mt-1 text-slate-800 font-medium">{selectedStudent.studentId || "-"}</div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500">Email</label>
+                          <div className="mt-1 text-slate-800">{selectedStudent.email || "-"}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Academic Information */}
+                    <div>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-slate-500">Course</label>
+                          <div className="mt-1 text-slate-800 font-medium">{selectedStudent.course || "-"}</div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500">Branch</label>
+                          <div className="mt-1 text-slate-800 font-medium">{selectedStudent.branch || "-"}</div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500">Semester</label>
+                          <div className="mt-1 text-slate-800">{selectedStudent.semester || "-"}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* College Information */}
+                    <div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-slate-500">College</label>
+                          <div className="mt-1 text-slate-800">{selectedStudent.college || "-"}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Assignment Information */}
+                    <div>
+             
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-slate-500">Coordinator Assigned</label>
+                          <div className="mt-1 text-slate-800">{selectedStudent.teacherId || "Not Assigned"}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Info for Special Students */}
+                  {activeTab === "special" && (
+                    <div className="mt-6 pt-6 border-t border-slate-200">
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Special Event Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedStudent.eventId && (
+                          <div>
+                            <label className="text-xs text-slate-500">Event ID</label>
+                            <div className="mt-1 text-slate-800">{selectedStudent.eventId}</div>
+                          </div>
+                        )}
+                        {selectedStudent.semester && (
+                          <div>
+                            <label className="text-xs text-slate-500">Event Semester</label>
+                            <div className="mt-1 text-slate-800">{selectedStudent.semester}</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Contribution Calendar */}
+                  <div className="mt-6 pt-6 border-t border-slate-200">
+                    <div className="rounded-lg p-4 bg-slate-50 border border-slate-200">
+                      {loadingActivity ? (
+                        <div className="text-center py-8 text-slate-500">Loading activity...</div>
+                      ) : (
+                        <ContributionCalendar 
+                          activityByDate={activity} 
+                          title="Student Activity"
+                          year={selectedYear}
+                          availableYears={availableYears}
+                          onYearChange={handleYearChange}
+                          showYearFilter={true}
+                          stats={activityStats}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4 flex justify-end">
+                  <button
+                    onClick={closeModal}
+                    className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

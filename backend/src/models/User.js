@@ -12,10 +12,12 @@ const userSchema = new mongoose.Schema({
   mustChangePassword: { type: Boolean, default: false },
   course: String,
   branch: String,
+  department: String, // For coordinators
   college: String,
   semester: { type: Number, min: 1, max: 8 }, // Required for students: current semester (1-8)
   passwordResetToken: String,
   passwordResetExpires: Date,
+  avatarUrl: String, // Profile picture URL
 }, { timestamps: true });
 
 userSchema.methods.verifyPassword = async function (pw) {

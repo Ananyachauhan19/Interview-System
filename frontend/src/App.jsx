@@ -11,6 +11,7 @@ import SessionAndFeedback from "./student/SessionAndFeedback";
 import FeedbackForm from "./student/FeedbackForm";
 import StudentLearning from "./student/StudentLearning";
 import LearningDetail from "./student/LearningDetail";
+import StudentProfile from "./student/StudentProfile";
 import StudentProtectedRoute from "./student/StudentProtectedRoute";
 import AdminDashboard from "./admin/AdminDashboard";
 import AdminLearning from "./admin/AdminLearning";
@@ -28,6 +29,7 @@ import CoordinatorDashboard from "./coordinator/CoordinatorDashboard";
 import CoordinatorStudents from "./coordinator/CoordinatorStudents";
 import CoordinatorChangePassword from "./coordinator/CoordinatorChangePassword";
 import CoordinatorEventDetail from "./coordinator/CoordinatorEventDetail";
+import CoordinatorProfile from "./coordinator/CoordinatorProfile";
 import SemesterManagement from "./coordinator/SemesterManagement";
 import CoordinatorFeedback from "./coordinator/CoordinatorFeedback";
 import CoordinatorProtectedRoute from "./coordinator/CoordinatorProtectedRoute";
@@ -70,6 +72,7 @@ function AppContent() {
         
         {/* Student Routes - Protected */}
         <Route path="/student/change-password" element={<StudentProtectedRoute><ChangePassword /></StudentProtectedRoute>} />
+        <Route path="/student/profile" element={<StudentProtectedRoute><StudentProfile /></StudentProtectedRoute>} />
         <Route path="/student/dashboard" element={<StudentProtectedRoute><StudentDashboard /></StudentProtectedRoute>} />
         <Route path="/student/session" element={<StudentProtectedRoute><SessionAndFeedback /></StudentProtectedRoute>} />
         <Route path="/student/feedback/:pairId" element={<StudentProtectedRoute><FeedbackForm /></StudentProtectedRoute>} />
@@ -96,6 +99,7 @@ function AppContent() {
         <Route path="/coordinator/subjects" element={<CoordinatorProtectedRoute><SemesterManagement /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/feedback" element={<CoordinatorProtectedRoute><CoordinatorFeedback /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/event/create" element={<CoordinatorProtectedRoute><EventManagement /></CoordinatorProtectedRoute>} />
+        <Route path="/coordinator/profile" element={<CoordinatorProtectedRoute><CoordinatorProfile /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/change-password" element={<CoordinatorProtectedRoute><CoordinatorChangePassword /></CoordinatorProtectedRoute>} />
       </Routes>
       
