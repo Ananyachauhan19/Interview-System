@@ -47,7 +47,7 @@ export const api = {
     fd.append('avatar', file);
     return request('/auth/me/avatar', { method: 'PUT', formData: fd });
   },
-  getStudentActivity: (year) => request(`/auth/activity${year ? '?year=' + year : ''}`),
+  getStudentActivity: () => request('/auth/activity'),
   login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password } }),
   changePassword: (currentPassword, newPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword: newPassword } }),
   changeStudentPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
@@ -59,7 +59,7 @@ export const api = {
   listAllStudents: (search = '') => request(`/students/list${search ? '?search=' + encodeURIComponent(search) : ''}`),
   listAllSpecialStudents: (search = '') => request(`/students/special${search ? '?search=' + encodeURIComponent(search) : ''}`),
   listSpecialStudentsByEvent: (eventId) => request(`/students/special/${eventId}`),
-  getStudentActivityByAdmin: (studentId, year) => request(`/students/${studentId}/activity${year ? '?year=' + year : ''}`),
+  getStudentActivityByAdmin: (studentId) => request(`/students/${studentId}/activity`),
   checkStudentsCsv: (file) => {
     const fd = new FormData();
     fd.append('file', file);

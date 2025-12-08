@@ -1,52 +1,39 @@
 import Pair from '../models/Pair.js';
 import Progress from '../models/Progress.js';
-import Semester from '../models/Subject.js';
 import User from '../models/User.js';
 import SpecialStudent from '../models/SpecialStudent.js';
-import StudentActivity from '../models/StudentActivity.js';
-import Subject from '../models/Subject.js';
 import { HttpError } from '../utils/errors.js';
 
 /**
- * Log student activity for contribution calendar
- */
-export async function logStudentActivity({ studentId, studentModel, activityType, metadata = {} }) {
-  try {
-    await StudentActivity.create({
-      studentId,
-      studentModel,
-      activityType,
-      metadata,
-      date: new Date()
-    });
-  } catch (error) {
-    console.error('[Log Student Activity Error]', error);
-    // Non-blocking - don't throw error
-  }
-}
-
-/**
- * Get student activity data for contribution calendar with comprehensive stats
+ * Get student activity data for contribution calendar
+ * Aggregates:
+ * - Sessions scheduled (finalConfirmedTime set)
+ * - Course completions (completed topics)
+ * Returns counts grouped by date
  */
 export async function getStudentActivity(req, res) {
   const user = req.user;
   if (!user) throw new HttpError(401, 'Unauthorized');
   if (user.role !== 'student') throw new HttpError(403, 'Only students can access activity data');
 
-  const { year } = req.query;
-  const targetYear = year ? parseInt(year) : new Date().getFullYear();
+  // Always use rolling 365-day window ending today
+  const endDate = new Date();
+  endDate.setHours(23, 59, 59, 999);
   
-  // Date range for the specified year
-  const startDate = new Date(targetYear, 0, 1);
-  const endDate = new Date(targetYear, 11, 31, 23, 59, 59);
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - 364); // 365 days including today
+  startDate.setHours(0, 0, 0, 0);
 
   try {
-    // 1. Get all student activities from StudentActivity collection
-    const activities = await StudentActivity.aggregate([
+    // 1. Get scheduled sessions (pairs with finalConfirmedTime)
+    const scheduledSessions = await Pair.aggregate([
       {
         $match: {
-          studentId: user._id,
-          date: {
+          $or: [
+            { interviewer: user._id, interviewerModel: user.isSpecialStudent ? 'SpecialStudent' : 'User' },
+            { interviewee: user._id, intervieweeModel: user.isSpecialStudent ? 'SpecialStudent' : 'User' }
+          ],
+          finalConfirmedTime: { 
             $gte: startDate,
             $lte: endDate
           }
@@ -55,226 +42,110 @@ export async function getStudentActivity(req, res) {
       {
         $group: {
           _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$date' }
+            $dateToString: { format: '%Y-%m-%d', date: '$finalConfirmedTime' }
           },
           count: { $sum: 1 }
         }
       }
     ]);
 
-<<<<<<< Updated upstream
-    // 3. Merge activity data (sessions + completions)
-||||||| Stash base
-    // 3. Merge activity data
-=======
-    // 2. Merge activity data
->>>>>>> Stashed changes
-    const activityMap = {};
-    activities.forEach(item => {
-      activityMap[item._id] = item.count;
-    });
-
-    // 3. Calculate streaks
-    const sortedDates = Object.keys(activityMap).sort();
-    let currentStreak = 0;
-    let bestStreak = 0;
-    let tempStreak = 0;
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Calculate best streak
-    for (let i = 0; i < sortedDates.length; i++) {
-      if (i === 0) {
-        tempStreak = 1;
-      } else {
-        const prevDate = new Date(sortedDates[i - 1]);
-        const currDate = new Date(sortedDates[i]);
-        const diffDays = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 1) {
-          tempStreak++;
-        } else {
-          bestStreak = Math.max(bestStreak, tempStreak);
-          tempStreak = 1;
-        }
-      }
-    }
-    bestStreak = Math.max(bestStreak, tempStreak);
-
-    // Calculate current streak (working backwards from today)
-    if (sortedDates.length > 0) {
-      const todayOrYesterday = [today, new Date(Date.now() - 86400000).toISOString().split('T')[0]];
-      if (todayOrYesterday.includes(sortedDates[sortedDates.length - 1])) {
-        currentStreak = 1;
-        for (let i = sortedDates.length - 2; i >= 0; i--) {
-          const currDate = new Date(sortedDates[i + 1]);
-          const prevDate = new Date(sortedDates[i]);
-          const diffDays = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
-          if (diffDays === 1) {
-            currentStreak++;
-          } else {
-            break;
-          }
-        }
-      }
-    }
-
-    // 4. Get total videos watched (all time)
-    const videoWatchCount = await StudentActivity.countDocuments({
-      studentId: user._id,
-      activityType: 'VIDEO_WATCH'
-    });
-
-    // 5. Get total problems solved (all time)
-    const problemsSolvedCount = await StudentActivity.countDocuments({
-      studentId: user._id,
-      activityType: 'PROBLEM_SOLVED'
-    });
-
-<<<<<<< Updated upstream
-    // 3b. Aggregate learning engagement: video watched seconds per day (based on lastAccessedAt)
-    const videoByDay = await Progress.aggregate([
+    // 2. Get completed topics (learning progress)
+    const completedTopics = await Progress.aggregate([
       {
         $match: {
           studentId: user._id,
-          lastAccessedAt: { $gte: startDate, $lte: endDate }
+          completed: true,
+          completedAt: {
+            $gte: startDate,
+            $lte: endDate
+          }
         }
       },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$lastAccessedAt' } },
-          seconds: { $sum: '$videoWatchedSeconds' }
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$completedAt' }
+          },
+          count: { $sum: 1 }
         }
       }
     ]);
 
-    // Optionally reflect time spent into calendar intensity by converting seconds into activity units
-    // Here, treat each 30 minutes (~1800s) watched as 1 activity unit
-    videoByDay.forEach(item => {
-      const date = item._id;
-      const units = Math.floor((item.seconds || 0) / 1800);
-      if (units > 0) {
-        if (!activityMap[date]) activityMap[date] = 0;
-        activityMap[date] += units;
-      }
-    });
-
-    // 4. Get available years (years when user was active)
-||||||| Stash base
-    // 4. Get available years (years when user was active)
-=======
-    // 6. Get total subjects enrolled
-    // Find all semesters with student's coordinatorId (teacherId)
-    const coordinator = user.teacherId;
-    let totalSubjects = 0;
+    // 3. Merge activity data
+    const activityMap = {};
     
-    if (coordinator) {
-      const semesters = await Subject.find({ coordinatorId: coordinator });
-      semesters.forEach(semester => {
-        totalSubjects += semester.subjects?.length || 0;
-      });
-    }
+    scheduledSessions.forEach(item => {
+      const date = item._id;
+      if (!activityMap[date]) activityMap[date] = 0;
+      activityMap[date] += item.count;
+    });
 
-    // 7. Get available years
->>>>>>> Stashed changes
-    const userCreatedYear = user.createdAt ? new Date(user.createdAt).getFullYear() : targetYear;
-    const currentYear = new Date().getFullYear();
-    const availableYears = [];
-    for (let y = userCreatedYear; y <= currentYear; y++) {
-      availableYears.push(y);
-    }
+    completedTopics.forEach(item => {
+      const date = item._id;
+      if (!activityMap[date]) activityMap[date] = 0;
+      activityMap[date] += item.count;
+    });
 
-    // 5. Compute stats: active days, streaks, totals
-    const isLeap = (targetYear % 4 === 0 && targetYear % 100 !== 0) || (targetYear % 400 === 0);
-    const totalDaysInYear = isLeap ? 366 : 365;
-    const activeDays = Object.keys(activityMap).filter(d => activityMap[d] > 0).length;
+    // Calculate streaks
+    const calculateStreaks = () => {
+      const sortedDates = Object.keys(activityMap).sort();
+      if (sortedDates.length === 0) return { currentStreak: 0, bestStreak: 0 };
 
-    // Streaks
-    const datesSorted = Object.keys(activityMap)
-      .filter(d => activityMap[d] > 0)
-      .sort();
-    let currentStreak = 0;
-    let bestStreak = 0;
-    let prevDate = null;
-    datesSorted.forEach(d => {
-      const cur = new Date(d + 'T00:00:00Z');
-      if (prevDate) {
-        const nextOfPrev = new Date(prevDate);
-        nextOfPrev.setUTCDate(nextOfPrev.getUTCDate() + 1);
-        if (nextOfPrev.toISOString().slice(0,10) === d) {
-          currentStreak += 1;
+      let currentStreak = 0;
+      let bestStreak = 0;
+      let tempStreak = 0;
+      
+      // Check from end date backwards for current streak
+      let checkDate = new Date(endDate);
+      while (checkDate >= startDate) {
+        const dateStr = checkDate.toISOString().slice(0, 10);
+        if (activityMap[dateStr] && activityMap[dateStr] > 0) {
+          currentStreak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else if (currentStreak > 0) {
+          break;
         } else {
-          currentStreak = 1;
+          checkDate.setDate(checkDate.getDate() - 1);
         }
-      } else {
-        currentStreak = 1;
       }
-      prevDate = cur;
-      if (currentStreak > bestStreak) bestStreak = currentStreak;
-    });
 
-    // Curriculum totals based on student's semester: number of subjects and total videos
-    const allSemesters = await Semester.find().select('semesterName subjects');
-    const studentSemNum = typeof user.semester === 'number' ? user.semester : null;
-    const filteredSemesters = allSemesters.filter(sem => {
-      if (studentSemNum == null) return true;
-      const m = String(sem.semesterName || '').match(/\d+/);
-      if (!m) return true; // include if not parseable
-      const num = parseInt(m[0]);
-      return num <= studentSemNum;
-    });
+      // Calculate best streak
+      let prevDate = null;
+      for (const dateStr of sortedDates) {
+        const currentDate = new Date(dateStr);
+        if (prevDate) {
+          const dayDiff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
+          if (dayDiff === 1) {
+            tempStreak++;
+          } else {
+            bestStreak = Math.max(bestStreak, tempStreak);
+            tempStreak = 1;
+          }
+        } else {
+          tempStreak = 1;
+        }
+        prevDate = currentDate;
+      }
+      bestStreak = Math.max(bestStreak, tempStreak);
 
-    let totalCoursesEnrolled = 0;
-    let totalVideosTotal = 0;
-    filteredSemesters.forEach(sem => {
-      (sem.subjects || []).forEach(sub => {
-        totalCoursesEnrolled += 1;
-        (sub.chapters || []).forEach(ch => {
-          (ch.topics || []).forEach(tp => {
-            if (tp && tp.topicVideoLink) totalVideosTotal += 1;
-          });
-        });
-      });
-    });
+      return { currentStreak, bestStreak };
+    };
 
-    // Videos watched vs total (within selected year for watched, total from curriculum)
-    const videosWatchedAgg = await Progress.aggregate([
-      { $match: { studentId: user._id, lastAccessedAt: { $gte: startDate, $lte: endDate }, videoWatchedSeconds: { $gt: 0 } } },
-      { $group: { _id: '$topicId' } }
-    ]);
-    const totalVideosWatched = videosWatchedAgg.length;
-
-    const totalProblemsSolved = completedTopics.reduce((sum, item) => sum + item.count, 0);
+    const { currentStreak, bestStreak } = calculateStreaks();
+    const totalActiveDays = Object.keys(activityMap).length;
 
     res.json({
       activityByDate: activityMap,
-      year: targetYear,
-      availableYears,
+      startDate: startDate.toISOString().slice(0, 10),
+      endDate: endDate.toISOString().slice(0, 10),
       stats: {
-<<<<<<< Updated upstream
-        totalDaysInYear,
-        totalActiveDays: activeDays,
+        totalActiveDays,
+        totalDaysInRange: 365,
         currentStreak,
         bestStreak,
         totalSessions: scheduledSessions.reduce((sum, item) => sum + item.count, 0),
         totalCompletions: completedTopics.reduce((sum, item) => sum + item.count, 0),
-        totalActivities: Object.values(activityMap).reduce((sum, val) => sum + val, 0),
-        totalCoursesEnrolled,
-        totalVideosWatched,
-        totalVideosTotal,
-        totalProblemsSolved
-||||||| Stash base
-        totalSessions: scheduledSessions.reduce((sum, item) => sum + item.count, 0),
-        totalCompletions: completedTopics.reduce((sum, item) => sum + item.count, 0),
         totalActivities: Object.values(activityMap).reduce((sum, val) => sum + val, 0)
-=======
-        totalActiveDays: sortedDates.length,
-        currentStreak,
-        bestStreak,
-        totalSubjects,
-        totalVideosWatched: videoWatchCount,
-        totalProblemsSolved: problemsSolvedCount,
-        totalActivities: Object.values(activityMap).reduce((sum, val) => sum + val, 0)
->>>>>>> Stashed changes
       }
     });
   } catch (error) {
@@ -309,9 +180,13 @@ export async function getStudentActivityByAdmin(req, res) {
     throw new HttpError(400, 'Invalid student ID');
   }
 
-  const targetYear = year ? parseInt(year) : new Date().getFullYear();
-  const startDate = new Date(targetYear, 0, 1);
-  const endDate = new Date(targetYear, 11, 31, 23, 59, 59);
+  // Always use rolling 365-day window ending today
+  const endDate = new Date();
+  endDate.setHours(23, 59, 59, 999);
+  
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - 364);
+  startDate.setHours(0, 0, 0, 0);
 
   try {
     // Get scheduled sessions
@@ -375,116 +250,64 @@ export async function getStudentActivityByAdmin(req, res) {
       activityMap[date] += item.count;
     });
 
-    // Video watched seconds per day (based on lastAccessedAt)
-    const videoByDay = await Progress.aggregate([
-      {
-        $match: {
-          studentId: student._id,
-          lastAccessedAt: { $gte: startDate, $lte: endDate }
-        }
-      },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$lastAccessedAt' } },
-          seconds: { $sum: '$videoWatchedSeconds' }
-        }
-      }
-    ]);
+    // Calculate streaks
+    const calculateStreaks = () => {
+      const sortedDates = Object.keys(activityMap).sort();
+      if (sortedDates.length === 0) return { currentStreak: 0, bestStreak: 0 };
 
-    // Each 30 minutes watched adds one activity unit
-    videoByDay.forEach(item => {
-      const date = item._id;
-      const units = Math.floor((item.seconds || 0) / 1800);
-      if (units > 0) {
-        if (!activityMap[date]) activityMap[date] = 0;
-        activityMap[date] += units;
-      }
-    });
-
-    // Get available years
-    const userCreatedYear = student.createdAt ? new Date(student.createdAt).getFullYear() : targetYear;
-    const currentYear = new Date().getFullYear();
-    const availableYears = [];
-    for (let y = userCreatedYear; y <= currentYear; y++) {
-      availableYears.push(y);
-    }
-
-    // Stats
-    const isLeap = (targetYear % 4 === 0 && targetYear % 100 !== 0) || (targetYear % 400 === 0);
-    const totalDaysInYear = isLeap ? 366 : 365;
-    const activeDays = Object.keys(activityMap).filter(d => activityMap[d] > 0).length;
-
-    // Streaks
-    const datesSorted = Object.keys(activityMap)
-      .filter(d => activityMap[d] > 0)
-      .sort();
-    let currentStreak = 0;
-    let bestStreak = 0;
-    let prevDate = null;
-    datesSorted.forEach(d => {
-      const cur = new Date(d + 'T00:00:00Z');
-      if (prevDate) {
-        const nextOfPrev = new Date(prevDate);
-        nextOfPrev.setUTCDate(nextOfPrev.getUTCDate() + 1);
-        if (nextOfPrev.toISOString().slice(0,10) === d) {
-          currentStreak += 1;
+      let currentStreak = 0;
+      let bestStreak = 0;
+      let tempStreak = 0;
+      
+      let checkDate = new Date(endDate);
+      while (checkDate >= startDate) {
+        const dateStr = checkDate.toISOString().slice(0, 10);
+        if (activityMap[dateStr] && activityMap[dateStr] > 0) {
+          currentStreak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else if (currentStreak > 0) {
+          break;
         } else {
-          currentStreak = 1;
+          checkDate.setDate(checkDate.getDate() - 1);
         }
-      } else {
-        currentStreak = 1;
       }
-      prevDate = cur;
-      if (currentStreak > bestStreak) bestStreak = currentStreak;
-    });
 
-    // Curriculum totals based on student's semester
-    const allSemesters = await Semester.find().select('semesterName subjects');
-    const studentSemNum = typeof student.semester === 'number' ? student.semester : null;
-    const filteredSemesters = allSemesters.filter(sem => {
-      if (studentSemNum == null) return true;
-      const m = String(sem.semesterName || '').match(/\d+/);
-      if (!m) return true;
-      const num = parseInt(m[0]);
-      return num <= studentSemNum;
-    });
+      let prevDate = null;
+      for (const dateStr of sortedDates) {
+        const currentDate = new Date(dateStr);
+        if (prevDate) {
+          const dayDiff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
+          if (dayDiff === 1) {
+            tempStreak++;
+          } else {
+            bestStreak = Math.max(bestStreak, tempStreak);
+            tempStreak = 1;
+          }
+        } else {
+          tempStreak = 1;
+        }
+        prevDate = currentDate;
+      }
+      bestStreak = Math.max(bestStreak, tempStreak);
 
-    let totalCoursesEnrolled = 0;
-    let totalVideosTotal = 0;
-    filteredSemesters.forEach(sem => {
-      (sem.subjects || []).forEach(sub => {
-        totalCoursesEnrolled += 1;
-        (sub.chapters || []).forEach(ch => {
-          (ch.topics || []).forEach(tp => { if (tp && tp.topicVideoLink) totalVideosTotal += 1; });
-        });
-      });
-    });
+      return { currentStreak, bestStreak };
+    };
 
-    // Videos watched vs total (watched within selected year; total from curriculum)
-    const videosWatchedAgg = await Progress.aggregate([
-      { $match: { studentId: student._id, lastAccessedAt: { $gte: startDate, $lte: endDate }, videoWatchedSeconds: { $gt: 0 } } },
-      { $group: { _id: '$topicId' } }
-    ]);
-    const totalVideosWatched = videosWatchedAgg.length;
-
-    const totalProblemsSolved = completedTopics.reduce((sum, item) => sum + item.count, 0);
+    const { currentStreak, bestStreak } = calculateStreaks();
+    const totalActiveDays = Object.keys(activityMap).length;
 
     res.json({
       activityByDate: activityMap,
-      year: targetYear,
-      availableYears,
+      startDate: startDate.toISOString().slice(0, 10),
+      endDate: endDate.toISOString().slice(0, 10),
       stats: {
-        totalDaysInYear,
-        totalActiveDays: activeDays,
+        totalActiveDays,
+        totalDaysInRange: 365,
         currentStreak,
         bestStreak,
         totalSessions: scheduledSessions.reduce((sum, item) => sum + item.count, 0),
         totalCompletions: completedTopics.reduce((sum, item) => sum + item.count, 0),
-        totalActivities: Object.values(activityMap).reduce((sum, val) => sum + val, 0),
-        totalCoursesEnrolled,
-        totalVideosWatched,
-        totalVideosTotal,
-        totalProblemsSolved
+        totalActivities: Object.values(activityMap).reduce((sum, val) => sum + val, 0)
       }
     });
   } catch (error) {

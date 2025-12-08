@@ -1,32 +1,48 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
-// Helper to get dates from 12 months for a specific year or current year
-function getMonths(year = new Date().getFullYear()) {
-  const months = [];
-  // Start from January of the specified year
-  for (let month = 0; month < 12; month++) {
-    months.push({ year, month });
-  }
-  return months;
-}
-
-function getDaysInMonth(year, month) {
-  // Get all days for a month, fill 7 rows (weeks)
-  const first = new Date(year, month, 1);
-  const last = new Date(year, month + 1, 0);
-  const startDay = first.getDay(); // 0=Sun
-  const daysInMonth = last.getDate();
+// Helper to generate rolling 365 days from today backwards
+function getRolling365Days() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   
-  const days = [];
-  // Fill empty cells before month starts
-  for (let i = 0; i < startDay; i++) {
-    days.push(null);
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - 364);
+  
+  const monthsMap = new Map();
+  const currentDate = new Date(startDate);
+  
+  while (currentDate <= today) {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const key = `${year}-${month}`;
+    
+    if (!monthsMap.has(key)) {
+      monthsMap.set(key, {
+        year,
+        month,
+        days: []
+      });
+    }
+    
+    monthsMap.get(key).days.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
   }
-  // Add actual days
-  for (let day = 1; day <= daysInMonth; day++) {
-    days.push(new Date(year, month, day));
+  
+  // Convert map to array and fill weeks
+  const months = Array.from(monthsMap.values());
+  
+  // Add padding to first month to align with week grid
+  if (months.length > 0) {
+    const firstDay = months[0].days[0];
+    const startDayOfWeek = firstDay.getDay();
+    const padding = [];
+    for (let i = 0; i < startDayOfWeek; i++) {
+      padding.push(null);
+    }
+    months[0].days = [...padding, ...months[0].days];
   }
-  return days;
+  
+  return months;
 }
 
 function intensityClass(v) {
@@ -39,60 +55,44 @@ function intensityClass(v) {
 }
 
 export default function ContributionCalendar({ 
-  activityByDate = {}, 
+  activity = {}, 
   title = 'Contribution Calendar',
-  year,
-  availableYears = [],
-  onYearChange,
-  showYearFilter = false,
   stats = null
 }) {
-  const displayYear = year || new Date().getFullYear();
-  const months = getMonths(displayYear);
+  const months = useMemo(() => getRolling365Days(), []);
   
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <h3 className="text-base font-semibold text-slate-800">{title}</h3>
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h3 className="text-base font-semibold text-slate-800 dark:text-gray-100">{title}</h3>
           {stats && (
-            <div className="flex items-center gap-2 flex-wrap text-xs text-slate-700">
-              <span className="bg-blue-50 px-2 py-1 rounded">
-                Active Days: <strong>{stats.totalActiveDays}</strong> / {stats.totalDaysInYear}
+            <div className="flex items-center gap-2 flex-wrap text-xs text-slate-700 dark:text-gray-300">
+              <span className="bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded">
+                Active Days: <strong>{stats.totalActiveDays || 0}</strong> / {stats.totalDaysInRange || 365}
               </span>
-              <span className="bg-violet-50 px-2 py-1 rounded">
+              <span className="bg-violet-50 dark:bg-violet-900/30 px-2 py-1 rounded">
                 Current Streak: <strong>{stats.currentStreak || 0}</strong>
               </span>
-              <span className="bg-amber-50 px-2 py-1 rounded">
+              <span className="bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded">
                 Best Streak: <strong>{stats.bestStreak || 0}</strong>
               </span>
             </div>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          {showYearFilter && availableYears.length > 0 && onYearChange && (
-            <select
-              value={displayYear}
-              onChange={(e) => onYearChange(parseInt(e.target.value))}
-              className="text-xs border border-slate-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {availableYears.map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          )}
-          <div className="text-xs text-slate-500">{displayYear}</div>
-        </div>
       </div>
+      
       {/* Horizontal scrollable grid */}
       <div className="overflow-x-auto pb-2">
         <div className="flex gap-3 min-w-max">
-          {months.map(({ year, month }) => {
+          {months.map(({ year, month, days }) => {
             const monthName = new Date(year, month, 1).toLocaleString('default', { month: 'short' });
-            const days = getDaysInMonth(year, month);
+            
             return (
               <div key={`${year}-${month}`} className="flex flex-col">
-                <div className="text-xs text-slate-500 mb-2 text-center font-medium">{monthName}</div>
+                <div className="text-xs text-slate-500 dark:text-gray-400 mb-2 text-center font-medium">
+                  {monthName}
+                </div>
                 {/* 7 rows for days of week, columns for weeks */}
                 <div className="grid grid-rows-7 grid-flow-col gap-1">
                   {days.map((date, i) => {
@@ -100,13 +100,16 @@ export default function ContributionCalendar({
                       return <div key={`empty-${i}`} className="w-2.5 h-2.5" />;
                     }
                     const key = date.toISOString().slice(0, 10);
-                    const v = activityByDate[key] || 0;
+                    const v = activity[key] || 0;
                     const cls = intensityClass(v);
+                    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    
                     return (
                       <div
                         key={key}
-                        title={`${key}: ${v} activities`}
-                        className={`w-2.5 h-2.5 rounded-sm ${cls} hover:ring-1 hover:ring-slate-400 transition-all cursor-pointer`}
+                        title={`${formattedDate} (${dayOfWeek}): ${v} activities`}
+                        className={`w-2.5 h-2.5 rounded-sm ${cls} hover:ring-2 hover:ring-blue-500 dark:hover:ring-blue-400 transition-all cursor-pointer`}
                       />
                     );
                   })}
@@ -116,32 +119,35 @@ export default function ContributionCalendar({
           })}
         </div>
       </div>
-      {/* Legend */}
-      <div className="flex items-center justify-between gap-2 mt-3">
+      
+      {/* Legend and Stats */}
+      <div className="flex items-center justify-between gap-4 mt-4 flex-wrap">
         {stats && (
-          <div className="text-xs text-slate-700 flex gap-3 flex-wrap">
-            <span className="bg-indigo-50 px-2 py-1 rounded">
-              Courses Enrolled: <strong>{stats.totalCoursesEnrolled || 0}</strong>
+          <div className="text-xs text-slate-700 dark:text-gray-300 flex gap-3 flex-wrap">
+            <span className="bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded">
+              Total Sessions: <strong>{stats.totalSessions || 0}</strong>
             </span>
-            <span className="bg-pink-50 px-2 py-1 rounded">
-              Problems Solved: <strong>{stats.totalProblemsSolved || 0}</strong>
+            <span className="bg-pink-50 dark:bg-pink-900/30 px-2 py-1 rounded">
+              Completed Topics: <strong>{stats.totalCompletions || 0}</strong>
             </span>
-            <span className="bg-teal-50 px-2 py-1 rounded">
-              Videos Watched: <strong>{stats.totalVideosWatched || 0}</strong>/{stats.totalVideosTotal || 0}
+            <span className="bg-cyan-50 dark:bg-cyan-900/30 px-2 py-1 rounded">
+              Total Activities: <strong>{stats.totalActivities || 0}</strong>
             </span>
           </div>
         )}
         
         {/* Intensity legend */}
-        <span className="text-xs text-slate-500">Less</span>
-        <div className="flex gap-1">
-          <div className="w-2.5 h-2.5 bg-slate-100 rounded-sm" title="No activity" />
-          <div className="w-2.5 h-2.5 bg-blue-200 rounded-sm" title="Low activity" />
-          <div className="w-2.5 h-2.5 bg-blue-400 rounded-sm" title="Medium activity" />
-          <div className="w-2.5 h-2.5 bg-blue-600 rounded-sm" title="High activity" />
-          <div className="w-2.5 h-2.5 bg-blue-700 rounded-sm" title="Very high activity" />
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500 dark:text-gray-400">Less</span>
+          <div className="flex gap-1">
+            <div className="w-2.5 h-2.5 bg-slate-100 dark:bg-gray-700 rounded-sm border border-slate-300 dark:border-gray-600" title="No activity" />
+            <div className="w-2.5 h-2.5 bg-blue-200 dark:bg-blue-800 rounded-sm" title="1-2 activities" />
+            <div className="w-2.5 h-2.5 bg-blue-400 dark:bg-blue-600 rounded-sm" title="3-4 activities" />
+            <div className="w-2.5 h-2.5 bg-blue-600 dark:bg-blue-500 rounded-sm" title="5-7 activities" />
+            <div className="w-2.5 h-2.5 bg-blue-700 dark:bg-blue-400 rounded-sm" title="8+ activities" />
+          </div>
+          <span className="text-xs text-slate-500 dark:text-gray-400">More</span>
         </div>
-        <span className="text-xs text-slate-500">More</span>
       </div>
     </div>
   );

@@ -6,9 +6,9 @@ import {
   ChevronDown,
   ChevronRight,
   BookOpen,
-  Video,
-  FileText,
-  FileQuestion,
+  Youtube,
+  FileType,
+  FileSpreadsheet,
   Star,
   X,
   ExternalLink,
@@ -467,7 +467,7 @@ export default function AdminLearningDetail() {
                       </div>
                     </div>
 
-                    {/* Topics */}
+                    {/* Topics Table */}
                     <AnimatePresence>
                       {expandedChapters[chapter._id] && (
                         <motion.div
@@ -476,72 +476,143 @@ export default function AdminLearningDetail() {
                           exit={{ height: 0, opacity: 0 }}
                           className="border-t border-gray-100 dark:border-gray-700"
                         >
-                          <div className="p-5">
-                            <div className="space-y-3">
-                              {chapter.topics.map((topic) => (
-                                <div
-                                  key={topic._id}
-                                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                                >
-                                  <div className="flex items-center space-x-3 flex-1">
-                                    <div className="text-gray-700 dark:text-gray-200 font-medium flex-1">
-                                      {topic.topicName}
-                                    </div>
-                                    {getDifficultyBadge(topic.difficultyLevel)}
-                                  </div>
-
-                                  <div className="flex items-center space-x-2 ml-4">
-                                    {/* Video Button */}
-                                    {topic.topicVideoLink && (
-                                      <button
-                                        onClick={() => openModal('video', topic.topicVideoLink)}
-                                        className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                                        title="Watch Video"
-                                      >
-                                        <Video className="w-4 h-4" />
-                                      </button>
-                                    )}
-
-                                    {/* Notes Button */}
-                                    {topic.notesPDF && (
-                                      <button
-                                        onClick={() => openModal('pdf', topic.notesPDF)}
-                                        className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                                        title="View Notes PDF"
-                                      >
-                                        <FileText className="w-4 h-4" />
-                                      </button>
-                                    )}
-
-                                    {/* PDF Button */}
-                                    {topic.questionPDF && (
-                                      <button
-                                        onClick={() => openModal('pdf', topic.questionPDF)}
-                                        className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                                        title="View Questions"
-                                      >
-                                        <FileQuestion className="w-4 h-4" />
-                                      </button>
-                                    )}
-
-                                    {/* Edit/Delete */}
-                                    <button
-                                      onClick={() => openEditTopicModal(chapter, topic)}
-                                      className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-lg transition-colors"
-                                      title="Edit Topic"
+                          <div className="p-5 bg-white dark:bg-gray-900">
+                            <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-300 mb-3">Topics</h4>
+                            <div className="overflow-x-auto">
+                              <table className="w-full">
+                                <thead>
+                                  <tr className="border-b border-slate-200 dark:border-gray-700">
+                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Topic</th>
+                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Problem Link</th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Importance</th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Difficulty</th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Video</th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Notes</th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Questions</th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="bg-white dark:bg-gray-900">
+                                  {chapter.topics.map((topic, idx) => (
+                                    <tr 
+                                      key={topic._id}
+                                      className={`border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-800/50 transition-colors ${
+                                        idx === chapter.topics.length - 1 ? 'border-b-0' : ''
+                                      }`}
                                     >
-                                      <Edit2 className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteTopic(chapter._id, topic._id)}
-                                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors"
-                                      title="Delete Topic"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
+                                      {/* Topic Name */}
+                                      <td className="py-3 px-4">
+                                        <span className="text-sm font-medium text-slate-800 dark:text-gray-200">
+                                          {topic.topicName}
+                                        </span>
+                                      </td>
+
+                                      {/* Problem Link */}
+                                      <td className="py-3 px-4">
+                                        {topic.problemLink ? (
+                                          <a
+                                            href={topic.problemLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+                                          >
+                                            Solve
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                          </a>
+                                        ) : (
+                                          <span className="text-xs text-slate-400 dark:text-gray-500">No link</span>
+                                        )}
+                                      </td>
+
+                                      {/* Importance */}
+                                      <td className="py-3 px-4">
+                                        <div className="flex items-center justify-center gap-0.5">
+                                          {Array.from({ length: 5 }).map((_, i) => (
+                                            <Star
+                                              key={i}
+                                              className={`w-3.5 h-3.5 ${
+                                                i < (chapter.importanceLevel || 3)
+                                                  ? 'text-yellow-500 fill-yellow-500'
+                                                  : 'text-slate-300 dark:text-gray-600'
+                                              }`}
+                                            />
+                                          ))}
+                                        </div>
+                                      </td>
+
+                                      {/* Difficulty */}
+                                      <td className="py-3 px-4 text-center">
+                                        {getDifficultyBadge(topic.difficultyLevel)}
+                                      </td>
+
+                                      {/* Video */}
+                                      <td className="py-3 px-4 text-center">
+                                        {topic.topicVideoLink ? (
+                                          <button
+                                            onClick={() => openModal('video', topic.topicVideoLink)}
+                                            className="inline-flex items-center justify-center w-9 h-9 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-sm"
+                                            title="Watch Video"
+                                          >
+                                            <Youtube className="w-5 h-5" />
+                                          </button>
+                                        ) : (
+                                          <span className="text-slate-300 dark:text-gray-600">—</span>
+                                        )}
+                                      </td>
+
+                                      {/* Notes PDF */}
+                                      <td className="py-3 px-4 text-center">
+                                        {topic.notesPDF ? (
+                                          <button
+                                            onClick={() => openModal('pdf', topic.notesPDF)}
+                                            className="inline-flex items-center justify-center w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
+                                            title="View Notes"
+                                          >
+                                            <FileType className="w-5 h-5" />
+                                          </button>
+                                        ) : (
+                                          <span className="text-slate-300 dark:text-gray-600">—</span>
+                                        )}
+                                      </td>
+
+                                      {/* Questions PDF */}
+                                      <td className="py-3 px-4 text-center">
+                                        {topic.questionPDF ? (
+                                          <button
+                                            onClick={() => openModal('pdf', topic.questionPDF)}
+                                            className="inline-flex items-center justify-center w-9 h-9 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-sm"
+                                            title="View Questions"
+                                          >
+                                            <FileSpreadsheet className="w-5 h-5" />
+                                          </button>
+                                        ) : (
+                                          <span className="text-slate-300 dark:text-gray-600">—</span>
+                                        )}
+                                      </td>
+
+                                      {/* Actions */}
+                                      <td className="py-3 px-4">
+                                        <div className="flex items-center justify-center gap-1">
+                                          <button
+                                            onClick={() => openEditTopicModal(chapter, topic)}
+                                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
+                                            title="Edit Topic"
+                                          >
+                                            <Edit2 className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteTopic(chapter._id, topic._id)}
+                                            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+                                            title="Delete Topic"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
                             </div>
                           </div>
                         </motion.div>

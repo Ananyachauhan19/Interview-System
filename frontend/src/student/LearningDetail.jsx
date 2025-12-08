@@ -5,9 +5,9 @@ import {
   ChevronDown,
   ChevronRight,
   BookOpen,
-  Video,
-  FileText,
-  FileQuestion,
+  Youtube,
+  FileType,
+  FileSpreadsheet,
   Star,
   X,
   ExternalLink,
@@ -397,7 +397,7 @@ export default function LearningDetail() {
                       </span>
                     </div>
 
-                    {/* Topics */}
+                    {/* Topics Table */}
                     <AnimatePresence>
                       {expandedChapters[chapter._id] && (
                         <motion.div
@@ -407,61 +407,132 @@ export default function LearningDetail() {
                           transition={{ duration: 0.2 }}
                           className="border-t border-slate-200 dark:border-gray-700"
                         >
-                          <div className="p-4 bg-slate-50 dark:bg-gray-900">
-                            <div className="space-y-2">
-                              {chapter.topics.map((topic) => (
-                                <div
-                                  key={topic._id}
-                                  className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 hover:border-sky-300 dark:hover:border-sky-600 transition-all"
-                                >
-                                  <div className="flex items-center space-x-2.5 flex-1 min-w-0">
-                                    {isTopicCompleted(topic._id) ? (
-                                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                                    ) : (
-                                      <Circle className="w-5 h-5 text-slate-400 dark:text-gray-500 flex-shrink-0" />
-                                    )}
-                                    <div className="text-slate-800 dark:text-gray-200 font-semibold text-sm flex-1 truncate">
-                                      {topic.topicName}
-                                    </div>
-                                    {getDifficultyBadge(topic.difficultyLevel)}
-                                  </div>
+                          <div className="p-4 bg-white dark:bg-gray-900">
+                            <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-300 mb-3">Topics</h4>
+                            <div className="overflow-x-auto">
+                              <table className="w-full">
+                                <thead>
+                                  <tr className="border-b border-slate-200 dark:border-gray-700">
+                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Topic</th>
+                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Problem Link</th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Importance</th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Difficulty</th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Video</th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Notes</th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Questions</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="bg-white dark:bg-gray-900">
+                                  {chapter.topics.map((topic, idx) => (
+                                    <tr 
+                                      key={topic._id}
+                                      className={`border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-800/50 transition-colors ${
+                                        idx === chapter.topics.length - 1 ? 'border-b-0' : ''
+                                      }`}
+                                    >
+                                      {/* Status */}
+                                      <td className="py-3 px-4">
+                                        {isTopicCompleted(topic._id) ? (
+                                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                        ) : (
+                                          <Circle className="w-5 h-5 text-slate-300 dark:text-gray-600" />
+                                        )}
+                                      </td>
 
-                                  <div className="flex items-center space-x-1.5 ml-3 flex-shrink-0">
-                                    {/* Video Button */}
-                                    {topic.topicVideoLink && (
-                                      <button
-                                        onClick={() => openModal('video', topic.topicVideoLink, { ...topic, chapterId: chapter._id })}
-                                        className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-sm"
-                                        title="Watch Video"
-                                      >
-                                        <Video className="w-4 h-4" />
-                                      </button>
-                                    )}
+                                      {/* Topic Name */}
+                                      <td className="py-3 px-4">
+                                        <span className="text-sm font-medium text-slate-800 dark:text-gray-200">
+                                          {topic.topicName}
+                                        </span>
+                                      </td>
 
-                                    {/* Notes Button */}
-                                    {topic.notesPDF && (
-                                      <button
-                                        onClick={() => openModal('pdf', topic.notesPDF, topic)}
-                                        className="p-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors shadow-sm"
-                                        title="View Notes PDF"
-                                      >
-                                        <FileText className="w-4 h-4" />
-                                      </button>
-                                    )}
+                                      {/* Problem Link */}
+                                      <td className="py-3 px-4">
+                                        {topic.problemLink ? (
+                                          <a
+                                            href={topic.problemLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+                                          >
+                                            Solve
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                          </a>
+                                        ) : (
+                                          <span className="text-xs text-slate-400 dark:text-gray-500">No link</span>
+                                        )}
+                                      </td>
 
-                                    {/* PDF Button */}
-                                    {topic.questionPDF && (
-                                      <button
-                                        onClick={() => openModal('pdf', topic.questionPDF, topic)}
-                                        className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm"
-                                        title="View Questions"
-                                      >
-                                        <FileQuestion className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
+                                      {/* Importance */}
+                                      <td className="py-3 px-4">
+                                        <div className="flex items-center justify-center gap-0.5">
+                                          {Array.from({ length: 5 }).map((_, i) => (
+                                            <Star
+                                              key={i}
+                                              className={`w-3.5 h-3.5 ${
+                                                i < (chapter.importanceLevel || 3)
+                                                  ? 'text-yellow-500 fill-yellow-500'
+                                                  : 'text-slate-300 dark:text-gray-600'
+                                              }`}
+                                            />
+                                          ))}
+                                        </div>
+                                      </td>
+
+                                      {/* Difficulty */}
+                                      <td className="py-3 px-4 text-center">
+                                        {getDifficultyBadge(topic.difficultyLevel)}
+                                      </td>
+
+                                      {/* Video */}
+                                      <td className="py-3 px-4 text-center">
+                                        {topic.topicVideoLink ? (
+                                          <button
+                                            onClick={() => openModal('video', topic.topicVideoLink, { ...topic, chapterId: chapter._id })}
+                                            className="inline-flex items-center justify-center w-9 h-9 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-sm"
+                                            title="Watch Video"
+                                          >
+                                            <Youtube className="w-5 h-5" />
+                                          </button>
+                                        ) : (
+                                          <span className="text-slate-300 dark:text-gray-600">—</span>
+                                        )}
+                                      </td>
+
+                                      {/* Notes PDF */}
+                                      <td className="py-3 px-4 text-center">
+                                        {topic.notesPDF ? (
+                                          <button
+                                            onClick={() => openModal('pdf', topic.notesPDF, topic)}
+                                            className="inline-flex items-center justify-center w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
+                                            title="View Notes"
+                                          >
+                                            <FileType className="w-5 h-5" />
+                                          </button>
+                                        ) : (
+                                          <span className="text-slate-300 dark:text-gray-600">—</span>
+                                        )}
+                                      </td>
+
+                                      {/* Questions PDF */}
+                                      <td className="py-3 px-4 text-center">
+                                        {topic.questionPDF ? (
+                                          <button
+                                            onClick={() => openModal('pdf', topic.questionPDF, topic)}
+                                            className="inline-flex items-center justify-center w-9 h-9 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-sm"
+                                            title="View Questions"
+                                          >
+                                            <FileSpreadsheet className="w-5 h-5" />
+                                          </button>
+                                        ) : (
+                                          <span className="text-slate-300 dark:text-gray-600">—</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
                             </div>
                           </div>
                         </motion.div>

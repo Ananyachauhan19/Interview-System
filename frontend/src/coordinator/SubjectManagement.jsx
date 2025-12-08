@@ -4,7 +4,7 @@ import { api } from '../utils/api';
 import socketService from '../utils/socket';
 import {
   BookOpen, Plus, ChevronDown, ChevronRight, Edit2, Trash2, Save, X,
-  Star, Upload, Link as LinkIcon, FileText, GripVertical, Video, File
+  Star, Upload, Link as LinkIcon, FileType, GripVertical, Youtube, FileSpreadsheet
 } from 'lucide-react';
 import { useToast } from '../components/CustomToast';
 
@@ -592,160 +592,250 @@ export default function SubjectManagement() {
     };
 
     return (
-      <div className="space-y-2">
-        <Reorder.Group axis="y" values={topics} onReorder={handleReorderTopics} className="space-y-2">
-          {topics.map((topic) => (
-            <Reorder.Item key={topic._id} value={topic}>
-              {editingTopic && editingTopic._id === topic._id ? (
-                <div className="border border-blue-300 dark:border-blue-800 rounded-lg p-3 bg-blue-50 dark:bg-blue-900/20 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <GripVertical className="w-4 h-4 text-slate-400 cursor-move flex-shrink-0 mt-2" />
-                    <div className="flex-1 space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Topic Name *</label>
-                        <input
-                          type="text"
-                          placeholder="Enter topic name"
-                          value={editingTopic.topicName}
-                          onChange={(e) => setEditingTopic({ ...editingTopic, topicName: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Difficulty Level</label>
-                        <select
-                          value={editingTopic.difficultyLevel}
-                          onChange={(e) => setEditingTopic({ ...editingTopic, difficultyLevel: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
-                        >
-                          <option value="easy">Easy</option>
-                          <option value="easy-medium">Easy-Medium</option>
-                          <option value="medium">Medium</option>
-                          <option value="medium-hard">Medium-Hard</option>
-                          <option value="hard">Hard</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Video Link (Optional)</label>
-                        <input
-                          type="url"
-                          placeholder="https://example.com/video"
-                          value={editingTopic.topicVideoLink || ''}
-                          onChange={(e) => setEditingTopic({ ...editingTopic, topicVideoLink: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Notes Link (Optional)</label>
-                        <input
-                          type="url"
-                          placeholder="https://example.com/notes"
-                          value={editingTopic.notesLink || ''}
-                          onChange={(e) => setEditingTopic({ ...editingTopic, notesLink: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Question PDF (Optional)</label>
-                        <input
-                          type="file"
-                          accept=".pdf"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const maxSize = 1 * 1024 * 1024; // 1MB in bytes
-                              if (file.size > maxSize) {
-                                toast.error('File size must be less than 1MB');
-                                e.target.value = '';
-                                return;
-                              }
-                            }
-                            setEditingTopic({ ...editingTopic, questionPDF: file });
-                          }}
-                          className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
-                        />
-                        <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Maximum file size: 1MB</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleUpdateTopic(topic._id)}
-                      className="flex-1 px-3 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-sm flex items-center justify-center gap-1"
-                    >
-                      <Save className="w-4 h-4" />
-                      Update
-                    </button>
-                    <button
-                      onClick={() => setEditingTopic(null)}
-                      className="px-3 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors text-sm"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
+      <div className="space-y-3">
+        {/* Edit Form (when editing a topic) */}
+        {editingTopic && (
+          <div className="border border-blue-300 dark:border-blue-800 rounded-lg p-3 bg-blue-50 dark:bg-blue-900/20 space-y-2">
+            <div className="flex items-start gap-2">
+              <div className="flex-1 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Topic Name *</label>
+                  <input
+                    type="text"
+                    placeholder="Enter topic name"
+                    value={editingTopic.topicName}
+                    onChange={(e) => setEditingTopic({ ...editingTopic, topicName: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
                 </div>
-              ) : (
-                <div className="flex items-start gap-2 p-2 border border-slate-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700">
-                  <GripVertical className="w-4 h-4 text-slate-400 cursor-move flex-shrink-0 mt-1" />
-                  <div className="flex-1">
-                    <h5 className="font-medium text-slate-800 dark:text-gray-100">{topic.topicName}</h5>
-                    <div className="flex flex-wrap gap-2 mt-1">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Difficulty Level</label>
+                  <select
+                    value={editingTopic.difficultyLevel}
+                    onChange={(e) => setEditingTopic({ ...editingTopic, difficultyLevel: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="easy-medium">Easy-Medium</option>
+                    <option value="medium">Medium</option>
+                    <option value="medium-hard">Medium-Hard</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Video Link (Optional)</label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/video"
+                    value={editingTopic.topicVideoLink || ''}
+                    onChange={(e) => setEditingTopic({ ...editingTopic, topicVideoLink: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Notes Link (Optional)</label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/notes"
+                    value={editingTopic.notesLink || ''}
+                    onChange={(e) => setEditingTopic({ ...editingTopic, notesLink: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Question PDF (Optional)</label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const maxSize = 1 * 1024 * 1024; // 1MB in bytes
+                        if (file.size > maxSize) {
+                          toast.error('File size must be less than 1MB');
+                          e.target.value = '';
+                          return;
+                        }
+                      }
+                      setEditingTopic({ ...editingTopic, questionPDF: file });
+                    }}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Maximum file size: 1MB</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleUpdateTopic(editingTopic._id)}
+                className="flex-1 px-3 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-sm flex items-center justify-center gap-1"
+              >
+                <Save className="w-4 h-4" />
+                Update
+              </button>
+              <button
+                onClick={() => setEditingTopic(null)}
+                className="px-3 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors text-sm"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Topics Table */}
+        <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-300">Topics</h4>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-gray-700">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider w-10"></th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Topic</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Problem Link</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Importance</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Difficulty</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Video</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Notes</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Questions</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-900">
+              <Reorder.Group axis="y" values={topics} onReorder={handleReorderTopics} as="tbody" className="bg-white dark:bg-gray-900">
+                {topics.map((topic, idx) => (
+                  <Reorder.Item key={topic._id} value={topic} as="tr" className={`border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-800/50 transition-colors ${idx === topics.length - 1 ? 'border-b-0' : ''}`}>
+                    {/* Drag Handle */}
+                    <td className="py-3 px-4">
+                      <GripVertical className="w-4 h-4 text-slate-400 cursor-move" />
+                    </td>
+
+                    {/* Topic Name */}
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-slate-800 dark:text-gray-200">
+                        {topic.topicName}
+                      </span>
+                    </td>
+
+                    {/* Problem Link */}
+                    <td className="py-3 px-4">
+                      {topic.problemLink ? (
+                        <a
+                          href={topic.problemLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Solve
+                          <LinkIcon className="w-3.5 h-3.5" />
+                        </a>
+                      ) : (
+                        <span className="text-xs text-slate-400 dark:text-gray-500">No link</span>
+                      )}
+                    </td>
+
+                    {/* Importance */}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center justify-center gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3.5 h-3.5 ${
+                              i < (chapter.importanceLevel || 3)
+                                ? 'text-yellow-500 fill-yellow-500'
+                                : 'text-slate-300 dark:text-gray-600'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </td>
+
+                    {/* Difficulty */}
+                    <td className="py-3 px-4 text-center">
                       <span className={`text-xs px-2 py-1 rounded ${difficultyColors[topic.difficultyLevel]}`}>
                         {topic.difficultyLevel}
                       </span>
-                      {topic.topicVideoLink && (
+                    </td>
+
+                    {/* Video */}
+                    <td className="py-3 px-4 text-center">
+                      {topic.topicVideoLink ? (
                         <a
                           href={topic.topicVideoLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded flex items-center gap-1 hover:bg-blue-200 dark:hover:bg-blue-900/50"
+                          className="inline-flex items-center justify-center w-9 h-9 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-sm"
+                          title="Watch Video"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Video className="w-3 h-3" /> Video
+                          <Youtube className="w-5 h-5" />
                         </a>
+                      ) : (
+                        <span className="text-slate-300 dark:text-gray-600">—</span>
                       )}
-                      {topic.notesLink && (
+                    </td>
+
+                    {/* Notes */}
+                    <td className="py-3 px-4 text-center">
+                      {topic.notesLink ? (
                         <a
                           href={topic.notesLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded flex items-center gap-1 hover:bg-purple-200 dark:hover:bg-purple-900/50"
+                          className="inline-flex items-center justify-center w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
+                          title="View Notes"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <FileText className="w-3 h-3" /> Notes
+                          <FileType className="w-5 h-5" />
                         </a>
+                      ) : (
+                        <span className="text-slate-300 dark:text-gray-600">—</span>
                       )}
-                      {topic.questionPDF && (
-                          <span className="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded flex items-center gap-1">
-                          <File className="w-3 h-3" /> PDF
+                    </td>
+
+                    {/* Questions PDF */}
+                    <td className="py-3 px-4 text-center">
+                      {topic.questionPDF ? (
+                        <span className="inline-flex items-center justify-center w-9 h-9 bg-green-600 text-white rounded-lg shadow-sm" title="PDF Available">
+                          <FileSpreadsheet className="w-5 h-5" />
                         </span>
+                      ) : (
+                        <span className="text-slate-300 dark:text-gray-600">—</span>
                       )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setEditingTopic({
-                      _id: topic._id,
-                      topicName: topic.topicName,
-                      topicVideoLink: topic.topicVideoLink || '',
-                      notesLink: topic.notesLink || '',
-                      difficultyLevel: topic.difficultyLevel,
-                      questionPDF: null
-                    })}
-                    className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors flex-shrink-0"
-                  >
-                    <Edit2 className="w-3 h-3 text-blue-600" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTopic(topic._id)}
-                    className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors flex-shrink-0"
-                  >
-                    <Trash2 className="w-3 h-3 text-red-600" />
-                  </button>
-                </div>
-              )}
-            </Reorder.Item>
-          ))}
-        </Reorder.Group>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => setEditingTopic({
+                            _id: topic._id,
+                            topicName: topic.topicName,
+                            topicVideoLink: topic.topicVideoLink || '',
+                            notesLink: topic.notesLink || '',
+                            difficultyLevel: topic.difficultyLevel,
+                            questionPDF: null
+                          })}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
+                          title="Edit Topic"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTopic(topic._id)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+                          title="Delete Topic"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </Reorder.Item>
+                ))}
+              </Reorder.Group>
+            </tbody>
+          </table>
+        </div>
 
         {/* Add Topic Form */}
         {showAddTopic ? (
