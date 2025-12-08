@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { api } from '../utils/api';
+import socketService from '../utils/socket';
 import {
   BookOpen, Plus, ChevronDown, ChevronRight, Edit2, Trash2, Save, X,
   Star, Upload, Link as LinkIcon, FileText, GripVertical, Video, File
@@ -27,6 +28,22 @@ export default function SubjectManagement() {
 
   useEffect(() => {
     loadSubjects();
+  }, []);
+
+  // Socket.IO real-time synchronization
+  useEffect(() => {
+    socketService.connect();
+
+    const handleLearningUpdate = (data) => {
+      console.log('[Socket] Learning updated:', data);
+      loadSubjects();
+    };
+
+    socketService.on('learning-updated', handleLearningUpdate);
+
+    return () => {
+      socketService.off('learning-updated', handleLearningUpdate);
+    };
   }, []);
 
   const loadSubjects = async () => {

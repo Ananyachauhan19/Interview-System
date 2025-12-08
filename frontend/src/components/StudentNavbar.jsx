@@ -141,9 +141,10 @@ export function StudentNavbar() {
                 </Link>
               );
             })}
+          </div>
 
-            {/* Desktop Profile */}
-            <div className="relative profile-container ml-1">
+          {/* Desktop Profile */}
+          <div className="relative profile-container ml-1">
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 hover:bg-sky-50 text-gray-700 transition-all duration-200 border border-gray-200"
@@ -215,7 +216,6 @@ export function StudentNavbar() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
           </div>
 
           {/* Mobile Profile */}

@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronRight, BookOpen, Users, X, GraduationCap } from 'lucide-react';
 import { api } from '../utils/api';
-import toast from 'react-hot-toast';
+import socketService from '../utils/socket';
+import { useToast } from '../components/CustomToast';
 import { useNavigate } from 'react-router-dom';
 
 export default function StudentLearning() {
+  const toast = useToast();
   const [semesters, setSemesters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSemester, setSelectedSemester] = useState(null);
@@ -14,6 +16,22 @@ export default function StudentLearning() {
 
   useEffect(() => {
     loadSemesters();
+  }, []);
+
+  // Socket.IO real-time synchronization
+  useEffect(() => {
+    socketService.connect();
+
+    const handleLearningUpdate = (data) => {
+      console.log('[Socket] Learning updated:', data);
+      loadSemesters();
+    };
+
+    socketService.on('learning-updated', handleLearningUpdate);
+
+    return () => {
+      socketService.off('learning-updated', handleLearningUpdate);
+    };
   }, []);
 
   const loadSemesters = async () => {

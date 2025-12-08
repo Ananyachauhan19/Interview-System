@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import socketService from '../utils/socket';
 import {
   ChevronDown,
   ChevronRight,
@@ -21,7 +22,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { api } from '../utils/api';
-import toast from 'react-hot-toast';
+import { useToast } from '../components/CustomToast';
 
 // Convert YouTube URL to embed format
 const convertToEmbedUrl = (url) => {
@@ -49,6 +50,7 @@ const convertToEmbedUrl = (url) => {
 };
 
 export default function AdminLearningDetail() {
+  const toast = useToast();
   const { semester, subject, teacherId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -84,6 +86,25 @@ export default function AdminLearningDetail() {
       loadSubjectDetails(semesterId, subjectId);
       setSelectedSubject({ semesterId, subjectId });
     }
+  }, [semesterId, subjectId]);
+
+  // Socket.IO real-time synchronization
+  useEffect(() => {
+    socketService.connect();
+
+    const handleLearningUpdate = (data) => {
+      console.log('[Socket] Learning updated:', data);
+      loadCoordinatorSubjects();
+      if (semesterId && subjectId) {
+        loadSubjectDetails(semesterId, subjectId);
+      }
+    };
+
+    socketService.on('learning-updated', handleLearningUpdate);
+
+    return () => {
+      socketService.off('learning-updated', handleLearningUpdate);
+    };
   }, [semesterId, subjectId]);
 
   const loadCoordinatorSubjects = async () => {

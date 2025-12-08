@@ -1,6 +1,7 @@
 import Semester from '../models/Subject.js';
 import { HttpError } from '../utils/errors.js';
 import { supabase } from '../utils/supabase.js';
+import { io } from '../server.js';
 
 // Get all semesters for a coordinator
 export async function listSemesters(req, res) {
@@ -43,6 +44,9 @@ export async function createSemester(req, res) {
       subjects: []
     });
     
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'semester-created', data: semester });
+    
     res.status(201).json(semester);
   } catch (err) {
     console.error('Error creating semester:', err);
@@ -64,6 +68,10 @@ export async function updateSemester(req, res) {
     if (semesterDescription !== undefined) semester.semesterDescription = semesterDescription;
     
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'semester-updated', data: semester });
+    
     res.json(semester);
   } catch (err) {
     console.error('Error updating semester:', err);
@@ -95,6 +103,9 @@ export async function deleteSemester(req, res) {
       throw new HttpError(404, 'Semester not found or you do not have permission to delete it');
     }
     
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'semester-deleted', data: { id } });
+    
     res.json({ message: 'Semester deleted successfully' });
   } catch (err) {
     console.error('Error deleting semester:', err);
@@ -114,6 +125,10 @@ export async function reorderSemesters(req, res) {
     );
     
     await Promise.all(updates);
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'semesters-reordered', data: { semesterIds } });
+    
     res.json({ message: 'Semesters reordered successfully' });
   } catch (err) {
     console.error('Error reordering semesters:', err);
@@ -153,6 +168,10 @@ export async function addSubject(req, res) {
     });
     
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'subject-created', data: semester });
+    
     res.status(201).json(semester);
   } catch (err) {
     console.error('Error adding subject:', err);
@@ -178,6 +197,10 @@ export async function updateSubject(req, res) {
     if (subjectDescription !== undefined) subject.subjectDescription = subjectDescription;
     
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'subject-updated', data: semester });
+    
     res.json(semester);
   } catch (err) {
     console.error('Error updating subject:', err);
@@ -197,6 +220,9 @@ export async function deleteSubject(req, res) {
     
     semester.subjects.pull(subjectId);
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'subject-deleted', data: semester });
     
     res.json({ message: 'Subject deleted successfully', semester });
   } catch (err) {
@@ -225,6 +251,9 @@ export async function reorderSubjects(req, res) {
     
     semester.subjects.sort((a, b) => a.order - b.order);
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'subjects-reordered', data: semester });
     
     res.json(semester);
   } catch (err) {
@@ -258,6 +287,10 @@ export async function addChapter(req, res) {
     });
     
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'chapter-created', data: semester });
+    
     res.status(201).json(semester);
   } catch (err) {
     console.error('Error adding chapter:', err);
@@ -286,6 +319,10 @@ export async function updateChapter(req, res) {
     if (importanceLevel !== undefined) chapter.importanceLevel = importanceLevel;
     
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'chapter-updated', data: semester });
+    
     res.json(semester);
   } catch (err) {
     console.error('Error updating chapter:', err);
@@ -308,6 +345,9 @@ export async function deleteChapter(req, res) {
     
     subject.chapters.pull(chapterId);
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'chapter-deleted', data: semester });
     
     res.json({ message: 'Chapter deleted successfully', semester });
   } catch (err) {
@@ -339,6 +379,9 @@ export async function reorderChapters(req, res) {
     
     subject.chapters.sort((a, b) => a.order - b.order);
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'chapters-reordered', data: semester });
     
     res.json(semester);
   } catch (err) {
@@ -435,6 +478,10 @@ export async function addTopic(req, res) {
     console.log('[addTopic] Topic added, saving semester...');
     await semester.save();
     console.log('[addTopic] Semester saved successfully');
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'topic-created', data: semester });
+    
     res.status(201).json(semester);
   } catch (err) {
     console.error('[addTopic] Error:', err);
@@ -520,6 +567,10 @@ export async function updateTopic(req, res) {
     
     console.log('[updateTopic] Topic updated successfully');
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'topic-updated', data: semester });
+    
     res.json(semester);
   } catch (err) {
     console.error('Error updating topic:', err);
@@ -544,6 +595,9 @@ export async function deleteTopic(req, res) {
     
     chapter.topics.pull(topicId);
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'topic-deleted', data: semester });
     
     res.json({ message: 'Topic deleted successfully', semester });
   } catch (err) {
@@ -578,6 +632,9 @@ export async function reorderTopics(req, res) {
     
     chapter.topics.sort((a, b) => a.order - b.order);
     await semester.save();
+    
+    // Emit socket event for real-time update
+    io.emit('learning-updated', { type: 'topics-reordered', data: semester });
     
     res.json(semester);
   } catch (err) {

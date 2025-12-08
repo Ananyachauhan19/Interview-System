@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../utils/api';
+import socketService from '../utils/socket';
 import { ChevronDown, ChevronRight, BookOpen, X, GraduationCap, Edit2, Trash2, Plus, Save } from 'lucide-react';
 import { useToast } from '../components/CustomToast';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +20,22 @@ export default function AdminLearning() {
 
   useEffect(() => {
     loadSemesters();
+  }, []);
+
+  // Socket.IO real-time synchronization
+  useEffect(() => {
+    socketService.connect();
+
+    const handleLearningUpdate = (data) => {
+      console.log('[Socket] Learning updated:', data);
+      loadSemesters();
+    };
+
+    socketService.on('learning-updated', handleLearningUpdate);
+
+    return () => {
+      socketService.off('learning-updated', handleLearningUpdate);
+    };
   }, []);
 
   const loadSemesters = async () => {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { api } from '../utils/api';
+import socketService from '../utils/socket';
 import {
   BookOpen, Plus, ChevronDown, ChevronRight, Edit2, Trash2, Save, X,
   Star, Upload, Link as LinkIcon, FileText, GripVertical, Video, File, Calendar, Menu, ArrowLeft
@@ -32,6 +33,26 @@ export default function SemesterManagement() {
 
   useEffect(() => {
     loadSemesters();
+  }, []);
+
+  // Socket.IO real-time synchronization
+  useEffect(() => {
+    // Connect to socket
+    socketService.connect();
+
+    // Listen for learning module updates
+    const handleLearningUpdate = (data) => {
+      console.log('[Socket] Learning updated:', data);
+      // Reload semesters to get latest data
+      loadSemesters();
+    };
+
+    socketService.on('learning-updated', handleLearningUpdate);
+
+    // Cleanup on unmount
+    return () => {
+      socketService.off('learning-updated', handleLearningUpdate);
+    };
   }, []);
 
   const loadSemesters = async () => {

@@ -17,7 +17,8 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { api } from '../utils/api';
-import toast from 'react-hot-toast';
+import socketService from '../utils/socket';
+import { useToast } from '../components/CustomToast';
 
 // Convert YouTube URL to embed format
 const convertToEmbedUrl = (url) => {
@@ -45,6 +46,7 @@ const convertToEmbedUrl = (url) => {
 };
 
 export default function LearningDetail() {
+  const toast = useToast();
   const { semester, subject, teacherId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -82,6 +84,26 @@ export default function LearningDetail() {
       setSelectedSubject({ semesterId, subjectId });
       loadSubjectProgress(subjectId);
     }
+  }, [semesterId, subjectId]);
+
+  // Socket.IO real-time synchronization
+  useEffect(() => {
+    socketService.connect();
+
+    const handleLearningUpdate = (data) => {
+      console.log('[Socket] Learning updated:', data);
+      loadCoordinatorSubjects();
+      if (semesterId && subjectId) {
+        loadSubjectDetails(semesterId, subjectId);
+        loadSubjectProgress(subjectId);
+      }
+    };
+
+    socketService.on('learning-updated', handleLearningUpdate);
+
+    return () => {
+      socketService.off('learning-updated', handleLearningUpdate);
+    };
   }, [semesterId, subjectId]);
 
   const loadCoordinatorSubjects = async () => {
