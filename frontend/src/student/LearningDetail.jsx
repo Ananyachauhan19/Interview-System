@@ -97,6 +97,10 @@ export default function LearningDetail() {
         loadSubjectDetails(semesterId, subjectId);
         loadSubjectProgress(subjectId);
       }
+      // Refresh all sidebar subjects' progress
+      if (allSubjects.length > 0) {
+        loadAllSubjectsProgress(allSubjects);
+      }
     };
 
     socketService.on('learning-updated', handleLearningUpdate);
@@ -104,7 +108,7 @@ export default function LearningDetail() {
     return () => {
       socketService.off('learning-updated', handleLearningUpdate);
     };
-  }, [semesterId, subjectId]);
+  }, [semesterId, subjectId, allSubjects]);
 
   const loadCoordinatorSubjects = async () => {
     try {
@@ -117,11 +121,43 @@ export default function LearningDetail() {
         : data;
 
       setAllSubjects(filtered);
+      
+      // Load progress for all subjects in sidebar
+      await loadAllSubjectsProgress(filtered);
     } catch (error) {
       console.error('Error loading subjects:', error);
       toast.error('Failed to load subjects');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAllSubjectsProgress = async (subjects) => {
+    try {
+      // Load progress for each subject in parallel
+      const progressPromises = subjects.map(subject => 
+        api.getSubjectProgress(subject.subjectId)
+          .then(data => ({ subjectId: subject.subjectId, data }))
+          .catch(err => {
+            console.error(`Failed to load progress for ${subject.subjectId}:`, err);
+            return { subjectId: subject.subjectId, data: null };
+          })
+      );
+      
+      const results = await Promise.all(progressPromises);
+      
+      // Update progress state for all subjects
+      setProgress(prev => {
+        const updated = { ...prev };
+        results.forEach(({ subjectId, data }) => {
+          if (data) {
+            updated[subjectId] = data;
+          }
+        });
+        return updated;
+      });
+    } catch (error) {
+      console.error('Error loading all subjects progress:', error);
     }
   };
 
@@ -221,6 +257,12 @@ export default function LearningDetail() {
         // Refresh progress immediately after tracking is complete
         await loadSubjectProgress(subjectDetails.subjectId);
         await loadSubjectDetails(subjectDetails.semesterId, subjectDetails.subjectId);
+        
+        // Also refresh all sidebar subjects' progress for dynamic updates
+        if (allSubjects.length > 0) {
+          await loadAllSubjectsProgress(allSubjects);
+        }
+        
         toast.success('Topic marked as watched! 🎉');
       } catch (error) {
         console.error('Error starting video tracking:', error);

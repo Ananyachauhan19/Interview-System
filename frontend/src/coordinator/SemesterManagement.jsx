@@ -60,8 +60,18 @@ export default function SemesterManagement() {
       setLoading(true);
       const data = await api.listSemesters();
       setSemesters(data.semesters || []);
-      // Auto-select first learning module if none selected
-      if (!selectedSemester && data.semesters && data.semesters.length > 0) {
+      
+      // If a semester was already selected, maintain selection after reload
+      if (selectedSemester && data.semesters && data.semesters.length > 0) {
+        const updatedSelectedSemester = data.semesters.find(s => s._id === selectedSemester._id);
+        if (updatedSelectedSemester) {
+          setSelectedSemester(updatedSelectedSemester);
+        } else {
+          // If previously selected semester no longer exists, select first
+          setSelectedSemester(data.semesters[0]);
+        }
+      } else if (!selectedSemester && data.semesters && data.semesters.length > 0) {
+        // Only auto-select first semester if none was selected
         setSelectedSemester(data.semesters[0]);
       }
     } catch (err) {
