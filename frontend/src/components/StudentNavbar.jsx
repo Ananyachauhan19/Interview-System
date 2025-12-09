@@ -151,7 +151,7 @@ export function StudentNavbar() {
           <div className="relative profile-container ml-1">
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-sky-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all duration-200 border border-gray-200 dark:border-gray-700"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-900 hover:bg-sky-50 dark:hover:bg-slate-800 text-gray-700 dark:text-white transition-all duration-200 border border-gray-200 dark:border-slate-700"
               >
                 <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white font-semibold text-sm">
                   {studentName.charAt(0).toUpperCase()}
@@ -160,27 +160,27 @@ export function StudentNavbar() {
                   <div className="font-semibold text-sm text-slate-800 dark:text-slate-200">{studentName}</div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">Student</div>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-slate-500 dark:text-slate-300 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
               </button>
 
               <AnimatePresence>
                 {isProfileOpen && (
-                  <motion.div
-                    variants={dropdownVariants}
-                    initial="closed"
-                    animate="open"
-                    exit="closed"
-                    className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-slate-200 dark:border-gray-700 overflow-hidden z-50"
-                  >
+                    <motion.div
+                      variants={dropdownVariants}
+                      initial="closed"
+                      animate="open"
+                      exit="closed"
+                      className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50"
+                    >
                     {/* Profile Header */}
-                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/30 dark:to-blue-900/30 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/40 dark:to-blue-900/40 px-4 py-3 border-b border-gray-200 dark:border-slate-700">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold">
                           {studentName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-slate-900 dark:text-slate-100 truncate">{studentName}</div>
-                          <div className="text-xs text-slate-600 dark:text-slate-400 truncate">{studentEmail}</div>
+                          <div className="font-semibold text-slate-900 dark:text-white truncate">{studentName}</div>
+                          <div className="text-xs text-slate-600 dark:text-gray-300 truncate">{studentEmail}</div>
                         </div>
                       </div>
                     </div>
@@ -190,27 +190,27 @@ export function StudentNavbar() {
                       <Link
                         to="/student/profile"
                         onClick={() => setIsProfileOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-white hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors group"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
-                          <User className="w-4 h-4 text-sky-600" />
+                        <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-slate-800 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-slate-700 transition-colors">
+                          <User className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                         </div>
                         <div className="flex-1">
-                          <div className="text-sm font-medium">Profile</div>
-                          <div className="text-xs text-slate-500">View and edit your details</div>
+                          <div className="text-sm font-medium dark:text-white">Profile</div>
+                          <div className="text-xs text-slate-500 dark:text-gray-300">View and edit your details</div>
                         </div>
                       </Link>
                       <Link
                         to="/student/change-password"
                         onClick={() => setIsProfileOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-white hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors group"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
-                          <Lock className="w-4 h-4 text-sky-600" />
+                        <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-slate-800 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-slate-700 transition-colors">
+                          <Lock className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                         </div>
                         <div className="flex-1">
-                          <div className="text-sm font-medium">Change Password</div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400">Update your account password</div>
+                          <div className="text-sm font-medium dark:text-white">Change Password</div>
+                          <div className="text-xs text-slate-500 dark:text-gray-300">Update your account password</div>
                         </div>
                       </Link>
 
@@ -219,14 +219,14 @@ export function StudentNavbar() {
                           setIsProfileOpen(false);
                           handleLogout();
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-white hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors group"
                       >
                         <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
                           <LogOut className="w-4 h-4 text-red-600" />
                         </div>
                         <div className="flex-1 text-left">
                           <div className="text-sm font-medium text-red-600">Logout</div>
-                          <div className="text-xs text-slate-500">Sign out of your account</div>
+                          <div className="text-xs text-slate-500 dark:text-gray-300">Sign out of your account</div>
                         </div>
                       </button>
                     </div>
@@ -251,17 +251,17 @@ export function StudentNavbar() {
                   initial="closed"
                   animate="open"
                   exit="closed"
-                  className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50"
+                  className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50"
                 >
                   {/* Profile Header */}
-                  <div className="bg-gradient-to-r from-sky-50 to-blue-50 px-4 py-3 border-b border-gray-200">
+                  <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/40 dark:to-blue-900/40 px-4 py-3 border-b border-gray-200 dark:border-slate-700">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold">
                         {studentName.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-slate-900 truncate">{studentName}</div>
-                        <div className="text-xs text-slate-600 truncate">{studentEmail}</div>
+                        <div className="font-semibold text-slate-900 dark:text-white truncate">{studentName}</div>
+                        <div className="text-xs text-slate-600 dark:text-gray-300 truncate">{studentEmail}</div>
                       </div>
                     </div>
                   </div>
@@ -271,27 +271,27 @@ export function StudentNavbar() {
                     <Link
                       to="/student/profile"
                       onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                      className="flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-white hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors group"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
-                        <User className="w-4 h-4 text-sky-600" />
+                      <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-slate-800 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-slate-700 transition-colors">
+                        <User className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                       </div>
                       <div className="flex-1">
-                        <div className="text-sm font-medium">Profile</div>
-                        <div className="text-xs text-slate-500">View and edit your details</div>
+                        <div className="text-sm font-medium dark:text-white">Profile</div>
+                        <div className="text-xs text-slate-500 dark:text-gray-300">View and edit your details</div>
                       </div>
                     </Link>
                     <Link
                       to="/student/change-password"
                       onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                      className="flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-white hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors group"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
-                        <Lock className="w-4 h-4 text-sky-600" />
+                      <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-slate-800 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-slate-700 transition-colors">
+                        <Lock className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                       </div>
                       <div className="flex-1">
-                        <div className="text-sm font-medium">Change Password</div>
-                        <div className="text-xs text-slate-500">Update your account password</div>
+                        <div className="text-sm font-medium dark:text-white">Change Password</div>
+                        <div className="text-xs text-slate-500 dark:text-gray-300">Update your account password</div>
                       </div>
                     </Link>
 
@@ -300,14 +300,14 @@ export function StudentNavbar() {
                         setIsProfileOpen(false);
                         handleLogout();
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-sky-50 transition-colors group"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-white hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors group"
                     >
                       <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
                         <LogOut className="w-4 h-4 text-red-600" />
                       </div>
                       <div className="flex-1 text-left">
                         <div className="text-sm font-medium text-red-600">Logout</div>
-                        <div className="text-xs text-slate-500">Sign out of your account</div>
+                        <div className="text-xs text-slate-500 dark:text-gray-300">Sign out of your account</div>
                       </div>
                     </button>
                   </div>

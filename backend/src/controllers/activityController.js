@@ -62,19 +62,82 @@ export async function getStudentActivity(req, res) {
       }
     ]);
 
-    // 2. Merge activity data
+    // 2. Get scheduled sessions within range
+    const isSpecialStudent = Boolean(user.isSpecialStudent);
+    const scheduledSessions = await Pair.aggregate([
+      {
+        $match: {
+          $or: [
+            { interviewer: user._id, interviewerModel: isSpecialStudent ? 'SpecialStudent' : 'User' },
+            { interviewee: user._id, intervieweeModel: isSpecialStudent ? 'SpecialStudent' : 'User' }
+          ],
+          finalConfirmedTime: {
+            $gte: startDate,
+            $lte: endDate
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$finalConfirmedTime' }
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // 3. Get completed topics within range
+    const completedTopics = await Progress.aggregate([
+      {
+        $match: {
+          studentId: user._id,
+          completed: true,
+          completedAt: {
+            $gte: startDate,
+            $lte: endDate
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$completedAt' }
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // 4. Merge activity data from all sources
     const activityMap = {};
+
+    // Base activities from StudentActivity collection (videos watched, problems solved, etc.)
     activities.forEach(item => {
       activityMap[item._id] = item.count;
     });
 
-    // 3. Calculate streaks
+    // Scheduled interview sessions
+    scheduledSessions.forEach(item => {
+      const date = item._id;
+      if (!activityMap[date]) activityMap[date] = 0;
+      activityMap[date] += item.count;
+    });
+
+    // Completed learning topics
+    completedTopics.forEach(item => {
+      const date = item._id;
+      if (!activityMap[date]) activityMap[date] = 0;
+      activityMap[date] += item.count;
+    });
+
+    // 5. Calculate streaks based on merged activity map
     const sortedDates = Object.keys(activityMap).sort();
     let currentStreak = 0;
     let bestStreak = 0;
     let tempStreak = 0;
     const today = new Date().toISOString().split('T')[0];
-    
+
     // Calculate best streak
     for (let i = 0; i < sortedDates.length; i++) {
       if (i === 0) {
@@ -83,7 +146,7 @@ export async function getStudentActivity(req, res) {
         const prevDate = new Date(sortedDates[i - 1]);
         const currDate = new Date(sortedDates[i]);
         const diffDays = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
-        
+
         if (diffDays === 1) {
           tempStreak++;
         } else {
