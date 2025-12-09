@@ -48,7 +48,8 @@ const getActivities = async (req, res) => {
       targetType,
       startDate,
       endDate,
-      search
+      search,
+      coordinatorEmail
     } = req.query;
 
     const query = {};
@@ -63,8 +64,13 @@ const getActivities = async (req, res) => {
         { userRole: 'admin', 'metadata.coordinatorId': req.user.coordinatorId }
       ];
     } else if (req.user.role === 'admin') {
-      // Admin sees only admin activities (shared between all admins)
-      query.userRole = 'admin';
+      // Admin can filter by coordinator email or see all admin activities
+      if (coordinatorEmail) {
+        query.userEmail = coordinatorEmail;
+        query.userRole = 'coordinator';
+      } else {
+        query.userRole = 'admin';
+      }
     }
 
     // Filter by action type

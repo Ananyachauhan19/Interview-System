@@ -184,4 +184,9 @@ export const api = {
   // Activity Tracking
   getActivities: (queryString) => request(`/activity${queryString ? '?' + queryString : ''}`),
   getActivityStats: () => request('/activity/stats'),
+  logActivity: ({ actionType, targetType, targetId, description, changes, metadata }) => 
+    request('/activity', { 
+      method: 'POST', 
+      body: { actionType, targetType, targetId, description, changes, metadata } 
+    }),
 };

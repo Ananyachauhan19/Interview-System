@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { api } from '../utils/api';
+import { useActivityLogger } from '../hooks/useActivityLogger';
 import { Plus, Users } from 'lucide-react';
 
 export default function CoordinatorOnboarding() {
+  const { logCreate } = useActivityLogger();
   const [showForm, setShowForm] = useState(true);
   const [form, setForm] = useState({ coordinatorName: '', coordinatorEmail: '', coordinatorPassword: '', coordinatorID: '' });
   const [msg, setMsg] = useState('');
@@ -27,9 +29,14 @@ export default function CoordinatorOnboarding() {
       return;
     }
     try {
-      await api.createCoordinator(form);
+      const data = await api.createCoordinator(form);
       setMsg('Coordinator created successfully');
       setForm({ coordinatorName: '', coordinatorEmail: '', coordinatorPassword: '', coordinatorID: '' });
+      
+      // Log activity
+      logCreate('COORDINATOR', data._id, `Created coordinator: ${coordinatorName} (${coordinatorEmail})`, {
+        coordinatorID
+      });
     } catch (err) {
       const em = err.message || 'Failed to create coordinator';
       if (em.includes('exists')) setMsg('A coordinator with this email or ID already exists');

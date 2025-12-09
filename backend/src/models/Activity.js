@@ -21,7 +21,24 @@ const activitySchema = new mongoose.Schema({
       'LOGIN',
       'LOGOUT',
       'PASSWORD_CHANGE',
-      'EXPORT'
+      'EXPORT',
+      'UPLOAD',
+      'DOWNLOAD',
+      'ASSIGN',
+      'UNASSIGN',
+      'APPROVE',
+      'REJECT',
+      'SCHEDULE',
+      'RESCHEDULE',
+      'CANCEL',
+      'JOIN',
+      'LEAVE',
+      'ARCHIVE',
+      'RESTORE',
+      'REORDER',
+      'BULK_CREATE',
+      'BULK_UPDATE',
+      'BULK_DELETE'
     ]
   },
   targetType: {
@@ -37,7 +54,15 @@ const activitySchema = new mongoose.Schema({
       'SEMESTER',
       'FEEDBACK',
       'PROFILE',
-      'SYSTEM'
+      'SYSTEM',
+      'INTERVIEW',
+      'SCHEDULE',
+      'PAIR',
+      'FILE',
+      'TEMPLATE',
+      'SLOT',
+      'PROGRESS',
+      'SPECIAL_STUDENT'
     ]
   },
   targetId: {

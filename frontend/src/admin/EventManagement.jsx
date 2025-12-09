@@ -2,12 +2,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../utils/api";
+import { useActivityLogger } from "../hooks/useActivityLogger";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, AlertCircle, ToggleRight, ToggleLeft, Calendar, FileText, Upload, X, Download } from "lucide-react";
 import { useToast } from '../components/CustomToast';
 import DateTimePicker from "../components/DateTimePicker";
 
 export default function EventManagement() {
+  const { logCreate, logUpload } = useActivityLogger();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -243,6 +245,15 @@ export default function EventManagement() {
         setMsg(''); // Clear any error messages
         resetForm();
         
+        // Log activity
+        logCreate('EVENT', newId, `Created special event: ${eventName}`, {
+          eventType: 'special',
+          participantCount: csvValidationResults?.validStudents?.length || 0,
+          hasTemplate: !!template,
+          startDate: payloadStart,
+          endDate: payloadEnd
+        });
+        
         // Navigate based on user role
         const redirectPath = userRole === 'coordinator' ? `/coordinator/event/${newId}` : `/admin/event/${newId}`;
         if (newId) navigate(redirectPath, { state: { eventCreated: true } });
@@ -258,6 +269,14 @@ export default function EventManagement() {
         toast.success(`Interview "${eventName}" created successfully!`);
         setMsg(''); // Clear any error messages
         resetForm();
+        
+        // Log activity
+        logCreate('EVENT', ev._id, `Created event: ${eventName}`, {
+          eventType: 'general',
+          hasTemplate: !!template,
+          startDate: payloadStart,
+          endDate: payloadEnd
+        });
         
         // Navigate based on user role
         const redirectPath = userRole === 'coordinator' ? `/coordinator/event/${ev._id}` : `/admin/event/${ev._id}`;

@@ -2,9 +2,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../utils/api";
+import { useActivityLogger } from "../hooks/useActivityLogger";
 import { Upload, CheckCircle, AlertCircle, Plus, Loader2, FileText, Download, Users, BookOpen, Shield, ArrowRight, X } from "lucide-react";
 
 export default function StudentOnboarding() {
+  const { logBulkCreate, logCreate, logUpload } = useActivityLogger();
   const [csvFile, setCsvFile] = useState(null);
   const [students, setStudents] = useState([]);
   const [error, setError] = useState("");
@@ -221,6 +223,15 @@ export default function StudentOnboarding() {
           setSuccess(`Mails sent successfully - You can create events now`);
         }, 3000);
       }
+      
+      // Log activity
+      if (createdCount > 0) {
+        logBulkCreate('STUDENT', `Bulk uploaded ${createdCount} students via CSV`, {
+          fileName: csvFile.name,
+          createdCount,
+          existingCount
+        });
+      }
     } catch (err) {
       const errorMessage = err.message || 'Upload failed';
       // Make error messages user-friendly
@@ -263,6 +274,13 @@ export default function StudentOnboarding() {
       const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', password: singleForm.password || '', branch: singleForm.branch || '', college: singleForm.college || '', teacherid: singleForm.teacherid || '', semester: singleForm.semester || '', __row: 'N/A' };
       setStudents((s) => [newStudent, ...s]);
       setSingleForm({ name: '', email: '', studentid: '', password: '', branch: '', course: '', college: '', teacherid: '', semester: '' });
+      
+      // Log activity
+      logCreate('STUDENT', data._id, `Created student: ${data.name} (${data.email})`, {
+        studentId: data.studentid,
+        branch: data.branch,
+        semester: data.semester
+      });
     } catch (err) {
       const errorMessage = err.message || 'Failed to create student';
       // Make error messages user-friendly

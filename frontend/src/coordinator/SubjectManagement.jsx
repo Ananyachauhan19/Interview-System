@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { api } from '../utils/api';
+import { useActivityLogger } from '../hooks/useActivityLogger';
 import socketService from '../utils/socket';
 import {
   BookOpen, Plus, ChevronDown, ChevronRight, Edit2, Trash2, Save, X,
@@ -18,6 +19,7 @@ const difficultyColors = {
 
 export default function SubjectManagement() {
   const toast = useToast();
+  const { logCreate, logUpdate, logDelete, logReorder } = useActivityLogger();
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedSubjects, setExpandedSubjects] = useState(new Set());
@@ -282,6 +284,13 @@ export default function SubjectManagement() {
       try {
         await api.addChapter(subject._id, newChapter.chapterName, newChapter.importanceLevel);
         toast.success('Chapter added');
+        
+        // Log activity
+        logCreate('CHAPTER', null, `Added chapter: ${newChapter.chapterName}`, {
+          subjectName: subject.subjectName,
+          importanceLevel: newChapter.importanceLevel
+        });
+        
         setNewChapter({ chapterName: '', importanceLevel: 3 });
         setShowAddChapter(false);
         loadSubjects();
@@ -529,6 +538,17 @@ export default function SubjectManagement() {
 
         await api.addTopic(subject._id, chapter._id, formData);
         toast.success('Topic added');
+        
+        // Log activity
+        logCreate('TOPIC', null, `Added topic: ${newTopic.topicName}`, {
+          subjectName: subject.subjectName,
+          chapterName: chapter.chapterName,
+          difficultyLevel: newTopic.difficultyLevel,
+          hasVideo: !!newTopic.topicVideoLink,
+          hasNotes: !!newTopic.notesLink,
+          hasPDF: !!newTopic.questionPDF
+        });
+        
         setNewTopic({
           topicName: '',
           topicVideoLink: '',
