@@ -405,7 +405,7 @@ export default function EventManagement() {
                     placeholder="Select start date and time"
                     className="text-sm"
                   />
-                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Past dates are disabled. Select current or future time only.</p>
+                  <p className="text-xs text-slate-500 dark:text-white mt-1">Past dates are disabled. Select current or future time only.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-1">End Date & Time</label>
@@ -435,7 +435,7 @@ export default function EventManagement() {
                     placeholder="Select end date and time"
                     className="text-sm"
                   />
-                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-white mt-1">
                     {!startDate ? 'Select start date first' : 'Must be after or equal to start time'}
                   </p>
                 </div>
