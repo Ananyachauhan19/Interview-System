@@ -441,9 +441,17 @@ export default function AdminLearning() {
                                         className="w-full flex items-center justify-between p-2 bg-slate-50 dark:bg-gray-700 rounded-md hover:bg-sky-50 dark:hover:bg-gray-600 border border-slate-200 dark:border-gray-600 hover:border-sky-300 dark:hover:border-sky-600 transition-all group"
                                       >
                                         <div className="flex items-center space-x-2">
-                                          <div className="w-7 h-7 bg-sky-500 rounded-full flex items-center justify-center text-white font-semibold text-xs shadow-sm">
-                                            {coordinator.coordinatorName?.charAt(0).toUpperCase() || 'T'}
-                                          </div>
+                                          {coordinator.avatarUrl ? (
+                                            <img
+                                              src={coordinator.avatarUrl}
+                                              alt={coordinator.coordinatorName || 'Teacher'}
+                                              className="w-7 h-7 rounded-full object-cover border border-sky-200 dark:border-sky-700 shadow-sm"
+                                            />
+                                          ) : (
+                                            <div className="w-7 h-7 bg-sky-500 rounded-full flex items-center justify-center text-white font-semibold text-xs shadow-sm">
+                                              {coordinator.coordinatorName?.charAt(0).toUpperCase() || 'T'}
+                                            </div>
+                                          )}
                                           <div className="text-left">
                                             <p className="font-semibold text-slate-800 dark:text-gray-100 text-xs">
                                               {coordinator.coordinatorName || 'Teacher'}
