@@ -68,64 +68,7 @@ export async function getStudentActivity(req, res) {
       activityMap[item._id] = item.count;
     });
 
-    // 3. Calculate streaks
-    const sortedDates = Object.keys(activityMap).sort();
-    let currentStreak = 0;
-    let bestStreak = 0;
-    let tempStreak = 0;
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Calculate best streak
-    for (let i = 0; i < sortedDates.length; i++) {
-      if (i === 0) {
-        tempStreak = 1;
-      } else {
-        const prevDate = new Date(sortedDates[i - 1]);
-        const currDate = new Date(sortedDates[i]);
-        const diffDays = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 1) {
-          tempStreak++;
-        } else {
-          bestStreak = Math.max(bestStreak, tempStreak);
-          tempStreak = 1;
-        }
-      }
-    }
-    bestStreak = Math.max(bestStreak, tempStreak);
-
-    // Calculate current streak (working backwards from today)
-    if (sortedDates.length > 0) {
-      const todayOrYesterday = [today, new Date(Date.now() - 86400000).toISOString().split('T')[0]];
-      if (todayOrYesterday.includes(sortedDates[sortedDates.length - 1])) {
-        currentStreak = 1;
-        for (let i = sortedDates.length - 2; i >= 0; i--) {
-          const currDate = new Date(sortedDates[i + 1]);
-          const prevDate = new Date(sortedDates[i]);
-          const diffDays = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
-          if (diffDays === 1) {
-            currentStreak++;
-          } else {
-            break;
-          }
-        }
-      }
-    }
-
-    // 4. Get total videos watched (all time)
-    const videoWatchCount = await StudentActivity.countDocuments({
-      studentId: user._id,
-      activityType: 'VIDEO_WATCH'
-    });
-
-    // 5. Get total problems solved (all time)
-    const problemsSolvedCount = await StudentActivity.countDocuments({
-      studentId: user._id,
-      activityType: 'PROBLEM_SOLVED'
-    });
-
-<<<<<<< Updated upstream
-    // Calculate streaks
+    // 3. Calculate streaks (single implementation)
     const calculateStreaks = () => {
       const sortedDates = Object.keys(activityMap).sort();
       if (sortedDates.length === 0) return { currentStreak: 0, bestStreak: 0 };
@@ -172,15 +115,20 @@ export async function getStudentActivity(req, res) {
 
     const { currentStreak, bestStreak } = calculateStreaks();
     const totalActiveDays = Object.keys(activityMap).length;
-||||||| Stash base
-    // 4. Get available years (years when user was active)
-    const userCreatedYear = user.createdAt ? new Date(user.createdAt).getFullYear() : targetYear;
-    const currentYear = new Date().getFullYear();
-    const availableYears = [];
-    for (let y = userCreatedYear; y <= currentYear; y++) {
-      availableYears.push(y);
-    }
-=======
+
+    // 4. Get total videos watched (all time)
+    const videoWatchCount = await StudentActivity.countDocuments({
+      studentId: user._id,
+      activityType: 'VIDEO_WATCH'
+    });
+
+    // 5. Get total problems solved (all time)
+    const problemsSolvedCount = await StudentActivity.countDocuments({
+      studentId: user._id,
+      activityType: 'PROBLEM_SOLVED'
+    });
+    // Remove duplicate streaks and available years
+
     // 6. Get total subjects enrolled
     // Find all semesters with student's coordinatorId (teacherId)
     const coordinator = user.teacherId;
@@ -193,38 +141,20 @@ export async function getStudentActivity(req, res) {
       });
     }
 
-    // 7. Get available years
-    const userCreatedYear = user.createdAt ? new Date(user.createdAt).getFullYear() : targetYear;
-    const currentYear = new Date().getFullYear();
-    const availableYears = [];
-    for (let y = userCreatedYear; y <= currentYear; y++) {
-      availableYears.push(y);
-    }
->>>>>>> Stashed changes
+    // No availableYears needed for rolling window
 
     res.json({
       activityByDate: activityMap,
       startDate: startDate.toISOString().slice(0, 10),
       endDate: endDate.toISOString().slice(0, 10),
       stats: {
-<<<<<<< Updated upstream
         totalActiveDays,
         totalDaysInRange: 365,
-        currentStreak,
-        bestStreak,
-        totalSessions: scheduledSessions.reduce((sum, item) => sum + item.count, 0),
-        totalCompletions: completedTopics.reduce((sum, item) => sum + item.count, 0),
-||||||| Stash base
-        totalSessions: scheduledSessions.reduce((sum, item) => sum + item.count, 0),
-        totalCompletions: completedTopics.reduce((sum, item) => sum + item.count, 0),
-=======
-        totalActiveDays: sortedDates.length,
         currentStreak,
         bestStreak,
         totalSubjects,
         totalVideosWatched: videoWatchCount,
         totalProblemsSolved: problemsSolvedCount,
->>>>>>> Stashed changes
         totalActivities: Object.values(activityMap).reduce((sum, val) => sum + val, 0)
       }
     });
