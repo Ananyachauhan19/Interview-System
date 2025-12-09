@@ -379,7 +379,32 @@ export const getSubjectProgress = async (req, res) => {
     const progressRecords = await Progress.find({ studentId, subjectId });
 
     const completedTopics = progressRecords.filter(p => p.completed).length;
-    const totalTopics = progressRecords.length;
+
+    // Determine total topics from the curriculum definition (all topics uploaded
+    // by admin/coordinator for this subject), not just topics the student has
+    // already interacted with.
+    let totalTopics = 0;
+
+    try {
+      const semester = await Semester.findOne({ 'subjects._id': subjectId }).select('subjects._id subjects.chapters.topics');
+      if (semester) {
+        const subject = semester.subjects.id(subjectId);
+        if (subject) {
+          subject.chapters.forEach((chapter) => {
+            totalTopics += (chapter.topics ? chapter.topics.length : 0);
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error resolving subject topics for progress:', err);
+    }
+
+    // Fallback to number of progress records if curriculum lookup fails,
+    // so the endpoint still returns a sensible value.
+    if (!totalTopics) {
+      totalTopics = progressRecords.length;
+    }
+
     const percentage = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
 
     res.json({

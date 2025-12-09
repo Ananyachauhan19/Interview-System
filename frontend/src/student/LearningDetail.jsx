@@ -248,6 +248,34 @@ export default function LearningDetail() {
     );
   };
 
+  const getChapterProgress = (chapter) => {
+    if (!chapter || !Array.isArray(chapter.topics)) {
+      return { completedTopics: 0, totalTopics: 0, percentage: 0 };
+    }
+
+    const totalTopics = chapter.topics.length;
+
+    if (!subjectDetails?.subjectId || !progress[subjectDetails.subjectId]?.progressRecords || totalTopics === 0) {
+      return { completedTopics: 0, totalTopics, percentage: 0 };
+    }
+
+    const progressRecords = progress[subjectDetails.subjectId].progressRecords;
+    let completedTopics = 0;
+
+    chapter.topics.forEach(topic => {
+      const topicProgress = progressRecords.find(p => p.topicId === topic._id);
+      if (topicProgress?.completed) {
+        completedTopics += 1;
+      }
+    });
+
+    const percentage = totalTopics > 0
+      ? Math.round((completedTopics / totalTopics) * 100)
+      : 0;
+
+    return { completedTopics, totalTopics, percentage };
+  };
+
   const isTopicCompleted = (topicId) => {
     if (!subjectDetails?.subjectId || !progress[subjectDetails.subjectId]) {
       return false;
@@ -257,8 +285,28 @@ export default function LearningDetail() {
     return topicProgress?.completed || false;
   };
 
-  const getSubjectProgressPercentage = (subjId) => {
-    return progress[subjId]?.percentage || 0;
+  const getSubjectProgressInfo = (subjId) => {
+    const subj = progress[subjId];
+    if (!subj) {
+      return { completedTopics: 0, totalTopics: 0, percentage: 0 };
+    }
+
+    const completedTopics = typeof subj.completedTopics === 'number'
+      ? subj.completedTopics
+      : (subj.progressRecords || []).filter(p => p.completed).length;
+
+    let totalTopics;
+    if (typeof subj.totalTopics === 'number') {
+      totalTopics = subj.totalTopics;
+    } else {
+      totalTopics = (subj.progressRecords || []).length;
+    }
+
+    const percentage = totalTopics > 0
+      ? Math.round((completedTopics / totalTopics) * 100)
+      : 0;
+
+    return { completedTopics, totalTopics, percentage };
   };
 
   if (loading) {
@@ -292,7 +340,7 @@ export default function LearningDetail() {
             <div className="space-y-2.5">
               {allSubjects.map((subject) => {
                 const isSelected = selectedSubject?.subjectId === subject.subjectId;
-                const progressPercent = getSubjectProgressPercentage(subject.subjectId);
+                const { completedTopics, totalTopics, percentage: progressPercent } = getSubjectProgressInfo(subject.subjectId);
 
                 return (
                   <div key={subject.subjectId}>
@@ -319,17 +367,27 @@ export default function LearningDetail() {
                         </span>
                       </div>
                       
-                      {/* Progress Bar */}
-                      <div className="w-full bg-slate-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden mb-1.5">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progressPercent}%` }}
-                          transition={{ duration: 0.5, ease: 'easeOut' }}
-                          className="h-full bg-sky-500 dark:bg-sky-600 rounded-full"
-                        />
+                      {/* Subject Progress Bar divided by topics */}
+                      <div className="w-full bg-slate-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden mb-1.5 flex">
+                        {totalTopics > 0 ? (
+                          Array.from({ length: totalTopics }).map((_, idx) => (
+                            <div
+                              key={idx}
+                              className={`flex-1 ${
+                                idx < completedTopics
+                                  ? 'bg-sky-500 dark:bg-sky-600'
+                                  : 'bg-transparent'
+                              }`}
+                            />
+                          ))
+                        ) : (
+                          <div className="flex-1 bg-transparent" />
+                        )}
                       </div>
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium text-slate-600 dark:text-gray-400">{progressPercent}% Complete</p>
+                        <p className="text-xs font-medium text-slate-600 dark:text-gray-400">
+                          {progressPercent}% Complete
+                        </p>
                         {progressPercent === 100 && (
                           <CheckCircle2 className="w-4 h-4 text-green-500" />
                         )}
@@ -380,7 +438,10 @@ export default function LearningDetail() {
 
               {/* Chapters */}
               <div className="space-y-3">
-                {subjectDetails.chapters.map((chapter, chapterIdx) => (
+                {subjectDetails.chapters.map((chapter, chapterIdx) => {
+                  const { completedTopics, totalTopics, percentage } = getChapterProgress(chapter);
+
+                  return (
                   <div key={chapter._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden">
                     {/* Chapter Header */}
                     <div
@@ -411,9 +472,29 @@ export default function LearningDetail() {
                           ))}
                         </div>
                       </div>
-                      <span className="text-xs font-medium px-2 py-1 bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-400 rounded">
-                        {chapter.topics.length} {chapter.topics.length === 1 ? 'Topic' : 'Topics'}
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-xs font-medium px-2 py-1 bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-400 rounded">
+                          {chapter.topics.length} {chapter.topics.length === 1 ? 'Topic' : 'Topics'}
+                        </span>
+                        {totalTopics > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-28 h-1.5 bg-slate-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
+                              {Array.from({ length: totalTopics }).map((_, idx) => {
+                                const filled = idx < completedTopics;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`flex-1 ${filled ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-transparent'}`}
+                                  />
+                                );
+                              })}
+                            </div>
+                            <span className="text-[11px] font-medium text-slate-500 dark:text-gray-400">
+                              {completedTopics}/{totalTopics} ({percentage}%)
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Topics Table */}
@@ -558,7 +639,8 @@ export default function LearningDetail() {
                       )}
                     </AnimatePresence>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (

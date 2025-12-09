@@ -136,6 +136,9 @@ export default function StudentProfile() {
       // Refresh user data
       const me = await api.me();
       setUser(me);
+      if (me && me.avatarUrl !== undefined) {
+        localStorage.setItem("studentAvatarUrl", me.avatarUrl || "");
+      }
       
       setSuccess('Profile photo updated successfully!');
       setTimeout(() => {

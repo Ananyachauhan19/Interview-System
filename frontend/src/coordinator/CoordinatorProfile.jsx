@@ -35,6 +35,9 @@ export default function CoordinatorProfile() {
       // Refresh
       const me = await api.me();
       setUser(me);
+      if (me && me.avatarUrl !== undefined) {
+        localStorage.setItem("coordinatorAvatarUrl", me.avatarUrl || "");
+      }
       setAvatarFile(null);
     } catch (e) {
       setError(e.message || 'Failed to upload');

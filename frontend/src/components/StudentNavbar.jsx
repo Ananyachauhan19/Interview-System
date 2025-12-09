@@ -15,16 +15,42 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import DarkModeToggle from "./DarkModeToggle";
+import { api } from "../utils/api";
 
 export function StudentNavbar() {
   const location = useLocation();
   const [active, setActive] = useState(location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [studentName, setStudentName] = useState(localStorage.getItem("studentName") || "Student");
+  const [studentEmail, setStudentEmail] = useState(localStorage.getItem("studentEmail") || "email@example.com");
+  const [studentAvatarUrl, setStudentAvatarUrl] = useState(localStorage.getItem("studentAvatarUrl") || "");
 
-  // Retrieve student info from localStorage (set this in your login component)
-  const studentName = localStorage.getItem("studentName") || "Student";
-  const studentEmail = localStorage.getItem("studentEmail") || "email@example.com";
+  // Fetch latest student profile (name/email/avatar) when navbar mounts
+  useEffect(() => {
+    async function fetchStudentProfile() {
+      const existingToken = localStorage.getItem("token");
+      if (!existingToken) return;
+      try {
+        const data = await api.me();
+        if (data && data.name) {
+          setStudentName(data.name);
+          localStorage.setItem("studentName", data.name);
+        }
+        if (data && data.email) {
+          setStudentEmail(data.email);
+          localStorage.setItem("studentEmail", data.email);
+        }
+        if (data && Object.prototype.hasOwnProperty.call(data, "avatarUrl")) {
+          setStudentAvatarUrl(data.avatarUrl || "");
+          localStorage.setItem("studentAvatarUrl", data.avatarUrl || "");
+        }
+      } catch (err) {
+        console.warn("Student profile fetch failed:", err?.message || err);
+      }
+    }
+    fetchStudentProfile();
+  }, []);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -48,6 +74,7 @@ export function StudentNavbar() {
     localStorage.removeItem("isStudent");
     localStorage.removeItem("studentName");
     localStorage.removeItem("studentEmail");
+    localStorage.removeItem("studentAvatarUrl");
     navigate("/");
   };
 
@@ -153,9 +180,17 @@ export function StudentNavbar() {
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-900 hover:bg-sky-50 dark:hover:bg-slate-800 text-gray-700 dark:text-white transition-all duration-200 border border-gray-200 dark:border-slate-700"
               >
-                <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white font-semibold text-sm">
-                  {studentName.charAt(0).toUpperCase()}
-                </div>
+                {studentAvatarUrl ? (
+                  <img
+                    src={studentAvatarUrl}
+                    alt={studentName}
+                    className="w-8 h-8 rounded-full object-cover border border-white/20"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {studentName.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="text-left hidden lg:block">
                   <div className="font-semibold text-sm text-slate-800 dark:text-slate-200">{studentName}</div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">Student</div>
@@ -175,9 +210,17 @@ export function StudentNavbar() {
                     {/* Profile Header */}
                     <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/40 dark:to-blue-900/40 px-4 py-3 border-b border-gray-200 dark:border-slate-700">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold">
-                          {studentName.charAt(0).toUpperCase()}
-                        </div>
+                        {studentAvatarUrl ? (
+                          <img
+                            src={studentAvatarUrl}
+                            alt={studentName}
+                            className="w-10 h-10 rounded-full object-cover border border-white/30"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold">
+                            {studentName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="font-semibold text-slate-900 dark:text-white truncate">{studentName}</div>
                           <div className="text-xs text-slate-600 dark:text-gray-300 truncate">{studentEmail}</div>
@@ -239,9 +282,17 @@ export function StudentNavbar() {
           <div className="relative profile-container md:hidden">
             <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-sky-500 text-white font-semibold text-sm shadow-md"
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-sky-500 text-white font-semibold text-sm shadow-md overflow-hidden"
             >
-              {studentName.charAt(0).toUpperCase()}
+              {studentAvatarUrl ? (
+                <img
+                  src={studentAvatarUrl}
+                  alt={studentName}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                studentName.charAt(0).toUpperCase()
+              )}
             </button>
 
             <AnimatePresence>
@@ -256,9 +307,17 @@ export function StudentNavbar() {
                   {/* Profile Header */}
                   <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/40 dark:to-blue-900/40 px-4 py-3 border-b border-gray-200 dark:border-slate-700">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold">
-                        {studentName.charAt(0).toUpperCase()}
-                      </div>
+                      {studentAvatarUrl ? (
+                        <img
+                          src={studentAvatarUrl}
+                          alt={studentName}
+                          className="w-10 h-10 rounded-full object-cover border border-white/30"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold">
+                          {studentName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-slate-900 dark:text-white truncate">{studentName}</div>
                         <div className="text-xs text-slate-600 dark:text-gray-300 truncate">{studentEmail}</div>

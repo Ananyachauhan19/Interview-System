@@ -12,6 +12,7 @@ export function CoordinatorNavbar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [coordinatorName, setCoordinatorName] = useState(localStorage.getItem("coordinatorName") || "Coordinator");
   const [coordinatorEmail, setCoordinatorEmail] = useState(localStorage.getItem("coordinatorEmail") || "");
+  const [coordinatorAvatarUrl, setCoordinatorAvatarUrl] = useState(localStorage.getItem("coordinatorAvatarUrl") || "");
 
   useEffect(() => {
     async function fetchProfile() {
@@ -26,6 +27,10 @@ export function CoordinatorNavbar() {
         if (data && data.name) {
           setCoordinatorName(data.name);
           localStorage.setItem("coordinatorName", data.name);
+        }
+        if (data && Object.prototype.hasOwnProperty.call(data, "avatarUrl")) {
+          setCoordinatorAvatarUrl(data.avatarUrl || "");
+          localStorage.setItem("coordinatorAvatarUrl", data.avatarUrl || "");
         }
       } catch (err) {
         console.warn("Coordinator profile fetch failed:", err?.message || err);
@@ -53,6 +58,7 @@ export function CoordinatorNavbar() {
     localStorage.removeItem("token");
     localStorage.removeItem("coordinatorName");
     localStorage.removeItem("coordinatorEmail");
+    localStorage.removeItem("coordinatorAvatarUrl");
     window.location.href = "/";
   };
 
@@ -116,9 +122,17 @@ export function CoordinatorNavbar() {
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-sky-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all duration-200 border border-gray-200 dark:border-gray-700"
               >
-                <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-semibold text-sm">
-                  {coordinatorName.charAt(0).toUpperCase()}
-                </div>
+                {coordinatorAvatarUrl ? (
+                  <img
+                    src={coordinatorAvatarUrl}
+                    alt={coordinatorName}
+                    className="w-8 h-8 rounded-full object-cover border border-white/20"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {coordinatorName.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="text-left hidden lg:block">
                   <div className="font-semibold text-sm text-slate-800 dark:text-gray-200">{coordinatorName}</div>
                   <div className="text-xs text-slate-500 dark:text-gray-400">Coordinator</div>
@@ -136,9 +150,17 @@ export function CoordinatorNavbar() {
                   >
                     <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-700 dark:to-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold">
-                          {coordinatorName.charAt(0).toUpperCase()}
-                        </div>
+                        {coordinatorAvatarUrl ? (
+                          <img
+                            src={coordinatorAvatarUrl}
+                            alt={coordinatorName}
+                            className="w-10 h-10 rounded-full object-cover border border-white/30"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold">
+                            {coordinatorName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="font-semibold text-slate-900 dark:text-gray-100 truncate">{coordinatorName}</div>
                           <div className="text-xs text-slate-600 dark:text-gray-400 truncate">{coordinatorEmail}</div>
@@ -213,9 +235,17 @@ export function CoordinatorNavbar() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500 text-white font-semibold text-sm shadow-md"
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500 text-white font-semibold text-sm shadow-md overflow-hidden"
             >
-              {coordinatorName.charAt(0).toUpperCase()}
+              {coordinatorAvatarUrl ? (
+                <img
+                  src={coordinatorAvatarUrl}
+                  alt={coordinatorName}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                coordinatorName.charAt(0).toUpperCase()
+              )}
             </motion.button>
 
             <AnimatePresence>
@@ -228,9 +258,17 @@ export function CoordinatorNavbar() {
                 >
                   <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-700 dark:to-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold">
-                        {coordinatorName.charAt(0).toUpperCase()}
-                      </div>
+                      {coordinatorAvatarUrl ? (
+                        <img
+                          src={coordinatorAvatarUrl}
+                          alt={coordinatorName}
+                          className="w-10 h-10 rounded-full object-cover border border-white/30"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold">
+                          {coordinatorName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-slate-900 dark:text-gray-100 truncate">{coordinatorName}</div>
                         <div className="text-xs text-slate-600 dark:text-gray-400 truncate">{coordinatorEmail}</div>
