@@ -110,7 +110,13 @@ export default function LearningDetail() {
     try {
       setLoading(true);
       const data = await api.getCoordinatorSubjects(teacherId);
-      setAllSubjects(data);
+
+      // Only show subjects for the currently selected semester (if provided)
+      const filtered = semesterId
+        ? data.filter(subject => subject.semesterId === semesterId)
+        : data;
+
+      setAllSubjects(filtered);
     } catch (error) {
       console.error('Error loading subjects:', error);
       toast.error('Failed to load subjects');
