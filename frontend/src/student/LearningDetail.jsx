@@ -629,6 +629,7 @@ export default function LearningDetail() {
                   />
                 )}
                 {(modalType === 'notes' || modalType === 'pdf') && (
+<<<<<<< Updated upstream
                   <div className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden relative">
                     <iframe
                       src={modalContent}
@@ -648,6 +649,20 @@ export default function LearningDetail() {
                       </p>
                     </div>
                   </div>
+||||||| Stash base
+                  <iframe
+                    src={modalContent}
+                    className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                    title="Document Viewer"
+                  />
+=======
+                  <iframe
+                    src={`${modalContent}#toolbar=0&navpanes=0&scrollbar=0`}
+                    className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                    title="Document Viewer"
+                    sandbox="allow-scripts allow-same-origin"
+                  />
+>>>>>>> Stashed changes
                 )}
               </div>
             </motion.div>
