@@ -324,12 +324,12 @@ export default function AdminLearningDetail() {
         >
           <div className="h-full overflow-y-auto p-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-gray-900 dark:text-gray-100">Subjects</h2>
+              <h2 className="font-bold text-gray-900 dark:text-white">Subjects</h2>
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="lg:hidden p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 dark:text-white" />
               </button>
             </div>
 
@@ -349,7 +349,7 @@ export default function AdminLearningDetail() {
                   >
                     <div className="flex items-center space-x-2">
                       <BookOpen className={`w-4 h-4 ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'}`} />
-                      <span className={`font-medium text-sm ${isSelected ? 'text-indigo-900 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <span className={`font-medium text-sm ${isSelected ? 'text-indigo-900 dark:text-white' : 'text-gray-700 dark:text-white'}`}>
                         {subject.subjectName}
                       </span>
                     </div>
@@ -377,20 +377,20 @@ export default function AdminLearningDetail() {
               <div className="mb-8 flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                       {subjectDetails.subjectName}
                     </h1>
                     <button
                       onClick={() => navigate('/admin/learning')}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-white hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       Back
                     </button>
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400">{subjectDetails.subjectDescription}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                    Taught by <span className="font-medium dark:text-gray-300">
+                  <p className="text-gray-600 dark:text-white">{subjectDetails.subjectDescription}</p>
+                  <p className="text-sm text-gray-500 dark:text-white mt-2">
+                    Taught by <span className="font-medium dark:text-white">
                       {currentCoordinatorName || subjectDetails?.coordinatorName || initialCoordinatorName || 'Teacher'}
                     </span>
                   </p>

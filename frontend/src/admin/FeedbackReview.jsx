@@ -28,8 +28,8 @@ const FeedbackCard = ({ feedback }) => (
   >
     <div className="flex items-start justify-between">
       <div className="flex-1">
-        <h3 className="font-semibold text-slate-800 dark:text-gray-100 text-sm">{feedback.event}</h3>
-        <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+        <h3 className="font-semibold text-slate-800 dark:text-white text-sm">{feedback.event}</h3>
+        <p className="text-xs text-slate-500 dark:text-white mt-0.5">
           {new Date(feedback.submittedAt).toLocaleString()}
         </p>
       </div>
@@ -43,16 +43,16 @@ const FeedbackCard = ({ feedback }) => (
       <div className="flex items-center gap-1.5">
         <User className="w-3 h-3 text-emerald-500" />
         <div>
-          <div className="text-xs text-slate-500 dark:text-gray-400">Mentor</div>
-          <div className="font-medium text-slate-800 dark:text-gray-200 text-sm">{feedback.interviewer}</div>
+          <div className="text-xs text-slate-500 dark:text-white">Mentor</div>
+          <div className="font-medium text-slate-800 dark:text-white text-sm">{feedback.interviewer}</div>
         </div>
       </div>
       
       <div className="flex items-center gap-1.5">
         <Users className="w-3 h-3 text-indigo-500" />
         <div>
-          <div className="text-xs text-slate-500 dark:text-gray-400">Candidate</div>
-          <div className="font-medium text-slate-800 dark:text-gray-200 text-sm">{feedback.interviewee}</div>
+          <div className="text-xs text-slate-500 dark:text-white">Candidate</div>
+          <div className="font-medium text-slate-800 dark:text-white text-sm">{feedback.interviewee}</div>
         </div>
       </div>
 
@@ -60,8 +60,8 @@ const FeedbackCard = ({ feedback }) => (
         <div className="flex items-center gap-1.5">
           <School className="w-3 h-3 text-amber-500" />
           <div>
-            <div className="text-xs text-slate-500 dark:text-gray-400">College</div>
-            <div className="font-medium text-slate-800 dark:text-gray-200 text-sm">{feedback.intervieweeCollege}</div>
+            <div className="text-xs text-slate-500 dark:text-white">College</div>
+            <div className="font-medium text-slate-800 dark:text-white text-sm">{feedback.intervieweeCollege}</div>
           </div>
         </div>
       )}
@@ -70,10 +70,10 @@ const FeedbackCard = ({ feedback }) => (
     {feedback.comments && (
       <div className="bg-slate-50 dark:bg-gray-700 rounded p-2">
         <div className="flex items-center gap-1.5 mb-1">
-          <MessageSquare className="w-3 h-3 text-slate-500 dark:text-gray-400" />
-          <div className="text-xs font-semibold text-slate-600 dark:text-gray-300">Comments</div>
+          <MessageSquare className="w-3 h-3 text-slate-500 dark:text-white" />
+          <div className="text-xs font-semibold text-slate-600 dark:text-white">Comments</div>
         </div>
-        <p className="text-sm text-slate-700 dark:text-gray-300 line-clamp-2">{feedback.comments}</p>
+        <p className="text-sm text-slate-700 dark:text-white line-clamp-2">{feedback.comments}</p>
       </div>
     )}
   </motion.div>
@@ -215,9 +215,9 @@ export default function FeedbackReview() {
             <div className="w-8 h-8 bg-sky-500 dark:bg-sky-600 rounded-lg flex items-center justify-center">
               <Calendar className="w-4 h-4 text-white" />
             </div>
-            <h2 className="text-sm font-bold text-slate-800 dark:text-gray-100">Events</h2>
+            <h2 className="text-sm font-bold text-slate-800 dark:text-white">Events</h2>
           </div>
-          <p className="text-xs text-slate-500 dark:text-gray-400">Select an event to view feedback</p>
+          <p className="text-xs text-slate-500 dark:text-white">Select an event to view feedback</p>
         </div>
 
         {/* Events List */}
@@ -233,10 +233,10 @@ export default function FeedbackReview() {
           >
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <h3 className="text-xs font-semibold text-slate-900 dark:text-gray-100 truncate">
+                <h3 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
                   All Events
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-white mt-0.5">
                   View all feedback
                 </p>
               </div>
@@ -262,10 +262,10 @@ export default function FeedbackReview() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xs font-semibold text-slate-900 dark:text-gray-100 truncate">
+                  <h3 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
                     {event.name}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-white mt-0.5">
                     {new Date(event.startDate).toLocaleDateString()}
                   </p>
                 </div>

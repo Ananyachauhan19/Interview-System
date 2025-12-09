@@ -34,12 +34,12 @@ const EventCard = ({ event, isActive, onClick }) => (
     <div className="flex items-start gap-2">
       <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-slate-800 dark:text-gray-100 text-sm truncate">{event.name}</h3>
-        <div className="text-xs text-slate-600 dark:text-gray-400 mt-1">
+        <h3 className="font-semibold text-slate-800 dark:text-white text-sm truncate">{event.name}</h3>
+        <div className="text-xs text-slate-600 dark:text-white mt-1">
           <p>{new Date(event.startDate).toLocaleDateString()}</p>
         </div>
         {event.coordinatorName && (
-          <div className="mt-1 text-xs text-slate-500 dark:text-gray-400">
+          <div className="mt-1 text-xs text-slate-500 dark:text-white">
             <span className="font-medium">Coordinator:</span> {event.coordinatorName}
           </div>
         )}
@@ -65,8 +65,8 @@ const StatCard = ({ icon: Icon, label, value, color = "indigo" }) => (
         <Icon className={`w-3 h-3 text-${color}-600`} />
       </div>
       <div>
-        <div className="text-xs text-slate-500 dark:text-gray-400">{label}</div>
-        <div className="font-semibold text-slate-800 dark:text-gray-100 text-sm">{value}</div>
+        <div className="text-xs text-slate-500 dark:text-white">{label}</div>
+        <div className="font-semibold text-slate-800 dark:text-white text-sm">{value}</div>
       </div>
     </div>
   </motion.div>
@@ -87,21 +87,21 @@ const PairCard = ({ pair, index }) => (
             <div className="font-medium text-indigo-700 dark:text-indigo-400 text-sm truncate">
               {pair.interviewer?.name || pair.interviewer?.email}
             </div>
-            <div className="text-xs text-slate-500 dark:text-gray-400">Mentor</div>
+            <div className="text-xs text-slate-500 dark:text-white">Mentor</div>
           </div>
           
-          <div className="text-slate-400 dark:text-gray-500 flex-shrink-0 text-xs">→</div>
+          <div className="text-slate-400 dark:text-white flex-shrink-0 text-xs">→</div>
           
           <div className="min-w-0 flex-1">
             <div className="font-medium text-sky-700 dark:text-sky-400 text-sm truncate">
               {pair.interviewee?.name || pair.interviewee?.email}
             </div>
-            <div className="text-xs text-slate-500 dark:text-gray-400">Candidate</div>
+            <div className="text-xs text-slate-500 dark:text-white">Candidate</div>
           </div>
         </div>
       </div>
       
-      <div className="flex flex-wrap gap-1 text-xs text-slate-600 dark:text-gray-400 border-t border-slate-200 dark:border-gray-700 pt-1.5">
+      <div className="flex flex-wrap gap-1 text-xs text-slate-600 dark:text-white border-t border-slate-200 dark:border-gray-700 pt-1.5">
         <span className={`px-1.5 py-0.5 rounded ${
           pair.status === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' :
           pair.status === 'scheduled' ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300' :
@@ -143,7 +143,7 @@ const EventSearchFilter = ({ searchQuery, setSearchQuery, eventTab, setEventTab 
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Search scheduled interviews..."
-        className="w-full bg-slate-50 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 pl-7 pr-7 py-2 rounded-lg focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 text-slate-700 dark:text-gray-100 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+        className="w-full bg-slate-50 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 pl-7 pr-7 py-2 rounded-lg focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 text-slate-700 dark:text-white text-sm placeholder:text-gray-400 dark:placeholder:text-gray-400"
       />
       {searchQuery && (
         <button
@@ -163,7 +163,7 @@ const EventSearchFilter = ({ searchQuery, setSearchQuery, eventTab, setEventTab 
           className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-all duration-200 ${
             eventTab === tab
               ? 'bg-white dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm'
-              : 'text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200'
+              : 'text-slate-600 dark:text-white hover:text-slate-800 dark:hover:text-white'
           }`}
         >
           {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -295,12 +295,12 @@ export default function EventDetail() {
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Mobile Header */}
           <div className="lg:hidden flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-3 border border-slate-200 dark:border-gray-700">
-                        <h1 className="text-lg font-semibold text-slate-800 dark:text-gray-100">Scheduled Interviews</h1>
+                        <h1 className="text-lg font-semibold text-slate-800 dark:text-white">Scheduled Interviews</h1>
             <button
               onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
               className="p-1.5 rounded bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600"
             >
-              {isMobileSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              {isMobileSidebarOpen ? <X className="w-4 h-4 dark:text-white" /> : <Menu className="w-4 h-4 dark:text-white" />}
             </button>
           </div>
 
@@ -318,7 +318,7 @@ export default function EventDetail() {
                 }`}
               >
                 <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-4 h-[calc(100vh-8rem)] overflow-y-auto">
-                                    <h2 className="text-lg font-semibold text-slate-800 dark:text-gray-100 mb-3">Scheduled Interviews</h2>
+                                    <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-3">Scheduled Interviews</h2>
                   
                   <EventSearchFilter 
                     searchQuery={searchQuery}
@@ -329,7 +329,7 @@ export default function EventDetail() {
 
                   <div className="mt-3 space-y-2">
                     {filteredEvents.length === 0 ? (
-                      <div className="text-slate-500 dark:text-gray-400 text-sm text-center py-4">
+                      <div className="text-slate-500 dark:text-white text-sm text-center py-4">
                         No interviews found
                       </div>
                     ) : (

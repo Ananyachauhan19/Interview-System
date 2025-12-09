@@ -110,8 +110,8 @@ export default function CoordinatorDirectory() {
                 <Users className="w-6 h-6 text-indigo-600" />
               </div>
               <div>
-                <h2 className="text-2xl font-semibold text-slate-800 dark:text-gray-100">Coordinator Database</h2>
-                <p className="text-slate-600 dark:text-gray-400 text-sm">View and search all coordinators</p>
+                <h2 className="text-2xl font-semibold text-slate-800 dark:text-white">Coordinator Database</h2>
+                <p className="text-slate-600 dark:text-white text-sm">View and search all coordinators</p>
               </div>
             </div>
 
@@ -124,7 +124,7 @@ export default function CoordinatorDirectory() {
                   placeholder="Search coordinators..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-9 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600 focus:border-indigo-500 dark:focus:border-indigo-600 text-slate-700 dark:text-gray-100 bg-white dark:bg-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  className="w-full pl-9 pr-9 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600 focus:border-indigo-500 dark:focus:border-indigo-600 text-slate-700 dark:text-white bg-white dark:bg-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-400"
                 />
                 {searchQuery && (
                   <button
@@ -136,7 +136,7 @@ export default function CoordinatorDirectory() {
                   </button>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 ml-1">Search by name, coordinator ID, or email</p>
+              <p className="text-xs text-slate-500 dark:text-white mt-1 ml-1">Search by name, coordinator ID, or email</p>
             </div>
           </div>
 
@@ -144,8 +144,8 @@ export default function CoordinatorDirectory() {
           <div className="mb-6 p-4 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-slate-600" />
-                <span className="text-sm font-medium text-slate-700 dark:text-gray-300">
+                <Users className="w-5 h-5 text-slate-600 dark:text-white" />
+                <span className="text-sm font-medium text-slate-700 dark:text-white">
                   Total Coordinators: <span className="font-semibold text-indigo-600 dark:text-indigo-400">{coordinators.length}</span>
                 </span>
               </div>
@@ -195,10 +195,10 @@ export default function CoordinatorDirectory() {
                 <thead className="bg-slate-50 dark:bg-gray-700">
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-gray-300">Coordinator</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Email</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Events Created</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Students Assigned</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Created</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Email</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Events Created</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Students Assigned</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Created</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
@@ -223,33 +223,33 @@ export default function CoordinatorDirectory() {
                             <div className="max-w-[280px]">
                               <button
                                 onClick={() => openCoordinatorProfile(c)}
-                                className="font-medium text-slate-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 truncate text-sm transition-colors text-left"
+                                className="font-medium text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 truncate text-sm transition-colors text-left"
                               >
                                 {c.name || "Unknown"}
                               </button>
-                              <div className="text-xs text-slate-500 dark:text-gray-400 truncate">{c.coordinatorId || "N/A"}</div>
+                              <div className="text-xs text-slate-500 dark:text-white truncate">{c.coordinatorId || "N/A"}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-2 text-slate-700 dark:text-gray-300 max-w-[260px] text-sm">
+                        <td className="px-4 py-2 text-slate-700 dark:text-white max-w-[260px] text-sm">
                           <span className="truncate block">{c.email || "-"}</span>
                         </td>
-                        <td className="px-4 py-2 text-slate-700 dark:text-gray-300 text-sm">
+                        <td className="px-4 py-2 text-slate-700 dark:text-white text-sm">
                           {c.eventsCreated ? (
                             <div className="flex flex-col gap-0.5">
-                              <span className="font-medium text-slate-900 dark:text-gray-100">
+                              <span className="font-medium text-slate-900 dark:text-white">
                                 {c.eventsCreated.total} Total
                               </span>
-                              <span className="text-xs text-slate-500 dark:text-gray-400">
+                              <span className="text-xs text-slate-500 dark:text-white">
                                 {c.eventsCreated.regular} Regular, {c.eventsCreated.special} Special
                               </span>
                             </div>
                           ) : (
-                            <span className="text-slate-500 dark:text-gray-400">0</span>
+                            <span className="text-slate-500 dark:text-white">0</span>
                           )}
                         </td>
-                        <td className="px-4 py-2 text-slate-700 text-sm">{c.studentsAssigned ?? 0}</td>
-                        <td className="px-4 py-2 text-slate-600 text-sm">{registered}</td>
+                        <td className="px-4 py-2 text-slate-700 dark:text-white text-sm">{c.studentsAssigned ?? 0}</td>
+                        <td className="px-4 py-2 text-slate-600 dark:text-white text-sm">{registered}</td>
                       </tr>
                     );
                   })}
@@ -271,7 +271,7 @@ export default function CoordinatorDirectory() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeModal}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+              className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-50"
             />
             
             {/* Modal */}
@@ -285,10 +285,10 @@ export default function CoordinatorDirectory() {
             >
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               >
                 {/* Header */}
-                <div className="sticky top-0 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                <div className="sticky top-0 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-700 dark:to-gray-700 border-b border-slate-200 dark:border-gray-600 px-6 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     {selectedCoordinator.avatarUrl ? (
                       <img 
@@ -302,15 +302,15 @@ export default function CoordinatorDirectory() {
                       </div>
                     )}
                     <div>
-                      <h3 className="text-xl font-semibold text-slate-800">{selectedCoordinator.name || "Unknown"}</h3>
-                      <p className="text-sm text-slate-600">{selectedCoordinator.coordinatorId || "N/A"}</p>
+                      <h3 className="text-xl font-semibold text-slate-800 dark:text-white">{selectedCoordinator.name || "Unknown"}</h3>
+                      <p className="text-sm text-slate-600 dark:text-white">{selectedCoordinator.coordinatorId || "N/A"}</p>
                     </div>
                   </div>
                   <button
                     onClick={closeModal}
-                    className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                    className="p-2 hover:bg-slate-200 dark:hover:bg-gray-600 rounded-full transition-colors"
                   >
-                    <X className="w-5 h-5 text-slate-600" />
+                    <X className="w-5 h-5 text-slate-600 dark:text-white" />
                   </button>
                 </div>
 
@@ -319,60 +319,60 @@ export default function CoordinatorDirectory() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Personal Information */}
                     <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Personal Information</h4>
+                      <h4 className="text-sm font-semibold text-slate-700 dark:text-white mb-3 uppercase tracking-wide">Personal Information</h4>
                       <div className="space-y-3">
                         <div>
-                          <label className="text-xs text-slate-500">Name</label>
-                          <div className="mt-1 text-slate-800 font-medium">{selectedCoordinator.name || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Name</label>
+                          <div className="mt-1 text-slate-800 dark:text-white font-medium">{selectedCoordinator.name || "-"}</div>
                         </div>
                         <div>
-                          <label className="text-xs text-slate-500">Coordinator ID</label>
-                          <div className="mt-1 text-slate-800 font-medium">{selectedCoordinator.coordinatorId || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Coordinator ID</label>
+                          <div className="mt-1 text-slate-800 dark:text-white font-medium">{selectedCoordinator.coordinatorId || "-"}</div>
                         </div>
                         <div>
-                          <label className="text-xs text-slate-500">Email</label>
-                          <div className="mt-1 text-slate-800">{selectedCoordinator.email || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Email</label>
+                          <div className="mt-1 text-slate-800 dark:text-white">{selectedCoordinator.email || "-"}</div>
                         </div>
                       </div>
                     </div>
 
                     {/* Statistics */}
                     <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Statistics</h4>
+                      <h4 className="text-sm font-semibold text-slate-700 dark:text-white mb-3 uppercase tracking-wide">Statistics</h4>
                       <div className="space-y-3">
                         <div>
-                          <label className="text-xs text-slate-500">Events Created</label>
+                          <label className="text-xs text-slate-500 dark:text-white">Events Created</label>
                           {selectedCoordinator.eventsCreated ? (
                             <div className="mt-1">
-                              <div className="text-slate-800 font-medium">{selectedCoordinator.eventsCreated.total} Total</div>
-                              <div className="text-xs text-slate-600">{selectedCoordinator.eventsCreated.regular} Regular, {selectedCoordinator.eventsCreated.special} Special</div>
+                              <div className="text-slate-800 dark:text-white font-medium">{selectedCoordinator.eventsCreated.total} Total</div>
+                              <div className="text-xs text-slate-600 dark:text-white">{selectedCoordinator.eventsCreated.regular} Regular, {selectedCoordinator.eventsCreated.special} Special</div>
                             </div>
                           ) : (
-                            <div className="mt-1 text-slate-800">0</div>
+                            <div className="mt-1 text-slate-800 dark:text-white">0</div>
                           )}
                         </div>
                         <div>
-                          <label className="text-xs text-slate-500">Students Assigned</label>
-                          <div className="mt-1 text-slate-800 font-medium">{selectedCoordinator.studentsAssigned ?? 0}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Students Assigned</label>
+                          <div className="mt-1 text-slate-800 dark:text-white font-medium">{selectedCoordinator.studentsAssigned ?? 0}</div>
                         </div>
                         <div>
-                          <label className="text-xs text-slate-500">Registered On</label>
-                          <div className="mt-1 text-slate-800">{selectedCoordinator.createdAt ? new Date(selectedCoordinator.createdAt).toLocaleDateString() : "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Registered On</label>
+                          <div className="mt-1 text-slate-800 dark:text-white">{selectedCoordinator.createdAt ? new Date(selectedCoordinator.createdAt).toLocaleDateString() : "-"}</div>
                         </div>
                       </div>
                     </div>
 
                     {/* Institution */}
                     <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Institution</h4>
+                      <h4 className="text-sm font-semibold text-slate-700 dark:text-white mb-3 uppercase tracking-wide">Institution</h4>
                       <div className="space-y-3">
                         <div>
-                          <label className="text-xs text-slate-500">Department</label>
-                          <div className="mt-1 text-slate-800">{selectedCoordinator.department || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Department</label>
+                          <div className="mt-1 text-slate-800 dark:text-white">{selectedCoordinator.department || "-"}</div>
                         </div>
                         <div>
-                          <label className="text-xs text-slate-500">College</label>
-                          <div className="mt-1 text-slate-800">{selectedCoordinator.college || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">College</label>
+                          <div className="mt-1 text-slate-800 dark:text-white">{selectedCoordinator.college || "-"}</div>
                         </div>
                       </div>
                     </div>
@@ -380,10 +380,10 @@ export default function CoordinatorDirectory() {
                 </div>
 
                 {/* Footer */}
-                <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4 flex justify-end">
+                <div className="sticky bottom-0 bg-slate-50 dark:bg-gray-700 border-t border-slate-200 dark:border-gray-600 px-6 py-4 flex justify-end">
                   <button
                     onClick={closeModal}
-                    className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
+                    className="px-4 py-2 bg-slate-800 dark:bg-gray-600 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-gray-500 transition-colors"
                   >
                     Close
                   </button>

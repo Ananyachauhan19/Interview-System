@@ -166,7 +166,7 @@ export default function StudentDirectory() {
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === "students"
                   ? "border-emerald-500 dark:border-emerald-400 text-emerald-600 dark:text-emerald-400"
-                  : "border-transparent text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200"
+                  : "border-transparent text-slate-600 dark:text-white hover:text-slate-800 dark:hover:text-white"
               }`}
             >
               Students
@@ -176,7 +176,7 @@ export default function StudentDirectory() {
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === "special"
                   ? "border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200"
+                  : "border-transparent text-slate-600 dark:text-white hover:text-slate-800 dark:hover:text-white"
               }`}
             >
               Special Students
@@ -194,10 +194,10 @@ export default function StudentDirectory() {
                 }`} />
               </div>
               <div>
-                <h2 className="text-2xl font-semibold text-slate-800 dark:text-gray-100">
+                <h2 className="text-2xl font-semibold text-slate-800 dark:text-white">
                   {activeTab === "students" ? "Student Database" : "Special Event Students"}
                 </h2>
-                <p className="text-slate-600 dark:text-gray-400 text-sm">
+                <p className="text-slate-600 dark:text-white text-sm">
                   {activeTab === "students" 
                     ? "View and search all registered students" 
                     : "View students from special events"}
@@ -214,7 +214,7 @@ export default function StudentDirectory() {
                   placeholder="Search students..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-9 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-600 focus:border-emerald-500 dark:focus:border-emerald-600 text-slate-700 dark:text-gray-100 bg-white dark:bg-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  className="w-full pl-9 pr-9 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-600 focus:border-emerald-500 dark:focus:border-emerald-600 text-slate-700 dark:text-white bg-white dark:bg-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-400"
                 />
                 {searchQuery && (
                   <button
@@ -226,7 +226,7 @@ export default function StudentDirectory() {
                   </button>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 ml-1">
+              <p className="text-xs text-slate-500 dark:text-white mt-1 ml-1">
                 Search by name, ID, email, branch, course, or college
               </p>
             </form>
@@ -236,8 +236,8 @@ export default function StudentDirectory() {
           <div className="mb-6 p-4 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-slate-600" />
-                <span className="text-sm font-medium text-slate-700 dark:text-gray-300">
+                <Users className="w-5 h-5 text-slate-600 dark:text-white" />
+                <span className="text-sm font-medium text-slate-700 dark:text-white">
                   Total {activeTab === "students" ? "Students" : "Special Students"}: <span className={`font-semibold ${
                     activeTab === "students" ? "text-emerald-600 dark:text-emerald-400" : "text-indigo-600 dark:text-indigo-400"
                   }`}>{currentStudents.length}</span>
@@ -245,8 +245,8 @@ export default function StudentDirectory() {
               </div>
               {searchQuery && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-600 dark:text-gray-400">
-                    Showing: <span className="font-semibold text-slate-800 dark:text-gray-200">{filteredStudents.length}</span> results
+                  <span className="text-sm text-slate-600 dark:text-white">
+                    Showing: <span className="font-semibold text-slate-800 dark:text-white">{filteredStudents.length}</span> results
                   </span>
                 </div>
               )}
@@ -268,13 +268,13 @@ export default function StudentDirectory() {
           {isLoading && students.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mb-4" />
-              <p className="text-slate-600 dark:text-gray-400">Loading students...</p>
+              <p className="text-slate-600 dark:text-white">Loading students...</p>
             </div>
           ) : filteredStudents.length === 0 ? (
             <div className="text-center py-12">
               <Users className="w-16 h-16 text-slate-300 dark:text-gray-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-slate-700 dark:text-gray-300 mb-2">No students found</h3>
-              <p className="text-slate-500 dark:text-gray-400 text-sm">
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-white mb-2">No students found</h3>
+              <p className="text-slate-500 dark:text-white text-sm">
                 {searchQuery
                   ? "Try adjusting your search query"
                   : "No students have been registered yet"}
@@ -284,8 +284,8 @@ export default function StudentDirectory() {
             // Students Table (no tabs, clear and scannable)
             <div>
               <div className="mb-3 px-2">
-                <p className="text-sm text-slate-600 dark:text-gray-400 flex items-center gap-2">
-                  <span className="font-medium text-sky-600">💡 Tip:</span>
+                <p className="text-sm text-slate-600 dark:text-white flex items-center gap-2">
+                  <span className="font-medium text-sky-600 dark:text-sky-400">💡 Tip:</span>
                   Click on a student's name to view their detailed profile
                 </p>
               </div>
@@ -293,13 +293,13 @@ export default function StudentDirectory() {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50 dark:bg-gray-700">
                   <tr>
-                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-gray-300">Student</th>
-                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Email</th>
-                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Branch</th>
-                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Course</th>
-                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Semester</th>
-                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">College</th>
-                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600">Coordinator Assigned</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Student</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Email</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Branch</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Course</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Semester</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">College</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Coordinator Assigned</th>
                     
                   </tr>
                 </thead>
@@ -326,20 +326,20 @@ export default function StudentDirectory() {
                             <div className="max-w-[280px]">
                               <button
                                 onClick={() => openStudentProfile(s)}
-                                className="font-medium text-slate-900 dark:text-gray-100 hover:text-sky-600 dark:hover:text-sky-400 truncate text-sm transition-colors text-left"
+                                className="font-medium text-slate-900 dark:text-white hover:text-sky-600 dark:hover:text-sky-400 truncate text-sm transition-colors text-left"
                               >
                                 {s.name || "Unknown"}
                               </button>
-                              <div className="text-xs text-slate-500 dark:text-gray-400 truncate">{s.studentId || "N/A"}</div>
+                              <div className="text-xs text-slate-500 dark:text-white truncate">{s.studentId || "N/A"}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-2 text-slate-700 dark:text-gray-300 max-w-[260px] text-sm"><span className="truncate block">{s.email || "-"}</span></td>
-                        <td className="px-4 py-2 text-slate-700 dark:text-gray-300 text-sm">{s.branch || "-"}</td>
-                        <td className="px-4 py-2 text-slate-600 dark:text-gray-400 text-sm">{s.course || "-"}</td>
-                        <td className="px-4 py-2 text-slate-600 dark:text-gray-400 text-sm">{s.semester || "-"}</td>
-                        <td className="px-4 py-2 text-slate-600 dark:text-gray-400 text-sm max-w-[200px]"><span className="truncate block">{s.college || "-"}</span></td>
-                        <td className="px-4 py-2 text-slate-700 dark:text-gray-300 text-sm">{s.teacherId || "-"}</td>
+                        <td className="px-4 py-2 text-slate-700 dark:text-white max-w-[260px] text-sm"><span className="truncate block">{s.email || "-"}</span></td>
+                        <td className="px-4 py-2 text-slate-700 dark:text-white text-sm">{s.branch || "-"}</td>
+                        <td className="px-4 py-2 text-slate-600 dark:text-white text-sm">{s.course || "-"}</td>
+                        <td className="px-4 py-2 text-slate-600 dark:text-white text-sm">{s.semester || "-"}</td>
+                        <td className="px-4 py-2 text-slate-600 dark:text-white text-sm max-w-[200px]"><span className="truncate block">{s.college || "-"}</span></td>
+                        <td className="px-4 py-2 text-slate-700 dark:text-white text-sm">{s.teacherId || "-"}</td>
                         
                       </tr>
                     );
@@ -393,15 +393,15 @@ export default function StudentDirectory() {
                       </div>
                     )}
                     <div>
-                      <h3 className="text-xl font-semibold text-slate-800 dark:text-gray-100">{selectedStudent.name || "Unknown"}</h3>
-                      <p className="text-sm text-slate-600 dark:text-gray-400">{selectedStudent.studentId || "N/A"}</p>
+                      <h3 className="text-xl font-semibold text-slate-800 dark:text-white">{selectedStudent.name || "Unknown"}</h3>
+                      <p className="text-sm text-slate-600 dark:text-white">{selectedStudent.studentId || "N/A"}</p>
                     </div>
                   </div>
                   <button
                     onClick={closeModal}
                     className="p-2 hover:bg-slate-200 dark:hover:bg-gray-600 rounded-full transition-colors"
                   >
-                    <X className="w-5 h-5 text-slate-600" />
+                    <X className="w-5 h-5 text-slate-600 dark:text-white" />
                   </button>
                 </div>
 
@@ -413,16 +413,16 @@ export default function StudentDirectory() {
                      
                       <div className="space-y-3">
                         <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Name</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-200 font-medium">{selectedStudent.name || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Name</label>
+                          <div className="mt-1 text-slate-800 dark:text-white font-medium">{selectedStudent.name || "-"}</div>
                         </div>
                         <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Student ID</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-200 font-medium">{selectedStudent.studentId || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Student ID</label>
+                          <div className="mt-1 text-slate-800 dark:text-white font-medium">{selectedStudent.studentId || "-"}</div>
                         </div>
                         <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Email</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-200">{selectedStudent.email || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Email</label>
+                          <div className="mt-1 text-slate-800 dark:text-white">{selectedStudent.email || "-"}</div>
                         </div>
                       </div>
                     </div>
@@ -432,16 +432,16 @@ export default function StudentDirectory() {
                       
                       <div className="space-y-3">
                         <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Course</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-200 font-medium">{selectedStudent.course || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Course</label>
+                          <div className="mt-1 text-slate-800 dark:text-white font-medium">{selectedStudent.course || "-"}</div>
                         </div>
                         <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Branch</label>
-                          <div className="mt-1 text-slate-800 font-medium">{selectedStudent.branch || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Branch</label>
+                          <div className="mt-1 text-slate-800 dark:text-white font-medium">{selectedStudent.branch || "-"}</div>
                         </div>
                         <div>
-                          <label className="text-xs text-slate-500">Semester</label>
-                          <div className="mt-1 text-slate-800">{selectedStudent.semester || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Semester</label>
+                          <div className="mt-1 text-slate-800 dark:text-white">{selectedStudent.semester || "-"}</div>
                         </div>
                       </div>
                     </div>
@@ -450,8 +450,8 @@ export default function StudentDirectory() {
                     <div>
                       <div className="space-y-3">
                         <div>
-                          <label className="text-xs text-slate-500">College</label>
-                          <div className="mt-1 text-slate-800">{selectedStudent.college || "-"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">College</label>
+                          <div className="mt-1 text-slate-800 dark:text-white">{selectedStudent.college || "-"}</div>
                         </div>
                       </div>
                     </div>
@@ -461,8 +461,8 @@ export default function StudentDirectory() {
              
                       <div className="space-y-3">
                         <div>
-                          <label className="text-xs text-slate-500">Coordinator Assigned</label>
-                          <div className="mt-1 text-slate-800">{selectedStudent.teacherId || "Not Assigned"}</div>
+                          <label className="text-xs text-slate-500 dark:text-white">Coordinator Assigned</label>
+                          <div className="mt-1 text-slate-800 dark:text-white">{selectedStudent.teacherId || "Not Assigned"}</div>
                         </div>
                       </div>
                     </div>
@@ -470,19 +470,19 @@ export default function StudentDirectory() {
 
                   {/* Additional Info for Special Students */}
                   {activeTab === "special" && (
-                    <div className="mt-6 pt-6 border-t border-slate-200">
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Special Event Information</h4>
+                    <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-600">
+                      <h4 className="text-sm font-semibold text-slate-700 dark:text-white mb-3 uppercase tracking-wide">Special Event Information</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {selectedStudent.eventId && (
                           <div>
-                            <label className="text-xs text-slate-500">Event ID</label>
-                            <div className="mt-1 text-slate-800">{selectedStudent.eventId}</div>
+                            <label className="text-xs text-slate-500 dark:text-white">Event ID</label>
+                            <div className="mt-1 text-slate-800 dark:text-white">{selectedStudent.eventId}</div>
                           </div>
                         )}
                         {selectedStudent.semester && (
                           <div>
-                            <label className="text-xs text-slate-500">Event Semester</label>
-                            <div className="mt-1 text-slate-800">{selectedStudent.semester}</div>
+                            <label className="text-xs text-slate-500 dark:text-white">Event Semester</label>
+                            <div className="mt-1 text-slate-800 dark:text-white">{selectedStudent.semester}</div>
                           </div>
                         )}
                       </div>
@@ -493,7 +493,7 @@ export default function StudentDirectory() {
                   <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-600">
                     <div className="rounded-lg p-4 bg-slate-50 dark:bg-gray-700/50 border border-slate-200 dark:border-gray-600">
                       {loadingActivity ? (
-                        <div className="text-center py-8 text-slate-500 dark:text-gray-400">Loading activity...</div>
+                        <div className="text-center py-8 text-slate-500 dark:text-white">Loading activity...</div>
                       ) : (
                         <ContributionCalendar 
                           activity={activity} 
@@ -506,7 +506,7 @@ export default function StudentDirectory() {
 
                   {/* Statistics Tabs */}
                   <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-600">
-                    <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-300 mb-4 uppercase tracking-wide">Statistics</h4>
+                    <h4 className="text-sm font-semibold text-slate-700 dark:text-white mb-4 uppercase tracking-wide">Statistics</h4>
                     
                     {loadingStats ? (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -558,16 +558,16 @@ export default function StudentDirectory() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-center text-slate-500 dark:text-gray-400 py-6">No statistics available</p>
+                      <p className="text-center text-slate-500 dark:text-white py-6">No statistics available</p>
                     )}
                   </div>
                 </div>
 
                 {/* Footer */}
-                <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4 flex justify-end">
+                <div className="sticky bottom-0 bg-slate-50 dark:bg-gray-700 border-t border-slate-200 dark:border-gray-600 px-6 py-4 flex justify-end">
                   <button
                     onClick={closeModal}
-                    className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
+                    className="px-4 py-2 bg-slate-800 dark:bg-gray-600 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-gray-500 transition-colors"
                   >
                     Close
                   </button>

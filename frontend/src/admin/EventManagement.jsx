@@ -347,25 +347,25 @@ export default function EventManagement() {
             <div className="space-y-3">
               {/* Event Title */}
               <div>
-                <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-1">Interview Title</label>
+                <label className="block text-sm font-medium text-slate-800 dark:text-white mb-1">Interview Title</label>
                 <input
                   type="text"
                   placeholder="Enter interview title..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-white dark:bg-gray-700 border border-slate-300 dark:border-gray-600 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 text-slate-700 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm"
+                  className="w-full bg-white dark:bg-gray-700 border border-slate-300 dark:border-gray-600 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 text-slate-700 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 text-sm"
                   required
                 />
               </div>
 
               {/* Event Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-1">Interview Description</label>
+                <label className="block text-sm font-medium text-slate-800 dark:text-white mb-1">Interview Description</label>
                 <textarea
                   placeholder="Describe the interview purpose and format..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-white dark:bg-gray-700 border border-slate-300 dark:border-gray-600 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 text-slate-700 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm"
+                  className="w-full bg-white dark:bg-gray-700 border border-slate-300 dark:border-gray-600 p-2.5 rounded-lg focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 text-slate-700 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 text-sm"
                   rows="3"
                   required
                 />
@@ -374,7 +374,7 @@ export default function EventManagement() {
               {/* Date & Time */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-1">Start Date & Time</label>
+                  <label className="block text-sm font-medium text-slate-800 dark:text-white mb-1">Start Date & Time</label>
                   <DateTimePicker
                     value={startDate}
                     onChange={(isoDateTime) => {
@@ -408,7 +408,7 @@ export default function EventManagement() {
                   <p className="text-xs text-slate-500 dark:text-white mt-1">Past dates are disabled. Select current or future time only.</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-1">End Date & Time</label>
+                  <label className="block text-sm font-medium text-slate-800 dark:text-white mb-1">End Date & Time</label>
                   <DateTimePicker
                     value={endDate}
                     onChange={(isoDateTime) => {
@@ -443,10 +443,10 @@ export default function EventManagement() {
 
               {/* Template Upload */}
               <div>
-                <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-1">Interview Template (Optional)</label>
+                <label className="block text-sm font-medium text-slate-800 dark:text-white mb-1">Interview Template (Optional)</label>
                 <label className="flex items-center justify-center w-full p-3 bg-white dark:bg-gray-700 rounded-lg border border-slate-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-600 transition-colors cursor-pointer">
                   <Upload className="w-4 h-4 text-sky-500 dark:text-sky-400 mr-2" />
-                  <span className="text-slate-700 dark:text-gray-200 text-sm font-medium">Upload Template File</span>
+                  <span className="text-slate-700 dark:text-white text-sm font-medium">Upload Template File</span>
                   <input
                     type="file"
                     onChange={(e) => setTemplate(e.target.files?.[0] || null)}
@@ -463,7 +463,7 @@ export default function EventManagement() {
                     <span className="text-sky-800 dark:text-sky-300 text-sm font-medium">{template.name}</span>
                   </motion.div>
                 )}
-                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-slate-500 dark:text-white mt-1">
                   Upload a template file for interview questions or guidelines (optional)
                 </p>
               </div>
@@ -471,14 +471,14 @@ export default function EventManagement() {
               {/* Special Mode CSV Upload */}
               {specialMode && (
                 <div className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700 rounded-lg p-3">
-                  <label className="block text-sm font-medium text-slate-800 dark:text-gray-200 mb-2">
+                  <label className="block text-sm font-medium text-slate-800 dark:text-white mb-2">
                     <FileText className="w-4 h-4 inline mr-1 text-sky-600 dark:text-sky-400" />
                     Allowed Participants CSV
                   </label>
                   <label className="flex items-center justify-center w-full p-3 bg-white dark:bg-gray-700 rounded border border-sky-300 dark:border-sky-600 hover:bg-sky-50 dark:hover:bg-gray-600 cursor-pointer border-dashed">
                     <div className="text-center">
                       <FileText className="w-6 h-6 text-sky-500 dark:text-sky-400 mx-auto mb-1" />
-                      <span className="text-slate-700 dark:text-gray-200 text-sm font-medium">Upload CSV File</span>
+                      <span className="text-slate-700 dark:text-white text-sm font-medium">Upload CSV File</span>
                     </div>
                     <input
                       ref={csvInputRef}

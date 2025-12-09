@@ -169,10 +169,10 @@ export default function AdminLearning() {
           className="mb-6 flex items-center justify-between"
         >
           <div>
-            <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100 mb-0.5">
+            <h1 className="text-xl font-bold text-slate-800 dark:text-white mb-0.5">
               Learning Modules
             </h1>
-            <p className="text-xs text-slate-500 dark:text-gray-400">
+            <p className="text-xs text-slate-500 dark:text-white">
               Manage all semesters, subjects, and teachers
             </p>
           </div>
