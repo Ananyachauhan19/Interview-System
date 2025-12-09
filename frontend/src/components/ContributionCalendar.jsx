@@ -61,6 +61,13 @@ export default function ContributionCalendar({
 }) {
   const months = useMemo(() => getRolling365Days(), []);
   
+  // Debug logging
+  React.useEffect(() => {
+    console.log('[ContributionCalendar] Activity data:', activity);
+    console.log('[ContributionCalendar] Stats data:', stats);
+    console.log('[ContributionCalendar] Activity keys count:', Object.keys(activity).length);
+  }, [activity, stats]);
+  
   return (
     <div className="w-full">
       <h3 className="text-base font-semibold text-slate-800 dark:text-gray-100 mb-4">{title}</h3>
@@ -120,6 +127,13 @@ export default function ContributionCalendar({
       
       {/* Horizontal scrollable grid */}
       <div className="overflow-x-auto pb-2">
+        {Object.keys(activity).length === 0 && (
+          <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p className="text-xs text-yellow-800 dark:text-yellow-200">
+              No activity data yet. Start watching videos or solving problems to see your contribution calendar!
+            </p>
+          </div>
+        )}
         <div className="flex gap-3 min-w-max">
           {months.map(({ year, month, days }) => {
             const monthName = new Date(year, month, 1).toLocaleString('default', { month: 'short' });

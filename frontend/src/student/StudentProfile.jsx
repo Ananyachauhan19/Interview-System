@@ -60,10 +60,13 @@ export default function StudentProfile() {
     setLoadingActivity(true);
     try {
       const data = await api.getStudentActivity();
+      console.log('[StudentProfile] Activity API response:', data);
+      console.log('[StudentProfile] activityByDate:', data.activityByDate);
+      console.log('[StudentProfile] stats:', data.stats);
       setActivity(data.activityByDate || {});
       setActivityStats(data.stats || null);
     } catch (e) {
-      console.error('Failed to load activity:', e);
+      console.error('[StudentProfile] Failed to load activity:', e);
       setActivity({});
     } finally {
       setLoadingActivity(false);

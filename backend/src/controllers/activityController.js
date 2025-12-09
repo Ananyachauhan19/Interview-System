@@ -195,6 +195,12 @@ export async function getStudentActivity(req, res) {
       activityMap[date] += item.count;
     });
 
+    console.log('[getStudentActivity] Activities from StudentActivity:', activities.length);
+    console.log('[getStudentActivity] Scheduled sessions:', scheduledSessions.length);
+    console.log('[getStudentActivity] Completed topics:', completedTopics.length);
+    console.log('[getStudentActivity] Total activity dates:', Object.keys(activityMap).length);
+    console.log('[getStudentActivity] Sample activityMap:', Object.entries(activityMap).slice(0, 5));
+
     // 5. Calculate streaks based on merged activity map
     const sortedDates = Object.keys(activityMap).sort();
     let currentStreak = 0;
