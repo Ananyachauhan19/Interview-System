@@ -13,8 +13,6 @@ export default function AdminLearning() {
   const [expandedSubjects, setExpandedSubjects] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [editingSemester, setEditingSemester] = useState(null);
-  const [showAddSemester, setShowAddSemester] = useState(false);
-  const [newSemester, setNewSemester] = useState({ semesterName: '', semesterDescription: '' });
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -78,39 +76,6 @@ export default function AdminLearning() {
         coordinatorId: coordinator.coordinatorId
       }
     });
-  };
-
-  const handleAddSemester = async () => {
-    if (!newSemester.semesterName.trim()) {
-      toast.error('Semester name is required');
-      return;
-    }
-    
-    // Validate semester format: must contain "Semester" followed by a whole number
-    const semesterPattern = /^Semester\s+(\d+)$/i;
-    const match = newSemester.semesterName.trim().match(semesterPattern);
-    
-    if (!match) {
-      toast.error('Invalid format! Use: "Semester 1", "Semester 2", etc.');
-      return;
-    }
-    
-    const semesterNumber = parseInt(match[1]);
-    if (!Number.isInteger(semesterNumber) || semesterNumber < 1 || semesterNumber > 12) {
-      toast.error('Semester number must be a whole number between 1 and 12');
-      return;
-    }
-    
-    try {
-      await api.createSemester(newSemester.semesterName, newSemester.semesterDescription);
-      toast.success('Semester added successfully');
-      setNewSemester({ semesterName: '', semesterDescription: '' });
-      setShowAddSemester(false);
-      loadSemesters();
-    } catch (err) {
-      console.error('Failed to add semester:', err);
-      toast.error(err.message || 'Failed to add semester');
-    }
   };
 
   const handleDeleteSemester = async (semester, e) => {
@@ -178,13 +143,6 @@ export default function AdminLearning() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowAddSemester(!showAddSemester)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 dark:bg-sky-600 hover:bg-sky-600 dark:hover:bg-sky-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Semester
-            </button>
-            <button
               onClick={() => setEditMode(!editMode)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shadow-sm ${
                 editMode
@@ -206,53 +164,6 @@ export default function AdminLearning() {
             </button>
           </div>
         </motion.div>
-
-        {/* Add Semester Modal */}
-        <AnimatePresence>
-          {showAddSemester && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mb-5 p-4 bg-sky-50 dark:bg-sky-900/20 rounded-lg border border-sky-200 dark:border-sky-800"
-            >
-              <h3 className="text-sm font-semibold mb-2.5 text-slate-800 dark:text-gray-100">Add New Semester</h3>
-              <input
-                type="text"
-                placeholder="Semester name (e.g., Semester 1)"
-                value={newSemester.semesterName}
-                onChange={(e) => setNewSemester({ ...newSemester, semesterName: e.target.value })}
-                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 rounded-md mb-2 text-xs text-slate-800 dark:text-gray-100 bg-white dark:bg-gray-800 placeholder:text-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
-              />
-              <textarea
-                placeholder="Description (optional)"
-                value={newSemester.semesterDescription}
-                onChange={(e) => setNewSemester({ ...newSemester, semesterDescription: e.target.value })}
-                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 rounded-md mb-2.5 text-xs text-slate-800 dark:text-gray-100 bg-white dark:bg-gray-800 placeholder:text-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all resize-none"
-                rows="2"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleAddSemester}
-                  className="flex items-center gap-1 bg-sky-500 dark:bg-sky-600 text-white px-3 py-1.5 rounded-md hover:bg-sky-600 dark:hover:bg-sky-700 text-xs font-medium transition-colors shadow-sm"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  Save
-                </button>
-                <button
-                  onClick={() => {
-                    setNewSemester({ semesterName: '', semesterDescription: '' });
-                    setShowAddSemester(false);
-                  }}
-                  className="flex items-center gap-1 bg-slate-200 dark:bg-gray-700 text-slate-700 dark:text-gray-300 px-3 py-1.5 rounded-md hover:bg-slate-300 dark:hover:bg-gray-600 text-xs font-medium transition-colors"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Semesters Card Grid */}
         {semesters.length === 0 ? (
