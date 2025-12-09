@@ -21,7 +21,7 @@ export async function listAllCoordinators(req, res) {
     }
 
     const users = await User.find(query)
-      .select('name email coordinatorId createdAt')
+      .select('name email coordinatorId createdAt avatarUrl')
       .sort({ createdAt: -1 })
       .lean();
 
