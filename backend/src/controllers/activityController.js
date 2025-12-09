@@ -6,6 +6,67 @@ import StudentActivity from '../models/StudentActivity.js';
 import Subject from '../models/Subject.js';
 import { HttpError } from '../utils/errors.js';
 
+// Helper: determine learning scope (semesters/subjects/videos) for a given student
+// based on their current semester. This is used for both profile stats and
+// contribution calendar summary cards so that "Courses Enrolled" and
+// "Videos Watched" are always computed from the learning modules actually
+// assigned to the student.
+async function computeLearningScopeForStudent(student) {
+  // Fallback: if student or semester is missing, include all semesters
+  const semesters = await Subject.find().sort('order');
+
+  const normalizeSubjectName = (name) => {
+    if (!name) return '';
+    return String(name)
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const allowedSemesterIds = [];
+  const subjectKeys = new Set();
+  let totalVideosTotal = 0;
+
+  const hasSemesterNumber = student && typeof student.semester === 'number';
+
+  semesters.forEach(semester => {
+    // If the student has a defined semester, only include semesters up to that
+    if (hasSemesterNumber) {
+      const match = semester.semesterName?.match(/\d+/);
+      if (match) {
+        const semNum = parseInt(match[0], 10);
+        if (Number.isFinite(semNum) && semNum > student.semester) {
+          return; // skip higher semesters
+        }
+      }
+    }
+
+    allowedSemesterIds.push(semester._id);
+
+    // Collect unique logical subjects (per semester name + normalized subject name)
+    semester.subjects?.forEach(subject => {
+      const key = `${semester.semesterName || ''}::${normalizeSubjectName(subject.subjectName)}`;
+      subjectKeys.add(key);
+
+      // Count total videos available in curriculum (topics with a video link)
+      subject.chapters?.forEach(chapter => {
+        chapter.topics?.forEach(topic => {
+          if (topic.topicVideoLink) {
+            totalVideosTotal += 1;
+          }
+        });
+      });
+    });
+  });
+
+  return {
+    allowedSemesterIds,
+    totalCourses: subjectKeys.size,
+    totalVideosTotal
+  };
+}
+
 /**
  * Log student activity for contribution calendar
  */
@@ -41,6 +102,9 @@ export async function getStudentActivity(req, res) {
   startDate.setHours(0, 0, 0, 0);
 
   try {
+    // Determine learning scope for this student (which semesters/subjects/videos count)
+    const { allowedSemesterIds, totalCourses, totalVideosTotal } = await computeLearningScopeForStudent(user);
+
     // 1. Get all student activities from StudentActivity collection
     const activities = await StudentActivity.aggregate([
       {
@@ -175,11 +239,20 @@ export async function getStudentActivity(req, res) {
       }
     }
 
-    // 4. Get total videos watched (all time)
-    const videoWatchCount = await StudentActivity.countDocuments({
+    // 4. Get total videos watched (all time) within the allowed semesters
+    const videoWatchMatch = {
       studentId: user._id,
-      activityType: 'VIDEO_WATCH'
-    });
+      videoWatchedSeconds: { $gt: 0 }
+    };
+    if (allowedSemesterIds.length > 0) {
+      videoWatchMatch.semesterId = { $in: allowedSemesterIds };
+    }
+    const videosWatchedAgg = await Progress.aggregate([
+      { $match: videoWatchMatch },
+      { $group: { _id: '$topicId' } },
+      { $count: 'totalVideos' }
+    ]);
+    const videoWatchCount = videosWatchedAgg[0]?.totalVideos || 0;
 
     // 5. Get total problems solved (all time)
     const problemsSolvedCount = await StudentActivity.countDocuments({
@@ -187,27 +260,8 @@ export async function getStudentActivity(req, res) {
       activityType: 'PROBLEM_SOLVED'
     });
 
-    // 6. Get total subjects enrolled
-    const coordinator = user.teacherId;
-    let totalSubjects = 0;
-    let totalVideosTotal = 0;
-    
-    if (coordinator) {
-      const semesters = await Subject.find({ coordinatorId: coordinator });
-      semesters.forEach(semester => {
-        totalSubjects += semester.subjects?.length || 0;
-        // Count total videos with video links
-        semester.subjects?.forEach(subject => {
-          subject.chapters?.forEach(chapter => {
-            chapter.topics?.forEach(topic => {
-              if (topic.topicVideoLink) {
-                totalVideosTotal++;
-              }
-            });
-          });
-        });
-      });
-    }
+    // 6. Use learning scope helper for total subjects and total videos in curriculum
+    const totalSubjects = totalCourses;
 
     res.json({
       activityByDate: activityMap,
@@ -400,11 +454,23 @@ export async function getStudentActivityByAdmin(req, res) {
     const { currentStreak, bestStreak } = calculateStreaks();
     const totalActiveDays = Object.keys(activityMap).length;
 
-    // 4. Get total videos watched (all time)
-    const videoWatchCount = await StudentActivity.countDocuments({
+    // Determine learning scope for this student (semesters/subjects/videos assigned)
+    const { allowedSemesterIds, totalCourses, totalVideosTotal } = await computeLearningScopeForStudent(student);
+
+    // 4. Get total videos watched (all time) within the allowed semesters
+    const videoWatchMatch = {
       studentId: student._id,
-      activityType: 'VIDEO_WATCH'
-    });
+      videoWatchedSeconds: { $gt: 0 }
+    };
+    if (allowedSemesterIds.length > 0) {
+      videoWatchMatch.semesterId = { $in: allowedSemesterIds };
+    }
+    const videosWatchedAgg = await Progress.aggregate([
+      { $match: videoWatchMatch },
+      { $group: { _id: '$topicId' } },
+      { $count: 'totalVideos' }
+    ]);
+    const videoWatchCount = videosWatchedAgg[0]?.totalVideos || 0;
 
     // 5. Get total problems solved (all time)
     const problemsSolvedCount = await StudentActivity.countDocuments({
@@ -412,27 +478,8 @@ export async function getStudentActivityByAdmin(req, res) {
       activityType: 'PROBLEM_SOLVED'
     });
 
-    // 6. Get total subjects enrolled and total videos in curriculum
-    const coordinator = student.teacherId;
-    let totalSubjects = 0;
-    let totalVideosTotal = 0;
-    
-    if (coordinator) {
-      const semesters = await Subject.find({ coordinatorId: coordinator });
-      semesters.forEach(semester => {
-        totalSubjects += semester.subjects?.length || 0;
-        // Count total videos with video links
-        semester.subjects?.forEach(subject => {
-          subject.chapters?.forEach(chapter => {
-            chapter.topics?.forEach(topic => {
-              if (topic.topicVideoLink) {
-                totalVideosTotal++;
-              }
-            });
-          });
-        });
-      });
-    }
+    // 6. Use learning scope helper for total subjects and total videos in curriculum
+    const totalSubjects = totalCourses;
 
     res.json({
       activityByDate: activityMap,
@@ -484,27 +531,26 @@ export async function getStudentStats(req, res) {
     }
     if (!student) throw new HttpError(404, 'Student not found');
 
-    // 1. Get total courses enrolled (unique subjects)
-    const enrolledSubjects = await Progress.aggregate([
-      {
-        $match: { studentId: student._id }
-      },
-      {
-        $group: {
-          _id: { subjectId: '$subjectId', semesterId: '$semesterId' }
-        }
-      },
-      {
-        $count: 'totalCourses'
-      }
-    ]);
-    const totalCourses = enrolledSubjects[0]?.totalCourses || 0;
+    // Determine learning scope for this student (semesters/subjects/videos assigned)
+    const { allowedSemesterIds, totalCourses, totalVideosTotal } = await computeLearningScopeForStudent(student);
 
-    // 2. Get total videos watched (topics with videoWatchedSeconds > 0)
+    // Base match for all Progress-based stats (restricted to allowed semesters when available)
+    const baseMatch = {
+      studentId: student._id
+    };
+    if (allowedSemesterIds.length > 0) {
+      baseMatch.semesterId = { $in: allowedSemesterIds };
+    }
+
+    // 1. Get total courses enrolled (unique subjects within allowed semesters)
+    // We already have totalCourses from the learning scope helper, which counts
+    // unique logical subjects across the allowed semesters.
+
+    // 2. Get total videos watched (topics with videoWatchedSeconds > 0) within allowed semesters
     const videosWatched = await Progress.aggregate([
       {
         $match: {
-          studentId: student._id,
+          ...baseMatch,
           videoWatchedSeconds: { $gt: 0 }
         }
       },
@@ -519,16 +565,16 @@ export async function getStudentStats(req, res) {
     ]);
     const totalVideosWatched = videosWatched[0]?.totalVideos || 0;
 
-    // 3. Get total problems solved (completed topics)
+    // 3. Get total problems solved (completed topics) within allowed semesters
     const problemsSolved = await Progress.countDocuments({
-      studentId: student._id,
+      ...baseMatch,
       completed: true
     });
 
-    // 4. Get total watch time in hours
+    // 4. Get total watch time in hours within allowed semesters
     const watchTimeData = await Progress.aggregate([
       {
-        $match: { studentId: student._id }
+        $match: baseMatch
       },
       {
         $group: {
