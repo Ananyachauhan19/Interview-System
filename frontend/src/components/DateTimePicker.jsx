@@ -903,14 +903,14 @@ export default function DateTimePicker({
         type="text"
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 transition-all disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 ${className}`}
+        className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 transition-all disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 ${className}`}
         readOnly
       />
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
         {enableTime ? (
-          <Clock size={18} className="text-gray-400 dark:text-gray-500" />
+          <Clock size={18} className="text-gray-400 dark:text-white" />
         ) : (
-          <Calendar size={18} className="text-gray-400 dark:text-gray-500" />
+          <Calendar size={18} className="text-gray-400 dark:text-white" />
         )}
       </div>
 
@@ -927,9 +927,9 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-calendar {
-          background: #1f2937;
-          border-color: #374151;
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+          background: #111827;
+          border-color: #1f2937;
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
         }
         
          /* Header styling */
@@ -943,7 +943,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-months .flatpickr-month {
-          background: #0c4a6e;
+          background: linear-gradient(135deg, #0c4a6e 0%, #075985 100%);
         }
         
         /* OK button in header - dark mode support */
@@ -953,9 +953,9 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-ok-button {
-          background: rgba(255, 255, 255, 0.15) !important;
-          color: #38bdf8 !important;
-          border-color: rgba(255, 255, 255, 0.2) !important;
+          background: rgba(255, 255, 255, 0.1) !important;
+          color: #ffffff !important;
+          border-color: rgba(255, 255, 255, 0.3) !important;
         }
 
         .flatpickr-current-month {
@@ -977,8 +977,8 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-current-month .flatpickr-monthDropdown-months option {
-          background: #1f2937;
-          color: #f3f4f6;
+          background: #111827;
+          color: #ffffff;
         }
 
          .flatpickr-current-month .numInputWrapper {
@@ -1009,7 +1009,8 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-weekday {
-          color: #38bdf8;
+          color: #ffffff;
+          font-weight: 700;
         }
         
         /* Day cells */
@@ -1020,7 +1021,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-day {
-          color: #f3f4f6 !important;
+          color: #ffffff !important;
         }
 
          .flatpickr-day.selected,
@@ -1033,9 +1034,10 @@ export default function DateTimePicker({
         
         :root.dark .flatpickr-day.selected,
         :root.dark .flatpickr-day.selected:hover {
-          background: #0284c7 !important;
-          border-color: #0284c7 !important;
+          background: #0ea5e9 !important;
+          border-color: #0ea5e9 !important;
           color: #ffffff !important;
+          box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.3);
         }
 
         .flatpickr-day:hover {
@@ -1045,9 +1047,9 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-day:hover {
-          background: #1e3a8a !important;
-          border-color: #1e3a8a !important;
-          color: #bfdbfe !important;
+          background: #1e40af !important;
+          border-color: #1e40af !important;
+          color: #ffffff !important;
         }
 
         .flatpickr-day.today {
@@ -1058,9 +1060,10 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-day.today {
-          border-color: #38bdf8 !important;
-          background: #1e3a8a !important;
-          color: #bfdbfe !important;
+          border-color: #0ea5e9 !important;
+          background: #1e40af !important;
+          color: #ffffff !important;
+          box-shadow: 0 0 0 1px #0ea5e9 inset;
         }
         
         /* Disabled and outside month days */
@@ -1075,7 +1078,8 @@ export default function DateTimePicker({
         :root.dark .flatpickr-day.flatpickr-disabled:hover,
         :root.dark .flatpickr-day.prevMonthDay,
         :root.dark .flatpickr-day.nextMonthDay {
-          color: #4b5563 !important;
+          color: #6b7280 !important;
+          opacity: 0.5;
         }
 
          /* Side-by-side layout for time picker */
@@ -1110,7 +1114,8 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-custom .flatpickr-time {
-          border-left-color: #374151 !important;
+          border-left-color: #1f2937 !important;
+          background: #111827 !important;
         }
         
         /* Time picker heading and labels dark mode */
@@ -1119,8 +1124,9 @@ export default function DateTimePicker({
         }
         
         :root.dark .time-heading {
-          color: #38bdf8 !important;
-          border-bottom-color: #374151 !important;
+          color: #ffffff !important;
+          border-bottom-color: #1f2937 !important;
+          font-weight: 700;
         }
         
         .time-labels-container {
@@ -1128,7 +1134,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .time-labels-container {
-          border-bottom-color: #374151 !important;
+          border-bottom-color: #1f2937 !important;
         }
         
         .time-label {
@@ -1136,7 +1142,8 @@ export default function DateTimePicker({
         }
         
         :root.dark .time-label {
-          color: #9ca3af !important;
+          color: #ffffff !important;
+          font-weight: 600;
         }
         
         /* Time scroller backgrounds */
@@ -1150,8 +1157,8 @@ export default function DateTimePicker({
         :root.dark .time-scroller,
         :root.dark .hour-scroller,
         :root.dark .minute-scroller {
-          background: #111827 !important;
-          border-color: #374151 !important;
+          background: #0f172a !important;
+          border-color: #1f2937 !important;
         }
         
         .ampm-box {
@@ -1160,12 +1167,12 @@ export default function DateTimePicker({
         }
         
         :root.dark .ampm-box {
-          background: #111827 !important;
-          border-color: #374151 !important;
+          background: #0f172a !important;
+          border-color: #1f2937 !important;
         }
         
         :root.dark .ampm-box .ampm-option {
-          border-top-color: #374151 !important;
+          border-top-color: #1f2937 !important;
         }
         
         /* Time options text color */
@@ -1174,7 +1181,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .time-option {
-          color: #e5e7eb !important;
+          color: #ffffff !important;
         }
         
         .ampm-option {
@@ -1182,7 +1189,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .ampm-option {
-          color: #e5e7eb !important;
+          color: #ffffff !important;
         }
         
         . /* Hide separator and default inputs */
@@ -1198,8 +1205,8 @@ export default function DateTimePicker({
         }
         
         :root.dark .time-option:hover {
-          background: #1e3a8a !important;
-          color: #38bdf8 !important;
+          background: #1e40af !important;
+          color: #ffffff !important;
         }
         
         .time-option.disabled { 
@@ -1211,7 +1218,8 @@ export default function DateTimePicker({
         }
         
         :root.dark .time-option.disabled {
-          color: #4b5563 !important;
+          color: #6b7280 !important;
+          opacity: 0.4;
         }
         
          .ampm-option { transition: background 0.2s, color 0.2s; }
@@ -1219,9 +1227,9 @@ export default function DateTimePicker({
         .ampm-option.active { background: #0ea5e9; color: #ffffff; }
         .ampm-option.disabled { background: #e5e7eb !important; color: #94a3b8 !important; }
         
-        :root.dark .ampm-option:hover { background: #1e3a8a; color: #38bdf8; }
-        :root.dark .ampm-option.active { background: #0284c7; }
-        :root.dark .ampm-option.disabled { background: #374151 !important; color: #4b5563 !important; }
+        :root.dark .ampm-option:hover { background: #1e40af; color: #ffffff; }
+        :root.dark .ampm-option.active { background: #0ea5e9; color: #ffffff; }
+        :root.dark .ampm-option.disabled { background: #1f2937 !important; color: #6b7280 !important; opacity: 0.5; }
         
         /* Gradient fade for scrollers */
         .time-scroller::before,
@@ -1242,7 +1250,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .time-scroller::before {
-          background: linear-gradient(to bottom, #111827, transparent);
+          background: linear-gradient(to bottom, #0f172a, transparent);
         }
         
         .time-scroller::after {
@@ -1252,7 +1260,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .time-scroller::after {
-          background: linear-gradient(to top, #111827, transparent);
+          background: linear-gradient(to top, #0f172a, transparent);
         }
         
         /* OK Button styling */
@@ -1263,8 +1271,8 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-custom .ok-button-container {
-          border-top-color: #374151;
-          background: #1f2937;
+          border-top-color: #1f2937;
+          background: #111827;
         }
         
         .flatpickr-custom .ok-button {
@@ -1282,7 +1290,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-custom .ok-button {
-          background: #0284c7;
+          background: #0ea5e9;
         }
         
         .flatpickr-custom .ok-button:hover {
@@ -1291,7 +1299,9 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-custom .ok-button:hover {
-          background: #0369a1;
+          background: #0284c7;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
         }
         
         .flatpickr-custom .ok-button:active {
@@ -1300,7 +1310,8 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-custom .ok-button:active {
-          background: #075985;
+          background: #0369a1;
+          transform: translateY(0);
         }
       `}</style>
     </div>
