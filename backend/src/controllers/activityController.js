@@ -127,11 +127,22 @@ export async function getStudentActivity(req, res) {
     // 6. Get total subjects enrolled
     const coordinator = user.teacherId;
     let totalSubjects = 0;
+    let totalVideosTotal = 0;
     
     if (coordinator) {
       const semesters = await Subject.find({ coordinatorId: coordinator });
       semesters.forEach(semester => {
         totalSubjects += semester.subjects?.length || 0;
+        // Count total videos with video links
+        semester.subjects?.forEach(subject => {
+          subject.chapters?.forEach(chapter => {
+            chapter.topics?.forEach(topic => {
+              if (topic.topicVideoLink) {
+                totalVideosTotal++;
+              }
+            });
+          });
+        });
       });
     }
 
@@ -146,6 +157,7 @@ export async function getStudentActivity(req, res) {
         bestStreak,
         totalSubjects,
         totalVideosWatched: videoWatchCount,
+        totalVideosTotal,
         totalProblemsSolved: problemsSolvedCount,
         totalActivities: Object.values(activityMap).reduce((sum, val) => sum + val, 0)
       }
@@ -325,6 +337,40 @@ export async function getStudentActivityByAdmin(req, res) {
     const { currentStreak, bestStreak } = calculateStreaks();
     const totalActiveDays = Object.keys(activityMap).length;
 
+    // 4. Get total videos watched (all time)
+    const videoWatchCount = await StudentActivity.countDocuments({
+      studentId: student._id,
+      activityType: 'VIDEO_WATCH'
+    });
+
+    // 5. Get total problems solved (all time)
+    const problemsSolvedCount = await StudentActivity.countDocuments({
+      studentId: student._id,
+      activityType: 'PROBLEM_SOLVED'
+    });
+
+    // 6. Get total subjects enrolled and total videos in curriculum
+    const coordinator = student.teacherId;
+    let totalSubjects = 0;
+    let totalVideosTotal = 0;
+    
+    if (coordinator) {
+      const semesters = await Subject.find({ coordinatorId: coordinator });
+      semesters.forEach(semester => {
+        totalSubjects += semester.subjects?.length || 0;
+        // Count total videos with video links
+        semester.subjects?.forEach(subject => {
+          subject.chapters?.forEach(chapter => {
+            chapter.topics?.forEach(topic => {
+              if (topic.topicVideoLink) {
+                totalVideosTotal++;
+              }
+            });
+          });
+        });
+      });
+    }
+
     res.json({
       activityByDate: activityMap,
       startDate: startDate.toISOString().slice(0, 10),
@@ -334,6 +380,10 @@ export async function getStudentActivityByAdmin(req, res) {
         totalDaysInRange: 365,
         currentStreak,
         bestStreak,
+        totalSubjects,
+        totalVideosWatched: videoWatchCount,
+        totalVideosTotal,
+        totalProblemsSolved: problemsSolvedCount,
         totalSessions: scheduledSessions.reduce((sum, item) => sum + item.count, 0),
         totalCompletions: completedTopics.reduce((sum, item) => sum + item.count, 0),
         totalActivities: Object.values(activityMap).reduce((sum, val) => sum + val, 0)

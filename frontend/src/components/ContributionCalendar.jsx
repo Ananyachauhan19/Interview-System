@@ -63,24 +63,60 @@ export default function ContributionCalendar({
   
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h3 className="text-base font-semibold text-slate-800 dark:text-gray-100">{title}</h3>
-          {stats && (
-            <div className="flex items-center gap-2 flex-wrap text-xs text-slate-700 dark:text-gray-300">
-              <span className="bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded">
-                Active Days: <strong>{stats.totalActiveDays || 0}</strong> / {stats.totalDaysInRange || 365}
-              </span>
-              <span className="bg-violet-50 dark:bg-violet-900/30 px-2 py-1 rounded">
-                Current Streak: <strong>{stats.currentStreak || 0}</strong>
-              </span>
-              <span className="bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded">
-                Best Streak: <strong>{stats.bestStreak || 0}</strong>
-              </span>
+      <h3 className="text-base font-semibold text-slate-800 dark:text-gray-100 mb-4">{title}</h3>
+      
+      {/* Stats Grid */}
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+          {/* Active Days */}
+          <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
+            <div className="text-xs text-slate-600 dark:text-gray-400 mb-1">Active Days</div>
+            <div className="text-lg font-bold text-blue-700 dark:text-blue-400">
+              {stats.totalActiveDays || 0} / {stats.totalDaysInRange || 365}
             </div>
-          )}
+          </div>
+          
+          {/* Current Streak */}
+          <div className="bg-violet-50 dark:bg-violet-900/30 p-3 rounded-lg border border-violet-100 dark:border-violet-800">
+            <div className="text-xs text-slate-600 dark:text-gray-400 mb-1">Current Streak</div>
+            <div className="text-lg font-bold text-violet-700 dark:text-violet-400">
+              {stats.currentStreak || 0} days
+            </div>
+          </div>
+          
+          {/* Best Streak */}
+          <div className="bg-amber-50 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-100 dark:border-amber-800">
+            <div className="text-xs text-slate-600 dark:text-gray-400 mb-1">Best Streak</div>
+            <div className="text-lg font-bold text-amber-700 dark:text-amber-400">
+              {stats.bestStreak || 0} days
+            </div>
+          </div>
+          
+          {/* Courses Enrolled */}
+          <div className="bg-emerald-50 dark:bg-emerald-900/30 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800">
+            <div className="text-xs text-slate-600 dark:text-gray-400 mb-1">Courses Enrolled</div>
+            <div className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+              {stats.totalSubjects || 0}
+            </div>
+          </div>
+          
+          {/* Videos Watched */}
+          <div className="bg-pink-50 dark:bg-pink-900/30 p-3 rounded-lg border border-pink-100 dark:border-pink-800">
+            <div className="text-xs text-slate-600 dark:text-gray-400 mb-1">Videos Watched</div>
+            <div className="text-lg font-bold text-pink-700 dark:text-pink-400">
+              {stats.totalVideosWatched || 0} / {stats.totalVideosTotal || 0}
+            </div>
+          </div>
+          
+          {/* Problems Solved */}
+          <div className="bg-cyan-50 dark:bg-cyan-900/30 p-3 rounded-lg border border-cyan-100 dark:border-cyan-800">
+            <div className="text-xs text-slate-600 dark:text-gray-400 mb-1">Problems Solved</div>
+            <div className="text-lg font-bold text-cyan-700 dark:text-cyan-400">
+              {stats.totalProblemsSolved || 0}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Horizontal scrollable grid */}
       <div className="overflow-x-auto pb-2">
@@ -120,23 +156,8 @@ export default function ContributionCalendar({
         </div>
       </div>
       
-      {/* Legend and Stats */}
-      <div className="flex items-center justify-between gap-4 mt-4 flex-wrap">
-        {stats && (
-          <div className="text-xs text-slate-700 dark:text-gray-300 flex gap-3 flex-wrap">
-            <span className="bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded">
-              Total Sessions: <strong>{stats.totalSessions || 0}</strong>
-            </span>
-            <span className="bg-pink-50 dark:bg-pink-900/30 px-2 py-1 rounded">
-              Completed Topics: <strong>{stats.totalCompletions || 0}</strong>
-            </span>
-            <span className="bg-cyan-50 dark:bg-cyan-900/30 px-2 py-1 rounded">
-              Total Activities: <strong>{stats.totalActivities || 0}</strong>
-            </span>
-          </div>
-        )}
-        
-        {/* Intensity legend */}
+      {/* Legend */}
+      <div className="flex items-center justify-end gap-4 mt-4">
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-500 dark:text-gray-400">Less</span>
           <div className="flex gap-1">
