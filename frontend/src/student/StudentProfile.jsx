@@ -127,7 +127,7 @@ export default function StudentProfile() {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex flex-col pt-16">
         <div className="w-full max-w-3xl mx-auto px-4 py-12">
-          <p className="text-slate-600">Loading profile...</p>
+          <p className="text-slate-600 dark:text-gray-300">Loading profile...</p>
         </div>
       </div>
     );
@@ -174,7 +174,7 @@ export default function StudentProfile() {
             <h1 className="text-3xl font-bold text-slate-800 dark:text-white mb-1">
               {user.name || 'Student Name'}
             </h1>
-            <p className="text-slate-600 dark:text-gray-400 mb-6 flex items-center gap-2">
+            <p className="text-slate-600 dark:text-gray-300 mb-6 flex items-center gap-2">
               <FiHash className="w-4 h-4" />
               {user.studentId || 'Student ID'}
             </p>
@@ -337,10 +337,10 @@ export default function StudentProfile() {
                         />
                       </label>
                     </div>
-                    <p className="text-sm text-slate-600 dark:text-gray-400 mb-2 text-center">
+                    <p className="text-sm text-slate-600 dark:text-gray-300 mb-2 text-center">
                       {avatarFile ? avatarFile.name : 'Click the camera icon to select a new photo'}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-gray-500 text-center">
+                    <p className="text-xs text-slate-500 dark:text-gray-400 text-center">
                       Recommended: Square image, at least 256x256px
                     </p>
                   </div>

@@ -278,10 +278,10 @@ export default function FeedbackForm() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-gray-700">
-                    <th className="text-left p-2 border border-slate-200 dark:border-gray-600 font-semibold text-slate-700 dark:text-gray-200 text-xs">
+                    <th className="text-left p-2 border border-slate-200 dark:border-gray-600 font-semibold text-slate-700 dark:text-gray-100 text-xs">
                       Evaluation Point
                     </th>
-                    <th className="text-center p-2 border border-slate-200 dark:border-gray-600 font-semibold text-slate-700 dark:text-gray-200 text-xs" colSpan="5">
+                    <th className="text-center p-2 border border-slate-200 dark:border-gray-600 font-semibold text-slate-700 dark:text-gray-100 text-xs" colSpan="5">
                       Rating (1 = Poor, 5 = Excellent)
                     </th>
                   </tr>

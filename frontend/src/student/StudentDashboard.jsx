@@ -1161,7 +1161,7 @@ export default function StudentDashboard() {
             );
           })()
         ) : filteredEvents.length === 0 ? (
-          <div className="text-center text-slate-500 py-6">
+          <div className="text-center text-slate-500 dark:text-gray-300 py-6">
             <Calendar className="w-8 h-8 mx-auto mb-2 text-slate-300" />
             <p className="text-sm">No interviews found</p>
           </div>
@@ -1242,9 +1242,9 @@ export default function StudentDashboard() {
                           )}
                         </div>
                       </div>
-                      <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">{event.description}</p>
+                      <p className="text-xs text-slate-600 dark:text-gray-300 mt-0.5 line-clamp-2">{event.description}</p>
                       <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                        <span className="text-xs text-slate-500 dark:text-gray-300 bg-slate-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
                           {fmt(event.startDate)}
                         </span>
                         {event.joined && (

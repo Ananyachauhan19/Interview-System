@@ -500,8 +500,8 @@ export default function PairingAndScheduling() {
 
                             {p.scheduledAt && (
                               <div className="mt-1 flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-slate-500" />
-                                <span className="text-xs text-slate-600">
+                                <Clock className="w-3 h-3 text-slate-500 dark:text-gray-400" />
+                                <span className="text-xs text-slate-600 dark:text-gray-300">
                                   {new Date(p.scheduledAt).toLocaleString()}
                                 </span>
                               </div>
@@ -960,7 +960,7 @@ export default function PairingAndScheduling() {
                                       Change Time
                                     </button>
                                   </div>
-                                  <div className="text-xs text-slate-500 mt-3">
+                                  <div className="text-xs text-slate-500 dark:text-gray-300 mt-3">
                                     If you're satisfied with this time, click "Accept". Otherwise, propose a different time below.
                                   </div>
                                 </div>

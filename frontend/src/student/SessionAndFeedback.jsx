@@ -180,7 +180,7 @@ export default function SessionAndFeedback() {
               onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
               className="p-2 rounded-xl bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-200"
             >
-              {isMobileSidebarOpen ? <X className="w-5 h-5 text-gray-600" /> : <Calendar className="w-5 h-5 text-blue-500" />}
+              {isMobileSidebarOpen ? <X className="w-5 h-5 text-gray-600 dark:text-gray-300" /> : <Calendar className="w-5 h-5 text-blue-500" />}
             </motion.button>
           </motion.div>
 
@@ -218,7 +218,7 @@ export default function SessionAndFeedback() {
                     )}
                   </div>
                   {filteredPairs.length === 0 ? (
-                    <div className="text-gray-600 dark:text-gray-400 text-sm text-center py-8">No sessions found</div>
+                    <div className="text-gray-600 dark:text-gray-300 text-sm text-center py-8">No sessions found</div>
                   ) : (
                     filteredPairs.map((p) => (
                       <motion.div
@@ -289,7 +289,7 @@ export default function SessionAndFeedback() {
                       onClick={() => setActivePair(null)}
                       className="p-2 rounded-xl bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-200 lg:hidden"
                     >
-                      <X className="w-5 h-5 text-gray-600" />
+                      <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                     </motion.button>
                   </motion.div>
                   <div className="space-y-4">

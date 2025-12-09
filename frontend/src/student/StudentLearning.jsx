@@ -127,7 +127,7 @@ export default function StudentLearning() {
             <div className="w-16 h-16 bg-slate-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
               <BookOpen className="w-8 h-8 text-slate-400 dark:text-gray-500" />
             </div>
-            <p className="text-sm text-slate-600 dark:text-gray-400 font-medium">No courses available yet</p>
+            <p className="text-sm text-slate-600 dark:text-gray-300 font-medium">No courses available yet</p>
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -154,12 +154,12 @@ export default function StudentLearning() {
                         {semester.semesterName}
                       </h2>
                       {semester.semesterDescription && (
-                        <p className="text-slate-500 dark:text-gray-400 text-xs line-clamp-2">
+                        <p className="text-slate-500 dark:text-gray-300 text-xs line-clamp-2">
                           {semester.semesterDescription}
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center justify-between text-slate-600 dark:text-gray-400 text-xs">
+                    <div className="flex items-center justify-between text-slate-600 dark:text-gray-300 text-xs">
                       <span className="font-medium px-2 py-1 bg-slate-100 dark:bg-gray-700 rounded">
                         {semester.subjects.length} {semester.subjects.length === 1 ? 'Subject' : 'Subjects'}
                       </span>
@@ -221,7 +221,7 @@ export default function StudentLearning() {
                       <div className="w-14 h-14 bg-slate-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
                         <BookOpen className="w-7 h-7 text-slate-400 dark:text-gray-500" />
                       </div>
-                      <p className="text-sm text-slate-600 dark:text-gray-400 font-medium">No subjects available</p>
+                      <p className="text-sm text-slate-600 dark:text-gray-300 font-medium">No subjects available</p>
                     </div>
                   ) : (
                     <div className="space-y-2.5">
@@ -246,7 +246,7 @@ export default function StudentLearning() {
                                     {subject.subjectName}
                                   </h3>
                                   {subject.subjectDescription && (
-                                    <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5 truncate">
+                                    <p className="text-xs text-slate-500 dark:text-gray-300 mt-0.5 truncate">
                                       {subject.subjectDescription}
                                     </p>
                                   )}
@@ -291,7 +291,7 @@ export default function StudentLearning() {
                                             <p className="font-semibold text-slate-800 dark:text-gray-100 text-sm">
                                               {coordinator.coordinatorName || 'Teacher'}
                                             </p>
-                                            <p className="text-xs text-slate-500 dark:text-gray-400">
+                                            <p className="text-xs text-slate-500 dark:text-gray-300">
                                               Click to view content
                                             </p>
                                           </div>
