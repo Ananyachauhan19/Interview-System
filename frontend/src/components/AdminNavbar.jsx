@@ -15,6 +15,7 @@ export function AdminNavbar() {
   const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
   const [adminName, setAdminName] = useState(localStorage.getItem("adminName") || "Admin");
   const [adminEmail, setAdminEmail] = useState(localStorage.getItem("adminEmail") || "admin@example.com");
+  const [adminAvatarUrl, setAdminAvatarUrl] = useState(localStorage.getItem("adminAvatarUrl") || "");
 
   // Fetch admin profile from backend
   useEffect(() => {
@@ -31,6 +32,10 @@ export function AdminNavbar() {
         if (data && data.name) {
           setAdminName(data.name);
           localStorage.setItem("adminName", data.name);
+        }
+        if (data && Object.prototype.hasOwnProperty.call(data, "avatarUrl")) {
+          setAdminAvatarUrl(data.avatarUrl || "");
+          localStorage.setItem("adminAvatarUrl", data.avatarUrl || "");
         }
       } catch (err) {
         // Silently ignore 401s and keep local data
@@ -70,6 +75,7 @@ export function AdminNavbar() {
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("adminName");
     localStorage.removeItem("adminEmail");
+    localStorage.removeItem("adminAvatarUrl");
     window.location.href = "/";
   };
 
@@ -305,9 +311,17 @@ export function AdminNavbar() {
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-sky-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all duration-200 border border-gray-200 dark:border-gray-700"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                {adminName.charAt(0).toUpperCase()}
-              </div>
+              {adminAvatarUrl ? (
+                <img
+                  src={adminAvatarUrl}
+                  alt={adminName}
+                  className="w-8 h-8 rounded-full object-cover shadow-md border border-white/20"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                  {adminName.charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="text-left">
                 <div className="font-semibold text-sm text-slate-800 dark:text-gray-200">{adminName}</div>
                 <div className="text-xs text-slate-500 dark:text-gray-400">Admin</div>
@@ -327,9 +341,17 @@ export function AdminNavbar() {
                   {/* Profile Header */}
                   <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                        {adminName.charAt(0).toUpperCase()}
-                      </div>
+                      {adminAvatarUrl ? (
+                        <img
+                          src={adminAvatarUrl}
+                          alt={adminName}
+                          className="w-10 h-10 rounded-full object-cover shadow-md border border-white/30"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                          {adminName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-sm text-slate-900 dark:text-gray-100 truncate">{adminName}</div>
                         <div className="text-xs text-slate-600 dark:text-gray-400 truncate">{adminEmail}</div>
@@ -398,9 +420,17 @@ export function AdminNavbar() {
               whileHover="hover"
               whileTap="tap"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-white font-bold text-sm shadow-md"
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-white font-bold text-sm shadow-md overflow-hidden"
             >
-              {adminName.charAt(0).toUpperCase()}
+              {adminAvatarUrl ? (
+                <img
+                  src={adminAvatarUrl}
+                  alt={adminName}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                adminName.charAt(0).toUpperCase()
+              )}
             </motion.button>
 
             <AnimatePresence>
@@ -415,9 +445,17 @@ export function AdminNavbar() {
                   {/* Profile Header */}
                   <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                        {adminName.charAt(0).toUpperCase()}
-                      </div>
+                      {adminAvatarUrl ? (
+                        <img
+                          src={adminAvatarUrl}
+                          alt={adminName}
+                          className="w-10 h-10 rounded-full object-cover shadow-md border border-white/30"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                          {adminName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-sm text-slate-900 dark:text-gray-100 truncate">{adminName}</div>
                         <div className="text-xs text-slate-600 dark:text-gray-400 truncate">{adminEmail}</div>
