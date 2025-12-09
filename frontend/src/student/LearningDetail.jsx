@@ -285,8 +285,28 @@ export default function LearningDetail() {
     return topicProgress?.completed || false;
   };
 
-  const getSubjectProgressPercentage = (subjId) => {
-    return progress[subjId]?.percentage || 0;
+  const getSubjectProgressInfo = (subjId) => {
+    const subj = progress[subjId];
+    if (!subj) {
+      return { completedTopics: 0, totalTopics: 0, percentage: 0 };
+    }
+
+    const completedTopics = typeof subj.completedTopics === 'number'
+      ? subj.completedTopics
+      : (subj.progressRecords || []).filter(p => p.completed).length;
+
+    let totalTopics;
+    if (typeof subj.totalTopics === 'number') {
+      totalTopics = subj.totalTopics;
+    } else {
+      totalTopics = (subj.progressRecords || []).length;
+    }
+
+    const percentage = totalTopics > 0
+      ? Math.round((completedTopics / totalTopics) * 100)
+      : 0;
+
+    return { completedTopics, totalTopics, percentage };
   };
 
   if (loading) {
@@ -320,7 +340,7 @@ export default function LearningDetail() {
             <div className="space-y-2.5">
               {allSubjects.map((subject) => {
                 const isSelected = selectedSubject?.subjectId === subject.subjectId;
-                const progressPercent = getSubjectProgressPercentage(subject.subjectId);
+                const { completedTopics, totalTopics, percentage: progressPercent } = getSubjectProgressInfo(subject.subjectId);
 
                 return (
                   <div key={subject.subjectId}>
@@ -347,17 +367,27 @@ export default function LearningDetail() {
                         </span>
                       </div>
                       
-                      {/* Progress Bar */}
-                      <div className="w-full bg-slate-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden mb-1.5">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progressPercent}%` }}
-                          transition={{ duration: 0.5, ease: 'easeOut' }}
-                          className="h-full bg-sky-500 dark:bg-sky-600 rounded-full"
-                        />
+                      {/* Subject Progress Bar divided by topics */}
+                      <div className="w-full bg-slate-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden mb-1.5 flex">
+                        {totalTopics > 0 ? (
+                          Array.from({ length: totalTopics }).map((_, idx) => (
+                            <div
+                              key={idx}
+                              className={`flex-1 ${
+                                idx < completedTopics
+                                  ? 'bg-sky-500 dark:bg-sky-600'
+                                  : 'bg-transparent'
+                              }`}
+                            />
+                          ))
+                        ) : (
+                          <div className="flex-1 bg-transparent" />
+                        )}
                       </div>
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium text-slate-600 dark:text-gray-400">{progressPercent}% Complete</p>
+                        <p className="text-xs font-medium text-slate-600 dark:text-gray-400">
+                          {progressPercent}% Complete
+                        </p>
                         {progressPercent === 100 && (
                           <CheckCircle2 className="w-4 h-4 text-green-500" />
                         )}
