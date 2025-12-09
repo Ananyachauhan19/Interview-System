@@ -903,64 +903,61 @@ export default function DateTimePicker({
         type="text"
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 transition-all disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 ${className}`}
+        className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 transition-all disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 ${className}`}
         readOnly
       />
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
         {enableTime ? (
-          <Clock size={18} className="text-gray-400 dark:text-white" />
+          <Clock size={18} className="text-gray-400 dark:text-gray-500" />
         ) : (
-          <Calendar size={18} className="text-gray-400 dark:text-white" />
+          <Calendar size={18} className="text-gray-400 dark:text-gray-500" />
         )}
       </div>
 
       <style>{`
-         /* Base calendar styling */
-        
+        /* Base calendar styling with full dark theme support */
         .flatpickr-calendar {
           border-radius: 12px;
           box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
           border: 1px solid #e5e7eb;
-           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           padding: 0;
           background: white;
         }
         
         :root.dark .flatpickr-calendar {
-          background: #111827;
-          border-color: #1f2937;
+          background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+          border-color: #374151;
           box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
         }
         
-         /* Header styling */
-        
+        /* Header styling - Blue gradient in light, darker gradient in dark */
         .flatpickr-months .flatpickr-month {
-          background: #0ea5e9;
+          background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
           color: white;
-           height: 44px;
+          height: 44px;
           border-radius: 12px 12px 0 0;
           padding: 0;
         }
         
         :root.dark .flatpickr-months .flatpickr-month {
-          background: linear-gradient(135deg, #0c4a6e 0%, #075985 100%);
+          background: linear-gradient(135deg, #0c4a6e 0%, #082f49 100%);
         }
         
-        /* OK button in header - dark mode support */
+        /* OK button in header - white text in dark mode */
         .flatpickr-ok-button {
           background: white !important;
           color: #0ea5e9 !important;
         }
         
         :root.dark .flatpickr-ok-button {
-          background: rgba(255, 255, 255, 0.1) !important;
+          background: rgba(255, 255, 255, 0.15) !important;
           color: #ffffff !important;
           border-color: rgba(255, 255, 255, 0.3) !important;
         }
 
         .flatpickr-current-month {
           padding: 0 8px;
-
         }
         
         .flatpickr-current-month .flatpickr-monthDropdown-months {
@@ -977,21 +974,21 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-current-month .flatpickr-monthDropdown-months option {
-          background: #111827;
+          background: #1f2937;
           color: #ffffff;
         }
 
-         .flatpickr-current-month .numInputWrapper {
+        .flatpickr-current-month .numInputWrapper {
           color: white;
-          
         }
 
-         .flatpickr-current-month .numInputWrapper input {
+        .flatpickr-current-month .numInputWrapper input {
           color: white !important;
           font-weight: 600;
           font-size: 16px;
+        }
 
-        flatpickr-months .flatpickr-prev-month,
+        .flatpickr-months .flatpickr-prev-month,
         .flatpickr-months .flatpickr-next-month {
           fill: white;
         }
@@ -1001,19 +998,18 @@ export default function DateTimePicker({
           fill: rgba(255, 255, 255, 0.8);
         }
 
-          /* Weekday headers */
+        /* Weekday headers - White text in dark mode */
         .flatpickr-weekday {
           color: #0ea5e9;
           font-weight: 600;
-           font-size: 13px;
+          font-size: 13px;
         }
         
         :root.dark .flatpickr-weekday {
-          color: #ffffff;
-          font-weight: 700;
+          color: #ffffff !important;
         }
         
-        /* Day cells */
+        /* Day cells - White text in dark mode */
         .flatpickr-day {
           border-radius: 8px;
           font-weight: 500;
@@ -1024,7 +1020,7 @@ export default function DateTimePicker({
           color: #ffffff !important;
         }
 
-         .flatpickr-day.selected,
+        .flatpickr-day.selected,
         .flatpickr-day.selected:hover {
           background: #0ea5e9 !important;
           border-color: #0ea5e9 !important;
@@ -1034,10 +1030,9 @@ export default function DateTimePicker({
         
         :root.dark .flatpickr-day.selected,
         :root.dark .flatpickr-day.selected:hover {
-          background: #0ea5e9 !important;
-          border-color: #0ea5e9 !important;
+          background: #0284c7 !important;
+          border-color: #0284c7 !important;
           color: #ffffff !important;
-          box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.3);
         }
 
         .flatpickr-day:hover {
@@ -1047,8 +1042,8 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-day:hover {
-          background: #1e40af !important;
-          border-color: #1e40af !important;
+          background: #1e3a8a !important;
+          border-color: #1e3a8a !important;
           color: #ffffff !important;
         }
 
@@ -1060,13 +1055,12 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-day.today {
-          border-color: #0ea5e9 !important;
-          background: #1e40af !important;
+          border-color: #38bdf8 !important;
+          background: #1e3a8a !important;
           color: #ffffff !important;
-          box-shadow: 0 0 0 1px #0ea5e9 inset;
         }
         
-        /* Disabled and outside month days */
+        /* Disabled and outside month days - Dimmed white in dark mode */
         .flatpickr-day.flatpickr-disabled,
         .flatpickr-day.flatpickr-disabled:hover,
         .flatpickr-day.prevMonthDay,
@@ -1079,10 +1073,9 @@ export default function DateTimePicker({
         :root.dark .flatpickr-day.prevMonthDay,
         :root.dark .flatpickr-day.nextMonthDay {
           color: #6b7280 !important;
-          opacity: 0.5;
         }
 
-         /* Side-by-side layout for time picker */
+        /* Side-by-side layout for time picker */
         .flatpickr-custom .flatpickr-innerContainer {
           display: flex !important;
           flex-direction: row !important;
@@ -1090,7 +1083,7 @@ export default function DateTimePicker({
           gap: 0 !important;
         }
 
-        . .flatpickr-custom .flatpickr-rContainer {
+        .flatpickr-custom .flatpickr-rContainer {
           flex: 0 0 auto;
           width: 308px !important;
         }
@@ -1099,7 +1092,7 @@ export default function DateTimePicker({
           width: 308px !important;
         }
 
-         .flatpickr-custom .flatpickr-day {
+        .flatpickr-custom .flatpickr-day {
           height: 39px !important;
           line-height: 39px !important;
           max-width: 44px !important;
@@ -1114,19 +1107,18 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-custom .flatpickr-time {
-          border-left-color: #1f2937 !important;
-          background: #111827 !important;
+          border-left-color: #374151 !important;
+          background: #1f2937;
         }
         
-        /* Time picker heading and labels dark mode */
+        /* Time picker heading - White text in dark mode */
         .time-heading {
           color: #0ea5e9;
         }
         
         :root.dark .time-heading {
           color: #ffffff !important;
-          border-bottom-color: #1f2937 !important;
-          font-weight: 700;
+          border-bottom-color: #374151 !important;
         }
         
         .time-labels-container {
@@ -1134,19 +1126,19 @@ export default function DateTimePicker({
         }
         
         :root.dark .time-labels-container {
-          border-bottom-color: #1f2937 !important;
+          border-bottom-color: #374151 !important;
         }
         
+        /* Time labels - White text in dark mode */
         .time-label {
           color: #64748b;
         }
         
         :root.dark .time-label {
           color: #ffffff !important;
-          font-weight: 600;
         }
         
-        /* Time scroller backgrounds */
+        /* Time scroller backgrounds - Dark theme */
         .time-scroller,
         .hour-scroller,
         .minute-scroller {
@@ -1157,8 +1149,8 @@ export default function DateTimePicker({
         :root.dark .time-scroller,
         :root.dark .hour-scroller,
         :root.dark .minute-scroller {
-          background: #0f172a !important;
-          border-color: #1f2937 !important;
+          background: #111827 !important;
+          border-color: #374151 !important;
         }
         
         .ampm-box {
@@ -1167,15 +1159,15 @@ export default function DateTimePicker({
         }
         
         :root.dark .ampm-box {
-          background: #0f172a !important;
-          border-color: #1f2937 !important;
+          background: #111827 !important;
+          border-color: #374151 !important;
         }
         
         :root.dark .ampm-box .ampm-option {
-          border-top-color: #1f2937 !important;
+          border-top-color: #374151 !important;
         }
         
-        /* Time options text color */
+        /* Time options text - White in dark mode */
         .time-option {
           color: #475569;
         }
@@ -1192,20 +1184,20 @@ export default function DateTimePicker({
           color: #ffffff !important;
         }
         
-        . /* Hide separator and default inputs */
+        /* Hide separator and default inputs */
         .flatpickr-custom .flatpickr-time .flatpickr-time-separator,
         .flatpickr-custom .flatpickr-time .numInputWrapper {
           display: none !important;
         }
         
-         /* Time option hover effect - darker for contrast */
+        /* Time option hover effect - White text maintained */
         .time-option:hover {
           background: #dbeafe !important;
           color: #0ea5e9 !important;
         }
         
         :root.dark .time-option:hover {
-          background: #1e40af !important;
+          background: #1e3a8a !important;
           color: #ffffff !important;
         }
         
@@ -1219,17 +1211,41 @@ export default function DateTimePicker({
         
         :root.dark .time-option.disabled {
           color: #6b7280 !important;
-          opacity: 0.4;
         }
         
-         .ampm-option { transition: background 0.2s, color 0.2s; }
-        .ampm-option:hover { background: #dbeafe; color: #0ea5e9; }
-        .ampm-option.active { background: #0ea5e9; color: #ffffff; }
-        .ampm-option.disabled { background: #e5e7eb !important; color: #94a3b8 !important; }
+        .ampm-option { 
+          transition: background 0.2s, color 0.2s; 
+        }
         
-        :root.dark .ampm-option:hover { background: #1e40af; color: #ffffff; }
-        :root.dark .ampm-option.active { background: #0ea5e9; color: #ffffff; }
-        :root.dark .ampm-option.disabled { background: #1f2937 !important; color: #6b7280 !important; opacity: 0.5; }
+        .ampm-option:hover { 
+          background: #dbeafe; 
+          color: #0ea5e9; 
+        }
+        
+        :root.dark .ampm-option:hover { 
+          background: #1e3a8a; 
+          color: #ffffff; 
+        }
+        
+        .ampm-option.active { 
+          background: #0ea5e9; 
+          color: #ffffff; 
+        }
+        
+        :root.dark .ampm-option.active { 
+          background: #0284c7; 
+          color: #ffffff; 
+        }
+        
+        .ampm-option.disabled { 
+          background: #e5e7eb !important; 
+          color: #94a3b8 !important; 
+        }
+        
+        :root.dark .ampm-option.disabled { 
+          background: #374151 !important; 
+          color: #6b7280 !important; 
+        }
         
         /* Gradient fade for scrollers */
         .time-scroller::before,
@@ -1250,7 +1266,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .time-scroller::before {
-          background: linear-gradient(to bottom, #0f172a, transparent);
+          background: linear-gradient(to bottom, #111827, transparent);
         }
         
         .time-scroller::after {
@@ -1260,7 +1276,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .time-scroller::after {
-          background: linear-gradient(to top, #0f172a, transparent);
+          background: linear-gradient(to top, #111827, transparent);
         }
         
         /* OK Button styling */
@@ -1271,8 +1287,8 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-custom .ok-button-container {
-          border-top-color: #1f2937;
-          background: #111827;
+          border-top-color: #374151;
+          background: #1f2937;
         }
         
         .flatpickr-custom .ok-button {
@@ -1290,7 +1306,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-custom .ok-button {
-          background: #0ea5e9;
+          background: #0284c7;
         }
         
         .flatpickr-custom .ok-button:hover {
@@ -1299,9 +1315,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-custom .ok-button:hover {
-          background: #0284c7;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+          background: #0369a1;
         }
         
         .flatpickr-custom .ok-button:active {
@@ -1310,8 +1324,7 @@ export default function DateTimePicker({
         }
         
         :root.dark .flatpickr-custom .ok-button:active {
-          background: #0369a1;
-          transform: translateY(0);
+          background: #075985;
         }
       `}</style>
     </div>
