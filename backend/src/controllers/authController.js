@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { sendPasswordResetEmail } from '../utils/mailer.js';
 import { uploadAvatar, deleteAvatar, isCloudinaryConfigured } from '../utils/cloudinary.js';
 import { logActivity } from './adminActivityController.js';
+import { logStudentActivity } from './activityController.js';
 
 // Change password for student (requires current password)
 export async function changePassword(req, res) {
@@ -217,6 +218,17 @@ export async function updateMyAvatar(req, res) {
       req
     });
     
+    // Log student activity for profile update
+    if (u.role === 'student') {
+      const studentModel = u.isSpecialStudent ? 'SpecialStudent' : 'User';
+      await logStudentActivity({
+        studentId: u._id,
+        studentModel: studentModel,
+        activityType: 'PROFILE_UPDATED',
+        metadata: { action: 'avatar_updated' }
+      });
+    }
+    
     res.json({ message: 'Avatar updated', avatarUrl });
   } catch (e) {
     console.error('[Avatar Upload Error]', e);
@@ -248,6 +260,15 @@ export async function login(req, res) {
   if (student) {
     const ok = await student.verifyPassword(password);
     if (!ok) throw new HttpError(401, 'Invalid credentials');
+    
+    // Log student login activity
+    await logStudentActivity({
+      studentId: student._id,
+      studentModel: 'User',
+      activityType: 'LOGIN',
+      metadata: { email: student.email, studentId: student.studentId }
+    });
+    
     const token = signToken({ 
       sub: student._id, 
       role: student.role,
@@ -273,6 +294,15 @@ export async function login(req, res) {
   if (specialStudent) {
     const ok = await specialStudent.verifyPassword(password);
     if (!ok) throw new HttpError(401, 'Invalid credentials');
+    
+    // Log special student login activity
+    await logStudentActivity({
+      studentId: specialStudent._id,
+      studentModel: 'SpecialStudent',
+      activityType: 'LOGIN',
+      metadata: { email: specialStudent.email, studentId: specialStudent.studentId }
+    });
+    
     const token = signToken({ 
       sub: specialStudent._id, 
       role: 'student', 

@@ -3,6 +3,7 @@ import Pair from '../models/Pair.js';
 import Event from '../models/Event.js';
 import User from '../models/User.js';
 import { HttpError } from '../utils/errors.js';
+import { logStudentActivity } from './activityController.js';
 
 // Only interviewer can submit feedback about the interviewee.
 // Feedback allowed only after the meeting END (scheduledAt + duration) OR after event end.
@@ -64,6 +65,21 @@ export async function submitFeedback(req, res) {
   
   // Mark pair as completed after feedback submission
   await Pair.findByIdAndUpdate(pairId, { status: 'completed' });
+  
+  // Log feedback submission activity for the interviewer
+  if (req.user.role === 'student') {
+    await logStudentActivity({
+      studentId: req.user._id,
+      studentModel: 'User',
+      activityType: 'FEEDBACK_SUBMITTED',
+      metadata: {
+        pairId: pair._id,
+        eventId: pair.event,
+        intervieweeId: to,
+        marks: finalMarks
+      }
+    });
+  }
   
   res.json(fb);
 }

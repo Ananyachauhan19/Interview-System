@@ -48,6 +48,7 @@ export const api = {
     return request('/auth/me/avatar', { method: 'PUT', formData: fd });
   },
   getStudentActivity: () => request('/auth/activity'),
+  getStudentStats: () => request('/auth/stats'),
   login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password } }),
   changePassword: (currentPassword, newPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword: newPassword } }),
   changeStudentPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
@@ -60,6 +61,7 @@ export const api = {
   listAllSpecialStudents: (search = '') => request(`/students/special${search ? '?search=' + encodeURIComponent(search) : ''}`),
   listSpecialStudentsByEvent: (eventId) => request(`/students/special/${eventId}`),
   getStudentActivityByAdmin: (studentId) => request(`/students/${studentId}/activity`),
+  getStudentStatsByAdmin: (studentId) => request(`/students/${studentId}/stats`),
   checkStudentsCsv: (file) => {
     const fd = new FormData();
     fd.append('file', file);

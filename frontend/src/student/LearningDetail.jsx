@@ -167,8 +167,27 @@ export default function LearningDetail() {
 
   const openModal = async (type, content, topic) => {
     setModalType(type);
-    // Convert YouTube URLs to embed format
-    const embedContent = type === 'video' ? convertToEmbedUrl(content) : content;
+    
+    // Convert URLs to viewable format
+    let embedContent = content;
+    
+    if (type === 'video') {
+      // Convert YouTube URLs to embed format
+      embedContent = convertToEmbedUrl(content);
+    } else if (type === 'pdf' || type === 'notes') {
+      // Handle Google Drive links for PDF viewing
+      if (content.includes('drive.google.com')) {
+        // Extract file ID and use Google Drive viewer
+        const fileIdMatch = content.match(/[-\w]{25,}/);
+        if (fileIdMatch) {
+          embedContent = `https://drive.google.com/file/d/${fileIdMatch[0]}/preview`;
+        }
+      } else if (!content.includes('/preview') && !content.includes('viewer')) {
+        // For direct PDF links, use Google Drive viewer as fallback
+        embedContent = `https://docs.google.com/viewer?url=${encodeURIComponent(content)}&embedded=true`;
+      }
+    }
+    
     setModalContent(embedContent);
     setModalOpen(true);
 
@@ -605,16 +624,30 @@ export default function LearningDetail() {
                     src={modalContent}
                     className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-black"
                     allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     title="Video Player"
                   />
                 )}
                 {(modalType === 'notes' || modalType === 'pdf') && (
-                  <iframe
-                    src={`${modalContent}#toolbar=0&navpanes=0&scrollbar=0`}
-                    className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-                    title="Document Viewer"
-                    sandbox="allow-scripts allow-same-origin"
-                  />
+                  <div className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden relative">
+                    <iframe
+                      src={modalContent}
+                      className="w-full h-full"
+                      title="Document Viewer"
+                      allow="autoplay"
+                      style={{ border: 'none' }}
+                      onError={(e) => {
+                        console.error('PDF iframe load error:', e);
+                        toast.error('Unable to load PDF. Click "Open in new tab" to view.');
+                      }}
+                    />
+                    {/* Fallback message */}
+                    <div className="absolute bottom-4 left-4 right-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 text-center">
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        💡 If the document doesn't load, click the <ExternalLink className="inline w-3 h-3" /> icon above to open in a new tab
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
             </motion.div>

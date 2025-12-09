@@ -176,14 +176,15 @@ export async function getStudentActivityByAdmin(req, res) {
   }
 
   const { studentId } = req.params;
-  const { year } = req.query;
   
   if (!studentId) throw new HttpError(400, 'Student ID is required');
 
   // Find the student
   let student = await User.findById(studentId);
+  let studentModel = 'User';
   if (!student) {
     student = await SpecialStudent.findById(studentId);
+    studentModel = 'SpecialStudent';
   }
   if (!student) throw new HttpError(404, 'Student not found');
   if (student.role !== 'student' && !student.isSpecialStudent) {
@@ -199,6 +200,27 @@ export async function getStudentActivityByAdmin(req, res) {
   startDate.setHours(0, 0, 0, 0);
 
   try {
+    // 1. Get all student activities from StudentActivity collection
+    const activities = await StudentActivity.aggregate([
+      {
+        $match: {
+          studentId: student._id,
+          date: {
+            $gte: startDate,
+            $lte: endDate
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$date' }
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
     // Get scheduled sessions
     const scheduledSessions = await Pair.aggregate([
       {
@@ -247,6 +269,11 @@ export async function getStudentActivityByAdmin(req, res) {
 
     // Merge activity data
     const activityMap = {};
+    
+    // Start with activities from StudentActivity collection
+    activities.forEach(item => {
+      activityMap[item._id] = item.count;
+    });
     
     scheduledSessions.forEach(item => {
       const date = item._id;
@@ -323,5 +350,101 @@ export async function getStudentActivityByAdmin(req, res) {
   } catch (error) {
     console.error('[Get Student Activity By Admin Error]', error);
     throw new HttpError(500, 'Failed to fetch activity data');
+  }
+}
+
+/**
+ * Get comprehensive student statistics for profile tabs
+ */
+export async function getStudentStats(req, res) {
+  const user = req.user;
+  let studentId = req.params.studentId;
+
+  // If no studentId in params, use current user (student viewing own profile)
+  if (!studentId && user.role === 'student') {
+    studentId = user._id;
+  }
+
+  // Authorization check
+  if (!studentId) throw new HttpError(400, 'Student ID is required');
+  if (user.role !== 'admin' && user.role !== 'coordinator' && user._id.toString() !== studentId) {
+    throw new HttpError(403, 'Access denied');
+  }
+
+  try {
+    // Find the student
+    let student = await User.findById(studentId);
+    if (!student) {
+      student = await SpecialStudent.findById(studentId);
+    }
+    if (!student) throw new HttpError(404, 'Student not found');
+
+    // 1. Get total courses enrolled (unique subjects)
+    const enrolledSubjects = await Progress.aggregate([
+      {
+        $match: { studentId: student._id }
+      },
+      {
+        $group: {
+          _id: { subjectId: '$subjectId', semesterId: '$semesterId' }
+        }
+      },
+      {
+        $count: 'totalCourses'
+      }
+    ]);
+    const totalCourses = enrolledSubjects[0]?.totalCourses || 0;
+
+    // 2. Get total videos watched (topics with videoWatchedSeconds > 0)
+    const videosWatched = await Progress.aggregate([
+      {
+        $match: {
+          studentId: student._id,
+          videoWatchedSeconds: { $gt: 0 }
+        }
+      },
+      {
+        $group: {
+          _id: '$topicId'
+        }
+      },
+      {
+        $count: 'totalVideos'
+      }
+    ]);
+    const totalVideosWatched = videosWatched[0]?.totalVideos || 0;
+
+    // 3. Get total problems solved (completed topics)
+    const problemsSolved = await Progress.countDocuments({
+      studentId: student._id,
+      completed: true
+    });
+
+    // 4. Get total watch time in hours
+    const watchTimeData = await Progress.aggregate([
+      {
+        $match: { studentId: student._id }
+      },
+      {
+        $group: {
+          _id: null,
+          totalSeconds: { $sum: '$videoWatchedSeconds' }
+        }
+      }
+    ]);
+    const totalWatchTimeHours = watchTimeData[0] ? Math.round((watchTimeData[0].totalSeconds / 3600) * 10) / 10 : 0;
+
+    res.json({
+      success: true,
+      stats: {
+        totalCoursesEnrolled: totalCourses,
+        totalVideosWatched: totalVideosWatched,
+        problemsSolved: problemsSolved,
+        totalWatchTimeHours: totalWatchTimeHours
+      }
+    });
+  } catch (error) {
+    console.error('[Get Student Stats Error]', error);
+    throw new HttpError(500, 'Failed to fetch student statistics');
   }
 }

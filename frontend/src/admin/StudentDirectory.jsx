@@ -17,10 +17,10 @@ export default function StudentDirectory() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [activity, setActivity] = useState({});
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [availableYears, setAvailableYears] = useState([]);
   const [activityStats, setActivityStats] = useState(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [studentStats, setStudentStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   // Configure Fuse.js for optimized fuzzy search
   const currentStudents = activeTab === "students" ? students : specialStudents;
@@ -105,34 +105,38 @@ export default function StudentDirectory() {
   const openStudentProfile = async (student) => {
     setSelectedStudent(student);
     setShowModal(true);
-    setSelectedYear(new Date().getFullYear());
     
-    // Load real activity data for current year
-    await loadStudentActivity(student._id, new Date().getFullYear());
+    // Load real activity data and stats
+    await loadStudentActivity(student._id);
+    await loadStudentStats(student._id);
   };
 
-  const loadStudentActivity = async (studentId, year) => {
+  const loadStudentActivity = async (studentId) => {
     setLoadingActivity(true);
     try {
-      const data = await api.getStudentActivityByAdmin(studentId, year);
+      const data = await api.getStudentActivityByAdmin(studentId);
       setActivity(data.activityByDate || {});
-      setAvailableYears(data.availableYears || []);
       setActivityStats(data.stats || null);
     } catch (e) {
       console.error('Failed to load student activity:', e);
       // Fall back to empty activity
       setActivity({});
-      setAvailableYears([]);
       setActivityStats(null);
     } finally {
       setLoadingActivity(false);
     }
   };
 
-  const handleYearChange = async (year) => {
-    setSelectedYear(year);
-    if (selectedStudent && selectedStudent._id) {
-      await loadStudentActivity(selectedStudent._id, year);
+  const loadStudentStats = async (studentId) => {
+    setLoadingStats(true);
+    try {
+      const data = await api.getStudentStatsByAdmin(studentId);
+      setStudentStats(data.stats || null);
+    } catch (e) {
+      console.error('Failed to load student stats:', e);
+      setStudentStats(null);
+    } finally {
+      setLoadingStats(false);
     }
   };
 
@@ -141,9 +145,8 @@ export default function StudentDirectory() {
     setTimeout(() => {
       setSelectedStudent(null);
       setActivity({});
-      setAvailableYears([]);
       setActivityStats(null);
-      setSelectedYear(new Date().getFullYear());
+      setStudentStats(null);
     }, 300);
   };
 
@@ -487,22 +490,76 @@ export default function StudentDirectory() {
                   )}
 
                   {/* Contribution Calendar */}
-                  <div className="mt-6 pt-6 border-t border-slate-200">
-                    <div className="rounded-lg p-4 bg-slate-50 border border-slate-200">
+                  <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-600">
+                    <div className="rounded-lg p-4 bg-slate-50 dark:bg-gray-700/50 border border-slate-200 dark:border-gray-600">
                       {loadingActivity ? (
-                        <div className="text-center py-8 text-slate-500">Loading activity...</div>
+                        <div className="text-center py-8 text-slate-500 dark:text-gray-400">Loading activity...</div>
                       ) : (
                         <ContributionCalendar 
-                          activityByDate={activity} 
-                          title="Student Activity"
-                          year={selectedYear}
-                          availableYears={availableYears}
-                          onYearChange={handleYearChange}
-                          showYearFilter={true}
+                          activity={activity} 
                           stats={activityStats}
+                          title="Student Activity"
                         />
                       )}
                     </div>
+                  </div>
+
+                  {/* Statistics Tabs */}
+                  <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-600">
+                    <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-300 mb-4 uppercase tracking-wide">Statistics</h4>
+                    
+                    {loadingStats ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="animate-pulse">
+                            <div className="h-20 bg-slate-200 dark:bg-gray-700 rounded-lg"></div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : studentStats ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Total Courses Enrolled */}
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xl font-bold text-slate-800 dark:text-white">{studentStats.totalCoursesEnrolled || 0}</p>
+                            <p className="text-xs text-slate-600 dark:text-gray-300 font-medium">Courses Enrolled</p>
+                          </div>
+                        </div>
+
+                        {/* Total Videos Watched */}
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-800">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-red-600 dark:bg-red-500 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xl font-bold text-slate-800 dark:text-white">{studentStats.totalVideosWatched || 0}</p>
+                            <p className="text-xs text-slate-600 dark:text-gray-300 font-medium">Videos Watched</p>
+                          </div>
+                        </div>
+
+                        {/* Problems Solved */}
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-green-600 dark:bg-green-500 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xl font-bold text-slate-800 dark:text-white">{studentStats.problemsSolved || 0}</p>
+                            <p className="text-xs text-slate-600 dark:text-gray-300 font-medium">Problems Solved</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-center text-slate-500 dark:text-gray-400 py-6">No statistics available</p>
+                    )}
                   </div>
                 </div>
 

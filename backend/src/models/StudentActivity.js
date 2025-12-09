@@ -18,8 +18,13 @@ const studentActivitySchema = new mongoose.Schema({
     enum: [
       'LOGIN',
       'VIDEO_WATCH',
+      'VIDEO_STARTED',
       'PROBLEM_SOLVED',
       'TOPIC_COMPLETED',
+      'TOPIC_VIEWED',
+      'CHAPTER_VIEWED',
+      'COURSE_ENROLLED',
+      'SUBJECT_ACCESSED',
       'SESSION_SCHEDULED',
       'FEEDBACK_SUBMITTED',
       'PROFILE_UPDATED',

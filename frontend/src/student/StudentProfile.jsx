@@ -14,6 +14,8 @@ export default function StudentProfile() {
   const [activityStats, setActivityStats] = useState(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -40,10 +42,12 @@ export default function StudentProfile() {
     // Set timeout to refresh at midnight
     const midnightTimeout = setTimeout(() => {
       loadActivityData();
+      loadStats();
       
       // Set up daily interval after first midnight refresh
       const dailyInterval = setInterval(() => {
         loadActivityData();
+        loadStats();
       }, 24 * 60 * 60 * 1000); // 24 hours
       
       return () => clearInterval(dailyInterval);
@@ -65,6 +69,25 @@ export default function StudentProfile() {
       setLoadingActivity(false);
     }
   };
+
+  const loadStats = async () => {
+    setLoadingStats(true);
+    try {
+      const data = await api.getStudentStats();
+      setStats(data.stats || null);
+    } catch (e) {
+      console.error('Failed to load stats:', e);
+      setStats(null);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadStats();
+    }
+  }, [user]);
 
   const onAvatarChange = (e) => {
     const file = e.target.files?.[0] || null;
@@ -245,6 +268,62 @@ export default function StudentProfile() {
               stats={activityStats}
               title="Contribution Calendar"
             />
+          )}
+        </div>
+
+        {/* Statistics Tabs */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-6">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">Statistics</h2>
+          
+          {loadingStats ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-24 bg-slate-200 dark:bg-gray-700 rounded-lg"></div>
+                </div>
+              ))}
+            </div>
+          ) : stats ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Total Courses Enrolled */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800">
+                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
+                  <FiBook className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.totalCoursesEnrolled || 0}</p>
+                  <p className="text-xs text-slate-600 dark:text-gray-300 font-medium">Courses Enrolled</p>
+                </div>
+              </div>
+
+              {/* Total Videos Watched */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-800">
+                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-red-600 dark:bg-red-500 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.totalVideosWatched || 0}</p>
+                  <p className="text-xs text-slate-600 dark:text-gray-300 font-medium">Videos Watched</p>
+                </div>
+              </div>
+
+              {/* Problems Solved */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
+                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-600 dark:bg-green-500 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.problemsSolved || 0}</p>
+                  <p className="text-xs text-slate-600 dark:text-gray-300 font-medium">Problems Solved</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-slate-500 dark:text-gray-400 py-8">No statistics available</p>
           )}
         </div>
       </motion.div>

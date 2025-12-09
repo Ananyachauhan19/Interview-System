@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { login, forcePasswordChange, me, changePassword, changeAdminPassword, requestPasswordReset, resetPassword, updateMe, updateMyAvatar } from '../controllers/authController.js';
-import { getStudentActivity } from '../controllers/activityController.js';
+import { getStudentActivity, getStudentStats } from '../controllers/activityController.js';
 import { requireAuth } from '../middleware/auth.js';
 import multer from 'multer';
 const upload = multer();
@@ -16,5 +16,6 @@ router.get('/me', requireAuth, me);
 router.put('/me', requireAuth, updateMe);
 router.put('/me/avatar', requireAuth, upload.single('avatar'), updateMyAvatar);
 router.get('/activity', requireAuth, getStudentActivity);
+router.get('/stats', requireAuth, getStudentStats);
 
 export default router;

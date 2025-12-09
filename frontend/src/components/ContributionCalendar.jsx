@@ -46,12 +46,12 @@ function getRolling365Days() {
 }
 
 function intensityClass(v) {
-  // White/gray background with blue shades for activity
-  if (!v || v <= 0) return 'bg-slate-100';
-  if (v < 2) return 'bg-blue-200';
-  if (v < 4) return 'bg-blue-400';
-  if (v < 7) return 'bg-blue-600';
-  return 'bg-blue-700';
+  // White/gray background with blue shades for activity (with dark mode support)
+  if (!v || v <= 0) return 'bg-slate-100 dark:bg-gray-700 border border-slate-200 dark:border-gray-600';
+  if (v < 2) return 'bg-blue-200 dark:bg-blue-800';
+  if (v < 4) return 'bg-blue-400 dark:bg-blue-600';
+  if (v < 7) return 'bg-blue-600 dark:bg-blue-500';
+  return 'bg-blue-700 dark:bg-blue-400';
 }
 
 export default function ContributionCalendar({ 

@@ -6,6 +6,7 @@ import SpecialStudent from '../models/SpecialStudent.js';
 import { sendMail, buildICS, sendSlotProposalEmail, sendSlotAcceptanceEmail, sendInterviewScheduledEmail } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
 import crypto from 'crypto';
+import { logStudentActivity } from './activityController.js';
 
 // Helper function to format date as "6/11/2025, 12:16:00 PM"
 function formatDateTime(date) {
@@ -848,6 +849,20 @@ export async function confirmSlot(req, res) {
   }
   pair.status = 'scheduled';
   await pair.save();
+
+  // Log session scheduled activity for both participants
+  const confirmerModel = isSpecialEvent ? 'SpecialStudent' : 'User';
+  await logStudentActivity({
+    studentId: req.user._id,
+    studentModel: confirmerModel,
+    activityType: 'SESSION_SCHEDULED',
+    metadata: {
+      pairId: pair._id,
+      eventId: pair.event,
+      scheduledAt: scheduled,
+      role: confirmerIsInterviewer ? 'interviewer' : 'interviewee'
+    }
+  });
 
   // If both reached max attempts and still not scheduled, auto-assign
   try { await checkAndAutoAssign(pair); } catch {}
