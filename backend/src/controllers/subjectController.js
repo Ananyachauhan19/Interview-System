@@ -1,4 +1,5 @@
 import Semester from '../models/Subject.js';
+import Progress from '../models/Progress.js';
 import { HttpError } from '../utils/errors.js';
 import { supabase } from '../utils/supabase.js';
 import { io } from '../server.js';
@@ -261,6 +262,10 @@ export async function deleteSubject(req, res) {
     semester.subjects.pull(subjectId);
     await semester.save();
 
+    // Clean up all Progress records for this subject
+    const deleteResult = await Progress.deleteMany({ subjectId });
+    console.log(`Deleted ${deleteResult.deletedCount} progress records for subject ${subjectId}`);
+
     // Log activity
     logActivity({
       userEmail: req.user.email,
@@ -412,6 +417,10 @@ export async function deleteChapter(req, res) {
     
     subject.chapters.pull(chapterId);
     await semester.save();
+
+    // Clean up all Progress records for topics in this chapter
+    const deleteResult = await Progress.deleteMany({ chapterId });
+    console.log(`Deleted ${deleteResult.deletedCount} progress records for chapter ${chapterId}`);
 
     // Log activity
     logActivity({
@@ -689,6 +698,10 @@ export async function deleteTopic(req, res) {
     
     chapter.topics.pull(topicId);
     await semester.save();
+
+    // Clean up Progress records for this specific topic
+    const deleteResult = await Progress.deleteMany({ topicId });
+    console.log(`Deleted ${deleteResult.deletedCount} progress records for topic ${topicId}`);
 
     // Log activity
     logActivity({

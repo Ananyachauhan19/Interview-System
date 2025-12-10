@@ -26,8 +26,15 @@ async function request(path, { method = 'GET', body, headers = {}, formData } = 
     
     if (!res.ok) {
       let err;
-      try { const j = await res.json(); err = j.error || JSON.stringify(j); } catch { err = res.statusText; }
-      throw new Error(err);
+      try { 
+        const j = await res.json(); 
+        err = new Error(j.error || j.message || JSON.stringify(j));
+        err.response = { status: res.status, data: j };
+      } catch { 
+        err = new Error(res.statusText);
+        err.response = { status: res.status };
+      }
+      throw err;
     }
     const ct = res.headers.get('content-type') || '';
     return ct.includes('application/json') ? res.json() : res.text();

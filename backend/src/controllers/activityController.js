@@ -26,6 +26,7 @@ async function computeLearningScopeForStudent(student) {
 
   const allowedSemesterIds = [];
   const subjectKeys = new Set();
+  const validTopicIds = new Set(); // Track all valid topic IDs in curriculum
   let totalVideosTotal = 0;
 
   const hasSemesterNumber = student && typeof student.semester === 'number';
@@ -52,6 +53,9 @@ async function computeLearningScopeForStudent(student) {
       // Count total videos available in curriculum (topics with a video link)
       subject.chapters?.forEach(chapter => {
         chapter.topics?.forEach(topic => {
+          // Track all valid topic IDs
+          validTopicIds.add(topic._id.toString());
+          
           if (topic.topicVideoLink) {
             totalVideosTotal += 1;
           }
@@ -63,7 +67,8 @@ async function computeLearningScopeForStudent(student) {
   return {
     allowedSemesterIds,
     totalCourses: subjectKeys.size,
-    totalVideosTotal
+    totalVideosTotal,
+    validTopicIds: Array.from(validTopicIds).map(id => new Subject.base.Types.ObjectId(id))
   };
 }
 
@@ -103,7 +108,7 @@ export async function getStudentActivity(req, res) {
 
   try {
     // Determine learning scope for this student (which semesters/subjects/videos count)
-    const { allowedSemesterIds, totalCourses, totalVideosTotal } = await computeLearningScopeForStudent(user);
+    const { allowedSemesterIds, totalCourses, totalVideosTotal, validTopicIds } = await computeLearningScopeForStudent(user);
 
     // 1. Get all student activities from StudentActivity collection
     const activities = await StudentActivity.aggregate([
@@ -245,13 +250,17 @@ export async function getStudentActivity(req, res) {
       }
     }
 
-    // 4. Get total videos watched (all time) within the allowed semesters
+    // 4. Get total videos watched (all time) within the allowed semesters and valid topics only
     const videoWatchMatch = {
       studentId: user._id,
       videoWatchedSeconds: { $gt: 0 }
     };
     if (allowedSemesterIds.length > 0) {
       videoWatchMatch.semesterId = { $in: allowedSemesterIds };
+    }
+    // Only count videos for topics that still exist in the curriculum
+    if (validTopicIds.length > 0) {
+      videoWatchMatch.topicId = { $in: validTopicIds };
     }
     const videosWatchedAgg = await Progress.aggregate([
       { $match: videoWatchMatch },
@@ -461,15 +470,19 @@ export async function getStudentActivityByAdmin(req, res) {
     const totalActiveDays = Object.keys(activityMap).length;
 
     // Determine learning scope for this student (semesters/subjects/videos assigned)
-    const { allowedSemesterIds, totalCourses, totalVideosTotal } = await computeLearningScopeForStudent(student);
+    const { allowedSemesterIds, totalCourses, totalVideosTotal, validTopicIds } = await computeLearningScopeForStudent(student);
 
-    // 4. Get total videos watched (all time) within the allowed semesters
+    // 4. Get total videos watched (all time) within the allowed semesters and valid topics only
     const videoWatchMatch = {
       studentId: student._id,
       videoWatchedSeconds: { $gt: 0 }
     };
     if (allowedSemesterIds.length > 0) {
       videoWatchMatch.semesterId = { $in: allowedSemesterIds };
+    }
+    // Only count videos for topics that still exist in the curriculum
+    if (validTopicIds.length > 0) {
+      videoWatchMatch.topicId = { $in: validTopicIds };
     }
     const videosWatchedAgg = await Progress.aggregate([
       { $match: videoWatchMatch },
@@ -538,7 +551,7 @@ export async function getStudentStats(req, res) {
     if (!student) throw new HttpError(404, 'Student not found');
 
     // Determine learning scope for this student (semesters/subjects/videos assigned)
-    const { allowedSemesterIds, totalCourses, totalVideosTotal } = await computeLearningScopeForStudent(student);
+    const { allowedSemesterIds, totalCourses, totalVideosTotal, validTopicIds } = await computeLearningScopeForStudent(student);
 
     // Base match for all Progress-based stats (restricted to allowed semesters when available)
     const baseMatch = {
@@ -546,6 +559,10 @@ export async function getStudentStats(req, res) {
     };
     if (allowedSemesterIds.length > 0) {
       baseMatch.semesterId = { $in: allowedSemesterIds };
+    }
+    // Only count progress for topics that still exist in the curriculum
+    if (validTopicIds.length > 0) {
+      baseMatch.topicId = { $in: validTopicIds };
     }
 
     // 1. Get total courses enrolled (unique subjects within allowed semesters)

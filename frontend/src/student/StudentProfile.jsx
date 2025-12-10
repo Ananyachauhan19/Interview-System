@@ -3,6 +3,7 @@ import { api } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import ContributionCalendar from '../components/ContributionCalendar';
 import { FiCamera, FiX, FiMail, FiUser, FiBook, FiGitBranch, FiMapPin, FiHash, FiUserCheck } from 'react-icons/fi';
+import socketService from '../utils/socket';
 
 export default function StudentProfile() {
   const [user, setUser] = useState(null);
@@ -91,6 +92,24 @@ export default function StudentProfile() {
       loadStats();
     }
   }, [user]);
+
+  // Socket.IO real-time synchronization for learning content changes
+  useEffect(() => {
+    socketService.connect();
+
+    const handleLearningUpdate = (data) => {
+      console.log('[StudentProfile] Learning updated:', data);
+      // Refresh both activity and stats when content is updated/deleted
+      loadActivityData();
+      loadStats();
+    };
+
+    socketService.on('learning-updated', handleLearningUpdate);
+
+    return () => {
+      socketService.off('learning-updated', handleLearningUpdate);
+    };
+  }, []);
 
   const onAvatarChange = (e) => {
     const file = e.target.files?.[0] || null;

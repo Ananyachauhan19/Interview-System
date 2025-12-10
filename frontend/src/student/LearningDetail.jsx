@@ -90,16 +90,16 @@ export default function LearningDetail() {
   useEffect(() => {
     socketService.connect();
 
-    const handleLearningUpdate = (data) => {
+    const handleLearningUpdate = async (data) => {
       console.log('[Socket] Learning updated:', data);
-      loadCoordinatorSubjects();
+      
+      // Reload subjects first to get updated list
+      await loadCoordinatorSubjects();
+      
+      // Then reload current subject details if viewing one
       if (semesterId && subjectId) {
         loadSubjectDetails(semesterId, subjectId);
         loadSubjectProgress(subjectId);
-      }
-      // Refresh all sidebar subjects' progress
-      if (allSubjects.length > 0) {
-        loadAllSubjectsProgress(allSubjects);
       }
     };
 
@@ -108,7 +108,7 @@ export default function LearningDetail() {
     return () => {
       socketService.off('learning-updated', handleLearningUpdate);
     };
-  }, [semesterId, subjectId, allSubjects]);
+  }, [semesterId, subjectId]);
 
   const loadCoordinatorSubjects = async () => {
     try {
@@ -178,7 +178,15 @@ export default function LearningDetail() {
       }
     } catch (error) {
       console.error('Error loading subject details:', error);
-      toast.error('Failed to load subject details');
+      
+      // If subject not found (404), it may have been deleted - clear selection
+      if (error.response?.status === 404) {
+        toast.error('This subject is no longer available');
+        setSelectedSubject(null);
+        setSubjectDetails(null);
+      } else {
+        toast.error('Failed to load subject details');
+      }
     }
   };
 
