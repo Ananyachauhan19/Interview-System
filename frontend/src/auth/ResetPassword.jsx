@@ -15,6 +15,11 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [passwordMatch, setPasswordMatch] = useState(null);
+  const [passwordStrength, setPasswordStrength] = useState({
+    hasMinLength: false,
+    hasSpecialChar: false
+  });
 
   useEffect(() => {
     const tokenParam = searchParams.get('token');
@@ -25,6 +30,30 @@ export default function ResetPassword() {
       console.log('Reset token received:', tokenParam.substring(0, 10) + '...');
     }
   }, [searchParams]);
+
+  // Real-time password validation
+  useEffect(() => {
+    if (newPassword) {
+      setPasswordStrength({
+        hasMinLength: newPassword.length >= 8,
+        hasSpecialChar: /[#*]/.test(newPassword)
+      });
+    } else {
+      setPasswordStrength({
+        hasMinLength: false,
+        hasSpecialChar: false
+      });
+    }
+  }, [newPassword]);
+
+  // Real-time password matching
+  useEffect(() => {
+    if (confirmPassword) {
+      setPasswordMatch(newPassword === confirmPassword);
+    } else {
+      setPasswordMatch(null);
+    }
+  }, [newPassword, confirmPassword]);
 
   const validatePassword = () => {
     if (!newPassword) {
@@ -137,9 +166,30 @@ export default function ResetPassword() {
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                  <p className="mt-2 text-xs text-gray-500">
-                    At least 8 characters with * or # required
-                  </p>
+                  {newPassword && (
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center gap-2 text-xs">
+                        {passwordStrength.hasMinLength ? (
+                          <CheckCircle size={14} className="text-green-500" />
+                        ) : (
+                          <XCircle size={14} className="text-red-500" />
+                        )}
+                        <span className={passwordStrength.hasMinLength ? 'text-green-600' : 'text-red-600'}>
+                          At least 8 characters
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        {passwordStrength.hasSpecialChar ? (
+                          <CheckCircle size={14} className="text-green-500" />
+                        ) : (
+                          <XCircle size={14} className="text-red-500" />
+                        )}
+                        <span className={passwordStrength.hasSpecialChar ? 'text-green-600' : 'text-red-600'}>
+                          Contains * or #
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -154,7 +204,13 @@ export default function ResetPassword() {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
+                      className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 transition-all ${
+                        passwordMatch === null
+                          ? 'border-gray-300 focus:ring-sky-500 focus:border-sky-500'
+                          : passwordMatch
+                          ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
+                          : 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                      }`}
                       placeholder="Confirm new password"
                       disabled={loading || !token}
                     />
@@ -166,6 +222,27 @@ export default function ResetPassword() {
                       {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+                  {passwordMatch !== null && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`mt-2 flex items-center gap-2 text-xs ${
+                        passwordMatch ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
+                      {passwordMatch ? (
+                        <>
+                          <CheckCircle size={14} className="text-green-500" />
+                          <span>Passwords match!</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle size={14} className="text-red-500" />
+                          <span>Passwords do not match</span>
+                        </>
+                      )}
+                    </motion.div>
+                  )}
                 </div>
 
                 {error && (

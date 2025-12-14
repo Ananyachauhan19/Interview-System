@@ -131,6 +131,13 @@ export const getAllSemestersForStudent = async (req, res) => {
       console.log(`[Learning] Filtered ${result.length} semesters to ${filteredResult.length} for student semester ${studentSemester}`);
     }
 
+    // For students, filter out empty semesters (those with no subjects)
+    if (req.user.role === 'student') {
+      const beforeEmptyFilter = filteredResult.length;
+      filteredResult = filteredResult.filter(sem => sem.subjects && sem.subjects.length > 0);
+      console.log(`[Learning] Filtered out empty semesters: ${beforeEmptyFilter} -> ${filteredResult.length}`);
+    }
+
     console.log('[Learning] Returning filtered result:', filteredResult.length, 'semesters');
     res.json(filteredResult);
   } catch (error) {

@@ -26,14 +26,80 @@ export default function SemesterManagement() {
   const [expandedSubjects, setExpandedSubjects] = useState(new Set());
   const [expandedChapters, setExpandedChapters] = useState(new Set());
   const [editingSemester, setEditingSemester] = useState(null);
-  const [showAddSemester, setShowAddSemester] = useState(false);
-  const [newSemester, setNewSemester] = useState({ semesterName: '', semesterDescription: '' });
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState('wide'); // 'narrow', 'wide', 'extra-wide'
+  const [defaultSemestersCreated, setDefaultSemestersCreated] = useState(false);
 
   useEffect(() => {
-    loadSemesters();
+    loadSemesters(true); // Initial load with default semester creation
   }, []);
+
+  // Auto-create default semesters (1-12) if they don't exist
+  const ensureDefaultSemesters = async (existingSemesters) => {
+    // Prevent concurrent execution
+    if (defaultSemestersCreated) {
+      console.log('Semesters already created, skipping...');
+      return false;
+    }
+
+    // Extract existing semester numbers (case-insensitive)
+    const existingSemesterMap = new Map();
+    existingSemesters.forEach(sem => {
+      const match = sem.semesterName.match(/Semester\s+(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1]);
+        // Keep track of all semesters with this number
+        if (!existingSemesterMap.has(num)) {
+          existingSemesterMap.set(num, []);
+        }
+        existingSemesterMap.get(num).push(sem);
+      }
+    });
+
+    const semestersToCreate = [];
+    for (let i = 1; i <= 12; i++) {
+      if (!existingSemesterMap.has(i)) {
+        semestersToCreate.push(i);
+      }
+    }
+
+    console.log('Existing semesters:', Array.from(existingSemesterMap.keys()).sort((a, b) => a - b));
+    console.log('Semesters to create:', semestersToCreate);
+
+    if (semestersToCreate.length > 0) {
+      try {
+        setDefaultSemestersCreated(true); // Set flag before creating
+        console.log(`Creating ${semestersToCreate.length} missing semesters...`);
+        
+        // Create all semesters in parallel (backend will handle duplicates)
+        const createPromises = semestersToCreate.map(async (num) => {
+          const semesterName = `Semester ${num}`;
+          try {
+            const result = await api.createSemester(semesterName, `Default semester ${num}`);
+            console.log(`✓ ${semesterName}`);
+            return result;
+          } catch (err) {
+            console.error(`✗ Failed to create ${semesterName}:`, err.message);
+            return null;
+          }
+        });
+        
+        await Promise.all(createPromises);
+        console.log('✓ Semester creation complete');
+        
+        // Reload to get the newly created semesters
+        return true;
+      } catch (err) {
+        console.error('Failed to create default semesters:', err);
+        setDefaultSemestersCreated(false); // Reset on error
+        return false;
+      }
+    } else {
+      console.log('All 12 semesters already exist');
+      setDefaultSemestersCreated(true); // All semesters exist
+    }
+    return false;
+  };
 
   // Socket.IO real-time synchronization
   useEffect(() => {
@@ -55,24 +121,50 @@ export default function SemesterManagement() {
     };
   }, []);
 
-  const loadSemesters = async () => {
+  const loadSemesters = async (isInitialLoad = false) => {
     try {
       setLoading(true);
-      const data = await api.listSemesters();
-      setSemesters(data.semesters || []);
+      let finalData;
+      
+      // Only on initial load: cleanup duplicates first, then create missing semesters
+      if (isInitialLoad && !defaultSemestersCreated) {
+        console.log('Running initial setup: cleanup duplicates + create missing semesters');
+        
+        // Step 1: Cleanup any existing duplicates
+        try {
+          const cleanupResult = await api.cleanupDuplicateSemesters();
+          console.log('Cleanup result:', cleanupResult);
+        } catch (err) {
+          console.error('Cleanup failed (continuing anyway):', err);
+        }
+        
+        // Step 2: Get fresh list after cleanup
+        const cleanData = await api.listSemesters();
+        
+        // Step 3: Create missing semesters
+        const needsReload = await ensureDefaultSemesters(cleanData.semesters || []);
+        
+        // Step 4: Final reload
+        finalData = needsReload ? await api.listSemesters() : cleanData;
+      } else {
+        // Normal load without cleanup
+        finalData = await api.listSemesters();
+      }
+      
+      setSemesters(finalData.semesters || []);
       
       // If a semester was already selected, maintain selection after reload
-      if (selectedSemester && data.semesters && data.semesters.length > 0) {
-        const updatedSelectedSemester = data.semesters.find(s => s._id === selectedSemester._id);
+      if (selectedSemester && finalData.semesters && finalData.semesters.length > 0) {
+        const updatedSelectedSemester = finalData.semesters.find(s => s._id === selectedSemester._id);
         if (updatedSelectedSemester) {
           setSelectedSemester(updatedSelectedSemester);
         } else {
           // If previously selected semester no longer exists, select first
-          setSelectedSemester(data.semesters[0]);
+          setSelectedSemester(finalData.semesters[0]);
         }
-      } else if (!selectedSemester && data.semesters && data.semesters.length > 0) {
+      } else if (!selectedSemester && finalData.semesters && finalData.semesters.length > 0) {
         // Only auto-select first semester if none was selected
-        setSelectedSemester(data.semesters[0]);
+        setSelectedSemester(finalData.semesters[0]);
       }
     } catch (err) {
       console.error('Failed to load learning modules:', err);
@@ -233,69 +325,17 @@ export default function SemesterManagement() {
                   >
                     <ChevronRight className="w-4 h-4 text-slate-600 dark:text-gray-400" />
                   </button>
-                  <button
-                    onClick={() => setShowAddSemester(true)}
-                    className="p-2 bg-sky-500 hover:bg-sky-600 rounded-lg transition-colors shadow-sm"
-                    title="Add Learning Module"
-                  >
-                    <Plus className="w-4 h-4 text-white" />
-                  </button>
                 </div>
               </div>
               <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">{semesters.length} learning module{semesters.length !== 1 ? 's' : ''} total</p>
             </div>
-
-            {/* Add Learning Module Modal */}
-            {showAddSemester && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 bg-sky-50 dark:bg-sky-900/20 border-b border-sky-100 dark:border-sky-800"
-              >
-                <h3 className="text-sm font-semibold mb-3 text-slate-800 dark:text-gray-100">Add New Semester</h3>
-                <input
-                  type="text"
-                  placeholder="Semester name (e.g., Semester 1)"
-                  value={newSemester.semesterName}
-                  onChange={(e) => setNewSemester({ ...newSemester, semesterName: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg mb-2 text-sm text-slate-800 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 transition-all"
-                />
-                <textarea
-                  placeholder="Description (optional)"
-                  value={newSemester.semesterDescription}
-                  onChange={(e) => setNewSemester({ ...newSemester, semesterDescription: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg mb-3 text-sm text-slate-800 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-sky-500 dark:focus:border-sky-600 transition-all resize-none"
-                  rows="2"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleAddSemester}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-sky-500 text-white px-3 py-2 rounded-lg hover:bg-sky-600 text-sm font-medium transition-colors shadow-sm"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setNewSemester({ semesterName: '', semesterDescription: '' });
-                      setShowAddSemester(false);
-                    }}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-3 py-2 rounded-lg hover:bg-slate-300 dark:hover:bg-gray-500 text-sm font-medium transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    Cancel
-                  </button>
-                </div>
-              </motion.div>
-            )}
 
             {/* Learning Modules List */}
             <div className="flex-1 overflow-y-auto p-3">
               {semesters.length === 0 ? (
                 <div className="text-center py-12 text-slate-500 dark:text-gray-400">
                   <Calendar className="w-14 h-14 mx-auto mb-3 text-slate-300 dark:text-gray-600" />
-                  <p className="text-sm font-medium">No learning modules yet</p>
-                  <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">Click the + button to add one</p>
+                  <p className="text-sm font-medium">Loading semesters...</p>
                 </div>
               ) : (
                 <Reorder.Group axis="y" values={semesters} onReorder={handleReorderSemesters} className="space-y-2">
@@ -349,9 +389,6 @@ export default function SemesterManagement() {
                             ) : (
                               <>
                                 <h3 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">{semester.semesterName}</h3>
-                                {semester.semesterDescription && (
-                                  <p className="text-xs text-slate-500 dark:text-gray-400 truncate mt-0.5">{semester.semesterDescription}</p>
-                                )}
                                 <p className="text-xs text-slate-400 dark:text-gray-500 mt-1 font-medium">
                                   {semester.subjects?.length || 0} subject{semester.subjects?.length !== 1 ? 's' : ''}
                                 </p>
@@ -363,16 +400,9 @@ export default function SemesterManagement() {
                               <button
                                 onClick={() => setEditingSemester(semester)}
                                 className="p-1.5 hover:bg-sky-100 dark:hover:bg-sky-900/40 rounded-lg transition-colors"
-                                title="Edit"
+                                title="Edit Description"
                               >
                                 <Edit2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteSemester(semester._id)}
-                                className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg transition-colors"
-                                title="Delete"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                               </button>
                             </div>
                           )}

@@ -150,6 +150,7 @@ export const api = {
   updateSemester: (id, data) => request(`/subjects/${id}`, { method: 'PUT', body: data }),
   deleteSemester: (id) => request(`/subjects/${id}`, { method: 'DELETE' }),
   reorderSemesters: (semesterIds) => request('/subjects/reorder', { method: 'POST', body: { semesterIds } }),
+  cleanupDuplicateSemesters: () => request('/subjects/cleanup-duplicates', { method: 'POST' }),
   
   addSubject: (semesterId, subjectName, subjectDescription) => request(`/subjects/${semesterId}/subjects`, { method: 'POST', body: { subjectName, subjectDescription } }),
   updateSubject: (semesterId, subjectId, data) => request(`/subjects/${semesterId}/subjects/${subjectId}`, { method: 'PUT', body: data }),

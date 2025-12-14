@@ -20,6 +20,7 @@ import {
   deleteTopic,
   reorderTopics
 } from '../controllers/subjectController.js';
+import { cleanupDuplicateSemesters } from '../controllers/cleanupController.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -30,6 +31,7 @@ router.post('/', requireAuth, requireAdminOrCoordinator, createSemester);
 router.put('/:id', requireAuth, requireAdminOrCoordinator, updateSemester);
 router.delete('/:id', requireAuth, requireAdminOrCoordinator, deleteSemester);
 router.post('/reorder', requireAuth, requireAdminOrCoordinator, reorderSemesters);
+router.post('/cleanup-duplicates', requireAuth, requireAdminOrCoordinator, cleanupDuplicateSemesters);
 
 // Subject routes (nested under semester)
 router.post('/:semesterId/subjects', requireAuth, requireAdminOrCoordinator, addSubject);

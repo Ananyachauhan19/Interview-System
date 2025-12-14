@@ -34,6 +34,16 @@ export async function createSemester(req, res) {
     const coordinatorId = req.user.role === 'coordinator' ? req.user.coordinatorId : (req.body.coordinatorId || null);
     if (!coordinatorId) throw new HttpError(400, 'coordinatorId is required');
     
+    // Check for duplicate semester name (case-insensitive)
+    const existingSemester = await Semester.findOne({ 
+      coordinatorId,
+      semesterName: { $regex: new RegExp(`^${semesterName.trim()}$`, 'i') }
+    });
+    if (existingSemester) {
+      console.log(`Semester "${semesterName}" already exists for coordinator ${coordinatorId}`);
+      return res.status(200).json(existingSemester); // Return existing instead of error
+    }
+    
     // Get max order for this coordinator
     const maxSemester = await Semester.findOne({ coordinatorId }).sort({ order: -1 }).select('order').lean();
     const order = maxSemester ? maxSemester.order + 1 : 0;
@@ -53,6 +63,17 @@ export async function createSemester(req, res) {
   } catch (err) {
     console.error('Error creating semester:', err);
     if (err instanceof HttpError) throw err;
+    
+    // Handle duplicate key error (E11000)
+    if (err.code === 11000 || err.name === 'MongoServerError') {
+      console.log(`Duplicate semester detected: "${semesterName}" for coordinator ${coordinatorId}`);
+      // Return the existing semester instead of error
+      const existing = await Semester.findOne({ coordinatorId, semesterName: { $regex: new RegExp(`^${semesterName.trim()}$`, 'i') } });
+      if (existing) {
+        return res.status(200).json(existing);
+      }
+    }
+    
     res.status(500).json({ error: err.message || 'Failed to create semester' });
   }
 }

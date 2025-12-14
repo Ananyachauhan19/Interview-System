@@ -38,7 +38,15 @@ export default function StudentLearning() {
     try {
       setLoading(true);
       const data = await api.getAllSemestersForStudent();
-      setSemesters(data);
+      
+      // Sort semesters by number (Semester 1, Semester 2, etc.)
+      const sortedSemesters = data.sort((a, b) => {
+        const numA = parseInt(a.semesterName.match(/\d+/)?.[0] || '999');
+        const numB = parseInt(b.semesterName.match(/\d+/)?.[0] || '999');
+        return numA - numB;
+      });
+      
+      setSemesters(sortedSemesters);
     } catch (error) {
       console.error('Error loading semesters:', error);
       toast.error('Failed to load semesters');
@@ -153,11 +161,6 @@ export default function StudentLearning() {
                       <h2 className="text-base font-bold text-slate-800 dark:text-gray-100 mb-1">
                         {semester.semesterName}
                       </h2>
-                      {semester.semesterDescription && (
-                        <p className="text-slate-500 dark:text-gray-300 text-xs line-clamp-2">
-                          {semester.semesterDescription}
-                        </p>
-                      )}
                     </div>
                     <div className="flex items-center justify-between text-slate-600 dark:text-gray-300 text-xs">
                       <span className="font-medium px-2 py-1 bg-slate-100 dark:bg-gray-700 rounded">

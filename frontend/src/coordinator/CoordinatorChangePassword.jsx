@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../utils/api";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -14,7 +14,33 @@ export default function CoordinatorChangePassword() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [passwordMatch, setPasswordMatch] = useState(null);
+  const [passwordStrength, setPasswordStrength] = useState({
+    hasMinLength: false
+  });
   const navigate = useNavigate();
+
+  // Real-time password validation
+  useEffect(() => {
+    if (newPassword) {
+      setPasswordStrength({
+        hasMinLength: newPassword.length >= 6
+      });
+    } else {
+      setPasswordStrength({
+        hasMinLength: false
+      });
+    }
+  }, [newPassword]);
+
+  // Real-time password matching
+  useEffect(() => {
+    if (confirmPassword) {
+      setPasswordMatch(newPassword === confirmPassword);
+    } else {
+      setPasswordMatch(null);
+    }
+  }, [newPassword, confirmPassword]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -147,6 +173,20 @@ export default function CoordinatorChangePassword() {
                 {showNew ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+            {newPassword && (
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center gap-2 text-xs">
+                  {passwordStrength.hasMinLength ? (
+                    <CheckCircle size={14} className="text-green-500" />
+                  ) : (
+                    <AlertCircle size={14} className="text-red-500" />
+                  )}
+                  <span className={passwordStrength.hasMinLength ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                    At least 6 characters
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -159,7 +199,13 @@ export default function CoordinatorChangePassword() {
                 type={showConfirm ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-600 focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                className={`w-full px-4 py-3 border bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 placeholder:text-gray-400 dark:placeholder:text-gray-500 ${
+                  passwordMatch === null
+                    ? 'border-gray-300 dark:border-gray-600 focus:ring-emerald-500 dark:focus:ring-emerald-600'
+                    : passwordMatch
+                    ? 'border-green-500 focus:ring-green-500'
+                    : 'border-red-500 focus:ring-red-500'
+                }`}
                 placeholder="Confirm new password"
               />
               <button
@@ -170,6 +216,27 @@ export default function CoordinatorChangePassword() {
                 {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+            {passwordMatch !== null && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`mt-2 flex items-center gap-2 text-xs ${
+                  passwordMatch ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                }`}
+              >
+                {passwordMatch ? (
+                  <>
+                    <CheckCircle size={14} className="text-green-500" />
+                    <span>Passwords match!</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle size={14} className="text-red-500" />
+                    <span>Passwords do not match</span>
+                  </>
+                )}
+              </motion.div>
+            )}
           </div>
 
           <button

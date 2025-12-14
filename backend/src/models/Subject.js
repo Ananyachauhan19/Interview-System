@@ -38,6 +38,15 @@ const semesterSchema = new mongoose.Schema({
 // Index for quick coordinator lookup
 semesterSchema.index({ coordinatorId: 1, order: 1 });
 
+// Unique compound index to prevent duplicate semester names per coordinator (case-insensitive)
+semesterSchema.index({ 
+  coordinatorId: 1, 
+  semesterName: 1 
+}, { 
+  unique: true,
+  collation: { locale: 'en', strength: 2 } // Case-insensitive comparison
+});
+
 const Semester = mongoose.model('Semester', semesterSchema);
 
 export default Semester;

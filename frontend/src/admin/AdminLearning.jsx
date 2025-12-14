@@ -40,7 +40,15 @@ export default function AdminLearning() {
     try {
       setLoading(true);
       const data = await api.getAllSemestersForStudent();
-      setSemesters(data);
+      
+      // Sort semesters by number (Semester 1, Semester 2, etc.)
+      const sortedSemesters = data.sort((a, b) => {
+        const numA = parseInt(a.semesterName.match(/\d+/)?.[0] || '999');
+        const numB = parseInt(b.semesterName.match(/\d+/)?.[0] || '999');
+        return numA - numB;
+      });
+      
+      setSemesters(sortedSemesters);
     } catch (error) {
       console.error('Error loading semesters:', error);
       toast.error('Failed to load semesters');

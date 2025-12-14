@@ -13,7 +13,36 @@ export default function AdminChangePassword() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordMatch, setPasswordMatch] = useState(null);
+  const [passwordStrength, setPasswordStrength] = useState({
+    hasMinLength: false,
+    hasSpecialChar: false
+  });
   const navigate = useNavigate();
+
+  // Real-time password validation
+  React.useEffect(() => {
+    if (newPassword) {
+      setPasswordStrength({
+        hasMinLength: newPassword.length >= 6,
+        hasSpecialChar: /[@#]/.test(newPassword)
+      });
+    } else {
+      setPasswordStrength({
+        hasMinLength: false,
+        hasSpecialChar: false
+      });
+    }
+  }, [newPassword]);
+
+  // Real-time password matching
+  React.useEffect(() => {
+    if (confirmPassword) {
+      setPasswordMatch(newPassword === confirmPassword);
+    } else {
+      setPasswordMatch(null);
+    }
+  }, [newPassword, confirmPassword]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -130,9 +159,30 @@ export default function AdminChangePassword() {
                   {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              <div className="mt-2 text-xs text-slate-600 dark:text-gray-400 bg-blue-50 dark:bg-gray-700 p-3 rounded-lg border border-blue-100 dark:border-gray-600">
-                <span>Minimum 6 characters, must include @ or #</span>
-              </div>
+              {newPassword && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    {passwordStrength.hasMinLength ? (
+                      <CheckCircle size={14} className="text-green-500" />
+                    ) : (
+                      <AlertCircle size={14} className="text-red-500" />
+                    )}
+                    <span className={passwordStrength.hasMinLength ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      At least 6 characters
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    {passwordStrength.hasSpecialChar ? (
+                      <CheckCircle size={14} className="text-green-500" />
+                    ) : (
+                      <AlertCircle size={14} className="text-red-500" />
+                    )}
+                    <span className={passwordStrength.hasSpecialChar ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      Contains @ or #
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Confirm New Password */}
@@ -145,7 +195,13 @@ export default function AdminChangePassword() {
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-blue-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 focus:border-blue-400 dark:focus:border-blue-600 transition-all pr-12 bg-blue-50/30 dark:bg-gray-700 text-slate-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 transition-all pr-12 bg-blue-50/30 dark:bg-gray-700 text-slate-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 ${
+                    passwordMatch === null
+                      ? 'border-blue-200 dark:border-gray-600 focus:ring-blue-400 dark:focus:ring-blue-600 focus:border-blue-400 dark:focus:border-blue-600'
+                      : passwordMatch
+                      ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
+                      : 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                  }`}
                   placeholder="Confirm new password"
                   required
                 />
@@ -157,6 +213,23 @@ export default function AdminChangePassword() {
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {passwordMatch !== null && (
+                <div className={`mt-2 flex items-center gap-2 text-xs ${
+                  passwordMatch ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {passwordMatch ? (
+                    <>
+                      <CheckCircle size={14} className="text-green-500" />
+                      <span>Passwords match!</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle size={14} className="text-red-500" />
+                      <span>Passwords do not match</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Error/Success Messages */}
