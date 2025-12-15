@@ -77,16 +77,56 @@ async function computeLearningScopeForStudent(student) {
  */
 export async function logStudentActivity({ studentId, studentModel, activityType, metadata = {} }) {
   try {
-    await StudentActivity.create({
+    // Use UTC date normalized to start of day for consistent grouping
+    const now = new Date();
+    const activity = await StudentActivity.create({
       studentId,
       studentModel,
       activityType,
       metadata,
-      date: new Date()
+      date: now
     });
+    console.log('[logStudentActivity] Created activity:', {
+      activityType,
+      studentId: studentId.toString(),
+      date: now.toISOString(),
+      dateOnly: now.toISOString().slice(0, 10),
+      dateUTC: now.toISOString()
+    });
+    return activity;
   } catch (error) {
     console.error('[Log Student Activity Error]', error);
     // Non-blocking - don't throw error
+  }
+}
+
+/**
+ * Debug endpoint to check raw student activity data
+ */
+export async function debugStudentActivity(req, res) {
+  const user = req.user;
+  if (!user) throw new HttpError(401, 'Unauthorized');
+  
+  try {
+    const allActivities = await StudentActivity.find({ studentId: user._id })
+      .sort({ date: -1 })
+      .limit(20)
+      .lean();
+    
+    const count = await StudentActivity.countDocuments({ studentId: user._id });
+    
+    res.json({
+      total: count,
+      recentActivities: allActivities.map(a => ({
+        activityType: a.activityType,
+        date: a.date,
+        dateString: new Date(a.date).toISOString().slice(0, 10),
+        metadata: a.metadata
+      }))
+    });
+  } catch (error) {
+    console.error('[Debug Student Activity Error]', error);
+    res.status(500).json({ error: error.message });
   }
 }
 
@@ -111,6 +151,10 @@ export async function getStudentActivity(req, res) {
     const { allowedSemesterIds, totalCourses, totalVideosTotal, validTopicIds } = await computeLearningScopeForStudent(user);
 
     // 1. Get all student activities from StudentActivity collection
+    console.log('[getStudentActivity] Querying StudentActivity collection');
+    console.log('[getStudentActivity] User ID:', user._id.toString());
+    console.log('[getStudentActivity] Date range:', startDate.toISOString(), 'to', endDate.toISOString());
+    
     const activities = await StudentActivity.aggregate([
       {
         $match: {
@@ -124,12 +168,19 @@ export async function getStudentActivity(req, res) {
       {
         $group: {
           _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$date' }
+            $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: 'UTC' }
           },
-          count: { $sum: 1 }
+          count: { $sum: 1 },
+          activities: { $push: '$activityType' }
         }
       }
     ]);
+    
+    console.log('[getStudentActivity] Activities found:', activities.length);
+    if (activities.length > 0) {
+      console.log('[getStudentActivity] Sample activities:', activities.slice(0, 3));
+      console.log('[getStudentActivity] All activity dates:', activities.map(a => a._id));
+    }
 
     // 2. Get scheduled sessions within range
     const isSpecialStudent = Boolean(user.isSpecialStudent);
@@ -204,7 +255,9 @@ export async function getStudentActivity(req, res) {
     console.log('[getStudentActivity] Scheduled sessions:', scheduledSessions.length);
     console.log('[getStudentActivity] Completed topics:', completedTopics.length);
     console.log('[getStudentActivity] Total activity dates:', Object.keys(activityMap).length);
-    console.log('[getStudentActivity] Sample activityMap:', Object.entries(activityMap).slice(0, 5));
+    console.log('[getStudentActivity] Activity map keys:', Object.keys(activityMap));
+    console.log('[getStudentActivity] Activity map values:', Object.values(activityMap));
+    console.log('[getStudentActivity] Full activityMap:', activityMap);
 
     // 5. Calculate streaks based on merged activity map
     const sortedDates = Object.keys(activityMap).sort();

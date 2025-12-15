@@ -717,6 +717,9 @@ export default function LearningDetail() {
                                 </tbody>
                               </table>
                             </div>
+                            <div className="mt-3 text-xs text-slate-600 dark:text-gray-400 bg-slate-50 dark:bg-gray-800/60 border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2">
+                              Tip: when you finish a video, click the status circle to mark it complete so your progress updates.
+                            </div>
                           </div>
                         </motion.div>
                       )}

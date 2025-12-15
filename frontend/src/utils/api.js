@@ -55,6 +55,7 @@ export const api = {
     return request('/auth/me/avatar', { method: 'PUT', formData: fd });
   },
   getStudentActivity: () => request('/auth/activity'),
+  debugStudentActivity: () => request('/auth/activity/debug'),
   getStudentStats: () => request('/auth/stats'),
   login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password } }),
   changePassword: (currentPassword, newPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword: newPassword } }),

@@ -338,12 +338,12 @@ export default function StudentOnboarding() {
               <h3 className="text-sm font-semibold text-slate-800 dark:text-gray-200 mb-2">CSV Upload Guidelines</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700 dark:text-gray-300">
                 <div className="space-y-1">
-                  <p><strong>Required columns:</strong> Name, Email, Student ID, Branch, Teacher ID</p>
-                  <p><strong>Optional columns:</strong> Course, College, Password</p>
+                  <p><strong>Required columns:</strong> Course, Name, Email, Student ID, Password, Branch, College, Teacher ID, Semester</p>
+                  <p><strong>Header format:</strong> Keep the same order as the sample CSV so every column is picked up correctly.</p>
                 </div>
                 <div className="space-y-1">
-                  <p><strong>Password:</strong> If not provided, password will be automatically generated.</p>
-                  <p><strong>Teacher ID:</strong> Links student to coordinator. Required for visibility.</p>
+                  <p><strong>Password:</strong> Fill it in (use Student ID if you want a default). Blank values will fail validation.</p>
+                  <p><strong>Teacher ID & Semester:</strong> Teacher ID must match the coordinator code; Semester must be a number from 1-8.</p>
                 </div>
               </div>
             </div>

@@ -48,9 +48,9 @@ function getRolling365Days() {
 function intensityClass(v) {
   // White/gray background with blue shades for activity (with dark mode support)
   if (!v || v <= 0) return 'bg-slate-100 dark:bg-gray-700 border border-slate-200 dark:border-gray-600';
-  if (v < 2) return 'bg-blue-200 dark:bg-blue-800';
-  if (v < 4) return 'bg-blue-400 dark:bg-blue-600';
-  if (v < 7) return 'bg-blue-600 dark:bg-blue-500';
+  if (v >= 1 && v <= 2) return 'bg-blue-200 dark:bg-blue-800';
+  if (v >= 3 && v <= 4) return 'bg-blue-400 dark:bg-blue-600';
+  if (v >= 5 && v <= 7) return 'bg-blue-600 dark:bg-blue-500';
   return 'bg-blue-700 dark:bg-blue-400';
 }
 
@@ -64,8 +64,16 @@ export default function ContributionCalendar({
   // Debug logging
   React.useEffect(() => {
     console.log('[ContributionCalendar] Activity data:', activity);
+    console.log('[ContributionCalendar] Activity keys:', Object.keys(activity || {}));
+    console.log('[ContributionCalendar] Activity values:', Object.values(activity || {}));
     console.log('[ContributionCalendar] Stats data:', stats);
-    console.log('[ContributionCalendar] Activity keys count:', Object.keys(activity).length);
+    console.log('[ContributionCalendar] Activity keys count:', Object.keys(activity || {}).length);
+    
+    // Sample a few dates to check format
+    const sampleKeys = Object.keys(activity || {}).slice(0, 5);
+    console.log('[ContributionCalendar] Sample activity entries:', 
+      sampleKeys.map(key => ({ date: key, count: activity[key] }))
+    );
   }, [activity, stats]);
   
   return (
@@ -149,11 +157,23 @@ export default function ContributionCalendar({
                     if (!date) {
                       return <div key={`empty-${i}`} className="w-2.5 h-2.5" />;
                     }
-                    const key = date.toISOString().slice(0, 10);
+                    
+                    // Create UTC date string in YYYY-MM-DD format to match backend
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const key = `${year}-${month}-${day}`;
+                    
                     const v = activity[key] || 0;
                     const cls = intensityClass(v);
                     const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
                     const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    
+                    // Debug for today's date
+                    const todayKey = new Date().toISOString().slice(0, 10);
+                    if (key === todayKey) {
+                      console.log('[ContributionCalendar] TODAY:', { key, value: v, class: cls, hasActivity: !!activity[key], activityValue: activity[key] });
+                    }
                     
                     return (
                       <div

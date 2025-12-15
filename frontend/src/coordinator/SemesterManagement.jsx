@@ -26,10 +26,24 @@ export default function SemesterManagement() {
   const [selectedSemester, setSelectedSemester] = useState(null);
   const [expandedSubjects, setExpandedSubjects] = useState(new Set());
   const [expandedChapters, setExpandedChapters] = useState(new Set());
-  const [editingSemester, setEditingSemester] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState('wide'); // 'narrow', 'wide', 'extra-wide'
   const [defaultSemestersCreated, setDefaultSemestersCreated] = useState(false);
+
+  const sortSemestersAscending = (list = []) => {
+    const getNumber = (sem) => {
+      const match = sem?.semesterName?.match(/(\d+)/);
+      return match ? parseInt(match[1], 10) : Number.POSITIVE_INFINITY;
+    };
+    return [...list].sort((a, b) => {
+      const aNum = getNumber(a);
+      const bNum = getNumber(b);
+      if (Number.isFinite(aNum) && Number.isFinite(bNum)) return aNum - bNum;
+      if (Number.isFinite(aNum)) return -1;
+      if (Number.isFinite(bNum)) return 1;
+      return (a?.semesterName || '').localeCompare(b?.semesterName || '');
+    });
+  };
 
   useEffect(() => {
     loadSemesters(true); // Initial load with default semester creation
@@ -152,20 +166,21 @@ export default function SemesterManagement() {
         finalData = await api.listSemesters();
       }
       
-      setSemesters(finalData.semesters || []);
+      const sortedSemesters = sortSemestersAscending(finalData.semesters || []);
+      setSemesters(sortedSemesters);
       
       // If a semester was already selected, maintain selection after reload
       if (selectedSemester && finalData.semesters && finalData.semesters.length > 0) {
-        const updatedSelectedSemester = finalData.semesters.find(s => s._id === selectedSemester._id);
+        const updatedSelectedSemester = sortedSemesters.find(s => s._id === selectedSemester._id);
         if (updatedSelectedSemester) {
           setSelectedSemester(updatedSelectedSemester);
         } else {
           // If previously selected semester no longer exists, select first
-          setSelectedSemester(finalData.semesters[0]);
+          setSelectedSemester(sortedSemesters[0]);
         }
-      } else if (!selectedSemester && finalData.semesters && finalData.semesters.length > 0) {
+      } else if (!selectedSemester && sortedSemesters && sortedSemesters.length > 0) {
         // Only auto-select first semester if none was selected
-        setSelectedSemester(finalData.semesters[0]);
+        setSelectedSemester(sortedSemesters[0]);
       }
     } catch (err) {
       console.error('Failed to load learning modules:', err);
@@ -252,37 +267,6 @@ export default function SemesterManagement() {
     }
   };
 
-  const handleUpdateSemester = async (semesterId) => {
-    if (!editingSemester.semesterName.trim()) {
-      toast.error('Module name is required');
-      return;
-    }
-    try {
-      await api.updateSemester(semesterId, {
-        semesterName: editingSemester.semesterName,
-        semesterDescription: editingSemester.semesterDescription
-      });
-      toast.success('Learning module updated');
-      setEditingSemester(null);
-      loadSemesters();
-    } catch (err) {
-      console.error('Failed to update learning module:', err);
-      toast.error('Failed to update learning module');
-    }
-  };
-
-  const handleReorderSemesters = async (newOrder) => {
-    setSemesters(newOrder);
-    try {
-      const semesterIds = newOrder.map(s => s._id);
-      await api.reorderSemesters(semesterIds);
-    } catch (err) {
-      console.error('Failed to reorder learning modules:', err);
-      toast.error('Failed to save order');
-      loadSemesters();
-    }
-  };
-
   const getSidebarWidthClass = () => {
     if (!isSidebarOpen) return 'w-0';
     switch (sidebarWidth) {
@@ -339,79 +323,28 @@ export default function SemesterManagement() {
                   <p className="text-sm font-medium">Loading semesters...</p>
                 </div>
               ) : (
-                <Reorder.Group axis="y" values={semesters} onReorder={handleReorderSemesters} className="space-y-2">
+                <div className="space-y-2">
                   {semesters.map((semester) => (
-                    <Reorder.Item key={semester._id} value={semester}>
-                      <div
-                        className={`p-3 rounded-lg cursor-pointer transition-all border ${
-                          selectedSemester?._id === semester._id
-                            ? 'bg-sky-50 dark:bg-sky-900/20 border-sky-300 dark:border-sky-600 shadow-sm ring-1 ring-sky-200 dark:ring-sky-700'
-                            : 'bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-600 hover:border-slate-300 dark:hover:border-gray-500 hover:shadow-sm'
-                        }`}
-                        onClick={() => handleSelectSemester(semester)}
-                      >
-                        <div className="flex items-start gap-2">
-                          <GripVertical
-                            className="w-4 h-4 text-slate-400 dark:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 mt-1 hover:text-slate-600 dark:hover:text-gray-400"
-                            onPointerDown={(e) => e.stopPropagation()}
-                          />
-                          <div className="flex-1 min-w-0">
-                            {editingSemester?._id === semester._id ? (
-                              <div onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="text"
-                                  value={editingSemester.semesterName}
-                                  onChange={(e) => setEditingSemester({ ...editingSemester, semesterName: e.target.value })}
-                                  className="w-full px-2 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg mb-2 text-sm text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                />
-                                <textarea
-                                  value={editingSemester.semesterDescription || ''}
-                                  onChange={(e) => setEditingSemester({ ...editingSemester, semesterDescription: e.target.value })}
-                                  className="w-full px-2 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg mb-2 text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none"
-                                  rows="2"
-                                />
-                                <div className="flex gap-1.5">
-                                  <button
-                                    onClick={() => handleUpdateSemester(semester._id)}
-                                    className="flex-1 flex items-center justify-center gap-1 bg-sky-500 text-white px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-sky-600 transition-colors shadow-sm"
-                                  >
-                                    <Save className="w-3 h-3" />
-                                    Save
-                                  </button>
-                                  <button
-                                    onClick={() => setEditingSemester(null)}
-                                    className="flex-1 flex items-center justify-center gap-1 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-300 dark:hover:bg-gray-500 transition-colors"
-                                  >
-                                    <X className="w-3 h-3" />
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <h3 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">{semester.semesterName}</h3>
-                                <p className="text-xs text-slate-400 dark:text-gray-500 mt-1 font-medium">
-                                  {semester.subjects?.length || 0} subject{semester.subjects?.length !== 1 ? 's' : ''}
-                                </p>
-                              </>
-                            )}
-                          </div>
-                          {editingSemester?._id !== semester._id && (
-                            <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                onClick={() => setEditingSemester(semester)}
-                                className="p-1.5 hover:bg-sky-100 dark:hover:bg-sky-900/40 rounded-lg transition-colors"
-                                title="Edit Description"
-                              >
-                                <Edit2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-                              </button>
-                            </div>
-                          )}
+                    <div
+                      key={semester._id}
+                      className={`p-3 rounded-lg cursor-pointer transition-all border ${
+                        selectedSemester?._id === semester._id
+                          ? 'bg-sky-50 dark:bg-sky-900/20 border-sky-300 dark:border-sky-600 shadow-sm ring-1 ring-sky-200 dark:ring-sky-700'
+                          : 'bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-600 hover:border-slate-300 dark:hover:border-gray-500 hover:shadow-sm'
+                      }`}
+                      onClick={() => handleSelectSemester(semester)}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">{semester.semesterName}</h3>
+                          <p className="text-xs text-slate-400 dark:text-gray-500 mt-1 font-medium">
+                            {semester.subjects?.length || 0} subject{semester.subjects?.length !== 1 ? 's' : ''}
+                          </p>
                         </div>
                       </div>
-                    </Reorder.Item>
+                    </div>
                   ))}
-                </Reorder.Group>
+                </div>
               )}
             </div>
           </div>
