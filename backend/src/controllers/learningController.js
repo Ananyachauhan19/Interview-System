@@ -646,3 +646,147 @@ export const startVideoTracking = async (req, res) => {
     res.status(500).json({ message: 'Failed to start tracking', error: error.message });
   }
 };
+
+// Manual topic completion
+export const markTopicComplete = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    const { semesterId, subjectId, chapterId, coordinatorId } = req.body;
+    const studentId = req.user._id;
+
+    console.log('[markTopicComplete] Marking topic as complete:', topicId);
+
+    if (!coordinatorId) {
+      return res.status(400).json({ message: 'Coordinator ID is required' });
+    }
+
+    // Find or create progress record
+    let progress = await Progress.findOne({ studentId, topicId });
+
+    const isNewProgress = !progress;
+    if (isNewProgress) {
+      const existingProgressInSubject = await Progress.findOne({ studentId, subjectId });
+      
+      // Log course enrollment if this is the first topic in this subject
+      if (!existingProgressInSubject) {
+        await logStudentActivity({
+          studentId,
+          studentModel: 'User',
+          activityType: 'COURSE_ENROLLED',
+          metadata: {
+            semesterId,
+            subjectId,
+            coordinatorId
+          }
+        });
+      }
+
+      progress = new Progress({
+        studentId,
+        semesterId,
+        subjectId,
+        chapterId,
+        topicId,
+        coordinatorId,
+        videoWatchedSeconds: 0,
+        completed: false
+      });
+    }
+
+    const wasCompleted = progress.completed;
+    
+    // Mark as completed
+    progress.completed = true;
+    progress.completedAt = new Date();
+    progress.lastAccessedAt = new Date();
+    progress.videoWatchedSeconds = 180; // Set default watched time
+    await progress.save();
+    
+    console.log('[markTopicComplete] Topic marked as completed:', topicId);
+
+    // Log completion activities if this is the first completion
+    if (!wasCompleted) {
+      await logStudentActivity({
+        studentId,
+        studentModel: 'User',
+        activityType: 'TOPIC_VIEWED',
+        metadata: {
+          topicId,
+          subjectId,
+          chapterId,
+          semesterId,
+          coordinatorId
+        }
+      });
+
+      await logStudentActivity({
+        studentId,
+        studentModel: 'User',
+        activityType: 'TOPIC_COMPLETED',
+        metadata: {
+          topicId,
+          subjectId,
+          chapterId,
+          semesterId,
+          coordinatorId,
+          totalWatchedSeconds: 180
+        }
+      });
+
+      await logStudentActivity({
+        studentId,
+        studentModel: 'User',
+        activityType: 'PROBLEM_SOLVED',
+        metadata: {
+          topicId,
+          subjectId,
+          chapterId,
+          semesterId,
+          coordinatorId
+        }
+      });
+    }
+
+    res.json({
+      message: 'Topic marked as complete',
+      progress
+    });
+  } catch (error) {
+    console.error('[markTopicComplete] Error:', error);
+    res.status(500).json({ message: 'Failed to mark topic as complete', error: error.message });
+  }
+};
+
+// Manual topic incompletion
+export const markTopicIncomplete = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    const studentId = req.user._id;
+
+    console.log('[markTopicIncomplete] Marking topic as incomplete:', topicId);
+
+    // Find progress record
+    const progress = await Progress.findOne({ studentId, topicId });
+
+    if (!progress) {
+      return res.status(404).json({ message: 'Progress record not found' });
+    }
+
+    // Mark as incomplete
+    progress.completed = false;
+    progress.completedAt = null;
+    progress.videoWatchedSeconds = 0;
+    progress.lastAccessedAt = new Date();
+    await progress.save();
+    
+    console.log('[markTopicIncomplete] Topic marked as incomplete:', topicId);
+
+    res.json({
+      message: 'Topic marked as incomplete',
+      progress
+    });
+  } catch (error) {
+    console.error('[markTopicIncomplete] Error:', error);
+    res.status(500).json({ message: 'Failed to mark topic as incomplete', error: error.message });
+  }
+};

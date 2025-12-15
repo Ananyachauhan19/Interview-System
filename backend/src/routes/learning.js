@@ -33,6 +33,10 @@ router.get('/topic/:topicId/progress', requireAuth, requireStudent, learningCont
 // Start video tracking (3-minute backend timer) - students only
 router.post('/topic/:topicId/start', requireAuth, requireStudent, learningController.startVideoTracking);
 
+// Manual topic completion - students only
+router.post('/topic/:topicId/complete', requireAuth, requireStudent, learningController.markTopicComplete);
+router.post('/topic/:topicId/incomplete', requireAuth, requireStudent, learningController.markTopicIncomplete);
+
 // Get progress for a specific subject - students only
 router.get('/subject/:subjectId/progress', requireAuth, requireStudent, learningController.getSubjectProgress);
 

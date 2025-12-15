@@ -188,6 +188,16 @@ export const api = {
   getTopicProgress: (topicId) => request(`/learning/topic/${topicId}/progress`),
   getSubjectProgress: (subjectId) => request(`/learning/subject/${subjectId}/progress`),
   getStudentProgress: () => request('/learning/progress'),
+  markTopicComplete: (topicId, semesterId, subjectId, chapterId, coordinatorId) =>
+    request(`/learning/topic/${topicId}/complete`, {
+      method: 'POST',
+      body: { semesterId, subjectId, chapterId, coordinatorId }
+    }),
+  markTopicIncomplete: (topicId, semesterId, subjectId, chapterId, coordinatorId) =>
+    request(`/learning/topic/${topicId}/incomplete`, {
+      method: 'POST',
+      body: { semesterId, subjectId, chapterId, coordinatorId }
+    }),
   
   // Activity Tracking
   getActivities: (queryString) => request(`/activity${queryString ? '?' + queryString : ''}`),

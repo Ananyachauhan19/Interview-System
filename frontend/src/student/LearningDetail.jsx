@@ -240,43 +240,6 @@ export default function LearningDetail() {
     
     setModalContent(embedContent);
     setModalOpen(true);
-
-    // Start backend tracking if it's a video (no frontend timer needed)
-    if (type === 'video') {
-      try {
-        // Use currentCoordinatorId which is reliably set from state or loaded data
-        const coordId = currentCoordinatorId || subjectDetails?.coordinatorId;
-        
-        if (!coordId) {
-          console.error('Coordinator ID not available');
-          toast.error('Unable to track video progress');
-          return;
-        }
-
-        const result = await api.startVideoTracking(
-          topic._id,
-          subjectDetails.semesterId,
-          subjectDetails.subjectId,
-          topic.chapterId,
-          coordId
-        );
-        console.log('[Video] Backend tracking started and completed:', result);
-        
-        // Refresh progress immediately after tracking is complete
-        await loadSubjectProgress(subjectDetails.subjectId);
-        await loadSubjectDetails(subjectDetails.semesterId, subjectDetails.subjectId);
-        
-        // Also refresh all sidebar subjects' progress for dynamic updates
-        if (allSubjects.length > 0) {
-          await loadAllSubjectsProgress(allSubjects);
-        }
-        
-        toast.success('Topic marked as watched! 🎉');
-      } catch (error) {
-        console.error('Error starting video tracking:', error);
-        toast.error('Failed to start video tracking');
-      }
-    }
   };
 
   const closeModal = () => {
@@ -287,6 +250,54 @@ export default function LearningDetail() {
 
   const openInNewTab = (url) => {
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const toggleTopicCompletion = async (topic, chapterId) => {
+    try {
+      const coordId = currentCoordinatorId || subjectDetails?.coordinatorId;
+      
+      if (!coordId) {
+        console.error('Coordinator ID not available');
+        toast.error('Unable to update topic status');
+        return;
+      }
+
+      const isCompleted = isTopicCompleted(topic._id);
+      
+      if (isCompleted) {
+        // Unmark as completed
+        await api.markTopicIncomplete(
+          topic._id,
+          subjectDetails.semesterId,
+          subjectDetails.subjectId,
+          chapterId,
+          coordId
+        );
+        toast.success('Topic marked as incomplete');
+      } else {
+        // Mark as completed
+        await api.markTopicComplete(
+          topic._id,
+          subjectDetails.semesterId,
+          subjectDetails.subjectId,
+          chapterId,
+          coordId
+        );
+        toast.success('Topic marked as completed! 🎉');
+      }
+      
+      // Refresh progress
+      await loadSubjectProgress(subjectDetails.subjectId);
+      await loadSubjectDetails(subjectDetails.semesterId, subjectDetails.subjectId);
+      
+      // Also refresh sidebar subjects' progress
+      if (allSubjects.length > 0) {
+        await loadAllSubjectsProgress(allSubjects);
+      }
+    } catch (error) {
+      console.error('Error toggling topic completion:', error);
+      toast.error('Failed to update topic status');
+    }
   };
 
   const getDifficultyBadge = (difficulty) => {
@@ -599,11 +610,17 @@ export default function LearningDetail() {
                                     >
                                       {/* Status */}
                                       <td className="py-3 px-4">
-                                        {isTopicCompleted(topic._id) ? (
-                                          <CheckCircle2 className="w-5 h-5 text-green-500" />
-                                        ) : (
-                                          <Circle className="w-5 h-5 text-slate-300 dark:text-gray-600" />
-                                        )}
+                                        <button
+                                          onClick={() => toggleTopicCompletion(topic, chapter._id)}
+                                          className="hover:scale-110 transition-transform"
+                                          title={isTopicCompleted(topic._id) ? 'Mark as incomplete' : 'Mark as complete'}
+                                        >
+                                          {isTopicCompleted(topic._id) ? (
+                                            <CheckCircle2 className="w-5 h-5 text-green-500 hover:text-green-600" />
+                                          ) : (
+                                            <Circle className="w-5 h-5 text-slate-300 dark:text-gray-600 hover:text-slate-400 dark:hover:text-gray-500" />
+                                          )}
+                                        </button>
                                       </td>
 
                                       {/* Topic Name */}
