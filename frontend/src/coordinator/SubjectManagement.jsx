@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { api } from '../utils/api';
 import { useActivityLogger } from '../hooks/useActivityLogger';
@@ -27,6 +27,12 @@ export default function SubjectManagement() {
   const [editingSubject, setEditingSubject] = useState(null);
   const [showAddSubject, setShowAddSubject] = useState(false);
   const [newSubject, setNewSubject] = useState({ subjectName: '', subjectDescription: '' });
+  const [isSavingSubject, setIsSavingSubject] = useState(false);
+  
+  // Hard lock refs for subject creation
+  const isSavingSubjectRef = useRef(false);
+  const lastSaveSubjectTimeRef = useRef(0);
+  const SAVE_COOLDOWN_MS = 3000;
 
   useEffect(() => {
     loadSubjects();
@@ -87,6 +93,26 @@ export default function SubjectManagement() {
       return;
     }
     
+    // HARD LOCK: Prevent duplicate submissions using ref
+    if (isSavingSubjectRef.current) {
+      console.log('[Subject Save] Blocked: Save already in progress');
+      return;
+    }
+    
+    // COOLDOWN: Enforce minimum time between save attempts
+    const now = Date.now();
+    const timeSinceLastSave = now - lastSaveSubjectTimeRef.current;
+    if (timeSinceLastSave < SAVE_COOLDOWN_MS && lastSaveSubjectTimeRef.current > 0) {
+      const remainingSeconds = Math.ceil((SAVE_COOLDOWN_MS - timeSinceLastSave) / 1000);
+      toast.error(`Please wait ${remainingSeconds} seconds before saving again`);
+      return;
+    }
+    
+    // State-based check (secondary protection)
+    if (isSavingSubject) {
+      return;
+    }
+    
     // Check for duplicate subject name
     const duplicate = subjects.find(
       sub => sub.subjectName.toLowerCase() === newSubject.subjectName.trim().toLowerCase()
@@ -97,14 +123,27 @@ export default function SubjectManagement() {
     }
     
     try {
+      // Lock immediately
+      isSavingSubjectRef.current = true;
+      lastSaveSubjectTimeRef.current = now;
+      setIsSavingSubject(true);
+      
+      console.log('[Subject Save] Starting save for:', newSubject.subjectName);
+      
       await api.createSubject(newSubject.subjectName, newSubject.subjectDescription);
       toast.success('Subject added successfully');
       setNewSubject({ subjectName: '', subjectDescription: '' });
       setShowAddSubject(false);
       loadSubjects();
+      
+      console.log('[Subject Save] Success - form closed');
     } catch (err) {
-      console.error('Failed to add subject:', err);
+      console.error('[Subject Save] Failed:', err);
       toast.error(err.message || 'Failed to add subject');
+      
+      // Only unlock on error
+      isSavingSubjectRef.current = false;
+      setIsSavingSubject(false);
     }
   };
 
@@ -261,18 +300,45 @@ export default function SubjectManagement() {
     const [newChapter, setNewChapter] = useState({ chapterName: '', importanceLevel: 3 });
     const [editingChapter, setEditingChapter] = useState(null);
     const [chapters, setChapters] = useState(subject.chapters || []);
+    const [isSavingChapter, setIsSavingChapter] = useState(false);
+    
+    // Hard lock using useRef to prevent duplicate submissions instantly
+    const isSavingRef = useRef(false);
+    const lastSaveTimeRef = useRef(0);
+    const SAVE_COOLDOWN_MS = 3000; // 3 second cooldown between saves
 
     useEffect(() => {
       setChapters(subject.chapters || []);
     }, [subject.chapters]);
 
     const handleAddChapter = async () => {
+      // Validation: chapter name required
       if (!newChapter.chapterName.trim()) {
         toast.error('Chapter name is required');
         return;
       }
       
-      // Check for duplicate chapter name
+      // HARD LOCK: Prevent duplicate submissions using ref (blocks instantly)
+      if (isSavingRef.current) {
+        console.log('[Chapter Save] Blocked: Save already in progress');
+        return;
+      }
+      
+      // COOLDOWN: Enforce minimum time between save attempts
+      const now = Date.now();
+      const timeSinceLastSave = now - lastSaveTimeRef.current;
+      if (timeSinceLastSave < SAVE_COOLDOWN_MS && lastSaveTimeRef.current > 0) {
+        const remainingSeconds = Math.ceil((SAVE_COOLDOWN_MS - timeSinceLastSave) / 1000);
+        toast.error(`Please wait ${remainingSeconds} seconds before saving again`);
+        return;
+      }
+      
+      // State-based check (secondary protection)
+      if (isSavingChapter) {
+        return;
+      }
+      
+      // Check for duplicate chapter name in current chapters
       const duplicate = chapters.find(
         ch => ch.chapterName.toLowerCase() === newChapter.chapterName.trim().toLowerCase()
       );
@@ -282,6 +348,13 @@ export default function SubjectManagement() {
       }
       
       try {
+        // Lock immediately using ref (instant blocking)
+        isSavingRef.current = true;
+        lastSaveTimeRef.current = now;
+        setIsSavingChapter(true);
+        
+        console.log('[Chapter Save] Starting save for:', newChapter.chapterName);
+        
         await api.addChapter(subject._id, newChapter.chapterName, newChapter.importanceLevel);
         toast.success('Chapter added');
         
@@ -291,12 +364,20 @@ export default function SubjectManagement() {
           importanceLevel: newChapter.importanceLevel
         });
         
+        // Reset form and close
         setNewChapter({ chapterName: '', importanceLevel: 3 });
         setShowAddChapter(false);
         loadSubjects();
+        
+        // Keep lock active (success - don't allow re-save of same data)
+        console.log('[Chapter Save] Success - form closed');
       } catch (err) {
-        console.error('Failed to add chapter:', err);
-        toast.error('Failed to add chapter');
+        console.error('[Chapter Save] Failed:', err);
+        toast.error(err.message || 'Failed to add chapter');
+        
+        // Only unlock on error so user can retry
+        isSavingRef.current = false;
+        setIsSavingChapter(false);
       }
     };
 
@@ -472,13 +553,22 @@ export default function SubjectManagement() {
             <div className="flex gap-2">
               <button
                 onClick={handleAddChapter}
-                className="flex-1 px-3 py-2 bg-emerald-600 dark:bg-emerald-700 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-800 transition-colors"
+                disabled={isSavingChapter}
+                className="flex-1 px-3 py-2 bg-emerald-600 dark:bg-emerald-700 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Add Chapter
+                {isSavingChapter ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Add Chapter'
+                )}
               </button>
               <button
                 onClick={() => setShowAddChapter(false)}
-                className="px-3 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors"
+                disabled={isSavingChapter}
+                className="px-3 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -501,6 +591,7 @@ export default function SubjectManagement() {
     const [showAddTopic, setShowAddTopic] = useState(false);
     const [editingTopic, setEditingTopic] = useState(null);
     const [topics, setTopics] = useState(chapter.topics || []);
+    const [isSavingTopic, setIsSavingTopic] = useState(false);
     const [newTopic, setNewTopic] = useState({
       topicName: '',
       topicVideoLink: '',
@@ -508,6 +599,11 @@ export default function SubjectManagement() {
       difficultyLevel: 'medium',
       questionPDF: null
     });
+    
+    // Hard lock refs for topic creation
+    const isSavingTopicRef = useRef(false);
+    const lastSaveTopicTimeRef = useRef(0);
+    const TOPIC_COOLDOWN_MS = 3000;
 
     useEffect(() => {
       setTopics(chapter.topics || []);
@@ -516,6 +612,26 @@ export default function SubjectManagement() {
     const handleAddTopic = async () => {
       if (!newTopic.topicName.trim()) {
         toast.error('Topic name is required');
+        return;
+      }
+      
+      // HARD LOCK: Prevent duplicate submissions using ref
+      if (isSavingTopicRef.current) {
+        console.log('[Topic Save] Blocked: Save already in progress');
+        return;
+      }
+      
+      // COOLDOWN: Enforce minimum time between save attempts
+      const now = Date.now();
+      const timeSinceLastSave = now - lastSaveTopicTimeRef.current;
+      if (timeSinceLastSave < TOPIC_COOLDOWN_MS && lastSaveTopicTimeRef.current > 0) {
+        const remainingSeconds = Math.ceil((TOPIC_COOLDOWN_MS - timeSinceLastSave) / 1000);
+        toast.error(`Please wait ${remainingSeconds} seconds before saving again`);
+        return;
+      }
+      
+      // State-based check (secondary protection)
+      if (isSavingTopic) {
         return;
       }
       
@@ -529,6 +645,13 @@ export default function SubjectManagement() {
       }
       
       try {
+        // Lock immediately
+        isSavingTopicRef.current = true;
+        lastSaveTopicTimeRef.current = now;
+        setIsSavingTopic(true);
+        
+        console.log('[Topic Save] Starting save for:', newTopic.topicName);
+        
         const formData = new FormData();
         formData.append('topicName', newTopic.topicName);
         formData.append('difficultyLevel', newTopic.difficultyLevel);
@@ -558,9 +681,15 @@ export default function SubjectManagement() {
         });
         setShowAddTopic(false);
         loadSubjects();
+        
+        console.log('[Topic Save] Success - form closed');
       } catch (err) {
-        console.error('Failed to add topic:', err);
+        console.error('[Topic Save] Failed:', err);
         toast.error('Failed to add topic');
+        
+        // Only unlock on error
+        isSavingTopicRef.current = false;
+        setIsSavingTopic(false);
       }
     };
 
@@ -928,13 +1057,22 @@ export default function SubjectManagement() {
             <div className="flex gap-2">
               <button
                 onClick={handleAddTopic}
-                className="flex-1 px-3 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-sm"
+                disabled={isSavingTopic}
+                className="flex-1 px-3 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Add Topic
+                {isSavingTopic ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Add Topic'
+                )}
               </button>
               <button
                 onClick={() => setShowAddTopic(false)}
-                className="px-3 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors text-sm"
+                disabled={isSavingTopic}
+                className="px-3 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -1003,16 +1141,25 @@ export default function SubjectManagement() {
             <div className="flex gap-3">
               <button
                 onClick={handleAddSubject}
-                className="flex-1 px-4 py-3 bg-emerald-600 dark:bg-emerald-700 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-800 transition-colors"
+                disabled={isSavingSubject}
+                className="flex-1 px-4 py-3 bg-emerald-600 dark:bg-emerald-700 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Create Subject
+                {isSavingSubject ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Subject'
+                )}
               </button>
               <button
                 onClick={() => {
                   setShowAddSubject(false);
                   setNewSubject({ subjectName: '', subjectDescription: '' });
                 }}
-                className="px-4 py-3 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors"
+                disabled={isSavingSubject}
+                className="px-4 py-3 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>

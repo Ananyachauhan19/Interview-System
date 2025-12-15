@@ -37,14 +37,17 @@ export default function TermsAndConditions() {
             <section>
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">2. Platform Purpose and Scope</h2>
               <p className="text-gray-700 leading-relaxed mb-3">
-                This Platform is designed to facilitate mock interview practice sessions between students. The Platform provides:
+                This Platform is designed as a comprehensive learning and interview preparation system for students. The Platform provides:
               </p>
               <ul className="list-disc list-inside text-gray-700 ml-4 space-y-1">
+                <li>Structured learning modules with video lectures and study materials</li>
+                <li>Progress tracking and contribution calendar</li>
                 <li>Automated pairing between interviewers and interviewees</li>
                 <li>Interview scheduling and time slot management</li>
                 <li>Feedback collection and review system</li>
                 <li>Event management and notifications</li>
-                <li>Performance tracking and interview history</li>
+                <li>Performance tracking and learning analytics</li>
+                <li>Coordinator-managed curriculum and semester structure</li>
               </ul>
             </section>
 
@@ -144,7 +147,31 @@ export default function TermsAndConditions() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">7. Prohibited Activities</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">7. Learning Content and Usage</h2>
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-xl font-medium text-gray-800 mb-2">7.1 Course Access</h3>
+                  <p className="text-gray-700 leading-relaxed">
+                    Students have access to learning modules organized by semesters and subjects. Video lectures, notes, and problem sets are provided for educational purposes only.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium text-gray-800 mb-2">7.2 Progress Tracking</h3>
+                  <p className="text-gray-700 leading-relaxed">
+                    Your learning activity, including videos watched, topics completed, and problems solved, is tracked to provide progress analytics and maintain your contribution calendar.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium text-gray-800 mb-2">7.3 Content Rights</h3>
+                  <p className="text-gray-700 leading-relaxed">
+                    Learning materials are provided for your personal educational use only. You may not redistribute, sell, or share course content outside the Platform without authorization.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">8. Prohibited Activities</h2>
               <p className="text-gray-700 leading-relaxed mb-3">
                 The following activities are strictly prohibited on this Platform:
               </p>
@@ -157,53 +184,55 @@ export default function TermsAndConditions() {
                 <li>Impersonating other users or providing false information</li>
                 <li>Using automated bots or scripts to interact with the Platform</li>
                 <li>Distributing spam, malware, or harmful content</li>
+                <li>Downloading or distributing course materials outside the Platform</li>
+                <li>Circumventing progress tracking or falsifying completion status</li>
               </ul>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">8. Intellectual Property</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">9. Intellectual Property</h2>
               <p className="text-gray-700 leading-relaxed">
                 All content, features, and functionality of the Platform, including but not limited to text, graphics, logos, and software, are owned by PeerPrep and protected by intellectual property laws. You may not copy, modify, distribute, or reverse engineer any part of the Platform without express written permission.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">9. Disclaimer of Warranties</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">10. Disclaimer of Warranties</h2>
               <p className="text-gray-700 leading-relaxed">
                 The Platform is provided "as is" and "as available" without warranties of any kind, either express or implied. We do not guarantee that the Platform will be uninterrupted, error-free, or completely secure. Mock interviews are for educational purposes only and do not guarantee job placement or career success.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">10. Limitation of Liability</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">11. Limitation of Liability</h2>
               <p className="text-gray-700 leading-relaxed">
                 To the fullest extent permitted by law, PeerPrep and its administrators shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Platform. This includes but is not limited to technical issues, data loss, missed interviews, or disputes between users.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">11. Privacy and Data Protection</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">12. Privacy and Data Protection</h2>
               <p className="text-gray-700 leading-relaxed">
                 Your use of the Platform is also governed by our Privacy Policy. By using the Platform, you consent to the collection, use, and disclosure of your information as described in the Privacy Policy.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">12. Modifications to Terms</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">13. Modifications to Terms</h2>
               <p className="text-gray-700 leading-relaxed">
                 We reserve the right to modify these Terms and Conditions at any time. Changes will be effective immediately upon posting to the Platform. Your continued use of the Platform after changes are posted constitutes your acceptance of the modified terms.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">13. Dispute Resolution</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">14. Dispute Resolution</h2>
               <p className="text-gray-700 leading-relaxed">
                 Any disputes arising from the use of this Platform should first be reported to the administrators. We encourage users to resolve conflicts amicably through communication and mediation.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">14. Contact Information</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">15. Contact Information</h2>
               <p className="text-gray-700 leading-relaxed">
                 If you have any questions about these Terms and Conditions, please contact us at:
               </p>

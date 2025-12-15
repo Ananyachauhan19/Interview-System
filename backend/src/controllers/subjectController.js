@@ -196,15 +196,25 @@ export async function addSubject(req, res) {
     const semester = await Semester.findOne({ _id: semesterId, ...ownerFilter });
     if (!semester) throw new HttpError(404, 'Semester not found');
     
-    // Check for duplicate subject (case-insensitive)
+    // DUPLICATE CHECK: Prevent duplicate subject names (case-insensitive)
     const normalizedName = subjectName.toLowerCase().trim();
     const duplicate = semester.subjects.find(s => 
       s.subjectName.toLowerCase().trim() === normalizedName
     );
     
     if (duplicate) {
-      return res.status(400).json({ error: 'Subject already exists' });
+      console.log('[Add Subject] Blocked duplicate:', { 
+        semesterId, 
+        subjectName, 
+        existingSubjectId: duplicate._id 
+      });
+      throw new HttpError(409, 'A subject with this name already exists in this semester');
     }
+    
+    console.log('[Add Subject] Creating new subject:', { 
+      semesterId, 
+      subjectName 
+    });
     
     const order = semester.subjects.length;
     semester.subjects.push({
@@ -355,6 +365,27 @@ export async function addChapter(req, res) {
     
     const subject = semester.subjects.id(subjectId);
     if (!subject) throw new HttpError(404, 'Subject not found');
+    
+    // DUPLICATE CHECK: Prevent duplicate chapter names in the same subject
+    const normalizedChapterName = chapterName.trim().toLowerCase();
+    const existingChapter = subject.chapters.find(
+      ch => ch.chapterName.trim().toLowerCase() === normalizedChapterName
+    );
+    
+    if (existingChapter) {
+      console.log('[Add Chapter] Blocked duplicate:', { 
+        subjectId, 
+        chapterName, 
+        existingChapterId: existingChapter._id 
+      });
+      throw new HttpError(409, 'A chapter with this name already exists in this subject');
+    }
+    
+    console.log('[Add Chapter] Creating new chapter:', { 
+      subjectId, 
+      chapterName, 
+      importanceLevel 
+    });
     
     const order = subject.chapters.length;
     subject.chapters.push({
@@ -530,6 +561,27 @@ export async function addTopic(req, res) {
     
     const chapter = subject.chapters.id(chapterId);
     if (!chapter) throw new HttpError(404, 'Chapter not found');
+    
+    // DUPLICATE CHECK: Prevent duplicate topic names in the same chapter
+    const normalizedTopicName = topicName.trim().toLowerCase();
+    const existingTopic = chapter.topics.find(
+      t => t.topicName.trim().toLowerCase() === normalizedTopicName
+    );
+    
+    if (existingTopic) {
+      console.log('[Add Topic] Blocked duplicate:', { 
+        chapterId, 
+        topicName, 
+        existingTopicId: existingTopic._id 
+      });
+      throw new HttpError(409, 'A topic with this name already exists in this chapter');
+    }
+    
+    console.log('[Add Topic] Creating new topic:', { 
+      chapterId, 
+      topicName, 
+      difficultyLevel 
+    });
     
     // Handle video link
     let videoLink = topicVideoLink || '';

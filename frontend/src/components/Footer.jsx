@@ -20,6 +20,7 @@ export function Footer() {
               <a href="/privacy" className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors duration-200 font-medium">Privacy Policy</a>
               <a href="/terms" className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors duration-200 font-medium">Terms & Conditions</a>
               <a href="/contact" className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors duration-200 font-medium">Contact Us</a>
+              <a href="/student/help" className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors duration-200 font-medium">Help & Support</a>
             </div>
             <div className="text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
               &copy; {new Date().getFullYear()} PeerPrep. All rights reserved.

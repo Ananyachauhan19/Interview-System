@@ -12,6 +12,7 @@ import FeedbackForm from "./student/FeedbackForm";
 import StudentLearning from "./student/StudentLearning";
 import LearningDetail from "./student/LearningDetail";
 import StudentProfile from "./student/StudentProfile";
+import HelpAndSupport from "./student/HelpAndSupport";
 import StudentProtectedRoute from "./student/StudentProtectedRoute";
 import AdminDashboard from "./admin/AdminDashboard";
 import AdminLearning from "./admin/AdminLearning";
@@ -80,6 +81,7 @@ function AppContent() {
         <Route path="/student/feedback/:pairId" element={<StudentProtectedRoute><FeedbackForm /></StudentProtectedRoute>} />
         <Route path="/student/learning" element={<StudentProtectedRoute><StudentLearning /></StudentProtectedRoute>} />
         <Route path="/student/learning/:semester/:subject/:teacherId" element={<StudentProtectedRoute><LearningDetail /></StudentProtectedRoute>} />
+        <Route path="/student/help" element={<StudentProtectedRoute><HelpAndSupport /></StudentProtectedRoute>} />
         
         {/* Admin Routes - Protected */}
         <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />

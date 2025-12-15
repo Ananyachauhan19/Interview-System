@@ -43,21 +43,37 @@ export default function PrivacyPolicy() {
                     We collect the following personal information when you register and use our platform:
                   </p>
                   <ul className="list-disc list-inside text-gray-700 mt-2 ml-4 space-y-1">
-                    <li>Full name and student ID</li>
-                    <li>Email address</li>
+                    <li>Full name, student ID, and email address</li>
                     <li>Login credentials (encrypted passwords)</li>
-                    <li>Profile information (role, specialization)</li>
+                    <li>Profile information (course, branch, college, semester)</li>
+                    <li>Role information (interviewer/interviewee assignments)</li>
+                    <li>Profile photo (optional, stored via Cloudinary CDN)</li>
                   </ul>
                 </div>
                 <div>
-                  <h3 className="text-xl font-medium text-gray-800 mb-2">2.2 Usage Information</h3>
+                  <h3 className="text-xl font-medium text-gray-800 mb-2">2.2 Learning Activity Data</h3>
                   <p className="text-gray-700 leading-relaxed">
-                    We automatically collect certain information about your device and usage patterns:
+                    We track your learning progress and activity to provide personalized analytics:
                   </p>
                   <ul className="list-disc list-inside text-gray-700 mt-2 ml-4 space-y-1">
-                    <li>Interview session details and schedules</li>
-                    <li>Feedback submissions and ratings</li>
-                    <li>Time slot proposals and acceptances</li>
+                    <li>Videos watched and watch duration</li>
+                    <li>Topics completed and course enrollment</li>
+                    <li>Problems solved and difficulty levels attempted</li>
+                    <li>Daily activity for contribution calendar</li>
+                    <li>Learning streaks and active days</li>
+                    <li>Progress percentage within each subject</li>
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium text-gray-800 mb-2">2.3 Interview and Interaction Data</h3>
+                  <p className="text-gray-700 leading-relaxed">
+                    We automatically collect information related to interview sessions:
+                  </p>
+                  <ul className="list-disc list-inside text-gray-700 mt-2 ml-4 space-y-1">
+                    <li>Interview session details, schedules, and pairing information</li>
+                    <li>Feedback submissions, ratings, and comments</li>
+                    <li>Time slot proposals, acceptances, and counter-proposals</li>
+                    <li>Meeting links and session attendance records</li>
                     <li>System interaction logs and activity timestamps</li>
                   </ul>
                 </div>
@@ -70,12 +86,14 @@ export default function PrivacyPolicy() {
                 We use the collected information for the following purposes:
               </p>
               <ul className="list-disc list-inside text-gray-700 ml-4 space-y-2">
+                <li><strong>Learning Management:</strong> To provide access to courses, track your progress, generate analytics, and display your contribution calendar</li>
                 <li><strong>Platform Operations:</strong> To facilitate mock interview sessions, schedule management, and pairing between interviewers and interviewees</li>
-                <li><strong>Communication:</strong> To send notifications about scheduled interviews, slot proposals, confirmations, and feedback requests</li>
+                <li><strong>Communication:</strong> To send notifications about scheduled interviews, slot proposals, confirmations, feedback requests, and learning milestones</li>
                 <li><strong>User Authentication:</strong> To verify your identity and maintain secure access to your account</li>
                 <li><strong>Performance Improvement:</strong> To analyze usage patterns and improve our platform features and user experience</li>
                 <li><strong>Feedback Management:</strong> To collect, store, and display feedback from interview sessions for educational purposes</li>
-                <li><strong>Administrative Tasks:</strong> To manage events, users, and system configurations by authorized administrators</li>
+                <li><strong>Progress Analytics:</strong> To generate personalized statistics including active days, current streak, best streak, and course completion rates</li>
+                <li><strong>Administrative Tasks:</strong> To manage events, users, curriculum, semesters, and system configurations by authorized coordinators and administrators</li>
               </ul>
             </section>
 
@@ -93,7 +111,21 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">5. Data Security</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">5. Coordinator and Administrator Access</h2>
+              <p className="text-gray-700 leading-relaxed mb-3">
+                Authorized coordinators and administrators have specific access levels:
+              </p>
+              <ul className="list-disc list-inside text-gray-700 ml-4 space-y-1">
+                <li>Coordinators can manage curriculum, subjects, chapters, and topics within their assigned semesters</li>
+                <li>Coordinators can view student progress, activity, and learning analytics for students in their semesters</li>
+                <li>Administrators have full access to user management, event creation, and system configuration</li>
+                <li>All coordinator and administrator actions are logged for audit purposes</li>
+                <li>Access is granted based on role-based authentication and is restricted to educational purposes only</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">6. Data Security</h2>
               <p className="text-gray-700 leading-relaxed">
                 We implement industry-standard security measures to protect your personal information:
               </p>
@@ -110,49 +142,60 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">6. Data Retention</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">7. Data Retention</h2>
               <p className="text-gray-700 leading-relaxed">
-                We retain your personal information for as long as your account is active or as needed to provide services. Interview records, feedback, and session history may be retained for educational and administrative purposes. You may request deletion of your data by contacting us at peerprep62@gmail.com.
+                We retain your personal information for as long as your account is active or as needed to provide services. Specifically:
+              </p>
+              <ul className="list-disc list-inside text-gray-700 mt-2 ml-4 space-y-1">
+                <li>Learning progress and activity data are retained to maintain your history and analytics</li>
+                <li>Interview records, feedback, and session history are retained for educational and administrative purposes</li>
+                <li>Contribution calendar data is maintained to track your ongoing engagement</li>
+                <li>Profile information and authentication data are retained until account deletion</li>
+              </ul>
+              <p className="text-gray-700 leading-relaxed mt-3">
+                You may request deletion of your data by contacting us at peerprep62@gmail.com. Some data may be retained for legal compliance or legitimate business purposes.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">7. Cookies and Tracking</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">8. Cookies and Tracking</h2>
               <p className="text-gray-700 leading-relaxed">
                 We use browser local storage to maintain your login session and remember your preferences. We do not use third-party tracking cookies for advertising purposes.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">8. Your Rights</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">9. Your Rights</h2>
               <p className="text-gray-700 leading-relaxed mb-3">
                 You have the following rights regarding your personal information:
               </p>
               <ul className="list-disc list-inside text-gray-700 ml-4 space-y-1">
-                <li>Access and review your personal data</li>
+                <li>Access and review your personal data, learning progress, and activity history</li>
                 <li>Request corrections to inaccurate information</li>
-                <li>Change your password at any time</li>
-                <li>Request account deletion and data removal</li>
+                <li>Change your password at any time through your profile settings</li>
+                <li>Update your profile information including photo, email, and personal details</li>
+                <li>Request account deletion and data removal (subject to legal retention requirements)</li>
                 <li>Opt-out of non-essential communications</li>
+                <li>View and download your feedback history and session records</li>
               </ul>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">9. Children's Privacy</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">10. Children's Privacy</h2>
               <p className="text-gray-700 leading-relaxed">
                 Our platform is intended for educational institutions and their students. We do not knowingly collect information from children under 13 without parental consent. If you believe we have collected such information, please contact us immediately.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">10. Changes to This Policy</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">11. Changes to This Policy</h2>
               <p className="text-gray-700 leading-relaxed">
                 We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date. You are advised to review this Privacy Policy periodically for any changes.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">11. Contact Us</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">12. Contact Us</h2>
               <p className="text-gray-700 leading-relaxed">
                 If you have any questions about this Privacy Policy or our data practices, please contact us at:
               </p>
