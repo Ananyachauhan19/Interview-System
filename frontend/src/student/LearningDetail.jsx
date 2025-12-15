@@ -566,7 +566,17 @@ export default function LearningDetail() {
                           <div className="p-4 bg-white dark:bg-gray-900">
                             <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-300 mb-3">Topics</h4>
                             <div className="overflow-x-auto">
-                              <table className="w-full">
+                              <table className="w-full table-fixed">
+                                <colgroup>
+                                  <col style={{ width: '8%' }} />
+                                  <col style={{ width: '22%' }} />
+                                  <col style={{ width: '12%' }} />
+                                  <col style={{ width: '12%' }} />
+                                  <col style={{ width: '11%' }} />
+                                  <col style={{ width: '11%' }} />
+                                  <col style={{ width: '12%' }} />
+                                  <col style={{ width: '12%' }} />
+                                </colgroup>
                                 <thead>
                                   <tr className="border-b border-slate-200 dark:border-gray-700">
                                     <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Status</th>

@@ -5,7 +5,8 @@ import { api } from '../utils/api';
 import socketService from '../utils/socket';
 import {
   BookOpen, Plus, ChevronDown, ChevronRight, Edit2, Trash2, Save, X,
-  Star, Upload, Link as LinkIcon, FileText, GripVertical, Video, File, Calendar, Menu, ArrowLeft
+  Star, Upload, Link as LinkIcon, FileText, GripVertical, Video, File, Calendar, Menu, ArrowLeft,
+  Youtube, ExternalLink, FileSpreadsheet
 } from 'lucide-react';
 import { useToast } from '../components/CustomToast';
 
@@ -1151,21 +1152,49 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
               )}
 
               {chapter.topics && chapter.topics.length > 0 ? (
-                <Reorder.Group axis="y" values={chapter.topics} onReorder={handleReorderTopics} className="space-y-1.5">
-                  {chapter.topics.map((topic) => (
-                    <TopicCard
-                      key={topic._id}
-                      topic={topic}
-                      semesterId={semesterId}
-                      subjectId={subjectId}
-                      chapterId={chapter._id}
-                      onDelete={() => handleDeleteTopic(topic._id)}
-                      loadSemesters={loadSemesters}
-                      semesters={semesters}
-                      setSemesters={setSemesters}
-                    />
-                  ))}
-                </Reorder.Group>
+                <div className="overflow-x-auto">
+                  <table className="w-full table-fixed">
+                    <colgroup>
+                      <col style={{ width: '25%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '11%' }} />
+                      <col style={{ width: '8%' }} />
+                      <col style={{ width: '8%' }} />
+                      <col style={{ width: '8%' }} />
+                      <col style={{ width: '16%' }} />
+                    </colgroup>
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-gray-700">
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Topic</th>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Problem Link</th>
+                        <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Importance</th>
+                        <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Difficulty</th>
+                        <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Video</th>
+                        <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Notes</th>
+                        <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Questions</th>
+                        <th className="text-center py-3 px-4 text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-900">
+                      {chapter.topics.map((topic, idx) => (
+                        <TopicCard
+                          key={topic._id}
+                          topic={topic}
+                          semesterId={semesterId}
+                          subjectId={subjectId}
+                          chapterId={chapter._id}
+                          onDelete={() => handleDeleteTopic(topic._id)}
+                          loadSemesters={loadSemesters}
+                          semesters={semesters}
+                          setSemesters={setSemesters}
+                          isLastRow={idx === chapter.topics.length - 1}
+                          chapterImportanceLevel={chapter.importanceLevel}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <div className="text-center py-4">
                   <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 dark:bg-gray-700 mb-1.5">
@@ -1182,16 +1211,26 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
   );
 }
 
-function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSemesters }) {
+function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSemesters, isLastRow, chapterImportanceLevel }) {
   const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ 
     topicName: topic.topicName, 
     difficulty: topic.difficultyLevel || topic.difficulty, 
+    problemLink: topic.problemLink || '',
     videoLink: topic.topicVideoLink || '',
     notesPDF: null,
     questionPDF: null
   });
+
+  const getDifficultyBadge = (difficulty) => {
+    const colors = difficultyColors[difficulty] || difficultyColors['medium'];
+    return (
+      <span className={`px-2 py-1 rounded-lg text-xs font-medium ${colors}`}>
+        {difficulty}
+      </span>
+    );
+  };
 
   const handleUpdate = async () => {
     if (!editData.topicName.trim()) {
@@ -1202,6 +1241,7 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
       const formData = new FormData();
       formData.append('topicName', editData.topicName);
       formData.append('difficulty', editData.difficulty);
+      if (editData.problemLink) formData.append('problemLink', editData.problemLink);
       if (editData.videoLink) formData.append('topicVideoLink', editData.videoLink);
       if (editData.notesPDF) formData.append('notesPDF', editData.notesPDF);
       if (editData.questionPDF) formData.append('questionPDF', editData.questionPDF);
@@ -1216,148 +1256,212 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
     }
   };
 
-  return (
-    <Reorder.Item value={topic} className="bg-white dark:bg-gray-800 p-2 rounded border border-slate-200 dark:border-gray-700 hover:border-slate-300 dark:hover:border-gray-600 transition-all">
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-1.5 flex-1">
-          <GripVertical 
-            className="w-3 h-3 text-slate-400 dark:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5 hover:text-slate-600 dark:hover:text-gray-400" 
-            onPointerDown={(e) => e.stopPropagation()}
-          />
-          <div className="flex-1">
-            {isEditing ? (
-              <div className="space-y-2">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Topic Name *</label>
-                  <input
-                    type="text"
-                    placeholder="Enter topic name"
-                    value={editData.topicName}
-                    onChange={(e) => setEditData({ ...editData, topicName: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Difficulty Level</label>
-                  <select
-                    value={editData.difficulty}
-                    onChange={(e) => setEditData({ ...editData, difficulty: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                  >
-                    <option value="easy">Easy</option>
-                    <option value="easy-medium">Easy-Medium</option>
-                    <option value="medium">Medium</option>
-                    <option value="medium-hard">Medium-Hard</option>
-                    <option value="hard">Hard</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Video Link (Optional)</label>
-                  <input
-                    type="url"
-                    placeholder="https://example.com/video"
-                    value={editData.videoLink}
-                    onChange={(e) => setEditData({ ...editData, videoLink: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Notes PDF (Optional)</label>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={(e) => setEditData({ ...editData, notesPDF: e.target.files[0] })}
-                    className="w-full px-2 py-1 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 dark:file:bg-sky-900/40 file:text-sky-600 dark:file:text-sky-400 hover:file:bg-sky-100 dark:hover:file:bg-sky-900/60"
-                  />
-                  {topic.notesPDF && (
-                    <a href={topic.notesPDF} target="_blank" rel="noopener noreferrer" className="text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline mt-0.5 inline-block font-medium">
-                      View current PDF
-                    </a>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Question PDF (Optional)</label>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={(e) => setEditData({ ...editData, questionPDF: e.target.files[0] })}
-                    className="w-full px-2 py-1 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 dark:file:bg-sky-900/40 file:text-sky-600 dark:file:text-sky-400 hover:file:bg-sky-100 dark:hover:file:bg-sky-900/60"
-                  />
-                </div>
-                <div className="flex gap-1.5">
-                  <button onClick={handleUpdate} className="flex items-center gap-1 bg-sky-500 text-white px-2.5 py-1.5 rounded hover:bg-sky-600 text-xs font-medium shadow-sm transition-colors">
-                    <Save className="w-3 h-3" />
-                    Save
-                  </button>
-                  <button onClick={() => setIsEditing(false)} className="flex items-center gap-1 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-2.5 py-1.5 rounded hover:bg-slate-300 dark:hover:bg-gray-500 text-xs font-medium transition-colors">
-                    <X className="w-3 h-3" />
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h5 className="font-semibold text-slate-800 dark:text-gray-100 text-sm">{topic.topicName}</h5>
-                  <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${difficultyColors[topic.difficulty]}`}>
-                    {topic.difficulty}
-                  </span>
-                </div>
-                {topic.links && topic.links.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {topic.links.map((link, i) => (
-                      <a
-                        key={i}
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline text-xs font-medium"
-                      >
-                        <LinkIcon className="w-3 h-3" />
-                        Link {i + 1}
-                      </a>
-                    ))}
-                  </div>
-                )}
-                {topic.questionPDF && (
-                  <a
-                    href={topic.questionPDF}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:underline mt-2 text-xs font-medium"
-                  >
-                    <FileText className="w-3 h-3" />
-                    Question PDF
-                  </a>
-                )}
-                {topic.notesPDF && (
-                  <a
-                    href={topic.notesPDF}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline mt-2 text-xs font-medium"
-                  >
-                    <FileText className="w-3 h-3" />
-                    Notes PDF
-                  </a>
-                )}
-              </>
-            )}
+  if (isEditing) {
+    return (
+      <tr className={`border-b border-slate-100 dark:border-gray-800 ${!isLastRow ? '' : 'border-b-0'}`}>
+        <td colSpan="8" className="py-3 px-4">
+          <div className="space-y-2">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Topic Name *</label>
+              <input
+                type="text"
+                placeholder="Enter topic name"
+                value={editData.topicName}
+                onChange={(e) => setEditData({ ...editData, topicName: e.target.value })}
+                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Problem Link (Optional)</label>
+              <input
+                type="url"
+                placeholder="https://example.com/problem"
+                value={editData.problemLink}
+                onChange={(e) => setEditData({ ...editData, problemLink: e.target.value })}
+                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Difficulty Level</label>
+              <select
+                value={editData.difficulty}
+                onChange={(e) => setEditData({ ...editData, difficulty: e.target.value })}
+                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+              >
+                <option value="easy">Easy</option>
+                <option value="easy-medium">Easy-Medium</option>
+                <option value="medium">Medium</option>
+                <option value="medium-hard">Medium-Hard</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Video Link (Optional)</label>
+              <input
+                type="url"
+                placeholder="https://example.com/video"
+                value={editData.videoLink}
+                onChange={(e) => setEditData({ ...editData, videoLink: e.target.value })}
+                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Notes PDF (Optional)</label>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setEditData({ ...editData, notesPDF: e.target.files[0] })}
+                className="w-full px-2 py-1 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 dark:file:bg-sky-900/40 file:text-sky-600 dark:file:text-sky-400 hover:file:bg-sky-100 dark:hover:file:bg-sky-900/60"
+              />
+              {topic.notesPDF && (
+                <a href={topic.notesPDF} target="_blank" rel="noopener noreferrer" className="text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline mt-0.5 inline-block font-medium">
+                  View current PDF
+                </a>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Question PDF (Optional)</label>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setEditData({ ...editData, questionPDF: e.target.files[0] })}
+                className="w-full px-2 py-1 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-sky-50 dark:file:bg-sky-900/40 file:text-sky-600 dark:file:text-sky-400 hover:file:bg-sky-100 dark:hover:file:bg-sky-900/60"
+              />
+            </div>
+            <div className="flex gap-1.5">
+              <button onClick={handleUpdate} className="flex items-center gap-1 bg-sky-500 text-white px-2.5 py-1.5 rounded hover:bg-sky-600 text-xs font-medium shadow-sm transition-colors">
+                <Save className="w-3 h-3" />
+                Save
+              </button>
+              <button onClick={() => setIsEditing(false)} className="flex items-center gap-1 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-2.5 py-1.5 rounded hover:bg-slate-300 dark:hover:bg-gray-500 text-xs font-medium transition-colors">
+                <X className="w-3 h-3" />
+                Cancel
+              </button>
+            </div>
           </div>
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr className={`border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-800/50 transition-colors ${!isLastRow ? '' : 'border-b-0'}`}>
+      {/* Topic Name */}
+      <td className="py-3 px-4">
+        <span className="text-sm font-medium text-slate-800 dark:text-gray-200">
+          {topic.topicName}
+        </span>
+      </td>
+
+      {/* Problem Link */}
+      <td className="py-3 px-4">
+        {topic.problemLink ? (
+          <a
+            href={topic.problemLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+          >
+            Solve
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        ) : (
+          <span className="text-xs text-slate-400 dark:text-gray-500">No link</span>
+        )}
+      </td>
+
+      {/* Importance */}
+      <td className="py-3 px-4">
+        <div className="flex items-center justify-center gap-0.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star
+              key={i}
+              className={`w-3.5 h-3.5 ${
+                i < (chapterImportanceLevel || 3)
+                  ? 'text-yellow-500 fill-yellow-500'
+                  : 'text-slate-300 dark:text-gray-600'
+              }`}
+            />
+          ))}
         </div>
-        <div className="flex items-center gap-1">
-          {!isEditing && (
-            <>
-              <button onClick={() => setIsEditing(true)} className="p-1 bg-sky-50 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400 rounded hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors">
-                <Edit2 className="w-3 h-3" />
-              </button>
-              <button onClick={onDelete} className="p-1 bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors">
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </>
-          )}
+      </td>
+
+      {/* Difficulty */}
+      <td className="py-3 px-4 text-center">
+        {getDifficultyBadge(topic.difficultyLevel || topic.difficulty)}
+      </td>
+
+      {/* Video */}
+      <td className="py-3 px-4 text-center">
+        {topic.topicVideoLink ? (
+          <a
+            href={topic.topicVideoLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center w-9 h-9 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-sm"
+            title="Watch Video"
+          >
+            <Youtube className="w-5 h-5" />
+          </a>
+        ) : (
+          <span className="text-slate-300 dark:text-gray-600">—</span>
+        )}
+      </td>
+
+      {/* Notes PDF */}
+      <td className="py-3 px-4 text-center">
+        {topic.notesPDF ? (
+          <a
+            href={topic.notesPDF}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
+            title="View Notes"
+          >
+            <FileText className="w-5 h-5" />
+          </a>
+        ) : (
+          <span className="text-slate-300 dark:text-gray-600">—</span>
+        )}
+      </td>
+
+      {/* Questions PDF */}
+      <td className="py-3 px-4 text-center">
+        {topic.questionPDF ? (
+          <a
+            href={topic.questionPDF}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center w-9 h-9 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-sm"
+            title="View Questions"
+          >
+            <FileSpreadsheet className="w-5 h-5" />
+          </a>
+        ) : (
+          <span className="text-slate-300 dark:text-gray-600">—</span>
+        )}
+      </td>
+
+      {/* Actions */}
+      <td className="py-3 px-4">
+        <div className="flex items-center justify-center gap-1">
+          <button
+            onClick={() => setIsEditing(true)}
+            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
+            title="Edit Topic"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+            title="Delete Topic"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
-      </div>
-    </Reorder.Item>
+      </td>
+    </tr>
   );
 }
+
