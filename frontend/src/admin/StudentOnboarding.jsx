@@ -14,7 +14,7 @@ export default function StudentOnboarding() {
   const [uploadResult, setUploadResult] = useState(null);
   const [clientErrors, setClientErrors] = useState([]);
   const [showSingleForm, setShowSingleForm] = useState(false);
-  const [singleForm, setSingleForm] = useState({ course: '', name: '', email: '', studentid: '', password: '', branch: '', college: '', teacherid: '', semester: '' });
+  const [singleForm, setSingleForm] = useState({ course: '', name: '', email: '', studentid: '', password: '', branch: '', college: '', teacherid: '', semester: '', group: '' });
   const [singleMsg, setSingleMsg] = useState('');
   const [singleLoading, setSingleLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -271,9 +271,9 @@ export default function StudentOnboarding() {
       const data = await api.createStudent(singleForm);
       setSingleMsg(`Student ${data.name || data.email} has been successfully added!`);
       setTimeout(() => setSingleMsg(''), 4000);
-      const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', password: singleForm.password || '', branch: singleForm.branch || '', college: singleForm.college || '', teacherid: singleForm.teacherid || '', semester: singleForm.semester || '', __row: 'N/A' };
+      const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', branch: singleForm.branch || '', college: singleForm.college || '', teacherid: singleForm.teacherid || '', semester: singleForm.semester || '', group: singleForm.group || '', __row: 'N/A' };
       setStudents((s) => [newStudent, ...s]);
-      setSingleForm({ name: '', email: '', studentid: '', password: '', branch: '', course: '', college: '', teacherid: '', semester: '' });
+      setSingleForm({ name: '', email: '', studentid: '', branch: '', course: '', college: '', teacherid: '', semester: '', group: '' });
       
       // Log activity
       logCreate('STUDENT', data._id, `Created student: ${data.name} (${data.email})`, {
@@ -299,9 +299,9 @@ export default function StudentOnboarding() {
   };
 
   const isSingleValid = () => {
-    const { course, name, email, studentid, password, branch, college, teacherid, semester } = singleForm;
+    const { course, name, email, studentid, branch, college, teacherid, semester } = singleForm;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return course && name && email && studentid && password && branch && college && teacherid && semester && emailRegex.test(email);
+    return course && name && email && studentid && branch && college && teacherid && semester && emailRegex.test(email);
   };
 
   return (
@@ -338,11 +338,12 @@ export default function StudentOnboarding() {
               <h3 className="text-sm font-semibold text-slate-800 dark:text-gray-200 mb-2">CSV Upload Guidelines</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700 dark:text-gray-300">
                 <div className="space-y-1">
-                  <p><strong>Required columns:</strong> Course, Name, Email, Student ID, Password, Branch, College, Teacher ID, Semester</p>
+                  <p><strong>Required columns:</strong> Course, Name, Email, Student ID, Branch, College, Teacher ID, Semester</p>
+                  <p><strong>Optional columns:</strong> Group (G1-G5)</p>
                   <p><strong>Header format:</strong> Keep the same order as the sample CSV so every column is picked up correctly.</p>
                 </div>
                 <div className="space-y-1">
-                  <p><strong>Password:</strong> Fill it in (use Student ID if you want a default). Blank values will fail validation.</p>
+                  <p><strong>Auto-generated:</strong> Passwords are automatically generated and sent via email. Do not include Password column in CSV.</p>
                   <p><strong>Teacher ID & Semester:</strong> Teacher ID must match the coordinator code; Semester must be a number from 1-8.</p>
                 </div>
               </div>
@@ -392,7 +393,6 @@ export default function StudentOnboarding() {
                 { key: 'semester', label: 'Semester *', placeholder: '1-8', type: 'number' },
                 { key: 'course', label: 'Course', placeholder: 'B.Tech' },
                 { key: 'college', label: 'College', placeholder: 'University Name' },
-                { key: 'password', label: 'Password (defaults to Student ID)', placeholder: '••••••••', type: 'password' },
               ].map(({ key, label, placeholder, type }) => (
                 <div key={key} className="flex flex-col">
                   <label className="text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">{label}</label>
@@ -405,6 +405,21 @@ export default function StudentOnboarding() {
                   />
                 </div>
               ))}
+              <div className="flex flex-col">
+                <label className="text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">Group (Optional)</label>
+                <select
+                  value={singleForm.group}
+                  onChange={(e) => handleSingleChange('group', e.target.value)}
+                  className="p-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100"
+                >
+                  <option value="">Select Group</option>
+                  <option value="G1">G1</option>
+                  <option value="G2">G2</option>
+                  <option value="G3">G3</option>
+                  <option value="G4">G4</option>
+                  <option value="G5">G5</option>
+                </select>
+              </div>
             </div>
             <div className="flex gap-3 mt-4 justify-end">
               <motion.button
