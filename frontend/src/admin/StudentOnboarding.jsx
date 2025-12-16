@@ -14,7 +14,7 @@ export default function StudentOnboarding() {
   const [uploadResult, setUploadResult] = useState(null);
   const [clientErrors, setClientErrors] = useState([]);
   const [showSingleForm, setShowSingleForm] = useState(false);
-  const [singleForm, setSingleForm] = useState({ course: '', name: '', email: '', studentid: '', password: '', branch: '', college: '', teacherid: '', semester: '', group: '' });
+  const [singleForm, setSingleForm] = useState({ course: '', name: '', email: '', studentid: '', branch: '', college: '', teacherid: '', semester: '', group: '' });
   const [singleMsg, setSingleMsg] = useState('');
   const [singleLoading, setSingleLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -100,7 +100,7 @@ export default function StudentOnboarding() {
         });
 
         // Validate CSV header columns match template
-        const requiredColumns = ['course', 'name', 'email', 'studentid', 'branch', 'college', 'teacherid', 'semester'];
+        const requiredColumns = ['name', 'email', 'studentid', 'branch', 'teacherid', 'semester', 'course', 'college'];
         const missingColumns = requiredColumns.filter(col => !cols.includes(col));
         
         if (missingColumns.length > 0) {
@@ -286,12 +286,8 @@ export default function StudentOnboarding() {
       return;
     }
     try {
-      // Create payload with default password (student ID) since backend requires it
-      const payload = {
-        ...singleForm,
-        password: singleForm.studentid // Use student ID as default password
-      };
-      const data = await api.createStudent(payload);
+      // Password is auto-generated on backend
+      const data = await api.createStudent(singleForm);
       setSingleMsg(`Student ${data.name || data.email} has been successfully added!`);
       setTimeout(() => setSingleMsg(''), 4000);
       const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', branch: singleForm.branch || '', college: singleForm.college || '', teacherid: singleForm.teacherid || '', semester: singleForm.semester || '', group: singleForm.group || '', __row: 'N/A' };
@@ -366,7 +362,7 @@ export default function StudentOnboarding() {
                   <p><strong>Header format:</strong> Keep the same order as the sample CSV so every column is picked up correctly.</p>
                 </div>
                 <div className="space-y-1">
-                  <p><strong>Auto-generated:</strong> Passwords are automatically generated and sent via email. Do not include Password column in CSV.</p>
+                  <p><strong>Passwords:</strong> Automatically generated (7-8 characters) and sent via email to each student.</p>
                   <p><strong>Teacher ID & Semester:</strong> Teacher ID must match the coordinator code; Semester must be a number from 1-8.</p>
                 </div>
               </div>

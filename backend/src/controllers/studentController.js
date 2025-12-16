@@ -6,6 +6,17 @@ import { sendOnboardingEmail } from '../utils/mailer.js';
 import SpecialStudent from '../models/SpecialStudent.js';
 import { logActivity } from './adminActivityController.js';
 
+// Generate random password (7-8 characters)
+function generateRandomPassword() {
+  const length = Math.random() < 0.5 ? 7 : 8; // Randomly choose 7 or 8 characters
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return password;
+}
+
 export async function listAllStudents(req, res) {
   try {
     const { search } = req.query;
@@ -50,8 +61,8 @@ export async function checkStudentsCsv(req, res) {
   const rows = parsed.data;
   const results = [];
 
-  // Required fields for onboarding - all 9 fields must be present
-  const requiredFields = ['course', 'name', 'email', 'studentid', 'password', 'branch', 'college', 'teacherid', 'semester'];
+  // Required fields for onboarding - password is auto-generated
+  const requiredFields = ['name', 'email', 'studentid', 'branch', 'teacherid', 'semester', 'course', 'college'];
 
   // Track duplicates inside the CSV
   const seenEmails = new Set();
@@ -120,8 +131,8 @@ export async function uploadStudentsCsv(req, res) {
   const rows = parsed.data;
   const results = [];
 
-  // Required fields for onboarding - all 9 fields must be present
-  const requiredFields = ['course', 'name', 'email', 'studentid', 'password', 'branch', 'college', 'teacherid', 'semester'];
+  // Required fields for onboarding - password is auto-generated
+  const requiredFields = ['name', 'email', 'studentid', 'branch', 'teacherid', 'semester', 'course', 'college'];
 
   // Track duplicates inside the CSV
   const seenEmails = new Set();
@@ -141,7 +152,7 @@ export async function uploadStudentsCsv(req, res) {
   const newStudents = []; // Collect new students for async email sending
 
   for (const row of normalizedRows) {
-    const { course, name, email, studentid, password, branch, college, teacherid } = row;
+    const { course, name, email, studentid, branch, college, teacherid } = row;
 
     // Skip completely empty rows
     if (!email && !studentid && !name) continue;
@@ -211,9 +222,9 @@ export async function uploadStudentsCsv(req, res) {
         continue;
       }
       
-      // Use student ID as default password if not provided
-      const defaultPassword = password || studentid;
-      const passwordHash = await User.hashPassword(defaultPassword);
+      // Generate random password (7-8 characters)
+      const generatedPassword = generateRandomPassword();
+      const passwordHash = await User.hashPassword(generatedPassword);
       const semesterNum = parseInt(row.semester);
       if (isNaN(semesterNum) || semesterNum < 1 || semesterNum > 8) {
         results.push({ row: row.__row, email, studentid, status: 'error', message: 'Semester must be between 1 and 8' });
@@ -229,7 +240,7 @@ export async function uploadStudentsCsv(req, res) {
       
       // Store for async email sending
       if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
-        newStudents.push({ email, studentId: studentid, password: password || studentid });
+        newStudents.push({ email, studentId: studentid, password: generatedPassword });
       }
     } catch (err) {
       results.push({ row: row.__row, email, studentid, status: 'error', message: err.message });
@@ -281,12 +292,12 @@ export async function uploadStudentsCsv(req, res) {
 
 export async function createStudent(req, res) {
   try {
-    const { name, email, studentid, password, branch, course, college, teacherid, semester } = req.body || {};
+    const { name, email, studentid, branch, course, college, teacherid, semester } = req.body || {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
-    // Check all required fields
-    if (!name || !email || !studentid || !password || !branch || !course || !college || !teacherid || !semester) {
-      return res.status(400).json({ error: 'All fields are required: name, email, studentid, password, branch, course, college, teacherid, semester' });
+    // Check all required fields (password is auto-generated)
+    if (!name || !email || !studentid || !branch || !course || !college || !teacherid || !semester) {
+      return res.status(400).json({ error: 'All fields are required: name, email, studentid, branch, course, college, teacherid, semester' });
     }
     
     const semesterNum = parseInt(semester);
@@ -299,16 +310,17 @@ export async function createStudent(req, res) {
     const exists = await User.findOne({ $or: [{ email }, { studentId: studentid }] });
     if (exists) return res.status(409).json({ error: 'Student with email or studentId already exists' });
 
-    // Use student ID as default password if not provided
-    const defaultPassword = password || studentid;
-    const passwordHash = await User.hashPassword(defaultPassword);
+    // Generate random password (7-8 characters)
+    const generatedPassword = generateRandomPassword();
+    const passwordHash = await User.hashPassword(generatedPassword);
     const user = await User.create({ role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, teacherId: teacherid, semester: semesterNum, mustChangePassword: true });
 
+    // Send password via email
     if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
       await sendOnboardingEmail({
         to: email,
         studentId: studentid,
-        password: defaultPassword,
+        password: generatedPassword,
       });
     }
 
@@ -334,15 +346,15 @@ function normalizeRow(r) {
   const map = {};
   for (const [k, v] of Object.entries(r)) map[k.trim().toLowerCase()] = (v ?? '').toString().trim();
   return {
-    course: map.course,
     name: map.name,
     email: map.email,
     studentid: map.studentid || map.student_id || map.sid,
-    password: map.password,
     branch: map.branch,
-    college: map.college,
     teacherid: map.teacherid || map.teacher_id || map.teacherId,
     semester: map.semester,
+    course: map.course,
+    college: map.college,
+    group: map.group,
   };
 }
 
