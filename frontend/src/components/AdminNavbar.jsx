@@ -11,6 +11,7 @@ export function AdminNavbar() {
   const [active, setActive] = useState(location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isInterviewOpen, setIsInterviewOpen] = useState(false);
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
   const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
   const [adminName, setAdminName] = useState(localStorage.getItem("adminName") || "Admin");
@@ -49,6 +50,7 @@ export function AdminNavbar() {
   useEffect(() => {
     setIsMenuOpen(false);
     setIsProfileOpen(false);
+    setIsInterviewOpen(false);
     setIsAddMembersOpen(false);
     setIsDatabaseOpen(false);
   }, [location.pathname]);
@@ -59,6 +61,9 @@ export function AdminNavbar() {
       if (isProfileOpen && !event.target.closest(".profile-container")) {
         setIsProfileOpen(false);
       }
+      if (isInterviewOpen && !event.target.closest(".interview-container")) {
+        setIsInterviewOpen(false);
+      }
       if (isAddMembersOpen && !event.target.closest(".addmembers-container")) {
         setIsAddMembersOpen(false);
       }
@@ -68,7 +73,7 @@ export function AdminNavbar() {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isProfileOpen, isAddMembersOpen, isDatabaseOpen]);
+  }, [isProfileOpen, isInterviewOpen, isAddMembersOpen, isDatabaseOpen]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -83,11 +88,9 @@ export function AdminNavbar() {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const navItems = [
+  const interviewItems = [
     { path: "/admin/event", label: "Create Interview", Icon: CalendarDays },
-    { path: "/admin/event/:id", label: "Scheduled Interviews", Icon: BookOpen },
-    { path: "/admin/feedback", label: "Feedback Review", Icon: GraduationCap },
-    { path: "/admin/learning", label: "Learning Modules", Icon: BookOpen },
+    { path: "/admin/event/:id", label: "Schedule Interview", Icon: BookOpen },
   ];
 
   const addMembersItems = [
@@ -158,43 +161,61 @@ export function AdminNavbar() {
           />
         </motion.div>
 
-        {/* Center: Desktop Navigation */}
-        <div className="hidden lg:flex items-center justify-center flex-1 gap-1">
-          {navItems.map(({ path, label, Icon }) => {
-            const isActive = active === path || location.pathname === path || location.pathname.startsWith(path.replace(":id", ""));
-            return (
-              <Link
-                key={path}
-                to={path}
-                onClick={() => setActive(path)}
-                className="relative"
-              >
-                <motion.div
-                  variants={itemHover}
-                  whileHover="hover"
-                  whileTap="tap"
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
-                      : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="font-medium text-sm whitespace-nowrap">{label}</span>
-                  
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeIndicator"
-                      className="absolute inset-0 border-2 border-sky-400/30 dark:border-sky-500/30 rounded-lg"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                </motion.div>
-              </Link>
-            );
-          })}
+        {/* Center: Desktop Navigation - Left aligned after logo */}
+        <div className="hidden lg:flex items-center flex-1 gap-1 ml-4">
+          {/* Interview Dropdown */}
+          <div className="relative interview-container">
+            <motion.button
+              variants={itemHover}
+              whileHover="hover"
+              whileTap="tap"
+              onClick={() => {
+                setIsInterviewOpen(!isInterviewOpen);
+                setIsAddMembersOpen(false);
+                setIsDatabaseOpen(false);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                isInterviewOpen || interviewItems.some(item => location.pathname === item.path || location.pathname.startsWith(item.path.replace(":id", "")))
+                  ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
+                  : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+            >
+              <CalendarDays className="w-4 h-4" />
+              <span className="font-medium text-sm whitespace-nowrap">Interview</span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isInterviewOpen ? 'rotate-180' : ''}`} />
+            </motion.button>
 
-          {/* Add Members Dropdown */}
+            <AnimatePresence>
+              {isInterviewOpen && (
+                <motion.div
+                  variants={dropdownVariants}
+                  initial="closed"
+                  animate="open"
+                  exit="closed"
+                  className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-slate-200 dark:border-gray-700 overflow-hidden z-50"
+                >
+                  {interviewItems.map(({ path, label, Icon }) => (
+                    <Link
+                      key={path}
+                      to={path}
+                      onClick={() => {
+                        setActive(path);
+                        setIsInterviewOpen(false);
+                      }}
+                      className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-gray-600 transition-colors">
+                        <Icon className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                      </div>
+                      <span className="text-sm font-medium">{label}</span>
+                    </Link>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Members Dropdown */}
           <div className="relative addmembers-container">
             <motion.button
               variants={itemHover}
@@ -202,6 +223,7 @@ export function AdminNavbar() {
               whileTap="tap"
               onClick={() => {
                 setIsAddMembersOpen(!isAddMembersOpen);
+                setIsInterviewOpen(false);
                 setIsDatabaseOpen(false);
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
@@ -211,7 +233,7 @@ export function AdminNavbar() {
               }`}
             >
               <UserPlus className="w-4 h-4" />
-              <span className="font-medium text-sm whitespace-nowrap">Add Members</span>
+              <span className="font-medium text-sm whitespace-nowrap">Members</span>
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isAddMembersOpen ? 'rotate-180' : ''}`} />
             </motion.button>
 
@@ -253,6 +275,7 @@ export function AdminNavbar() {
               whileTap="tap"
               onClick={() => {
                 setIsDatabaseOpen(!isDatabaseOpen);
+                setIsInterviewOpen(false);
                 setIsAddMembersOpen(false);
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
@@ -295,10 +318,68 @@ export function AdminNavbar() {
               )}
             </AnimatePresence>
           </div>
+
+          {/* Learning Modules */}
+          <Link
+            to="/admin/learning"
+            onClick={() => setActive("/admin/learning")}
+            className="relative"
+          >
+            <motion.div
+              variants={itemHover}
+              whileHover="hover"
+              whileTap="tap"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                location.pathname === "/admin/learning"
+                  ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
+                  : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span className="font-medium text-sm whitespace-nowrap">Learning Modules</span>
+              
+              {location.pathname === "/admin/learning" && (
+                <motion.div
+                  layoutId="activeIndicator"
+                  className="absolute inset-0 border-2 border-sky-400/30 dark:border-sky-500/30 rounded-lg"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+            </motion.div>
+          </Link>
+
+          {/* Feedback */}
+          <Link
+            to="/admin/feedback"
+            onClick={() => setActive("/admin/feedback")}
+            className="relative"
+          >
+            <motion.div
+              variants={itemHover}
+              whileHover="hover"
+              whileTap="tap"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                location.pathname === "/admin/feedback"
+                  ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
+                  : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span className="font-medium text-sm whitespace-nowrap">Feedback</span>
+              
+              {location.pathname === "/admin/feedback" && (
+                <motion.div
+                  layoutId="activeIndicator"
+                  className="absolute inset-0 border-2 border-sky-400/30 dark:border-sky-500/30 rounded-lg"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+            </motion.div>
+          </Link>
         </div>
 
-        {/* Right: Dark Mode Toggle & Profile */}
-        <div className="hidden lg:flex items-center gap-3 min-w-[200px] justify-end">
+        {/* Right: Dark Mode Toggle & Profile with increased spacing */}
+        <div className="hidden lg:flex items-center gap-3 min-w-[200px] justify-end ml-6">
           {/* Dark Mode Toggle */}
           <DarkModeToggle />
 
@@ -549,33 +630,40 @@ export function AdminNavbar() {
 
                 {/* Mobile Menu Items */}
                 <div className="flex-1 space-y-2">
-                  {navItems.map(({ path, label, Icon }) => {
-                    const isActive = active === path || location.pathname === path || location.pathname.startsWith(path.replace(":id", ""));
-                    return (
-                      <Link
-                        key={path}
-                        to={path}
-                        onClick={() => setActive(path)}
-                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors ${
-                          isActive
-                            ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
-                            : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
-                        }`}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
-                        <span className="font-medium text-xs">{label}</span>
-                        {isActive && (
-                          <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />
-                        )}
-                      </Link>
-                    );
-                  })}
+                  {/* Interview Section */}
+                  <div>
+                    <div className="flex items-center gap-2 px-2.5 py-1 text-gray-500 dark:text-gray-400">
+                      <CalendarDays className="w-3 h-3" />
+                      <span className="text-[10px] font-semibold uppercase tracking-wider">Interview</span>
+                    </div>
+                    {interviewItems.map(({ path, label, Icon }) => {
+                      const isActive = active === path || location.pathname === path || location.pathname.startsWith(path.replace(":id", ""));
+                      return (
+                        <Link
+                          key={path}
+                          to={path}
+                          onClick={() => setActive(path)}
+                          className={`flex items-center gap-2 pl-5 pr-2.5 py-1.5 rounded-md transition-colors ${
+                            isActive
+                              ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
+                              : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          <span className="font-medium text-xs">{label}</span>
+                          {isActive && (
+                            <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
 
-                  {/* Add Members Section */}
+                  {/* Members Section */}
                   <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-2 px-2.5 py-1 text-gray-500 dark:text-gray-400">
                       <UserPlus className="w-3 h-3" />
-                      <span className="text-[10px] font-semibold uppercase tracking-wider">Add Members</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider">Members</span>
                     </div>
                     {addMembersItems.map(({ path, label, Icon }) => {
                       const isActive = active === path || location.pathname === path;
@@ -627,6 +715,44 @@ export function AdminNavbar() {
                         </Link>
                       );
                     })}
+                  </div>
+
+                  {/* Learning Modules */}
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <Link
+                      to="/admin/learning"
+                      onClick={() => setActive("/admin/learning")}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors ${
+                        location.pathname === "/admin/learning"
+                          ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
+                          : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span className="font-medium text-xs">Learning Modules</span>
+                      {location.pathname === "/admin/learning" && (
+                        <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />
+                      )}
+                    </Link>
+                  </div>
+
+                  {/* Feedback */}
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <Link
+                      to="/admin/feedback"
+                      onClick={() => setActive("/admin/feedback")}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors ${
+                        location.pathname === "/admin/feedback"
+                          ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
+                          : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      <span className="font-medium text-xs">Feedback</span>
+                      {location.pathname === "/admin/feedback" && (
+                        <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />
+                      )}
+                    </Link>
                   </div>
                 </div>
 

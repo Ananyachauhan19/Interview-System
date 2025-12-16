@@ -18,6 +18,91 @@ const difficultyColors = {
   'hard': 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300'
 };
 
+// Sidebar Semester Dropdown Component
+function SidebarSemesterDropdown({ semesters, selectedSemester, onSelectSemester }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isOpen && !event.target.closest('.sidebar-semester-dropdown')) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative sidebar-semester-dropdown">
+      <label className="block text-xs font-semibold text-slate-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
+        Select Semester
+      </label>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 bg-white dark:bg-gray-700 border-2 border-slate-200 dark:border-gray-600 rounded-lg hover:border-sky-400 dark:hover:border-sky-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400"
+      >
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Calendar className="w-4 h-4 text-sky-600 dark:text-sky-400 flex-shrink-0" />
+          <span className="font-medium text-sm text-slate-800 dark:text-gray-100 truncate">
+            {selectedSemester ? selectedSemester.semesterName : 'Select a semester'}
+          </span>
+        </div>
+        <ChevronDown 
+          className={`w-4 h-4 text-slate-600 dark:text-gray-400 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} 
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full left-0 right-0 mt-2 max-h-80 overflow-y-auto bg-white dark:bg-gray-800 border-2 border-slate-200 dark:border-gray-700 rounded-lg shadow-2xl z-50"
+          >
+            {semesters.length === 0 ? (
+              <div className="px-4 py-8 text-center text-slate-500 dark:text-gray-400">
+                <Calendar className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-gray-600" />
+                <p className="text-sm">No semesters available</p>
+              </div>
+            ) : (
+              <div className="py-1">
+                {semesters.map((semester) => (
+                  <button
+                    key={semester._id}
+                    onClick={() => {
+                      onSelectSemester(semester);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2.5 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors ${
+                      selectedSemester?._id === semester._id
+                        ? 'bg-sky-50 dark:bg-gray-700 text-sky-700 dark:text-sky-400'
+                        : 'text-slate-700 dark:text-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm truncate">{semester.semesterName}</div>
+                        <div className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                          {semester.subjects?.length || 0} subject{semester.subjects?.length !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+                      {selectedSemester?._id === semester._id && (
+                        <div className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400 flex-shrink-0" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function SemesterManagement() {
   const navigate = useNavigate();
   const toast = useToast();
@@ -315,37 +400,13 @@ export default function SemesterManagement() {
               <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">{semesters.length} learning module{semesters.length !== 1 ? 's' : ''} total</p>
             </div>
 
-            {/* Learning Modules List */}
-            <div className="flex-1 overflow-y-auto p-3">
-              {semesters.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 dark:text-gray-400">
-                  <Calendar className="w-14 h-14 mx-auto mb-3 text-slate-300 dark:text-gray-600" />
-                  <p className="text-sm font-medium">Loading semesters...</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {semesters.map((semester) => (
-                    <div
-                      key={semester._id}
-                      className={`p-3 rounded-lg cursor-pointer transition-all border ${
-                        selectedSemester?._id === semester._id
-                          ? 'bg-sky-50 dark:bg-sky-900/20 border-sky-300 dark:border-sky-600 shadow-sm ring-1 ring-sky-200 dark:ring-sky-700'
-                          : 'bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-600 hover:border-slate-300 dark:hover:border-gray-500 hover:shadow-sm'
-                      }`}
-                      onClick={() => handleSelectSemester(semester)}
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">{semester.semesterName}</h3>
-                          <p className="text-xs text-slate-400 dark:text-gray-500 mt-1 font-medium">
-                            {semester.subjects?.length || 0} subject{semester.subjects?.length !== 1 ? 's' : ''}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+            {/* Semester Dropdown in Sidebar */}
+            <div className="p-4">
+              <SidebarSemesterDropdown 
+                semesters={semesters}
+                selectedSemester={selectedSemester}
+                onSelectSemester={handleSelectSemester}
+              />
             </div>
           </div>
         </div>

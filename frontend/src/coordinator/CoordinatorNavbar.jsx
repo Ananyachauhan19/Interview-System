@@ -10,6 +10,7 @@ export function CoordinatorNavbar() {
   const [active, setActive] = useState(location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isInterviewOpen, setIsInterviewOpen] = useState(false);
   const [coordinatorName, setCoordinatorName] = useState(localStorage.getItem("coordinatorName") || "Coordinator");
   const [coordinatorEmail, setCoordinatorEmail] = useState(localStorage.getItem("coordinatorEmail") || "");
   const [coordinatorAvatarUrl, setCoordinatorAvatarUrl] = useState(localStorage.getItem("coordinatorAvatarUrl") || "");
@@ -42,6 +43,7 @@ export function CoordinatorNavbar() {
   useEffect(() => {
     setIsMenuOpen(false);
     setIsProfileOpen(false);
+    setIsInterviewOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -49,10 +51,13 @@ export function CoordinatorNavbar() {
       if (isProfileOpen && !event.target.closest(".profile-container")) {
         setIsProfileOpen(false);
       }
+      if (isInterviewOpen && !event.target.closest(".interview-container")) {
+        setIsInterviewOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isProfileOpen]);
+  }, [isProfileOpen, isInterviewOpen]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -62,9 +67,12 @@ export function CoordinatorNavbar() {
     window.location.href = "/";
   };
 
+  const interviewItems = [
+    { path: "/coordinator", label: "Scheduled Interview", Icon: CalendarDays },
+    { path: "/coordinator/event/create", label: "Create Interview", Icon: CalendarDays },
+  ];
+
   const navItems = [
-    { path: "/coordinator", label: "Scheduled Events", Icon: CalendarDays },
-    { path: "/coordinator/event/create", label: "Create Event", Icon: CalendarDays },
     { path: "/coordinator/students", label: "My Students", Icon: Users },
     { path: "/coordinator/subjects", label: "Learning Modules", Icon: BookOpen },
     { path: "/coordinator/feedback", label: "Feedback", Icon: MessageSquare },
@@ -77,8 +85,9 @@ export function CoordinatorNavbar() {
       transition={{ duration: 0.4 }}
       className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm"
     >
-      <div className="w-full flex items-center justify-between h-16 px-4 sm:px-6">
-        <motion.div className="hidden sm:flex items-center" whileHover={{ scale: 1.02 }}>
+      <div className="w-full flex items-center h-16 px-4 sm:px-6">
+        {/* Logo */}
+        <motion.div className="hidden sm:flex items-center min-w-[200px]" whileHover={{ scale: 1.02 }}>
           <img src="/images/logo.png" alt="PeerPrep Logo" className="w-auto object-contain" style={{ height: '120px' }} />
         </motion.div>
 
@@ -86,8 +95,56 @@ export function CoordinatorNavbar() {
           <img src="/images/logo.png" alt="PeerPrep Logo" className="w-auto object-contain" style={{ height: '99px' }} />
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="hidden md:flex items-center gap-1">
+        {/* Desktop Navigation - Left aligned after logo */}
+        <div className="hidden md:flex items-center flex-1 gap-2 ml-4">
+          {/* Interview Dropdown */}
+          <div className="relative interview-container">
+              <motion.button
+                whileHover={{ y: -2, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsInterviewOpen(!isInterviewOpen)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                  isInterviewOpen || interviewItems.some(item => location.pathname === item.path)
+                    ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
+                    : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
+                }`}
+              >
+                <CalendarDays className="w-4 h-4" />
+                <span className="font-medium text-sm">Interview</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isInterviewOpen ? 'rotate-180' : ''}`} />
+              </motion.button>
+
+              <AnimatePresence>
+                {isInterviewOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-slate-200 dark:border-gray-700 overflow-hidden z-50"
+                  >
+                    {interviewItems.map(({ path, label, Icon }) => (
+                      <Link
+                        key={path}
+                        to={path}
+                        onClick={() => {
+                          setActive(path);
+                          setIsInterviewOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-gray-700 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-gray-600 transition-colors">
+                          <Icon className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                        </div>
+                        <span className="text-sm font-medium">{label}</span>
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Other Nav Items */}
             {navItems.map(({ path, label, Icon }) => {
               const isActive = location.pathname === path;
               return (
@@ -95,7 +152,7 @@ export function CoordinatorNavbar() {
                   <motion.div
                     whileHover={{ y: -2, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors mx-1 ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                       isActive ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400" : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
                     }`}
                   >
@@ -112,10 +169,13 @@ export function CoordinatorNavbar() {
                 </Link>
               );
             })}
+        </div>
 
-            <DarkModeToggle />
+        {/* Desktop Profile & Dark Mode - Right side with spacing */}
+        <div className="hidden md:flex items-center gap-3 ml-auto pl-8">
+          <DarkModeToggle />
 
-            <div className="relative ml-3 profile-container">
+          <div className="relative profile-container">
               <motion.button
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.98 }}
@@ -228,9 +288,11 @@ export function CoordinatorNavbar() {
                 )}
               </AnimatePresence>
             </div>
-          </div>
+        </div>
 
-          <div className="relative profile-container md:hidden">
+        {/* Mobile Profile & Menu */}
+        <div className="md:hidden flex items-center gap-3">
+          <div className="relative profile-container">
             <motion.button
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
@@ -364,23 +426,51 @@ export function CoordinatorNavbar() {
               className="md:hidden fixed top-16 right-0 bottom-0 z-50 w-80 max-w-full bg-white dark:bg-gray-900 rounded-l-2xl shadow-2xl p-6"
             >
               <div className="flex-1 space-y-2">
-                {navItems.map(({ path, label, Icon }) => {
-                  const isActive = location.pathname === path;
-                  return (
-                    <Link
-                      key={path}
-                      to={path}
-                      onClick={() => setActive(path)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                        isActive ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400" : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="font-medium text-sm">{label}</span>
-                      {isActive && <div className="ml-auto w-2 h-2 bg-sky-500 dark:bg-sky-400 rounded-full" />}
-                    </Link>
-                  );
-                })}
+                {/* Interview Section */}
+                <div>
+                  <div className="flex items-center gap-2 px-2.5 py-1 text-gray-500 dark:text-gray-400">
+                    <CalendarDays className="w-3 h-3" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wider">Interview</span>
+                  </div>
+                  {interviewItems.map(({ path, label, Icon }) => {
+                    const isActive = location.pathname === path;
+                    return (
+                      <Link
+                        key={path}
+                        to={path}
+                        onClick={() => setActive(path)}
+                        className={`flex items-center gap-2 pl-5 pr-2.5 py-1.5 rounded-md transition-colors ${
+                          isActive ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400" : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span className="font-medium text-xs">{label}</span>
+                        {isActive && <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />}
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* Other Nav Items */}
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                  {navItems.map(({ path, label, Icon }) => {
+                    const isActive = location.pathname === path;
+                    return (
+                      <Link
+                        key={path}
+                        to={path}
+                        onClick={() => setActive(path)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                          isActive ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400" : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="font-medium text-sm">{label}</span>
+                        {isActive && <div className="ml-auto w-2 h-2 bg-sky-500 dark:bg-sky-400 rounded-full" />}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
           </>
