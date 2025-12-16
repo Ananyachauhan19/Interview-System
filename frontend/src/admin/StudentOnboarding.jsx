@@ -99,19 +99,36 @@ export default function StudentOnboarding() {
           return obj;
         });
 
+        // Validate CSV header columns match template
+        const requiredColumns = ['course', 'name', 'email', 'studentid', 'branch', 'college', 'teacherid', 'semester'];
+        const missingColumns = requiredColumns.filter(col => !cols.includes(col));
+        
+        if (missingColumns.length > 0) {
+          setError(`CSV template does not match. Missing required columns: ${missingColumns.join(', ')}. Please download and use the correct sample CSV template.`);
+          setStudents([]);
+          setClientErrors([]);
+          setUploadSuccess(false);
+          return;
+        }
+
         const errs = [];
         const seenEmails = new Set();
         const seenIds = new Set();
         parsed.forEach((r) => {
           const rowNum = r.__row;
           const missing = [];
-          if (!r.name) missing.push('name');
-          if (!r.email) missing.push('email');
+          if (!r.name || r.name.trim() === '') missing.push('name');
+          if (!r.email || r.email.trim() === '') missing.push('email');
           if (!r.studentid && !r.student_id && !r.sid) missing.push('studentid');
-          if (!r.branch) missing.push('branch');
+          if (!r.branch || r.branch.trim() === '') missing.push('branch');
+          if (!r.course || r.course.trim() === '') missing.push('course');
+          if (!r.college || r.college.trim() === '') missing.push('college');
+          if (!r.teacherid || r.teacherid.trim() === '') missing.push('teacherid');
+          if (!r.semester || r.semester.trim() === '') missing.push('semester');
+          
           if (missing.length > 0) errs.push({ row: rowNum, error: 'Missing required fields', details: missing });
           else {
-            const email = r.email.toLowerCase();
+            const email = r.email.toLowerCase().trim();
             if (!emailRegex.test(email)) errs.push({ row: rowNum, error: 'Invalid email address format' });
             if (seenEmails.has(email)) errs.push({ row: rowNum, error: 'Duplicate email found in this file', details: 'email' });
             if (seenIds.has(r.studentid || r.student_id || r.sid)) errs.push({ row: rowNum, error: 'Duplicate student ID found in this file', details: 'studentid' });
@@ -152,7 +169,8 @@ export default function StudentOnboarding() {
             }
           }
         } else {
-          setError(`Found ${errs.length} error(s) in your CSV file. Please fix them and upload a new file.`);
+          setError(`Invalid CSV data! Found ${errs.length} error(s). Your CSV file does not match the template. Please fix all errors before uploading. Download the errors CSV to see what needs to be corrected.`);
+          setUploadSuccess(false);
         }
       } catch (err) {
         setError(err.message || 'Unable to read the CSV file. Please ensure it is a valid CSV format.');
@@ -193,7 +211,7 @@ export default function StudentOnboarding() {
     setSuccess("");
     setUploadSuccess(false);
     if (clientErrors.length > 0) {
-      setError('Please fix the errors in your CSV file before uploading. Download the errors CSV to see what needs to be corrected.');
+      setError('Invalid CSV data! Your file contains errors and cannot be uploaded. Please fix all errors in your CSV file before uploading. Download the errors CSV to see exactly what needs to be corrected.');
       return;
     }
     setIsUploading(true);
@@ -255,10 +273,10 @@ export default function StudentOnboarding() {
   const submitSingle = async () => {
     setSingleMsg('');
     setSingleLoading(true);
-    const { name, email, studentid, branch, teacherid, semester } = singleForm;
+    const { name, email, studentid, branch, teacherid, semester, course, college } = singleForm;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!name || !email || !studentid || !branch || !teacherid || !semester) {
-      setSingleMsg('Please fill in all required fields: Name, Email, Student ID, Branch, Teacher ID, and Semester');
+    if (!name || !email || !studentid || !branch || !teacherid || !semester || !course || !college) {
+      setSingleMsg('Please fill in all required fields: Name, Email, Student ID, Branch, Course, College, Teacher ID, and Semester');
       setSingleLoading(false);
       return;
     }
@@ -268,7 +286,12 @@ export default function StudentOnboarding() {
       return;
     }
     try {
-      const data = await api.createStudent(singleForm);
+      // Create payload with default password (student ID) since backend requires it
+      const payload = {
+        ...singleForm,
+        password: singleForm.studentid // Use student ID as default password
+      };
+      const data = await api.createStudent(payload);
       setSingleMsg(`Student ${data.name || data.email} has been successfully added!`);
       setTimeout(() => setSingleMsg(''), 4000);
       const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', branch: singleForm.branch || '', college: singleForm.college || '', teacherid: singleForm.teacherid || '', semester: singleForm.semester || '', group: singleForm.group || '', __row: 'N/A' };

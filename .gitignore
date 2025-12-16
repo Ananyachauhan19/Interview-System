@@ -36,3 +36,8 @@ Thumbs.db
 dist/
 build/
 *.local
+
+
+# MongoDB Backups
+MongoBackup/
+mongo-backup.bat
