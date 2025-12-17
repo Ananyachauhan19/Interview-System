@@ -35,6 +35,7 @@ import CoordinatorProfile from "./coordinator/CoordinatorProfile";
 import SemesterManagement from "./coordinator/SemesterManagement";
 import CoordinatorFeedback from "./coordinator/CoordinatorFeedback";
 import CoordinatorActivity from "./coordinator/CoordinatorActivity";
+import CoordinatorDatabase from "./coordinator/CoordinatorDatabase";
 import CoordinatorProtectedRoute from "./coordinator/CoordinatorProtectedRoute";
 import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
 import { CoordinatorNavbar } from "./coordinator/CoordinatorNavbar";
@@ -102,6 +103,7 @@ function AppContent() {
         <Route path="/coordinator/event/:id" element={<CoordinatorProtectedRoute><CoordinatorEventDetail /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/students" element={<CoordinatorProtectedRoute><CoordinatorStudents /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/subjects" element={<CoordinatorProtectedRoute><SemesterManagement /></CoordinatorProtectedRoute>} />
+        <Route path="/coordinator/database" element={<CoordinatorProtectedRoute><CoordinatorDatabase /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/feedback" element={<CoordinatorProtectedRoute><CoordinatorFeedback /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/event/create" element={<CoordinatorProtectedRoute><EventManagement /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/profile" element={<CoordinatorProtectedRoute><CoordinatorProfile /></CoordinatorProtectedRoute>} />

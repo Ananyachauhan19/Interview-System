@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, Users, CalendarDays, User, Lock, ChevronDown, LayoutDashboard, BookOpen, MessageSquare, Activity } from "lucide-react";
+import { LogOut, Menu, X, Users, CalendarDays, User, Lock, ChevronDown, LayoutDashboard, BookOpen, MessageSquare, Activity, Database } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../utils/api";
 import DarkModeToggle from "../components/DarkModeToggle";
@@ -75,6 +75,7 @@ export function CoordinatorNavbar() {
   const navItems = [
     { path: "/coordinator/students", label: "My Students", Icon: Users },
     { path: "/coordinator/subjects", label: "Learning Modules", Icon: BookOpen },
+    { path: "/coordinator/database", label: "Registered Courses", Icon: Database },
     { path: "/coordinator/feedback", label: "Feedback", Icon: MessageSquare },
   ];
 
