@@ -89,13 +89,41 @@ export default function StudentOnboarding() {
     reader.onload = async (event) => {
       const text = event.target.result;
       try {
+        // Proper CSV parsing that handles quoted fields
+        const parseCSVLine = (line) => {
+          const result = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            const nextChar = line[i + 1];
+            
+            if (char === '"') {
+              if (inQuotes && nextChar === '"') {
+                current += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              result.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        };
+        
         const rows = text.trim().split(/\r?\n/);
         const header = rows.shift();
-        const cols = header.split(',').map((s) => s.trim().toLowerCase());
+        const cols = parseCSVLine(header).map((s) => s.toLowerCase());
         const parsed = rows.map((row, i) => {
-          const vals = row.split(',');
+          const vals = parseCSVLine(row);
           const obj = { __row: i + 2 };
-          cols.forEach((c, idx) => (obj[c] = vals[idx]?.trim() || ''));
+          cols.forEach((c, idx) => (obj[c] = vals[idx] || ''));
           return obj;
         });
 
@@ -125,6 +153,14 @@ export default function StudentOnboarding() {
           if (!r.college || r.college.trim() === '') missing.push('college');
           if (!r.teacherid || r.teacherid.trim() === '') missing.push('teacherid');
           if (!r.semester || r.semester.trim() === '') missing.push('semester');
+          
+          // Validate Group if provided - must be G1 to G5
+          if (r.group && r.group.trim() !== '') {
+            const groupValue = r.group.trim().toUpperCase();
+            if (!['G1', 'G2', 'G3', 'G4', 'G5'].includes(groupValue)) {
+              errs.push({ row: rowNum, error: 'Invalid group value. Must be G1, G2, G3, G4, or G5', details: ['group'] });
+            }
+          }
           
           if (missing.length > 0) errs.push({ row: rowNum, error: 'Missing required fields', details: missing });
           else {
