@@ -7,6 +7,7 @@ import { sendPasswordResetEmail } from '../utils/mailer.js';
 import { uploadAvatar, deleteAvatar, isCloudinaryConfigured } from '../utils/cloudinary.js';
 import { logActivity } from './adminActivityController.js';
 import { logStudentActivity } from './activityController.js';
+import { logAuthAttempt, logSuspiciousActivity } from '../utils/logger.js';
 
 // Change password for student (requires current password)
 export async function changePassword(req, res) {
@@ -247,7 +248,13 @@ export async function login(req, res) {
   const admin = await User.findOne({ role: 'admin', email: idLower });
   if (admin) {
     const ok = await admin.verifyPassword(password);
-    if (!ok) throw new HttpError(401, 'Invalid credentials');
+    if (!ok) {
+      // SECURITY: Log failed auth attempt
+      logAuthAttempt(req, false, idLower, null, 'Invalid password');
+      throw new HttpError(401, 'Invalid credentials');
+    }
+    // SECURITY: Log successful auth
+    logAuthAttempt(req, true, admin.email, admin._id);
     const token = signToken({ sub: admin._id, role: admin.role, email: admin.email });
     return res.json({ token, user: { id: admin._id, email: admin.email, role: admin.role, name: admin.name } });
   }
@@ -259,7 +266,14 @@ export async function login(req, res) {
   });
   if (student) {
     const ok = await student.verifyPassword(password);
-    if (!ok) throw new HttpError(401, 'Invalid credentials');
+    if (!ok) {
+      // SECURITY: Log failed auth attempt
+      logAuthAttempt(req, false, student.email, null, 'Invalid password');
+      throw new HttpError(401, 'Invalid credentials');
+    }
+    
+    // SECURITY: Log successful auth
+    logAuthAttempt(req, true, student.email, student._id);
     
     // Log student login activity
     await logStudentActivity({
@@ -282,7 +296,13 @@ export async function login(req, res) {
   const coordinator = await User.findOne({ role: 'coordinator', email: idLower });
   if (coordinator) {
     const ok = await coordinator.verifyPassword(password);
-    if (!ok) throw new HttpError(401, 'Invalid credentials');
+    if (!ok) {
+      // SECURITY: Log failed auth attempt
+      logAuthAttempt(req, false, coordinator.email, null, 'Invalid password');
+      throw new HttpError(401, 'Invalid credentials');
+    }
+    // SECURITY: Log successful auth
+    logAuthAttempt(req, true, coordinator.email, coordinator._id);
     const token = signToken({ sub: coordinator._id, role: coordinator.role, email: coordinator.email });
     return res.json({ token, user: sanitizeUser(coordinator) });
   }
@@ -293,7 +313,14 @@ export async function login(req, res) {
   });
   if (specialStudent) {
     const ok = await specialStudent.verifyPassword(password);
-    if (!ok) throw new HttpError(401, 'Invalid credentials');
+    if (!ok) {
+      // SECURITY: Log failed auth attempt
+      logAuthAttempt(req, false, specialStudent.email, null, 'Invalid password');
+      throw new HttpError(401, 'Invalid credentials');
+    }
+    
+    // SECURITY: Log successful auth
+    logAuthAttempt(req, true, specialStudent.email, specialStudent._id);
     
     // Log special student login activity
     await logStudentActivity({
@@ -327,7 +354,8 @@ export async function login(req, res) {
     });
   }
 
-  // No match found
+  // No match found - SECURITY: Log failed attempt without revealing if user exists
+  logAuthAttempt(req, false, id, null, 'User not found');
   throw new HttpError(401, 'Invalid credentials');
 }
 

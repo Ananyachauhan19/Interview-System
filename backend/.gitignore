@@ -1,7 +1,9 @@
-# Environment variables
+# Environment variables - NEVER COMMIT THESE
 .env
 .env.local
 .env.*.local
+src/.env
+**/.env
 
 # Dependencies
 node_modules/
@@ -10,7 +12,19 @@ node_modules/
 logs
 *.log
 npm-debug.log*
+security.log
+errors.log
 
 # Build
 dist/
 build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
