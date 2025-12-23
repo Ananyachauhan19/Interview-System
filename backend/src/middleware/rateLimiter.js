@@ -21,8 +21,6 @@ export const authLimiter = rateLimit({
   message: 'Too many login attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
-  // Use IP + endpoint for key to track per-route attempts
-  keyGenerator: (req) => `${req.ip}-auth`,
   // Skip successful requests from count
   skipSuccessfulRequests: true,
   handler: (req, res) => {
@@ -40,7 +38,6 @@ export const passwordResetLimiter = rateLimit({
   message: 'Too many password reset requests',
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `${req.ip}-reset`,
   handler: (req, res) => {
     console.warn(`[SECURITY] Password reset limit exceeded for ${req.ip}`);
     res.status(429).json({
@@ -56,7 +53,6 @@ export const uploadLimiter = rateLimit({
   message: 'Too many upload requests',
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `${req.ip}-upload`,
   handler: (req, res) => {
     console.warn(`[SECURITY] Upload limit exceeded for ${req.ip}`);
     res.status(429).json({
@@ -72,7 +68,6 @@ export const bulkOperationLimiter = rateLimit({
   message: 'Too many bulk operation requests',
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `${req.ip}-bulk`,
   handler: (req, res) => {
     console.warn(`[SECURITY] Bulk operation limit exceeded for ${req.ip}`);
     res.status(429).json({
@@ -89,7 +84,6 @@ export const apiLimiter = rateLimit({
   message: 'Too many requests',
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `${req.ip}-api`,
   // Skip static health checks
   skip: (req) => req.path === '/api/health',
   handler: (req, res) => {
@@ -107,7 +101,6 @@ export const feedbackLimiter = rateLimit({
   message: 'Too many feedback submissions',
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `${req.user?._id || req.ip}-feedback`,
   handler: (req, res) => {
     console.warn(`[SECURITY] Feedback limit exceeded for user ${req.user?._id || req.ip}`);
     res.status(429).json({
