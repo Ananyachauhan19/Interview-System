@@ -659,6 +659,7 @@ export async function createSpecialEvent(req, res) {
   }
 
   // Upload template first
+  const tpl = await uploadTemplate(req.files?.template?.[0]);
   // Create event
   const event = await Event.create({
     name,
