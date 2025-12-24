@@ -78,6 +78,17 @@ export async function checkStudentsCsv(req, res) {
   const existingEmails = new Set(existing.map((u) => (u.email || '').toLowerCase()));
   const existingStudentIds = new Set(existing.map((u) => (u.studentId || '').toString()));
 
+  // Coordinators are required for valid teacher assignments
+  const coordinators = await User.find({ role: 'coordinator' }).select('coordinatorId').lean();
+  if (!coordinators.length) {
+    return res.status(400).json({ error: 'No coordinators exist. Please create at least one coordinator before uploading students.' });
+  }
+  const validCoordinatorIds = new Set(
+    coordinators
+      .map((c) => (c.coordinatorId || '').toString().trim())
+      .filter(Boolean)
+  );
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   for (const row of normalizedRows) {
@@ -110,6 +121,18 @@ export async function checkStudentsCsv(req, res) {
     }
     seenEmails.add(lowerEmail);
     seenStudentIds.add(studentid);
+
+    // Validate that assigned coordinator exists
+    if (!validCoordinatorIds.has(teacherid)) {
+      results.push({
+        row: row.__row,
+        email,
+        studentid,
+        status: 'invalid_teacherid',
+        message: `Teacher ID / Coordinator code "${teacherid}" does not match any existing coordinator. Please correct it before uploading.`,
+      });
+      continue;
+    }
 
     // Check existing in User DB (keep this check for regular students)
     if (existingEmails.has(lowerEmail) || existingStudentIds.has(studentid)) {
@@ -147,6 +170,31 @@ export async function uploadStudentsCsv(req, res) {
   const existing = await User.find({ $or: [{ email: { $in: emails } }, { studentId: { $in: studentIds } }] }).select('email studentId').lean();
   const existingEmails = new Set(existing.map((u) => (u.email || '').toLowerCase()));
   const existingStudentIds = new Set(existing.map((u) => (u.studentId || '').toString()));
+
+  // Ensure coordinators exist and Teacher IDs are valid before creating students
+  const coordinators = await User.find({ role: 'coordinator' }).select('coordinatorId').lean();
+  if (!coordinators.length) {
+    return res.status(400).json({ error: 'No coordinators exist. Please create at least one coordinator before uploading students.' });
+  }
+  const validCoordinatorIds = new Set(
+    coordinators
+      .map((c) => (c.coordinatorId || '').toString().trim())
+      .filter(Boolean)
+  );
+
+  // Pre-validate all teacher IDs from CSV; block upload if any are invalid
+  const invalidTeacherRows = normalizedRows.filter((row) => {
+    const { teacherid, email, studentid, name } = row;
+    if (!email && !studentid && !name) return false;
+    return !teacherid || !validCoordinatorIds.has(teacherid);
+  });
+
+  if (invalidTeacherRows.length > 0) {
+    const invalidIds = Array.from(new Set(invalidTeacherRows.map((r) => r.teacherid).filter(Boolean)));
+    return res.status(400).json({
+      error: `One or more Teacher ID / Coordinator codes in the CSV do not match any existing coordinator: ${invalidIds.join(', ')}. Please correct them and try again.`,
+    });
+  }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const newStudents = []; // Collect new students for async email sending
@@ -306,6 +354,12 @@ export async function createStudent(req, res) {
     }
     
     if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
+
+    // Validate that the provided Teacher ID belongs to an existing coordinator
+    const coordinator = await User.findOne({ role: 'coordinator', coordinatorId: teacherid }).select('_id coordinatorId').lean();
+    if (!coordinator) {
+      return res.status(400).json({ error: `Teacher ID / Coordinator code "${teacherid}" does not match any existing coordinator. Please create the coordinator first or correct the Teacher ID.` });
+    }
 
     const exists = await User.findOne({ $or: [{ email }, { studentId: studentid }] });
     if (exists) return res.status(409).json({ error: 'Student with email or studentId already exists' });

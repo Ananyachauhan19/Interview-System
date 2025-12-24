@@ -22,6 +22,8 @@ export default function EventManagement() {
   const [showValidationPopup, setShowValidationPopup] = useState(false);
   const [csvError, setCsvError] = useState("");
   const [userRole, setUserRole] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCsvValidating, setIsCsvValidating] = useState(false);
   const csvInputRef = useRef(null);
   const navigate = useNavigate();
   const toast = useToast();
@@ -46,6 +48,9 @@ export default function EventManagement() {
     setCsvValidationResults(null);
     setShowValidationPopup(false);
     setCsvError("");
+    setIsSubmitting(false);
+    setIsCsvValidating(false);
+    setMsg("");
     // Reset the file input
     if (csvInputRef.current) {
       csvInputRef.current.value = '';
@@ -58,29 +63,27 @@ export default function EventManagement() {
     setCsvFile(file);
     setCsvError("");
     setCsvValidationResults(null);
-    
+    setShowValidationPopup(false);
+    setMsg("");
     if (!file) {
+      setIsCsvValidating(false);
       setShowValidationPopup(false);
       return;
     }
+    setIsCsvValidating(true);
     
     // Validate CSV
     try {
       const result = await api.checkSpecialEventCsv(file);
       setCsvValidationResults(result);
       
-      // Check for errors
-      const hasErrors = result.results?.some(r => 
-        r.status === 'missing_fields' || 
-        r.status === 'invalid_email' || 
-        r.status === 'duplicate_in_file' ||
-        r.status === 'student_not_assigned_to_you' ||
-        r.status === 'error'
-      );
+      // Treat any non-ready status as an error
+      const hasErrors = result.results?.some(r => r.status !== 'ready');
       
       if (hasErrors) {
         setCsvError("CSV file has validation errors. Please review and fix them.");
         setShowValidationPopup(true);
+        toast.error('CSV file has validation errors. Please download and fix the error rows.');
       } else {
         const readyCount = result.results?.filter(r => r.status === 'ready').length || 0;
         if (readyCount > 0) {
@@ -88,11 +91,15 @@ export default function EventManagement() {
         } else {
           setCsvError("No valid students found in CSV");
           setShowValidationPopup(true);
+          toast.error('No valid students found in CSV.');
         }
       }
     } catch (err) {
-      setCsvError(err.message || 'Failed to validate CSV');
-      toast.error('Failed to validate CSV: ' + (err.message || 'Unknown error'));
+      const message = err.message || 'Failed to validate CSV';
+      setCsvError(message);
+      toast.error('Failed to validate CSV: ' + message);
+    } finally {
+      setIsCsvValidating(false);
     }
   };
 
@@ -181,26 +188,23 @@ export default function EventManagement() {
 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setMsg(""); // Clear previous messages
     
     // Check CSV validation for special events
     if (specialMode && csvFile) {
       if (!csvValidationResults) {
         setMsg('Please wait for CSV validation to complete');
+        toast.error('Please wait for CSV validation to complete before creating the event.');
         return;
       }
       
-      const hasErrors = csvValidationResults.results?.some(r => 
-        r.status === 'missing_fields' || 
-        r.status === 'invalid_email' || 
-        r.status === 'duplicate_in_file' ||
-        r.status === 'Student_not_assigned_to_you' ||
-        r.status === 'error'
-      );
+      const hasErrors = csvValidationResults.results?.some(r => r.status !== 'ready');
       
       if (hasErrors) {
         setMsg('Please fix CSV validation errors before creating the event');
         setShowValidationPopup(true);
+        toast.error('Please fix CSV validation errors before creating the event.');
         return;
       }
     }
@@ -230,6 +234,7 @@ export default function EventManagement() {
       }
     }
     
+    setIsSubmitting(true);
     try {
       let ev;
       const payloadStart = startDate ? new Date(parseLocalDateTime(startDate)).toISOString() : undefined;
@@ -304,6 +309,8 @@ export default function EventManagement() {
       
       toast.error(userFriendlyError);
       setMsg(userFriendlyError);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -548,22 +555,40 @@ export default function EventManagement() {
                       {csvError}
                     </div>
                   )}
+                  {!csvError && isCsvValidating && (
+                    <div className="mt-2 text-xs text-slate-600 dark:text-gray-300">
+                      Validating CSV, please wait...
+                    </div>
+                  )}
                   <p className="text-xs text-slate-600 dark:text-gray-400 mt-2">
                     CSV headers: name, email, studentid, branch (required). Optional: course, college, password.
                   </p>
+                  <div className="mt-2">
+                    <a
+                      href="/sample-students.csv"
+                      download
+                      className="inline-flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 underline"
+                    >
+                      <Download className="w-3 h-3" />
+                      Download Sample CSV
+                    </a>
+                  </div>
                 </div>
               )}
 
               {/* Submit Button */}
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className={`w-full p-3 rounded-lg font-medium text-white text-sm transition-colors ${
-                  specialMode
-                    ? 'bg-indigo-800 dark:bg-indigo-700 hover:bg-indigo-900 dark:hover:bg-indigo-800'
-                    : 'bg-sky-500 dark:bg-sky-600 hover:bg-sky-600 dark:hover:bg-sky-700'
+                  isSubmitting
+                    ? 'bg-slate-300 dark:bg-gray-600 cursor-not-allowed'
+                    : specialMode
+                      ? 'bg-indigo-800 dark:bg-indigo-700 hover:bg-indigo-900 dark:hover:bg-indigo-800'
+                      : 'bg-sky-500 dark:bg-sky-600 hover:bg-sky-600 dark:hover:bg-sky-700'
                 }`}
               >
-                {specialMode ? 'Create Special Interview' : 'Create Interview'}
+                {isSubmitting ? 'Creating...' : specialMode ? 'Create Special Interview' : 'Create Interview'}
               </button>
 
               {/* Help Text */}

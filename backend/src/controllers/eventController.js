@@ -280,7 +280,25 @@ function normalizeSpecialEventRow(row) {
     college: row.college || row.College || row.COLLEGE || '',
     semester: row.semester || row.Semester || row.SEMESTER || '',
     password: row.password || row.Password || row.PASSWORD || '',
-    teacherid: (row.teacherid || row.teacherId || row.TeacherId || row.TEACHERID || row.teacher_id || row.coordinatorId || row.CoordinatorId || '').toString().trim(),
+    // Support multiple header variants for Teacher/Coordinator ID (with or without spaces/underscore)
+    teacherid: (
+      row.teacherid ||
+      row.teacherId ||
+      row.TeacherId ||
+      row.TeacherID ||
+      row.TEACHERID ||
+      row.teacher_id ||
+      row.coordinatorId ||
+      row.CoordinatorId ||
+      row['Teacher ID'] ||
+      row['teacher ID'] ||
+      row['TEACHER ID'] ||
+      row['Coordinator ID'] ||
+      row['coordinator ID'] ||
+      ''
+    )
+      .toString()
+      .trim(),
   };
 }
 
@@ -320,8 +338,51 @@ export async function checkSpecialEventCsv(req, res) {
 
   const normalizedRows = rows.map((r, idx) => ({ ...normalizeSpecialEventRow(r), __row: idx + 2 }));
 
+  // For admins, pre-load related DB records to validate CSV against existing data
+  let existingUsersByEmail = new Map();
+  let existingUsersById = new Map();
+  let existingSpecialByEmail = new Map();
+  let existingSpecialById = new Map();
+  let validCoordinatorIds = new Set();
+
+  if (req.user?.role === 'admin') {
+    const emails = normalizedRows.map((r) => r.email).filter(Boolean);
+    const studentIds = normalizedRows.map((r) => r.studentid).filter(Boolean);
+
+    const [existingUsers, existingSpecials, coordinators] = await Promise.all([
+      User.find({
+        role: 'student',
+        $or: [
+          { email: { $in: emails } },
+          { studentId: { $in: studentIds } },
+        ],
+      }).select('email studentId teacherId').lean(),
+      SpecialStudent.find({
+        $or: [
+          { email: { $in: emails } },
+          { studentId: { $in: studentIds } },
+        ],
+      }).select('email studentId teacherId').lean(),
+      User.find({ role: 'coordinator' }).select('coordinatorId').lean(),
+    ]);
+
+    existingUsers.forEach((u) => {
+      if (u.email) existingUsersByEmail.set(u.email.toLowerCase(), u);
+      if (u.studentId) existingUsersById.set(String(u.studentId), u);
+    });
+    existingSpecials.forEach((s) => {
+      if (s.email) existingSpecialByEmail.set(s.email.toLowerCase(), s);
+      if (s.studentId) existingSpecialById.set(String(s.studentId), s);
+    });
+    validCoordinatorIds = new Set(
+      coordinators
+        .map((c) => (c.coordinatorId || '').toString().trim())
+        .filter(Boolean)
+    );
+  }
+
   for (const row of normalizedRows) {
-    const { name, email, studentid, branch } = row;
+    const { name, email, studentid, branch, teacherid } = row;
 
     // Skip completely empty rows
     if (!email && !studentid && !name) continue;
@@ -374,6 +435,86 @@ export async function checkSpecialEventCsv(req, res) {
       }
     }
 
+    // For admins, validate CSV data against existing DB records and coordinator assignments
+    if (req.user?.role === 'admin') {
+      const lowerEmail = email.toLowerCase();
+      const userByEmail = existingUsersByEmail.get(lowerEmail);
+      const userById = existingUsersById.get(studentid);
+      const specialByEmail = existingSpecialByEmail.get(lowerEmail);
+      const specialById = existingSpecialById.get(studentid);
+
+      // Validate that Teacher ID (if provided) belongs to a coordinator
+      if (teacherid && !validCoordinatorIds.has(teacherid)) {
+        results.push({
+          row: row.__row,
+          name,
+          email,
+          studentid,
+          status: 'invalid_coordinator',
+          message: `Teacher ID / Coordinator code "${teacherid}" does not match any existing coordinator.`,
+        });
+        continue;
+      }
+
+      // Helper to validate consistency between CSV and an existing record (email & studentId only)
+      const validateRecord = (record, source) => {
+        if (!record) return null;
+        if (record.email && record.email.toLowerCase() !== lowerEmail) {
+          return `CSV email does not match existing ${source} email for this student.`;
+        }
+        if (record.studentId && String(record.studentId) !== studentid) {
+          return `CSV Student ID does not match existing ${source} Student ID for this student.`;
+        }
+        return null;
+      };
+
+      const userMismatch = validateRecord(userByEmail || userById, 'User');
+      const specialMismatch = validateRecord(specialByEmail || specialById, 'SpecialStudent');
+
+      if (userMismatch || specialMismatch) {
+        results.push({
+          row: row.__row,
+          name,
+          email,
+          studentid,
+          status: 'db_mismatch',
+          message: userMismatch || specialMismatch,
+        });
+        continue;
+      }
+
+      // If there is an existing record with an assigned coordinator, enforce exact match on Teacher ID
+      const sourceRecord = userByEmail || userById || specialByEmail || specialById;
+      if (sourceRecord && sourceRecord.teacherId) {
+        const expectedTeacherId = String(sourceRecord.teacherId).trim();
+        const csvTeacherId = (teacherid || '').trim();
+
+        if (!csvTeacherId) {
+          results.push({
+            row: row.__row,
+            name,
+            email,
+            studentid,
+            status: 'missing_teacherid',
+            message: 'Teacher ID / Coordinator code is required for existing students and must match their assigned coordinator.',
+          });
+          continue;
+        }
+
+        if (csvTeacherId !== expectedTeacherId) {
+          results.push({
+            row: row.__row,
+            name,
+            email,
+            studentid,
+            status: 'db_mismatch',
+            message: 'CSV Teacher ID / Coordinator code does not match the assigned coordinator for this student.',
+          });
+          continue;
+        }
+      }
+    }
+
     // Mark as ready to create (no database checks shown to user)
     results.push({ row: row.__row, name, email, studentid, status: 'ready' });
   }
@@ -416,9 +557,108 @@ export async function createSpecialEvent(req, res) {
     throw new HttpError(400, 'Invalid CSV: ' + (e.message || e));
   }
 
+  // Normalize rows once for validation and processing
+  const normalizedRows = rows.map((r, idx) => ({ ...normalizeSpecialEventRow(r), __row: idx + 2 }));
+
+  // For admins, pre-validate CSV data against existing DB records and coordinator assignments
+  if (req.user?.role === 'admin') {
+    const emails = normalizedRows.map((r) => r.email).filter(Boolean);
+    const studentIds = normalizedRows.map((r) => r.studentid).filter(Boolean);
+
+    const [existingUsers, existingSpecials, coordinators] = await Promise.all([
+      User.find({
+        role: 'student',
+        $or: [
+          { email: { $in: emails } },
+          { studentId: { $in: studentIds } },
+        ],
+      }).select('email studentId teacherId').lean(),
+      SpecialStudent.find({
+        $or: [
+          { email: { $in: emails } },
+          { studentId: { $in: studentIds } },
+        ],
+      }).select('email studentId teacherId').lean(),
+      User.find({ role: 'coordinator' }).select('coordinatorId').lean(),
+    ]);
+
+    const usersByEmail = new Map();
+    const usersById = new Map();
+    const specialsByEmail = new Map();
+    const specialsById = new Map();
+    existingUsers.forEach((u) => {
+      if (u.email) usersByEmail.set(u.email.toLowerCase(), u);
+      if (u.studentId) usersById.set(String(u.studentId), u);
+    });
+    existingSpecials.forEach((s) => {
+      if (s.email) specialsByEmail.set(s.email.toLowerCase(), s);
+      if (s.studentId) specialsById.set(String(s.studentId), s);
+    });
+    const validCoordinatorIds = new Set(
+      coordinators
+        .map((c) => (c.coordinatorId || '').toString().trim())
+        .filter(Boolean)
+    );
+
+    for (const row of normalizedRows) {
+      const { name: csvName, email, studentid, teacherid } = row;
+      if (!email && !studentid && !csvName) continue;
+
+      const lowerEmail = email.toLowerCase();
+      const user = usersByEmail.get(lowerEmail) || usersById.get(studentid);
+      const special = specialsByEmail.get(lowerEmail) || specialsById.get(studentid);
+
+      // Teacher ID must reference an existing coordinator when provided
+      if (teacherid && !validCoordinatorIds.has(teacherid)) {
+        throw new HttpError(
+          400,
+          `Invalid Teacher ID / Coordinator code "${teacherid}" in CSV (row ${row.__row}). It does not match any existing coordinator.`
+        );
+      }
+
+      // Validate email & studentId consistency with existing records
+      const validateRecord = (record, source) => {
+        if (!record) return null;
+        if (record.email && record.email.toLowerCase() !== lowerEmail) {
+          return `CSV email does not match existing ${source} email for this student (row ${row.__row}).`;
+        }
+        if (record.studentId && String(record.studentId) !== studentid) {
+          return `CSV Student ID does not match existing ${source} Student ID for this student (row ${row.__row}).`;
+        }
+        return null;
+      };
+
+      const userMismatch = validateRecord(user, 'User');
+      const specialMismatch = validateRecord(special, 'SpecialStudent');
+
+      if (userMismatch || specialMismatch) {
+        throw new HttpError(400, userMismatch || specialMismatch);
+      }
+
+      // If there is an existing record with an assigned coordinator, enforce exact match on Teacher ID
+      const sourceRecord = user || special;
+      if (sourceRecord && sourceRecord.teacherId) {
+        const expectedTeacherId = String(sourceRecord.teacherId).trim();
+        const csvTeacherId = (teacherid || '').trim();
+
+        if (!csvTeacherId) {
+          throw new HttpError(
+            400,
+            `Row ${row.__row}: Teacher ID / Coordinator code is required for existing students and must match their assigned coordinator.`,
+          );
+        }
+
+        if (csvTeacherId !== expectedTeacherId) {
+          throw new HttpError(
+            400,
+            `Row ${row.__row}: CSV Teacher ID / Coordinator code does not match the assigned coordinator for this student.`,
+          );
+        }
+      }
+    }
+  }
+
   // Upload template first
-  const tpl = await uploadTemplate(req.files?.template?.[0]);
-  
   // Create event
   const event = await Event.create({
     name,
@@ -438,7 +678,6 @@ export async function createSpecialEvent(req, res) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const seenEmails = new Set();
   const seenStudentIds = new Set();
-  const normalizedRows = rows.map((r, idx) => ({ ...normalizeSpecialEventRow(r), __row: idx + 2 }));
   const createdStudents = []; // For async email sending
 
   for (const row of normalizedRows) {

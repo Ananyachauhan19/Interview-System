@@ -271,6 +271,10 @@ export default function CoordinatorEventDetail() {
     setIsMobileSidebarOpen(false);
   };
 
+  const msgLower = msg ? msg.toLowerCase() : '';
+  const isSuccessMsg = msgLower.includes('success') || msgLower.includes('created');
+  const isInfoMsg = msgLower.includes('no scheduled interviews') || msgLower.includes('no interviews available') || msgLower.includes('no interviews found');
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center pt-16">
@@ -445,12 +449,14 @@ export default function CoordinatorEventDetail() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 5 }}
                     className={`flex items-center justify-center p-2 rounded-lg mt-3 text-sm ${
-                      msg.toLowerCase().includes('success')
+                      isSuccessMsg
                         ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                        : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+                        : isInfoMsg
+                          ? 'bg-slate-50 dark:bg-gray-800 text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600'
+                          : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
                     }`}
                   >
-                    {msg.toLowerCase().includes('success') ? (
+                    {isSuccessMsg ? (
                       <CheckCircle className="w-3 h-3 mr-1" />
                     ) : (
                       <AlertCircle className="w-3 h-3 mr-1" />

@@ -292,8 +292,14 @@ export async function login(req, res) {
     return res.json({ token, user: sanitizeUser(student) });
   }
 
-  // Try coordinator by email only
-  const coordinator = await User.findOne({ role: 'coordinator', email: idLower });
+  // Try coordinator by email OR coordinatorId
+  const coordinator = await User.findOne({
+    role: 'coordinator',
+    $or: [
+      { email: idLower },
+      { coordinatorId: id },
+    ],
+  });
   if (coordinator) {
     const ok = await coordinator.verifyPassword(password);
     if (!ok) {

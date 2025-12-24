@@ -362,7 +362,7 @@ export default function StudentLoginPage() {
                   <div className="relative space-y-5">
                     <div className="group">
                       <label className="block text-xs font-semibold text-sky-700/90 mb-2 uppercase tracking-wide">
-                        EMAIL OR STUDENT ID
+                        EMAIL / STUDENT ID / COORDINATOR ID
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -374,7 +374,7 @@ export default function StudentLoginPage() {
                           onChange={(e) => setEmail(e.target.value)}
                           onKeyPress={handleKeyPress}
                           className="w-full pl-10 pr-4 py-3 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
-                          placeholder="Enter email"
+                          placeholder="Enter email or ID"
                         />
                       </div>
                     </div>

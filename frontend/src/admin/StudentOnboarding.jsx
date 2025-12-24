@@ -3,10 +3,12 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../utils/api";
 import { useActivityLogger } from "../hooks/useActivityLogger";
+import { useToast } from "../components/CustomToast";
 import { Upload, CheckCircle, AlertCircle, Plus, Loader2, FileText, Download, Users, BookOpen, Shield, ArrowRight, X } from "lucide-react";
 
 export default function StudentOnboarding() {
   const { logBulkCreate, logCreate, logUpload } = useActivityLogger();
+  const toast = useToast();
   const [csvFile, setCsvFile] = useState(null);
   const [students, setStudents] = useState([]);
   const [error, setError] = useState("");
@@ -186,11 +188,17 @@ export default function StudentOnboarding() {
             const readyCount = checkResult.results?.filter(r => r.status === 'ready').length || 0;
             
             if (existingCount > 0 && readyCount === 0) {
-              setError(`All ${existingCount} student(s) already exist in the system. Upload is not needed.`);
+              const msg = `All ${existingCount} student(s) already exist in the system. Upload is not needed.`;
+              setError(msg);
+              toast.info(msg);
             } else if (existingCount > 0 && readyCount > 0) {
-              setSuccess(`${readyCount} new student(s) ready to upload. ${existingCount} student(s) already exist and will be skipped during upload.`);
+              const msg = `${readyCount} new student(s) ready to upload. ${existingCount} student(s) already exist and will be skipped during upload.`;
+              setSuccess(msg);
+              toast.success(msg);
             } else {
-              setSuccess(`CSV file is valid. ${readyCount} student(s) ready to upload.`);
+              const msg = `CSV file is valid. ${readyCount} student(s) ready to upload.`;
+              setSuccess(msg);
+              toast.success(msg);
             }
           } catch (checkErr) {
             const errorMsg = checkErr.message || '';
@@ -201,15 +209,20 @@ export default function StudentOnboarding() {
                 window.location.href = '/';
               }, 2000);
             } else {
-              setError('Unable to verify students against the database. Please try again.');
+              setError(errorMsg || 'Unable to verify students against the database. Please try again.');
+              toast.error(errorMsg || 'Unable to verify students against the database. Please try again.');
             }
           }
         } else {
-          setError(`Invalid CSV data! Found ${errs.length} error(s). Your CSV file does not match the template. Please fix all errors before uploading. Download the errors CSV to see what needs to be corrected.`);
+          const msg = `Invalid CSV data! Found ${errs.length} error(s). Your CSV file does not match the template. Please fix all errors before uploading. Download the errors CSV to see what needs to be corrected.`;
+          setError(msg);
+          toast.error(msg);
           setUploadSuccess(false);
         }
       } catch (err) {
-        setError(err.message || 'Unable to read the CSV file. Please ensure it is a valid CSV format.');
+        const msg = err.message || 'Unable to read the CSV file. Please ensure it is a valid CSV format.';
+        setError(msg);
+        toast.error(msg);
         setStudents([]);
         setClientErrors([]);
         setUploadSuccess(false);
@@ -247,7 +260,9 @@ export default function StudentOnboarding() {
     setSuccess("");
     setUploadSuccess(false);
     if (clientErrors.length > 0) {
-      setError('Invalid CSV data! Your file contains errors and cannot be uploaded. Please fix all errors in your CSV file before uploading. Download the errors CSV to see exactly what needs to be corrected.');
+      const msg = 'Invalid CSV data! Your file contains errors and cannot be uploaded. Please fix all errors in your CSV file before uploading. Download the errors CSV to see exactly what needs to be corrected.';
+      setError(msg);
+      toast.error(msg);
       return;
     }
     setIsUploading(true);
@@ -260,21 +275,31 @@ export default function StudentOnboarding() {
       const createdCount = data.results?.filter(r => r.status === 'created').length || 0;
       
       if (existingCount > 0 && createdCount === 0) {
-        setError(`All ${existingCount} student(s) already exist in the system. No new students were added.`);
+        const msg = `All ${existingCount} student(s) already exist in the system. No new students were added.`;
+        setError(msg);
+        toast.info(msg);
         setUploadSuccess(true); // Still mark as complete even if all exist
       } else if (existingCount > 0 && createdCount > 0) {
-        setSuccess(`Successfully added ${createdCount} new student(s). ${existingCount} student(s) already existed. Sending emails to newly added users. Wait till we complete.`);
+        const msg = `Successfully added ${createdCount} new student(s). ${existingCount} student(s) already existed. Sending emails to newly added users. Wait till we complete.`;
+        setSuccess(msg);
+        toast.success(msg);
         setUploadSuccess(true);
         // Change message after emails are sent
         setTimeout(() => {
-          setSuccess(`Mails sent successfully - You can create events now`);
+          const followup = `Mails sent successfully - You can create events now`;
+          setSuccess(followup);
+          toast.success(followup);
         }, 3000);
       } else {
-        setSuccess(`Successfully added ${createdCount} student(s) to the system! Sending emails to newly added users. Wait till we complete.`);
+        const msg = `Successfully added ${createdCount} student(s) to the system! Sending emails to newly added users. Wait till we complete.`;
+        setSuccess(msg);
+        toast.success(msg);
         setUploadSuccess(true);
         // Change message after emails are sent
         setTimeout(() => {
-          setSuccess(`Mails sent successfully - You can create events now`);
+          const followup = `Mails sent successfully - You can create events now`;
+          setSuccess(followup);
+          toast.success(followup);
         }, 3000);
       }
       
@@ -290,13 +315,24 @@ export default function StudentOnboarding() {
       const errorMessage = err.message || 'Upload failed';
       // Make error messages user-friendly
       if (errorMessage.includes('duplicate') || errorMessage.includes('exists')) {
-        setError('Some students already exist in the system. Please check the results below.');
+        const msg = 'Some students already exist in the system. Please check the results below.';
+        setError(msg);
+        toast.error(msg);
       } else if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
-        setError('The CSV file contains invalid data. Please check the format and try again.');
+        const msg = 'The CSV file contains invalid data. Please check the format and try again.';
+        setError(msg);
+        toast.error(msg);
+      } else if (errorMessage.toLowerCase().includes('coordinator') || errorMessage.toLowerCase().includes('teacher id')) {
+        // Surface coordinator / Teacher ID-related validation errors directly
+        setError(errorMessage);
+        toast.error(errorMessage);
       } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-        setError('Unable to connect to the server. Please check your internet connection and try again.');
+        const msg = 'Unable to connect to the server. Please check your internet connection and try again.';
+        setError(msg);
+        toast.error(msg);
       } else {
         setError(errorMessage);
+        toast.error(errorMessage);
       }
       setUploadSuccess(false);
     } finally {
