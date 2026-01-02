@@ -8,6 +8,7 @@ import { uploadAvatar, deleteAvatar, isCloudinaryConfigured } from '../utils/clo
 import { logActivity } from './adminActivityController.js';
 import { logStudentActivity } from './activityController.js';
 import { logAuthAttempt, logSuspiciousActivity } from '../utils/logger.js';
+import { validatePasswordStrength, validateEmail, generateSecureToken, hashToken } from '../utils/validators.js';
 
 // Change password for student (requires current password)
 export async function changePassword(req, res) {
@@ -18,8 +19,12 @@ export async function changePassword(req, res) {
   if (user.role !== 'student' && user.role !== 'coordinator') throw new HttpError(403, 'Only students or coordinators can change password here');
   if (!currentPassword || !newPassword || !confirmPassword) throw new HttpError(400, 'All fields required');
   if (newPassword !== confirmPassword) throw new HttpError(400, 'New passwords do not match');
-  if (newPassword.length < 6) throw new HttpError(400, 'New password must be at least 6 characters');
-  if (!/[#@]/.test(newPassword)) throw new HttpError(400, 'New password must contain @ or #');
+  
+  // SECURITY: Enhanced password validation
+  const passwordValidation = validatePasswordStrength(newPassword, [user.email, user.name]);
+  if (!passwordValidation.valid) {
+    throw new HttpError(400, passwordValidation.errors.join('; '));
+  }
   
   // Verify current password
   const ok = await user.verifyPassword(currentPassword);
@@ -63,8 +68,12 @@ export async function changeAdminPassword(req, res) {
   // Validate input
   if (!currentPassword || !newPassword || !confirmPassword) throw new HttpError(400, 'All fields required');
   if (newPassword !== confirmPassword) throw new HttpError(400, 'New passwords do not match');
-  if (newPassword.length < 6) throw new HttpError(400, 'New password must be at least 6 characters');
-  if (!/[#@]/.test(newPassword)) throw new HttpError(400, 'New password must contain @ or #');
+  
+  // SECURITY: Enhanced password validation
+  const passwordValidation = validatePasswordStrength(newPassword, [user.email, user.name]);
+  if (!passwordValidation.valid) {
+    throw new HttpError(400, passwordValidation.errors.join('; '));
+  }
   
   // Verify current password
   const ok = await user.verifyPassword(currentPassword);
@@ -256,7 +265,17 @@ export async function login(req, res) {
     // SECURITY: Log successful auth
     logAuthAttempt(req, true, admin.email, admin._id);
     const token = signToken({ sub: admin._id, role: admin.role, email: admin.email });
-    return res.json({ token, user: { id: admin._id, email: admin.email, role: admin.role, name: admin.name } });
+    
+    // SECURITY: Store JWT in HttpOnly cookie instead of sending in response
+    res.cookie('accessToken', token, {
+      httpOnly: true, // Cannot be accessed via JavaScript (XSS protection)
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'strict', // CSRF protection
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/'
+    });
+    
+    return res.json({ user: { id: admin._id, email: admin.email, role: admin.role, name: admin.name } });
   }
 
   // Try regular student by email OR studentId
@@ -289,7 +308,17 @@ export async function login(req, res) {
       email: student.email,
       studentId: student.studentId
     });
-    return res.json({ token, user: sanitizeUser(student) });
+    
+    // SECURITY: Store JWT in HttpOnly cookie
+    res.cookie('accessToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000,
+      path: '/'
+    });
+    
+    return res.json({ user: sanitizeUser(student) });
   }
 
   // Try coordinator by email OR coordinatorId
@@ -310,7 +339,17 @@ export async function login(req, res) {
     // SECURITY: Log successful auth
     logAuthAttempt(req, true, coordinator.email, coordinator._id);
     const token = signToken({ sub: coordinator._id, role: coordinator.role, email: coordinator.email });
-    return res.json({ token, user: sanitizeUser(coordinator) });
+    
+    // SECURITY: Store JWT in HttpOnly cookie
+    res.cookie('accessToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000,
+      path: '/'
+    });
+    
+    return res.json({ user: sanitizeUser(coordinator) });
   }
 
   // Try special student by email OR studentId
@@ -343,8 +382,17 @@ export async function login(req, res) {
       email: specialStudent.email,
       studentId: specialStudent.studentId
     });
+    
+    // SECURITY: Store JWT in HttpOnly cookie
+    res.cookie('accessToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000,
+      path: '/'
+    });
+    
     return res.json({ 
-      token, 
       user: {
         id: specialStudent._id,
         role: 'student',
@@ -415,12 +463,13 @@ export async function requestPasswordReset(req, res) {
     return res.json({ message: 'If an account exists with this email or student ID, a password reset link has been sent.' });
   }
 
-  // Generate reset token (valid for 1 hour)
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+  // SECURITY: Generate secure token with shorter expiration (15 minutes)
+  const resetToken = generateSecureToken();
+  const resetTokenHash = hashToken(resetToken);
   
   user.passwordResetToken = resetTokenHash;
-  user.passwordResetExpires = Date.now() + 3600000; // 1 hour
+  user.passwordResetExpires = Date.now() + 15 * 60 * 1000; // 15 minutes (stricter)
+  user.passwordResetUsed = false; // Mark as unused
   await user.save();
 
   // Send email with reset link - support multiple frontend ports
@@ -455,30 +504,59 @@ export async function resetPassword(req, res) {
     console.log('[Password Reset] Attempting to reset password with token:', token ? token.substring(0, 10) + '...' : 'none');
     
     if (!token || !newPassword) throw new HttpError(400, 'Token and new password are required');
-    if (newPassword.length < 8) throw new HttpError(400, 'Password must be at least 8 characters');
-    if (!/[#*]/.test(newPassword)) throw new HttpError(400, 'Password must contain * or #');
-
-    const resetTokenHash = crypto.createHash('sha256').update(token).digest('hex');
     
-    const user = await User.findOne({
-      passwordResetToken: resetTokenHash,
-      passwordResetExpires: { $gt: Date.now() }
-    });
+    // SECURITY: Enhanced password validation
+    const passwordValidation = validatePasswordStrength(newPassword);
+    if (!passwordValidation.valid) {
+      throw new HttpError(400, passwordValidation.errors.join('; '));
+    }
+
+    const resetTokenHash = hashToken(token);
+    const newPasswordHash = await User.hashPassword(newPassword);
+    
+    // SECURITY: Atomic token invalidation using findOneAndUpdate
+    // This prevents race conditions where the same token could be used twice
+    // The token is invalidated in the same atomic operation as the password change
+    const user = await User.findOneAndUpdate(
+      {
+        passwordResetToken: resetTokenHash,
+        passwordResetExpires: { $gt: Date.now() },
+        passwordResetUsed: { $ne: true }
+      },
+      {
+        $set: {
+          passwordHash: newPasswordHash,
+          passwordResetUsed: true,
+          passwordChangedAt: new Date(),
+          mustChangePassword: false
+        },
+        $unset: {
+          passwordResetToken: 1,
+          passwordResetExpires: 1
+        }
+      },
+      { new: true }
+    );
 
     if (!user) {
       console.log('[Password Reset] No user found with valid token');
-      throw new HttpError(400, 'Invalid or expired reset token');
+      throw new HttpError(400, 'Invalid, expired, or already used reset token');
     }
 
-    console.log('[Password Reset] User found, updating password for:', user.email);
-
-    user.passwordHash = await User.hashPassword(newPassword);
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
-    user.mustChangePassword = false;
-    await user.save();
-
     console.log('[Password Reset] Password reset successful for:', user.email);
+    
+    // SECURITY: Log password reset
+    logActivity({
+      userEmail: user.email,
+      userRole: user.role,
+      actionType: 'UPDATE',
+      targetType: 'STUDENT',
+      targetId: user._id.toString(),
+      description: 'Password reset via email token',
+      metadata: {},
+      req
+    });
+    
     res.json({ message: 'Password has been reset successfully' });
   } catch (err) {
     console.error('[Password Reset] Error:', err.message);

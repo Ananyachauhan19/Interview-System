@@ -12,12 +12,23 @@ const userSchema = new mongoose.Schema({
   mustChangePassword: { type: Boolean, default: false },
   course: String,
   branch: String,
-  department: String, // For coordinators
   college: String,
   semester: { type: Number, min: 1, max: 8 }, // Required for students: current semester (1-8)
+  
+  // SECURITY: Password reset tokens with expiration and single-use
   passwordResetToken: String,
   passwordResetExpires: Date,
-  avatarUrl: String, // Profile picture URL
+  passwordResetUsed: { type: Boolean, default: false }, // Prevent token reuse
+  passwordChangedAt: Date, // Track when password was last changed
+  
+  // SECURITY: Email verification
+  emailVerified: { type: Boolean, default: false },
+  emailVerificationToken: String,
+  emailVerificationExpires: Date,
+  
+  // Additional fields
+  avatarUrl: String,
+  department: String, // For coordinators
 }, { timestamps: true });
 
 userSchema.methods.verifyPassword = async function (pw) {
@@ -28,5 +39,17 @@ userSchema.statics.hashPassword = async function (pw) {
   const saltRounds = Number(process.env.BCRYPT_ROUNDS || 10);
   return bcrypt.hash(pw, saltRounds);
 };
+
+// SECURITY: Invalidate password reset tokens when password changes
+userSchema.pre('save', function(next) {
+  if (this.isModified('passwordHash') && !this.isNew) {
+    // Password was changed - invalidate all reset tokens
+    this.passwordChangedAt = new Date();
+    this.passwordResetToken = undefined;
+    this.passwordResetExpires = undefined;
+    this.passwordResetUsed = true;
+  }
+  next();
+});
 
 export default mongoose.model('User', userSchema);

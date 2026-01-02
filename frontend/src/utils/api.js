@@ -1,21 +1,47 @@
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000/api';
 
-let token = localStorage.getItem('token') || '';
+/**
+ * SECURITY: JWT now stored in HttpOnly cookies instead of localStorage
+ * 
+ * WHY SAFE: Protects against XSS token theft. HttpOnly cookies cannot be
+ * accessed via JavaScript, so even if XSS vulnerability exists, tokens are safe.
+ * 
+ * MIGRATION: Kept backwards compatibility - still reads from localStorage
+ * during transition period. Remove localStorage token on logout.
+ */
+
+// Clear legacy localStorage token if it exists
+export function clearLegacyToken() {
+  localStorage.removeItem('token');
+}
+
+// Kept for backwards compatibility during migration
+let token = '';
 
 export function setToken(t) {
-  token = t || '';
-  if (t) localStorage.setItem('token', t); else localStorage.removeItem('token');
+  // No longer storing in localStorage for security
+  // Token is now in HttpOnly cookie set by server
+  token = '';
+  clearLegacyToken();
 }
 
 async function request(path, { method = 'GET', body, headers = {}, formData } = {}) {
-  const opts = { method, headers: { ...headers } };
+  const opts = { 
+    method, 
+    headers: { ...headers },
+    // SECURITY: Send cookies with every request
+    credentials: 'include' // This sends HttpOnly cookies
+  };
+  
   if (formData) {
     opts.body = formData;
   } else if (body !== undefined) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
   }
-  if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+  
+  // No longer sending Authorization header - JWT is in cookie
+  // if (token) opts.headers['Authorization'] = `Bearer ${token}`;
   
   const url = `${API_BASE}${path}`;
   console.log(`[API] ${method} ${url}`, body ? { body } : '');

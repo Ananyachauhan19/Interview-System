@@ -13,12 +13,16 @@ class SocketService {
       return this.socket;
     }
 
+    // SECURITY: Use withCredentials to send HttpOnly cookies for authentication
+    // This allows the server to read the JWT from the cookie instead of auth object
+    // Prevents XSS attacks from stealing tokens stored in JavaScript
     this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       autoConnect: true,
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 5,
+      withCredentials: true // SECURITY: Send cookies with WebSocket connection
     });
 
     this.socket.on('connect', () => {

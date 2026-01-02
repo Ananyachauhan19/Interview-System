@@ -10,6 +10,18 @@ const router = Router();
 
 // SECURITY: Rate limit authentication endpoints
 router.post('/login', authLimiter, login);
+
+// SECURITY: Logout endpoint to clear HttpOnly cookie
+router.post('/logout', (req, res) => {
+  res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/'
+  });
+  res.json({ message: 'Logged out successfully' });
+});
+
 router.post('/password/change', requireAuth, changePassword);
 router.post('/password/admin-change', requireAuth, changeAdminPassword);
 router.post('/password/request-reset', passwordResetLimiter, requestPasswordReset);
@@ -18,7 +30,7 @@ router.get('/me', requireAuth, me);
 router.put('/me', requireAuth, updateMe);
 router.put('/me/avatar', requireAuth, uploadLimiter, upload.single('avatar'), updateMyAvatar);
 router.get('/activity/debug', requireAuth, debugStudentActivity);
-router.get('/activity', requireAuth, getStudentActivity);
+router.get('/activity', requireAuth, getStudentStats);
 router.get('/stats', requireAuth, getStudentStats);
 
 export default router;

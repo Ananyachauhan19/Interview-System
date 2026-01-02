@@ -191,7 +191,8 @@ export default function StudentLoginPage() {
     setError('');
     try {
       const res = await api.login(email, password);
-      setToken(res.token);
+      // SECURITY: Token is now in HttpOnly cookie, no need to call setToken
+      // setToken(res.token); // REMOVED - token is in cookie
       const role = res.user?.role;
       
       // Handle Remember Me functionality

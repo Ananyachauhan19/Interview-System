@@ -7,6 +7,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { verifyToken } from './utils/jwt.js';
 import { logSuspiciousActivity } from './utils/logger.js';
+import cookie from 'cookie';
 
 const PORT = process.env.PORT || 4000;
 
@@ -25,9 +26,23 @@ const io = new Server(httpServer, {
 });
 
 // SECURITY: WebSocket authentication middleware
+// Now reads JWT from HttpOnly cookies to prevent XSS token theft
 io.use((socket, next) => {
   try {
-    const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
+    let token = null;
+    
+    // SECURITY: Try to read token from HttpOnly cookie first (preferred, XSS-safe)
+    const cookieHeader = socket.handshake.headers.cookie;
+    if (cookieHeader) {
+      const cookies = cookie.parse(cookieHeader);
+      token = cookies.accessToken;
+    }
+    
+    // Fallback: Check auth object (for backwards compatibility during migration)
+    // Note: This fallback should be removed after full migration to cookie-based auth
+    if (!token) {
+      token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
+    }
     
     if (!token) {
       console.warn(`[SECURITY] WebSocket connection attempt without token from ${socket.handshake.address}`);

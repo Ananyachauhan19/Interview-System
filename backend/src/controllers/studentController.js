@@ -5,6 +5,7 @@ import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { sendOnboardingEmail } from '../utils/mailer.js';
 import SpecialStudent from '../models/SpecialStudent.js';
 import { logActivity } from './adminActivityController.js';
+import { sanitizeCsvRow, sanitizeCsvField, validateObjectId, validateCsvImport, CSV_LIMITS } from '../utils/validators.js';
 
 // Generate random password (7-8 characters)
 function generateRandomPassword() {
@@ -56,9 +57,25 @@ export async function listAllStudents(req, res) {
 
 export async function checkStudentsCsv(req, res) {
   if (!req.file) return res.status(400).json({ error: 'CSV file required' });
+  
+  // SECURITY: Validate file size limit
+  const fileSize = req.file.size || req.file.buffer?.length || 0;
+  if (fileSize > CSV_LIMITS.MAX_FILE_SIZE) {
+    return res.status(400).json({ 
+      error: `File size (${Math.round(fileSize / 1024)}KB) exceeds maximum of ${CSV_LIMITS.MAX_FILE_SIZE / (1024 * 1024)}MB` 
+    });
+  }
+  
   const csvText = req.file.buffer.toString('utf8');
   const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
   const rows = parsed.data;
+  
+  // SECURITY: Validate CSV import limits (row count, field lengths)
+  const csvValidation = validateCsvImport(rows, fileSize);
+  if (!csvValidation.valid) {
+    return res.status(400).json({ error: csvValidation.errors.join('; ') });
+  }
+  
   const results = [];
 
   // Required fields for onboarding - password is auto-generated
@@ -68,8 +85,12 @@ export async function checkStudentsCsv(req, res) {
   const seenEmails = new Set();
   const seenStudentIds = new Set();
 
+  // SECURITY: Sanitize CSV rows to prevent formula injection
   // Normalize all rows first and collect emails/studentids for bulk DB check
-  const normalizedRows = rows.map((r, idx) => ({ ...normalizeRow(r), __row: idx + 2 })); // header is line 1
+  const normalizedRows = rows.map((r, idx) => ({ 
+    ...sanitizeCsvRow(normalizeRow(r)), 
+    __row: idx + 2 
+  })); // header is line 1
   const emails = normalizedRows.map((r) => r.email).filter(Boolean);
   const studentIds = normalizedRows.map((r) => r.studentid).filter(Boolean);
 
@@ -149,9 +170,25 @@ export async function checkStudentsCsv(req, res) {
 
 export async function uploadStudentsCsv(req, res) {
   if (!req.file) return res.status(400).json({ error: 'CSV file required' });
+  
+  // SECURITY: Validate file size limit
+  const fileSize = req.file.size || req.file.buffer?.length || 0;
+  if (fileSize > CSV_LIMITS.MAX_FILE_SIZE) {
+    return res.status(400).json({ 
+      error: `File size (${Math.round(fileSize / 1024)}KB) exceeds maximum of ${CSV_LIMITS.MAX_FILE_SIZE / (1024 * 1024)}MB` 
+    });
+  }
+  
   const csvText = req.file.buffer.toString('utf8');
   const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
   const rows = parsed.data;
+  
+  // SECURITY: Validate CSV import limits (row count, field lengths)
+  const csvValidation = validateCsvImport(rows, fileSize);
+  if (!csvValidation.valid) {
+    return res.status(400).json({ error: csvValidation.errors.join('; ') });
+  }
+  
   const results = [];
 
   // Required fields for onboarding - password is auto-generated
@@ -161,8 +198,12 @@ export async function uploadStudentsCsv(req, res) {
   const seenEmails = new Set();
   const seenStudentIds = new Set();
 
+  // SECURITY: Sanitize CSV rows to prevent formula injection
   // Normalize all rows first and collect emails/studentids for bulk DB check
-  const normalizedRows = rows.map((r, idx) => ({ ...normalizeRow(r), __row: idx + 2 })); // header is line 1
+  const normalizedRows = rows.map((r, idx) => ({ 
+    ...sanitizeCsvRow(normalizeRow(r)), 
+    __row: idx + 2 
+  })); // header is line 1
   const emails = normalizedRows.map((r) => r.email).filter(Boolean);
   const studentIds = normalizedRows.map((r) => r.studentid).filter(Boolean);
 

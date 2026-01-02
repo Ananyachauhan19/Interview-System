@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './utils/errors.js';
 import { mongoSanitizeMiddleware, xssProtectionMiddleware } from './middleware/sanitization.js';
@@ -17,6 +18,9 @@ app.use(helmet({
 
 // CORS - already configured correctly, just preserving it
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN?.split(',') || true, credentials: true }));
+
+// SECURITY: Cookie parser for HttpOnly JWT cookies
+app.use(cookieParser());
 
 // Body parsing with size limits (already safe at 2mb)
 app.use(express.json({ limit: '2mb' }));
