@@ -637,7 +637,7 @@ export default function EventManagement() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-7xl w-full max-h-[90vh] overflow-hidden"
             >
               {/* Header */}
               <div className="bg-sky-500 dark:bg-sky-600 text-white px-6 py-4 flex items-center justify-between">
