@@ -68,6 +68,8 @@ export async function sendBulkMail(emails) {
 export function renderTemplate(template, vars) {
   return template.replace(/\{(\w+)\}/g, (_, k) => escapeHtml(vars[k] ?? ''));
 }
+  return template.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+}
 
 // Simple iCal (ICS) event generator
 export function buildICS({ uid, start, end, summary, description, url, organizer, attendees = [] }) {
