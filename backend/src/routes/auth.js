@@ -3,13 +3,26 @@ import { login, forcePasswordChange, me, changePassword, changeAdminPassword, re
 import { getStudentActivity, getStudentStats, debugStudentActivity } from '../controllers/activityController.js';
 import { requireAuth } from '../middleware/auth.js';
 import { authLimiter, passwordResetLimiter, uploadLimiter } from '../middleware/rateLimiter.js';
+import { validateFileUpload, allowFields } from '../middleware/sanitization.js';
 import multer from 'multer';
-const upload = multer();
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 } // 2MB max for avatars
+});
+
+// SECURITY: Image file validation middleware
+const avatarValidator = validateFileUpload(['jpg', 'jpeg', 'png', 'gif', 'webp'], 2 * 1024 * 1024);
+
+// SECURITY: Mass assignment protection - only allow expected profile fields
+const profileUpdateFields = allowFields(['name', 'course', 'branch', 'college']);
+const passwordChangeFields = allowFields(['currentPassword', 'newPassword', 'confirmNewPassword']);
+const passwordResetFields = allowFields(['email', 'token', 'newPassword', 'confirmPassword']);
+const loginFields = allowFields(['email', 'password', 'role']);
 
 const router = Router();
 
 // SECURITY: Rate limit authentication endpoints
-router.post('/login', authLimiter, login);
+router.post('/login', authLimiter, loginFields, login);
 
 // SECURITY: Logout endpoint to clear HttpOnly cookie
 router.post('/logout', (req, res) => {
@@ -22,13 +35,13 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
-router.post('/password/change', requireAuth, changePassword);
-router.post('/password/admin-change', requireAuth, changeAdminPassword);
-router.post('/password/request-reset', passwordResetLimiter, requestPasswordReset);
-router.post('/password/reset', passwordResetLimiter, resetPassword);
+router.post('/password/change', requireAuth, passwordChangeFields, changePassword);
+router.post('/password/admin-change', requireAuth, passwordChangeFields, changeAdminPassword);
+router.post('/password/request-reset', passwordResetLimiter, passwordResetFields, requestPasswordReset);
+router.post('/password/reset', passwordResetLimiter, passwordResetFields, resetPassword);
 router.get('/me', requireAuth, me);
-router.put('/me', requireAuth, updateMe);
-router.put('/me/avatar', requireAuth, uploadLimiter, upload.single('avatar'), updateMyAvatar);
+router.put('/me', requireAuth, profileUpdateFields, updateMe);
+router.put('/me/avatar', requireAuth, uploadLimiter, upload.single('avatar'), avatarValidator, updateMyAvatar);
 router.get('/activity/debug', requireAuth, debugStudentActivity);
 router.get('/activity', requireAuth, getStudentStats);
 router.get('/stats', requireAuth, getStudentStats);

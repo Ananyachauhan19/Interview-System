@@ -256,12 +256,24 @@ export async function login(req, res) {
   const idLower = id.toLowerCase();
   const admin = await User.findOne({ role: 'admin', email: idLower });
   if (admin) {
+    // SECURITY: Check if account is locked
+    if (admin.isLocked) {
+      const remainingTime = Math.ceil((admin.lockUntil - Date.now()) / 60000);
+      logAuthAttempt(req, false, idLower, admin._id, 'Account locked');
+      throw new HttpError(423, `Account temporarily locked. Try again in ${remainingTime} minutes.`);
+    }
+    
     const ok = await admin.verifyPassword(password);
     if (!ok) {
-      // SECURITY: Log failed auth attempt
-      logAuthAttempt(req, false, idLower, null, 'Invalid password');
+      // SECURITY: Increment login attempts and potentially lock
+      await admin.incLoginAttempts();
+      logAuthAttempt(req, false, idLower, admin._id, 'Invalid password');
       throw new HttpError(401, 'Invalid credentials');
     }
+    
+    // SECURITY: Reset login attempts on successful login
+    await admin.resetLoginAttempts();
+    
     // SECURITY: Log successful auth
     logAuthAttempt(req, true, admin.email, admin._id);
     const token = signToken({ sub: admin._id, role: admin.role, email: admin.email });
@@ -284,12 +296,23 @@ export async function login(req, res) {
     $or: [{ email: idLower }, { studentId: id }],
   });
   if (student) {
+    // SECURITY: Check if account is locked
+    if (student.isLocked) {
+      const remainingTime = Math.ceil((student.lockUntil - Date.now()) / 60000);
+      logAuthAttempt(req, false, student.email, student._id, 'Account locked');
+      throw new HttpError(423, `Account temporarily locked. Try again in ${remainingTime} minutes.`);
+    }
+    
     const ok = await student.verifyPassword(password);
     if (!ok) {
-      // SECURITY: Log failed auth attempt
-      logAuthAttempt(req, false, student.email, null, 'Invalid password');
+      // SECURITY: Increment login attempts and potentially lock
+      await student.incLoginAttempts();
+      logAuthAttempt(req, false, student.email, student._id, 'Invalid password');
       throw new HttpError(401, 'Invalid credentials');
     }
+    
+    // SECURITY: Reset login attempts on successful login
+    await student.resetLoginAttempts();
     
     // SECURITY: Log successful auth
     logAuthAttempt(req, true, student.email, student._id);
@@ -330,12 +353,24 @@ export async function login(req, res) {
     ],
   });
   if (coordinator) {
+    // SECURITY: Check if account is locked
+    if (coordinator.isLocked) {
+      const remainingTime = Math.ceil((coordinator.lockUntil - Date.now()) / 60000);
+      logAuthAttempt(req, false, coordinator.email, coordinator._id, 'Account locked');
+      throw new HttpError(423, `Account temporarily locked. Try again in ${remainingTime} minutes.`);
+    }
+    
     const ok = await coordinator.verifyPassword(password);
     if (!ok) {
-      // SECURITY: Log failed auth attempt
-      logAuthAttempt(req, false, coordinator.email, null, 'Invalid password');
+      // SECURITY: Increment login attempts and potentially lock
+      await coordinator.incLoginAttempts();
+      logAuthAttempt(req, false, coordinator.email, coordinator._id, 'Invalid password');
       throw new HttpError(401, 'Invalid credentials');
     }
+    
+    // SECURITY: Reset login attempts on successful login
+    await coordinator.resetLoginAttempts();
+    
     // SECURITY: Log successful auth
     logAuthAttempt(req, true, coordinator.email, coordinator._id);
     const token = signToken({ sub: coordinator._id, role: coordinator.role, email: coordinator.email });
