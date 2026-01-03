@@ -20,20 +20,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-/**
- * SECURITY: HTML escape function to prevent email template injection
- * Escapes HTML special characters to prevent XSS in emails
- */
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 export async function sendMail({ to, subject, html, text, attachments }) {
   const from = process.env.MAIL_FROM || process.env.SMTP_USER || 'noreply@example.com';
   const info = await transporter.sendMail({ from, to, subject, html, text, attachments });
@@ -61,13 +47,7 @@ export async function sendBulkMail(emails) {
   return results;
 }
 
-/**
- * SECURITY: Safe template rendering with HTML escaping
- * All user-provided values are escaped to prevent injection
- */
 export function renderTemplate(template, vars) {
-  return template.replace(/\{(\w+)\}/g, (_, k) => escapeHtml(vars[k] ?? ''));
-}
   return template.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
 }
 

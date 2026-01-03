@@ -7,10 +7,6 @@ let memServer;
 export async function connectDb() {
   const uri = process.env.MONGODB_URI || 'memory';
   mongoose.set('strictQuery', true);
-  
-  // SECURITY: Set global query timeout to prevent long-running queries
-  mongoose.set('maxTimeMS', 30000); // 30 second max query time
-  
   let connectUri = uri;
   const maskUri = (u) => {
     try {
@@ -25,27 +21,15 @@ export async function connectDb() {
     memServer = await MongoMemoryServer.create();
     connectUri = memServer.getUri();
     console.log('Using in-memory MongoDB');
-    await mongoose.connect(connectUri, { 
-      autoIndex: true,
-      maxPoolSize: 10, // Limit connection pool size
-      socketTimeoutMS: 45000, // Socket timeout
-      serverSelectionTimeoutMS: 5000 // Server selection timeout
-    });
+    await mongoose.connect(connectUri, { autoIndex: true });
     console.log('Connected to in-memory MongoDB');
     return;
   }
 
   console.log('Attempting to connect to MongoDB at', maskUri(connectUri));
   try {
-    // SECURITY: Configure connection with timeouts and limits
-    await mongoose.connect(connectUri, { 
-      autoIndex: true, 
-      serverSelectionTimeoutMS: 8000,
-      maxPoolSize: 10, // Limit connection pool to prevent resource exhaustion
-      socketTimeoutMS: 45000, // Socket operations timeout
-      connectTimeoutMS: 10000, // Initial connection timeout
-      heartbeatFrequencyMS: 10000 // Heartbeat for connection monitoring
-    });
+    // set a reasonable server selection timeout so failures surface quickly
+    await mongoose.connect(connectUri, { autoIndex: true, serverSelectionTimeoutMS: 8000 });
     console.log('Connected to MongoDB');
     return;
   } catch (err) {
