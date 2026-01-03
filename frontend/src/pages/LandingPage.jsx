@@ -60,25 +60,25 @@ export default function LandingPage() {
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div 
-          className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-200/30 to-sky-200/20 rounded-full blur-3xl"
+          className="absolute top-0 right-0 w-56 h-56 sm:w-96 sm:h-96 bg-gradient-to-br from-indigo-200/30 to-sky-200/20 rounded-full blur-3xl"
           style={{ transform: `translateY(${scrollY * 0.1}px)` }}
         ></div>
         <div 
-          className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-blue-200/20 to-purple-200/20 rounded-full blur-3xl"
+          className="absolute top-10 left-0 sm:top-auto sm:bottom-0 w-56 h-56 sm:w-80 sm:h-80 bg-gradient-to-tr from-blue-200/20 to-purple-200/20 rounded-full blur-3xl"
           style={{ transform: `translateY(${-scrollY * 0.15}px)` }}
         ></div>
-        <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-gradient-to-br from-teal-200/20 to-cyan-200/15 rounded-full blur-2xl"></div>
+        <div className="hidden sm:block absolute top-1/3 right-1/4 w-64 h-64 bg-gradient-to-br from-teal-200/20 to-cyan-200/15 rounded-full blur-2xl"></div>
       </div>
 
       {/* Navbar - Sleek and Professional */}
       <nav className={`z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 sticky top-0 transition-all duration-700 shadow-sm ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-12">
+            <div className="flex items-center space-x-4 sm:space-x-12">
               <img 
                 src="/images/logo.png" 
                 alt="PeerPrep Logo" 
-                className="h-28 w-auto object-contain"
+                className="h-10 sm:h-12 lg:h-28 w-auto object-contain"
               />
               <div className="hidden md:flex items-center space-x-8">
                 <a href="#features" className="text-sm font-medium text-slate-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">Features</a>
@@ -91,22 +91,31 @@ export default function LandingPage() {
               <DarkModeToggle />
               <button 
                 onClick={handleLoginClick} 
-                className="group px-7 py-2.5 bg-gradient-to-r from-indigo-600 to-sky-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+                className="group px-4 py-2 sm:px-7 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-sky-500 text-white rounded-xl font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
               >
                 Get Started
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </button>
             </div>
           </div>
+
+          {/* Mobile Tabs (3 across) */}
+          <div className="md:hidden pb-3">
+            <div className="grid grid-cols-3 gap-2">
+              <a href="#features" className="text-center text-xs font-semibold text-slate-700 dark:text-gray-200 bg-slate-100/80 dark:bg-gray-800/80 border border-slate-200/60 dark:border-gray-700/60 rounded-lg py-2 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors duration-200">Features</a>
+              <a href="#platform" className="text-center text-xs font-semibold text-slate-700 dark:text-gray-200 bg-slate-100/80 dark:bg-gray-800/80 border border-slate-200/60 dark:border-gray-700/60 rounded-lg py-2 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors duration-200">Platform</a>
+              <a href="#system" className="text-center text-xs font-semibold text-slate-700 dark:text-gray-200 bg-slate-100/80 dark:bg-gray-800/80 border border-slate-200/60 dark:border-gray-700/60 rounded-lg py-2 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors duration-200">System</a>
+            </div>
+          </div>
         </div>
       </nav>
 
       {/* Hero Section - Premium Design */}
-      <section className={`relative z-10 pt-12 pb-20 transition-all duration-700 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <section className={`relative z-10 pt-8 pb-14 sm:pt-12 sm:pb-20 transition-all duration-700 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             {/* Left Content */}
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               <div 
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-sky-50 dark:from-gray-800 dark:to-gray-700 backdrop-blur-sm rounded-full px-5 py-2.5 border border-indigo-200/60 dark:border-gray-600 shadow-sm"
                 style={{ animation: 'fadeInUp 0.6s ease-out' }}
@@ -117,9 +126,9 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <h1 
-                  className="text-5xl lg:text-6xl font-bold text-slate-900 dark:text-gray-100 leading-tight"
+                  className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-gray-100 leading-tight"
                   style={{ animation: 'fadeInUp 0.8s ease-out 0.2s backwards' }}
                 >
                   Transform Your
@@ -129,7 +138,7 @@ export default function LandingPage() {
                 </h1>
 
                 <p 
-                  className="text-lg text-slate-600 dark:text-gray-300 leading-relaxed max-w-xl"
+                  className="text-base sm:text-lg text-slate-600 dark:text-gray-300 leading-relaxed max-w-xl"
                   style={{ animation: 'fadeInUp 1s ease-out 0.4s backwards' }}
                 >
                   A comprehensive platform featuring mock interviews, skill exchange, live discussions, personalized learning paths, and intelligent feedback systems designed to accelerate your career growth.
@@ -142,41 +151,32 @@ export default function LandingPage() {
               >
                 <button 
                   onClick={handleLoginClick}
-                  className="group px-10 py-4 bg-gradient-to-r from-indigo-600 to-sky-600 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
+                  className="group px-7 py-3 sm:px-10 sm:py-4 bg-gradient-to-r from-indigo-600 to-sky-600 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
                 >
                   Start Your Journey
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
                 </button>
                 <button 
                   onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
-                  className="px-10 py-4 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 rounded-xl font-semibold border-2 border-slate-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all duration-300 flex items-center justify-center gap-2"
+                  className="px-7 py-3 sm:px-10 sm:py-4 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 rounded-xl font-semibold border-2 border-slate-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all duration-300 flex items-center justify-center gap-2"
                 >
                   Explore Features
                   <PlayCircle className="w-5 h-5" />
                 </button>
               </div>
-
-              {/* Quick Stats */}
-              <div 
-                className="flex gap-8 pt-6"
-                style={{ animation: 'fadeInUp 1.4s ease-out 0.8s backwards' }}
-              >
-                
-                
-              </div>
             </div>
 
             {/* Right - Enhanced Visual */}
             <div 
-              className="relative"
+              className="relative max-w-md mx-auto lg:max-w-none lg:mx-0"
               style={{ animation: 'fadeInRight 1s ease-out 0.4s backwards' }}
             >
               {/* Floating Elements */}
-              <div className="absolute -top-6 -left-6 w-24 h-24 bg-gradient-to-br from-indigo-400/20 to-sky-400/20 rounded-2xl blur-2xl animate-pulse"></div>
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-2xl blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+              <div className="absolute -top-4 -left-4 sm:-top-6 sm:-left-6 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-indigo-400/20 to-sky-400/20 rounded-2xl blur-2xl animate-pulse"></div>
+              <div className="absolute -top-4 -right-4 sm:-bottom-6 sm:-right-6 sm:top-auto w-20 h-20 sm:w-32 sm:h-32 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-2xl blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
               
               <div className="relative bg-gradient-to-br from-indigo-600 via-sky-600 to-blue-600 rounded-3xl p-1 shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 backdrop-blur-xl">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 sm:p-8 backdrop-blur-xl">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
@@ -195,13 +195,13 @@ export default function LandingPage() {
                   {/* Main Content */}
                   <div className="space-y-6">
                     {/* Video Area */}
-                    <div className="bg-gradient-to-br from-indigo-50 via-sky-50 to-blue-50 dark:from-gray-700 dark:via-gray-700 dark:to-gray-700 rounded-2xl p-8 border-2 border-indigo-100 dark:border-gray-600">
+                    <div className="bg-gradient-to-br from-indigo-50 via-sky-50 to-blue-50 dark:from-gray-700 dark:via-gray-700 dark:to-gray-700 rounded-2xl p-5 sm:p-8 border-2 border-indigo-100 dark:border-gray-600">
                       <div className="flex justify-center items-center gap-6">
                         {/* Interviewer */}
                         <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300">
                           <div className="relative mb-3">
-                            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg rotate-3 hover:rotate-6 transition-transform duration-300">
-                              <Video className="w-10 h-10 text-white" />
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg rotate-3 hover:rotate-6 transition-transform duration-300">
+                              <Video className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                             </div>
                             <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white"></div>
                           </div>
@@ -213,16 +213,16 @@ export default function LandingPage() {
 
                         {/* Connection Line */}
                         <div className="flex flex-col items-center gap-2">
-                          <div className="w-16 h-0.5 bg-gradient-to-r from-indigo-400 to-sky-400"></div>
+                          <div className="w-10 sm:w-16 h-0.5 bg-gradient-to-r from-indigo-400 to-sky-400"></div>
                           <Video className="w-6 h-6 text-indigo-500" />
-                          <div className="w-16 h-0.5 bg-gradient-to-r from-sky-400 to-indigo-400"></div>
+                          <div className="w-10 sm:w-16 h-0.5 bg-gradient-to-r from-sky-400 to-indigo-400"></div>
                         </div>
 
                         {/* Candidate */}
                         <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300">
                           <div className="relative mb-3">
-                            <div className="w-20 h-20 bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg -rotate-3 hover:-rotate-6 transition-transform duration-300">
-                              <Users className="w-10 h-10 text-white" />
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg -rotate-3 hover:-rotate-6 transition-transform duration-300">
+                              <Users className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                             </div>
                             <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white"></div>
                           </div>
@@ -236,11 +236,11 @@ export default function LandingPage() {
 
                     {/* Features Bar */}
                     <div className="flex items-center justify-center gap-3 pt-2">
-                      <div className="flex items-center gap-2 bg-indigo-50 dark:bg-gray-700 px-4 py-2 rounded-lg">
+                      <div className="flex items-center gap-2 bg-indigo-50 dark:bg-gray-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg">
                         <MessageCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                         <span className="text-xs font-medium text-indigo-700 dark:text-gray-200">Live Feedback</span>
                       </div>
-                      <div className="flex items-center gap-2 bg-sky-50 dark:bg-gray-700 px-4 py-2 rounded-lg">
+                      <div className="flex items-center gap-2 bg-sky-50 dark:bg-gray-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg">
                         <BarChart3 className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                         <span className="text-xs font-medium text-sky-700 dark:text-gray-200">Analytics</span>
                       </div>
@@ -248,19 +248,19 @@ export default function LandingPage() {
 
                     {/* Controls */}
                     <div className="flex justify-center gap-3 pt-2">
-                      <button className="w-11 h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
+                      <button className="w-9 h-9 sm:w-11 sm:h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
                         <div className="w-5 h-5 bg-slate-600 dark:bg-gray-300 rounded-sm"></div>
                       </button>
-                      <button className="w-11 h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
+                      <button className="w-9 h-9 sm:w-11 sm:h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
                         <div className="w-5 h-5 bg-slate-600 dark:bg-gray-300 rounded-sm"></div>
                       </button>
-                      <button className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center hover:from-red-600 hover:to-red-700 transform hover:scale-110 transition-all duration-200 shadow-lg">
+                      <button className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center hover:from-red-600 hover:to-red-700 transform hover:scale-110 transition-all duration-200 shadow-lg">
                         <div className="w-6 h-6 bg-white rounded-sm"></div>
                       </button>
-                      <button className="w-11 h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
+                      <button className="w-9 h-9 sm:w-11 sm:h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
                         <div className="w-5 h-5 bg-slate-600 dark:bg-gray-300 rounded-sm"></div>
                       </button>
-                      <button className="w-11 h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
+                      <button className="w-9 h-9 sm:w-11 sm:h-11 bg-slate-100 dark:bg-gray-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-gray-600 transform hover:scale-110 transition-all duration-200 shadow-sm">
                         <div className="w-5 h-5 bg-slate-600 dark:bg-gray-300 rounded-sm"></div>
                       </button>
                     </div>
@@ -273,8 +273,8 @@ export default function LandingPage() {
       </section>
 
       {/* Core Features Overview */}
-      <section id="features" className="relative z-10 py-24 bg-gradient-to-br from-white via-indigo-50/30 to-sky-50/40 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" data-animate>
-        <div className="max-w-7xl mx-auto px-6">
+      <section id="features" className="relative z-10 py-16 sm:py-24 bg-gradient-to-br from-white via-indigo-50/30 to-sky-50/40 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" data-animate>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className={`text-center mb-16 transition-all duration-1000 ${isInView('features') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-sky-100 dark:from-gray-800 dark:to-gray-700 rounded-full px-5 py-2 mb-6">
               <Zap className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -291,7 +291,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-8 sm:mb-12">
             {[
               {
                 icon: Video,
@@ -378,18 +378,18 @@ export default function LandingPage() {
               <div
                 key={index}
                 data-animate
-                className={`group relative bg-gradient-to-br ${feature.bgColor} rounded-2xl border-2 ${feature.borderColor} p-7 transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-500 ${isInView('features') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+                className={`group relative bg-gradient-to-br ${feature.bgColor} rounded-xl sm:rounded-2xl border-2 ${feature.borderColor} p-3 sm:p-7 transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-500 ${isInView('features') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
                 style={{ transitionDelay: isInView('features') ? feature.delay : '0s' }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-gray-600/20 dark:to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-gray-600/20 dark:to-transparent rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <div className="relative">
-                  <div className={`w-14 h-14 bg-gradient-to-br ${feature.iconBg} rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg`}>
-                    <feature.icon className="w-7 h-7 text-white" />
+                  <div className={`w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br ${feature.iconBg} rounded-xl flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg`}>
+                    <feature.icon className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-gray-100 mb-3 group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors duration-300">
+                  <h3 className="text-xs sm:text-xl font-bold leading-tight text-slate-900 dark:text-gray-100 mb-0 sm:mb-3 group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors duration-300">
                     {feature.title}
                   </h3>
-                  <p className="text-sm text-slate-600 dark:text-gray-300 leading-relaxed">
+                  <p className="hidden sm:block text-sm text-slate-600 dark:text-gray-300 leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -400,8 +400,8 @@ export default function LandingPage() {
       </section>
 
       {/* Platform Capabilities */}
-      <section id="platform" className="relative z-10 py-24 bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800" data-animate>
-        <div className="max-w-7xl mx-auto px-6">
+      <section id="platform" className="relative z-10 py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800" data-animate>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className={`text-center mb-16 transition-all duration-1000 ${isInView('platform') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-100 to-blue-100 dark:from-gray-800 dark:to-gray-700 rounded-full px-5 py-2 mb-6">
               <Layers className="w-4 h-4 text-sky-600 dark:text-sky-400" />
@@ -428,7 +428,7 @@ export default function LandingPage() {
                     Comprehensive system for managing students, coordinators, and administrators with role-based access
                   </p>
                 </div>
-                <div className="lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="lg:w-2/3 grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4">
                   {[
                     { icon: Upload, text: 'Bulk CSV student onboarding' },
                     { icon: Users, text: 'Coordinator directory & assignment' },
@@ -437,9 +437,9 @@ export default function LandingPage() {
                     { icon: Target, text: 'Teacher-student linking system' },
                     { icon: Award, text: 'Special student support' }
                   ].map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 p-4 rounded-xl hover:scale-105 transition-transform duration-300">
-                      <item.icon className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm font-medium text-slate-700 dark:text-gray-200">{item.text}</span>
+                    <div key={idx} className="flex items-start gap-2 sm:gap-3 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 p-3 sm:p-4 rounded-xl hover:scale-105 transition-transform duration-300">
+                      <item.icon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-gray-200 leading-snug">{item.text}</span>
                     </div>
                   ))}
                 </div>
@@ -460,7 +460,7 @@ export default function LandingPage() {
                     Complete event lifecycle management with intelligent scheduling and automated coordination
                   </p>
                 </div>
-                <div className="lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="lg:w-2/3 grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4">
                   {[
                     { icon: FileText, text: 'Event templates with PDF upload' },
                     { icon: Clock, text: 'Time slot proposal system' },
@@ -469,9 +469,9 @@ export default function LandingPage() {
                     { icon: Mail, text: 'ICS calendar file generation' },
                     { icon: BarChart3, text: 'Event analytics & export' }
                   ].map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 p-4 rounded-xl hover:scale-105 transition-transform duration-300">
-                      <item.icon className="w-5 h-5 text-sky-600 dark:text-sky-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm font-medium text-slate-700 dark:text-gray-200">{item.text}</span>
+                    <div key={idx} className="flex items-start gap-2 sm:gap-3 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 p-3 sm:p-4 rounded-xl hover:scale-105 transition-transform duration-300">
+                      <item.icon className="w-4 h-4 sm:w-5 sm:h-5 text-sky-600 dark:text-sky-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-gray-200 leading-snug">{item.text}</span>
                     </div>
                   ))}
                 </div>
@@ -492,7 +492,7 @@ export default function LandingPage() {
                     Structured learning paths with comprehensive content management and progress tracking
                   </p>
                 </div>
-                <div className="lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="lg:w-2/3 grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4">
                   {[
                     { icon: Layers, text: '4-level content hierarchy' },
                     { icon: PlayCircle, text: 'Video watch time tracking' },
@@ -501,9 +501,9 @@ export default function LandingPage() {
                     { icon: Star, text: 'Importance & difficulty levels' },
                     { icon: RefreshCw, text: 'Drag-and-drop reordering' }
                   ].map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-700 dark:to-gray-600 p-4 rounded-xl hover:scale-105 transition-transform duration-300">
-                      <item.icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm font-medium text-slate-700 dark:text-gray-200">{item.text}</span>
+                    <div key={idx} className="flex items-start gap-2 sm:gap-3 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-700 dark:to-gray-600 p-3 sm:p-4 rounded-xl hover:scale-105 transition-transform duration-300">
+                      <item.icon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-gray-200 leading-snug">{item.text}</span>
                     </div>
                   ))}
                 </div>
@@ -514,8 +514,8 @@ export default function LandingPage() {
       </section>
 
       {/* System Features */}
-      <section id="system" className="relative z-10 py-24 bg-gradient-to-br from-indigo-50/40 via-white to-sky-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" data-animate>
-        <div className="max-w-7xl mx-auto px-6">
+      <section id="system" className="relative z-10 py-16 sm:py-24 bg-gradient-to-br from-indigo-50/40 via-white to-sky-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" data-animate>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className={`text-center mb-16 transition-all duration-1000 ${isInView('system') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-gray-800 dark:to-gray-700 rounded-full px-5 py-2 mb-6">
               <GitBranch className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -529,7 +529,7 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {[
               {
                 icon: MessageCircle,
@@ -563,16 +563,16 @@ export default function LandingPage() {
               <div
                 key={index}
                 data-animate
-                className={`group bg-gradient-to-br ${system.bgGradient} dark:from-gray-800 dark:to-gray-700 rounded-2xl border-2 border-slate-200 dark:border-gray-600 p-6 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 ${isInView('system') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+                className={`group bg-gradient-to-br ${system.bgGradient} dark:from-gray-800 dark:to-gray-700 rounded-xl sm:rounded-2xl border-2 border-slate-200 dark:border-gray-600 p-4 sm:p-6 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 ${isInView('system') ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
                 style={{ transitionDelay: isInView('system') ? `${index * 0.1}s` : '0s' }}
               >
-                <div className={`w-14 h-14 bg-gradient-to-br ${system.gradient} rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg`}>
-                  <system.icon className="w-7 h-7 text-white" />
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br ${system.gradient} rounded-xl flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg`}>
+                  <system.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-gray-100 mb-4">{system.title}</h3>
-                <ul className="space-y-2">
+                <h3 className="text-base sm:text-xl font-bold text-slate-900 dark:text-gray-100 mb-2 sm:mb-4 leading-tight">{system.title}</h3>
+                <ul className="space-y-1.5 sm:space-y-2">
                   {system.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-slate-600 dark:text-gray-300">
+                    <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-slate-600 dark:text-gray-300">
                       <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                       <span>{feature}</span>
                     </li>
@@ -602,14 +602,14 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA - Enhanced */}
-      <section className="relative z-10 py-24 bg-gradient-to-br from-slate-900 via-indigo-900 to-sky-900 overflow-hidden">
+      <section className="relative z-10 py-16 sm:py-24 bg-gradient-to-br from-slate-900 via-indigo-900 to-sky-900 overflow-hidden">
         {/* Background Effects */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl"></div>
         </div>
 
-        <div className="relative max-w-5xl mx-auto text-center px-6">
+        <div className="relative max-w-5xl mx-auto text-center px-4 sm:px-6">
           <div className="mb-8">
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2 mb-6 border border-white/20">
               <Sparkles className="w-4 h-4 text-sky-300" />
@@ -645,14 +645,14 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button 
               onClick={handleLoginClick}
-              className="group px-12 py-5 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl font-bold text-lg shadow-2xl hover:shadow-sky-500/50 transform hover:scale-110 transition-all duration-300 flex items-center gap-3"
+              className="group px-8 py-4 sm:px-12 sm:py-5 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl font-bold text-base sm:text-lg shadow-2xl hover:shadow-sky-500/50 transform hover:scale-110 transition-all duration-300 flex items-center gap-3"
             >
               Get Started Now
               <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
             </button>
             <button 
               onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
-              className="px-12 py-5 bg-white/10 dark:bg-white/5 backdrop-blur-sm text-white rounded-2xl font-semibold text-lg border-2 border-white/30 dark:border-white/20 hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300 flex items-center gap-3"
+              className="px-8 py-4 sm:px-12 sm:py-5 bg-white/10 dark:bg-white/5 backdrop-blur-sm text-white rounded-2xl font-semibold text-base sm:text-lg border-2 border-white/30 dark:border-white/20 hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300 flex items-center gap-3"
             >
               Learn More
               <Lightbulb className="w-5 h-5" />
