@@ -270,17 +270,17 @@ export default function StudentOnboarding() {
       const data = await api.uploadStudentsCsv(csvFile);
       setUploadResult(data);
       
-      // Check for existing/duplicate users
-      const existingCount = data.results?.filter(r => r.status === 'exists').length || 0;
+      // Check for existing/updated/duplicate users
+      const updatedCount = data.results?.filter(r => r.status === 'updated').length || 0;
       const createdCount = data.results?.filter(r => r.status === 'created').length || 0;
       
-      if (existingCount > 0 && createdCount === 0) {
-        const msg = `All ${existingCount} student(s) already exist in the system. No new students were added.`;
-        setError(msg);
-        toast.info(msg);
-        setUploadSuccess(true); // Still mark as complete even if all exist
-      } else if (existingCount > 0 && createdCount > 0) {
-        const msg = `Successfully added ${createdCount} new student(s). ${existingCount} student(s) already existed. Sending emails to newly added users. Wait till we complete.`;
+      if (updatedCount > 0 && createdCount === 0) {
+        const msg = `Updated ${updatedCount} existing student(s) with new CSV data. No new students were added.`;
+        setSuccess(msg);
+        toast.success(msg);
+        setUploadSuccess(true);
+      } else if (updatedCount > 0 && createdCount > 0) {
+        const msg = `Successfully added ${createdCount} new student(s) and updated ${updatedCount} existing student(s). Sending emails to newly added users. Wait till we complete.`;
         setSuccess(msg);
         toast.success(msg);
         setUploadSuccess(true);
@@ -905,6 +905,11 @@ export default function StudentOnboarding() {
                           <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
                             <AlertCircle className="w-3 h-3 mr-1" />
                             {errorsByRow[student.__row].length} error(s)
+                          </span>
+                        ) : uploadResult?.results?.[idx]?.status === 'updated' ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Updated
                           </span>
                         ) : uploadResult?.results?.[idx]?.status === 'exists' ? (
                           <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">

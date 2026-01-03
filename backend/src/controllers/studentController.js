@@ -208,9 +208,14 @@ export async function uploadStudentsCsv(req, res) {
   const studentIds = normalizedRows.map((r) => r.studentid).filter(Boolean);
 
   // Bulk query existing users in DB to avoid per-row queries
-  const existing = await User.find({ $or: [{ email: { $in: emails } }, { studentId: { $in: studentIds } }] }).select('email studentId').lean();
-  const existingEmails = new Set(existing.map((u) => (u.email || '').toLowerCase()));
-  const existingStudentIds = new Set(existing.map((u) => (u.studentId || '').toString()));
+  const existing = await User.find({ $or: [{ email: { $in: emails } }, { studentId: { $in: studentIds } }] }).lean();
+  const existingByEmail = new Map();
+  const existingByStudentId = new Map();
+  
+  existing.forEach((u) => {
+    if (u.email) existingByEmail.set(u.email.toLowerCase(), u);
+    if (u.studentId) existingByStudentId.set(u.studentId.toString(), u);
+  });
 
   // Ensure coordinators exist and Teacher IDs are valid before creating students
   const coordinators = await User.find({ role: 'coordinator' }).select('coordinatorId').lean();
@@ -271,10 +276,44 @@ export async function uploadStudentsCsv(req, res) {
     seenEmails.add(lowerEmail);
     seenStudentIds.add(studentid);
 
-    // Check existing in DB
-    if (existingEmails.has(lowerEmail) || existingStudentIds.has(studentid)) {
-      results.push({ row: row.__row, email, studentid, status: 'exists' });
-      continue;
+    // Check if student exists in DB
+    const existingUser = existingByEmail.get(lowerEmail) || existingByStudentId.get(studentid);
+    
+    if (existingUser) {
+      // Student exists - update their information with new CSV data
+      try {
+        const semesterNum = parseInt(row.semester);
+        if (isNaN(semesterNum) || semesterNum < 1 || semesterNum > 8) {
+          results.push({ row: row.__row, email, studentid, status: 'error', message: 'Semester must be between 1 and 8' });
+          continue;
+        }
+        
+        const updateData = {
+          name,
+          studentId: studentid,
+          branch,
+          course,
+          college,
+          teacherId: teacherid,
+          semester: semesterNum,
+          group: row.group,
+        };
+        
+        await User.findByIdAndUpdate(existingUser._id, updateData);
+        
+        results.push({ 
+          row: row.__row, 
+          id: existingUser._id, 
+          email, 
+          studentid, 
+          status: 'updated',
+          message: 'Student information updated with new CSV data'
+        });
+        continue;
+      } catch (err) {
+        results.push({ row: row.__row, email, studentid, status: 'error', message: err.message });
+        continue;
+      }
     }
 
     // Create user
@@ -339,7 +378,7 @@ export async function uploadStudentsCsv(req, res) {
   }
 
   // Log activity for bulk student upload
-  const successCount = results.filter(r => r.status === 'created' || r.status === 'linked_from_special').length;
+  const successCount = results.filter(r => r.status === 'created' || r.status === 'linked_from_special' || r.status === 'updated').length;
   if (successCount > 0 && req.user) {
     logActivity({
       userEmail: req.user.email,
