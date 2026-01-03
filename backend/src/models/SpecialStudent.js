@@ -1,3 +1,15 @@
+// DEPRECATED MODEL
+// -----------------
+// The SpecialStudent collection is no longer used by the
+// application. All students (including those in special events)
+// are now represented by the unified User model with the
+// fields `isSpecialStudent` and `specialEvents`.
+//
+// This file is kept only so existing data in the
+// `specialstudents` collection can still be inspected or
+// migrated manually if needed. Do NOT import or use this model
+// in new code.
+
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 

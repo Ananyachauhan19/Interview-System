@@ -1,6 +1,5 @@
 import { verifyToken } from '../utils/jwt.js';
 import User from '../models/User.js';
-import SpecialStudent from '../models/SpecialStudent.js';
 import { HttpError } from '../utils/errors.js';
 
 /**
@@ -25,19 +24,8 @@ export async function requireAuth(req, res, next) {
   if (!token) throw new HttpError(401, 'Missing token');
   
   const payload = verifyToken(token);
-  
-  // Check if it's a special student token
-  if (payload.isSpecial) {
-    const specialStudent = await SpecialStudent.findById(payload.sub);
-    if (!specialStudent) throw new HttpError(401, 'User not found');
-    // Make it look like a regular user object for middleware compatibility
-    req.user = specialStudent;
-    req.user.role = 'student';
-    req.user.isSpecialStudent = true;
-    return next();
-  }
-  
-  // Regular user
+
+  // All tokens now resolve to the unified User model
   const user = await User.findById(payload.sub);
   if (!user) throw new HttpError(401, 'User not found');
   

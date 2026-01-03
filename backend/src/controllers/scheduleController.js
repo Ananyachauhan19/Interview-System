@@ -2,7 +2,6 @@ import Pair from '../models/Pair.js';
 import SlotProposal from '../models/SlotProposal.js';
 import Event from '../models/Event.js';
 import User from '../models/User.js';
-import SpecialStudent from '../models/SpecialStudent.js';
 import { sendMail, buildICS, sendSlotProposalEmail, sendSlotAcceptanceEmail, sendInterviewScheduledEmail } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
 import crypto from 'crypto';
@@ -451,7 +450,7 @@ async function checkAndScheduleLastProposal(pair) {
   return true;
 }
 
-// Helper to check user's role in a pair (handles cross-collection matching for users in both User and SpecialStudent)
+// Helper to check user's role in a pair (all pairs use User IDs)
 async function getUserRoleInPair(pair, user) {
   const userId = user._id.toString();
   
@@ -468,54 +467,14 @@ async function getUserRoleInPair(pair, user) {
     return { isInPair: false, isInterviewer: null, effectiveUserId: null };
   }
   
-  // Direct ID match
+  // Direct ID match only
   if (userId === interviewerId) {
     return { isInPair: true, isInterviewer: true, effectiveUserId: userId };
   }
   if (userId === intervieweeId) {
     return { isInPair: true, isInterviewer: false, effectiveUserId: userId };
   }
-  
-  // If user is a regular User, check if they have a SpecialStudent record for special event pairs
-  if (!user.isSpecialStudent && user.email) {
-    const specialStudent = await SpecialStudent.findOne({
-      $or: [
-        { email: user.email },
-        { studentId: user.studentId }
-      ]
-    });
-    
-    if (specialStudent) {
-      const specialStudentId = specialStudent._id.toString();
-      if (specialStudentId === interviewerId) {
-        return { isInPair: true, isInterviewer: true, effectiveUserId: specialStudentId };
-      }
-      if (specialStudentId === intervieweeId) {
-        return { isInPair: true, isInterviewer: false, effectiveUserId: specialStudentId };
-      }
-    }
-  }
-  
-  // If user is a SpecialStudent, check if they have a User record for regular event pairs
-  if (user.isSpecialStudent && user.email) {
-    const regularUser = await User.findOne({
-      $or: [
-        { email: user.email },
-        { studentId: user.studentId }
-      ]
-    });
-    
-    if (regularUser) {
-      const regularUserId = regularUser._id.toString();
-      if (regularUserId === interviewerId) {
-        return { isInPair: true, isInterviewer: true, effectiveUserId: regularUserId };
-      }
-      if (regularUserId === intervieweeId) {
-        return { isInPair: true, isInterviewer: false, effectiveUserId: regularUserId };
-      }
-    }
-  }
-  
+
   return { isInPair: false, isInterviewer: null, effectiveUserId: null };
 }
 
@@ -523,37 +482,25 @@ export async function proposeSlots(req, res) {
   let pair = await Pair.findById(req.params.pairId);
   if (!pair) throw new HttpError(404, 'Pair not found');
   
-  // Get event to determine type
+  // Get event (for date boundaries only)
   const event = await Event.findById(pair.event);
-  const isSpecialEvent = event?.isSpecial;
-  
-  // Set model types if missing (backward compatibility)
-  if (!pair.interviewerModel || !pair.intervieweeModel) {
-    const modelType = isSpecialEvent ? 'SpecialStudent' : 'User';
-    pair.interviewerModel = modelType;
-    pair.intervieweeModel = modelType;
-    await pair.save();
-  }
   
   // Store the raw IDs before population attempt
   const rawInterviewerId = pair.interviewer;
   const rawIntervieweeId = pair.interviewee;
   
-  // Try to populate
+  // Try to populate from User model
   pair = await Pair.findById(req.params.pairId)
     .populate('interviewer')
     .populate('interviewee');
   
-  // If population failed (still an ObjectId, not an object with _id), manually fetch
-  const Model = isSpecialEvent ? SpecialStudent : User;
-  
   if (!pair.interviewer || !pair.interviewer._id) {
-    console.log(`[proposeSlots] Manually fetching interviewer from ${Model.modelName}`);
-    pair.interviewer = await Model.findById(rawInterviewerId);
+    console.log('[proposeSlots] Manually fetching interviewer from User');
+    pair.interviewer = await User.findById(rawInterviewerId);
   }
   if (!pair.interviewee || !pair.interviewee._id) {
-    console.log(`[proposeSlots] Manually fetching interviewee from ${Model.modelName}`);
-    pair.interviewee = await Model.findById(rawIntervieweeId);
+    console.log('[proposeSlots] Manually fetching interviewee from User');
+    pair.interviewee = await User.findById(rawIntervieweeId);
   }
   // Expire any passed active proposals before proceeding
   await expireProposalsIfNeeded(pair);
@@ -777,35 +724,23 @@ export async function confirmSlot(req, res) {
   let pair = await Pair.findById(req.params.pairId);
   if (!pair) throw new HttpError(404, 'Pair not found');
   
-  // Get event to determine type
+  // Get event (for date boundaries only)
   const event = await Event.findById(pair.event);
-  const isSpecialEvent = event?.isSpecial;
-  
-  // Set model types if missing (backward compatibility)
-  if (!pair.interviewerModel || !pair.intervieweeModel) {
-    const modelType = isSpecialEvent ? 'SpecialStudent' : 'User';
-    pair.interviewerModel = modelType;
-    pair.intervieweeModel = modelType;
-    await pair.save();
-  }
   
   // Store the raw IDs before population attempt
   const rawInterviewerId = pair.interviewer;
   const rawIntervieweeId = pair.interviewee;
   
-  // Try to populate
+  // Try to populate from User model
   pair = await Pair.findById(req.params.pairId)
     .populate('interviewer')
     .populate('interviewee');
   
-  // If population failed, manually fetch
-  const Model = isSpecialEvent ? SpecialStudent : User;
-  
   if (!pair.interviewer || !pair.interviewer._id) {
-    pair.interviewer = await Model.findById(rawInterviewerId);
+    pair.interviewer = await User.findById(rawInterviewerId);
   }
   if (!pair.interviewee || !pair.interviewee._id) {
-    pair.interviewee = await Model.findById(rawIntervieweeId);
+    pair.interviewee = await User.findById(rawIntervieweeId);
   }
   
   // Check if user is part of this pair (handles cross-collection matching)
@@ -850,11 +785,10 @@ export async function confirmSlot(req, res) {
   pair.status = 'scheduled';
   await pair.save();
 
-  // Log session scheduled activity for both participants
-  const confirmerModel = isSpecialEvent ? 'SpecialStudent' : 'User';
+  // Log session scheduled activity for both participants (always User model)
   await logStudentActivity({
     studentId: req.user._id,
-    studentModel: confirmerModel,
+    studentModel: 'User',
     activityType: 'SESSION_SCHEDULED',
     metadata: {
       pairId: pair._id,
@@ -898,35 +832,23 @@ export async function rejectSlots(req, res) {
   let pair = await Pair.findById(req.params.pairId);
   if (!pair) throw new HttpError(404, 'Pair not found');
   
-  // Get event to determine type
+  // Get event (for date boundaries only)
   const event = await Event.findById(pair.event);
-  const isSpecialEvent = event?.isSpecial;
-  
-  // Set model types if missing (backward compatibility)
-  if (!pair.interviewerModel || !pair.intervieweeModel) {
-    const modelType = isSpecialEvent ? 'SpecialStudent' : 'User';
-    pair.interviewerModel = modelType;
-    pair.intervieweeModel = modelType;
-    await pair.save();
-  }
   
   // Store the raw IDs before population attempt
   const rawInterviewerId = pair.interviewer;
   const rawIntervieweeId = pair.interviewee;
   
-  // Try to populate
+  // Try to populate from User model
   pair = await Pair.findById(req.params.pairId)
     .populate('interviewer')
     .populate('interviewee');
   
-  // If population failed, manually fetch
-  const Model = isSpecialEvent ? SpecialStudent : User;
-  
   if (!pair.interviewer || !pair.interviewer._id) {
-    pair.interviewer = await Model.findById(rawInterviewerId);
+    pair.interviewer = await User.findById(rawInterviewerId);
   }
   if (!pair.interviewee || !pair.interviewee._id) {
-    pair.interviewee = await Model.findById(rawIntervieweeId);
+    pair.interviewee = await User.findById(rawIntervieweeId);
   }
   
   if (pair.status === 'scheduled') throw new HttpError(400, 'Pair already scheduled; cannot reject now');

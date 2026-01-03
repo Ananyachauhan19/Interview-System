@@ -3,7 +3,6 @@ import User from '../models/User.js';
 import Event from '../models/Event.js';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { sendOnboardingEmail } from '../utils/mailer.js';
-import SpecialStudent from '../models/SpecialStudent.js';
 import { logActivity } from './adminActivityController.js';
 import { sanitizeCsvRow, sanitizeCsvField, validateObjectId, validateCsvImport, CSV_LIMITS } from '../utils/validators.js';
 
@@ -22,29 +21,34 @@ export async function listAllStudents(req, res) {
   try {
     const { search } = req.query;
     const user = req.user;
-    let query = { role: 'student' };
-    
-    // Coordinators see only their assigned students
-    if (user.role === 'coordinator') {
-      query.teacherId = user.coordinatorId;
-    }
-    
-    // Add search filter if provided
+    // Show ALL users with role='student' regardless of special tag
+    // Since special-event CSV creates users with role='student' AND isSpecialStudent=true,
+    // querying by role='student' will include both regular and special students
+    const baseQuery = user.role === 'coordinator'
+      ? { role: 'student', teacherId: user.coordinatorId }
+      : { role: 'student' };
+
+    let query = baseQuery;
+
+    // Add search filter if provided (server-side callers only; admin UI does client-side search)
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.trim(), 'i');
-      const baseQuery = user.role === 'coordinator' ? { role: 'student', teacherId: user.coordinatorId } : { role: 'student' };
       query = {
-        ...baseQuery,
-        $or: [
-          { name: searchRegex },
-          { email: searchRegex },
-          { studentId: searchRegex }
-        ]
+        $and: [
+          baseQuery,
+          {
+            $or: [
+              { name: searchRegex },
+              { email: searchRegex },
+              { studentId: searchRegex },
+            ],
+          },
+        ],
       };
     }
     
     const students = await User.find(query)
-      .select('name email studentId course branch college semester group teacherId avatarUrl createdAt')
+      .select('name email studentId course branch college semester group teacherId avatarUrl createdAt isSpecialStudent')
       .sort({ createdAt: -1 })
       .lean();
     
@@ -318,39 +322,6 @@ export async function uploadStudentsCsv(req, res) {
 
     // Create user
     try {
-      // Check if student exists in SpecialStudent collection
-      const existingSpecial = await SpecialStudent.findOne({
-        $or: [{ email: lowerEmail }, { studentId: studentid }]
-      });
-      
-      if (existingSpecial) {
-        // Create User with SpecialStudent's preserved password
-        const user = await User.create({
-          role: 'student',
-          course: course || existingSpecial.course,
-          name: name || existingSpecial.name,
-          email,
-          studentId: studentid,
-          passwordHash: existingSpecial.passwordHash, // Preserve password
-          branch: branch || existingSpecial.branch,
-          college: college || existingSpecial.college,
-          mustChangePassword: existingSpecial.mustChangePassword, // Preserve password change status
-          group: row.group || existingSpecial.group,
-        });
-        
-        results.push({ 
-          row: row.__row, 
-          id: user._id, 
-          email, 
-          studentid, 
-          status: 'linked_from_special',
-          message: 'Student exists in special events - linked with preserved password'
-        });
-        
-        // Don't send onboarding email - they already have credentials
-        continue;
-      }
-      
       // Generate random password (7-8 characters)
       const generatedPassword = generateRandomPassword();
       const passwordHash = await User.hashPassword(generatedPassword);
@@ -505,16 +476,17 @@ function generateTempPassword() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-// List all special students across all special events
+// List all special students across all special events (from User model with special tag)
 export async function listAllSpecialStudents(req, res) {
   try {
     const { search } = req.query;
-    let query = {};
+    let query = { isSpecialStudent: true };
     
     // Add search filter if provided
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.trim(), 'i');
       query = {
+        ...query,
         $or: [
           { name: searchRegex },
           { email: searchRegex },
@@ -526,66 +498,54 @@ export async function listAllSpecialStudents(req, res) {
       };
     }
     
-    const specialStudents = await SpecialStudent.find(query)
+    // Get special students from unified User collection
+    const specialStudents = await User.find(query)
       .populate({
-        path: 'events',
+        path: 'specialEvents',
         select: 'name isSpecial coordinatorId'
       })
-      .select('name email studentId course branch college semester group events createdAt teacherId avatarUrl')
+      .select('name email studentId course branch college semester group specialEvents createdAt teacherId avatarUrl')
       .sort({ createdAt: -1 })
       .lean();
-
-    // Get all unique coordinator IDs from events
-    const coordinatorIds = new Set();
-    specialStudents.forEach(student => {
-      student.events?.forEach(event => {
-        if (event.coordinatorId) {
-          coordinatorIds.add(event.coordinatorId);
-        }
-      });
-    });
-
-    // Fetch all coordinators at once
-    const coordinators = await User.find({
-      $or: [
-        { coordinatorId: { $in: Array.from(coordinatorIds) } },
-        { _id: { $in: Array.from(coordinatorIds).filter(id => id.match(/^[0-9a-fA-F]{24}$/)) } }
-      ]
-    }).select('_id name email coordinatorId').lean();
-
-    // Create a map for quick lookup
-    const coordMap = new Map();
-    coordinators.forEach(coord => {
-      if (coord.coordinatorId) coordMap.set(coord.coordinatorId, coord);
-      coordMap.set(coord._id.toString(), coord);
-    });
-
-    // As a fallback, fetch matching regular Users to derive teacherId when missing
-    const allEmails = specialStudents.map(s => s.email).filter(Boolean);
-    const allSids = specialStudents.map(s => s.studentId).filter(Boolean);
-    const userRecords = await User.find({ $or: [ { email: { $in: allEmails } }, { studentId: { $in: allSids } } ] })
-      .select('email studentId teacherId name')
+    // Fetch all coordinators once to avoid per-student queries
+    const coordinators = await User.find({ role: 'coordinator' })
+      .select('_id name email coordinatorId')
       .lean();
-    const userMapByEmail = new Map(userRecords.map(u => [String(u.email).toLowerCase(), u]));
-    const userMapBySid = new Map(userRecords.map(u => [String(u.studentId), u]));
 
-    // Extract coordinator info from events and add to each student
+    const coordinatorsById = new Map(coordinators.map(c => [c._id.toString(), c]));
+    const coordinatorsByCode = new Map(
+      coordinators
+        .filter(c => c.coordinatorId)
+        .map(c => [c.coordinatorId.toString(), c])
+    );
+
     const studentsWithCoordinator = specialStudents.map(student => {
-      // Get the first event's coordinator (most special students have one event)
-      const firstEvent = student.events && student.events.length > 0 ? student.events[0] : null;
-      const coordId = firstEvent?.coordinatorId;
-      const coordinator = coordId ? coordMap.get(coordId) : null;
-      const teacherFromStudent = student.teacherId;
-      // Fallback to matching regular User.teacherId if available
-      let teacherFromUser = null;
-      const u1 = student.email ? userMapByEmail.get(String(student.email).toLowerCase()) : null;
-      const u2 = !u1 && student.studentId ? userMapBySid.get(String(student.studentId)) : null;
-      teacherFromUser = (u1?.teacherId || u2?.teacherId) || null;
+      const teacherFromStudent = student.teacherId?.toString().trim() || null;
+      let coordinator = null;
+
+      if (teacherFromStudent) {
+        coordinator =
+          coordinatorsByCode.get(teacherFromStudent) ||
+          (validateObjectId(teacherFromStudent) ? coordinatorsById.get(teacherFromStudent) : null);
+      }
+
+      // If no coordinator found from student's teacherId, try from special events
+      if (!coordinator && Array.isArray(student.specialEvents)) {
+        for (const ev of student.specialEvents) {
+          if (!ev || !ev.coordinatorId) continue;
+          const id = ev.coordinatorId.toString();
+          coordinator =
+            coordinatorsByCode.get(id) ||
+            (validateObjectId(id) ? coordinatorsById.get(id) : null);
+          if (coordinator) break;
+        }
+      }
+
       return {
         ...student,
-        // Prefer teacherId stored on student (from CSV/admin), fallback to event coordinator mapping, then User.teacherId
-        teacherId: teacherFromStudent || coordinator?.coordinatorId || coordinator?.name || teacherFromUser || '-',
-        coordinatorEmail: coordinator?.email || '-'
+        // Prefer teacherId stored on student (from CSV/admin), then event coordinator, then coordinator name
+        teacherId: teacherFromStudent || coordinator?.coordinatorId || coordinator?.name || '-',
+        coordinatorEmail: coordinator?.email || '-',
       };
     });
 
@@ -596,7 +556,7 @@ export async function listAllSpecialStudents(req, res) {
   }
 }
 
-// List special students for a specific event
+// List special students for a specific event (from User model with special tag)
 export async function listSpecialStudentsByEvent(req, res) {
   try {
     const { eventId } = req.params;
@@ -625,7 +585,7 @@ export async function listSpecialStudentsByEvent(req, res) {
       }
     }
     
-    const specialStudents = await SpecialStudent.find({ events: eventId })
+    const specialStudents = await User.find({ isSpecialStudent: true, specialEvents: eventId })
       .select('name email studentId course branch college semester group createdAt teacherId')
       .sort({ createdAt: -1 })
       .lean();

@@ -1,5 +1,4 @@
 import User from '../models/User.js';
-import SpecialStudent from '../models/SpecialStudent.js';
 import { signToken } from '../utils/jwt.js';
 import { HttpError } from '../utils/errors.js';
 import crypto from 'crypto';
@@ -30,16 +29,10 @@ export async function changePassword(req, res) {
   const ok = await user.verifyPassword(currentPassword);
   if (!ok) throw new HttpError(401, 'Current password incorrect');
   
-  // Update password
-  if (user.isSpecialStudent) {
-    user.passwordHash = await SpecialStudent.hashPassword(newPassword);
-    user.mustChangePassword = false;
-    await user.save();
-  } else {
-    user.passwordHash = await User.hashPassword(newPassword);
-    user.mustChangePassword = false;
-    await user.save();
-  }
+  // Update password (all students and coordinators use User model hashing)
+  user.passwordHash = await User.hashPassword(newPassword);
+  user.mustChangePassword = false;
+  await user.save();
   
   // Log activity
   logActivity({
@@ -130,7 +123,8 @@ export function me(req, res) {
     email: u.email, 
     name: u.name, 
     role: u.role, 
-    avatarUrl: u.avatarUrl 
+    avatarUrl: u.avatarUrl,
+    isSpecialStudent: Boolean(u.isSpecialStudent),
   };
   
   // Add role-specific fields
@@ -166,7 +160,7 @@ export async function updateMe(req, res) {
     ...(branch !== undefined ? { branch: trim(branch) } : {}),
     ...(college !== undefined ? { college: trim(college) } : {}),
   };
-  // Persist on underlying model (User or SpecialStudent)
+  // Persist on underlying User model
   Object.assign(u, updates);
   await u.save();
   
@@ -212,7 +206,7 @@ export async function updateMyAvatar(req, res) {
     // Upload new avatar to Cloudinary
     const avatarUrl = await uploadAvatar(file.buffer, folder, u._id.toString());
     
-    // Save on user document (works for User and SpecialStudent via req.user)
+    // Save on user document (unified User model via req.user)
     u.avatarUrl = avatarUrl;
     await u.save();
     
@@ -228,14 +222,13 @@ export async function updateMyAvatar(req, res) {
       req
     });
     
-    // Log student activity for profile update
+    // Log student activity for profile update (always using User model)
     if (u.role === 'student') {
-      const studentModel = u.isSpecialStudent ? 'SpecialStudent' : 'User';
       await logStudentActivity({
         studentId: u._id,
-        studentModel: studentModel,
+        studentModel: 'User',
         activityType: 'PROFILE_UPDATED',
-        metadata: { action: 'avatar_updated' }
+        metadata: { action: 'avatar_updated', isSpecialStudent: Boolean(u.isSpecialStudent) }
       });
     }
     
@@ -299,7 +292,7 @@ export async function login(req, res) {
       studentId: student._id,
       studentModel: 'User',
       activityType: 'LOGIN',
-      metadata: { email: student.email, studentId: student.studentId }
+      metadata: { email: student.email, studentId: student.studentId, isSpecialStudent: Boolean(student.isSpecialStudent) }
     });
     
     const token = signToken({ 
@@ -352,62 +345,6 @@ export async function login(req, res) {
     return res.json({ user: sanitizeUser(coordinator) });
   }
 
-  // Try special student by email OR studentId
-  const specialStudent = await SpecialStudent.findOne({
-    $or: [{ email: idLower }, { studentId: id }],
-  });
-  if (specialStudent) {
-    const ok = await specialStudent.verifyPassword(password);
-    if (!ok) {
-      // SECURITY: Log failed auth attempt
-      logAuthAttempt(req, false, specialStudent.email, null, 'Invalid password');
-      throw new HttpError(401, 'Invalid credentials');
-    }
-    
-    // SECURITY: Log successful auth
-    logAuthAttempt(req, true, specialStudent.email, specialStudent._id);
-    
-    // Log special student login activity
-    await logStudentActivity({
-      studentId: specialStudent._id,
-      studentModel: 'SpecialStudent',
-      activityType: 'LOGIN',
-      metadata: { email: specialStudent.email, studentId: specialStudent.studentId }
-    });
-    
-    const token = signToken({ 
-      sub: specialStudent._id, 
-      role: 'student', 
-      isSpecial: true,
-      email: specialStudent.email,
-      studentId: specialStudent.studentId
-    });
-    
-    // SECURITY: Store JWT in HttpOnly cookie
-    res.cookie('accessToken', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000,
-      path: '/'
-    });
-    
-    return res.json({ 
-      user: {
-        id: specialStudent._id,
-        role: 'student',
-        name: specialStudent.name,
-        email: specialStudent.email,
-        studentId: specialStudent.studentId,
-        mustChangePassword: specialStudent.mustChangePassword,
-        course: specialStudent.course,
-        branch: specialStudent.branch,
-        college: specialStudent.college,
-        isSpecialStudent: true,
-      }
-    });
-  }
-
   // No match found - SECURITY: Log failed attempt without revealing if user exists
   logAuthAttempt(req, false, id, null, 'User not found');
   throw new HttpError(401, 'Invalid credentials');
@@ -434,6 +371,7 @@ function sanitizeUser(u) {
     course: u.course,
     branch: u.branch,
     college: u.college,
+    isSpecialStudent: Boolean(u.isSpecialStudent),
   };
 }
 

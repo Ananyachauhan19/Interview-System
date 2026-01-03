@@ -1,9 +1,6 @@
 import { sendSlotProposalEmail, sendSlotAcceptanceEmail, sendInterviewScheduledEmail, sendMail, renderTemplate, sendEventNotificationEmail, sendOnboardingEmail } from '../utils/mailer.js';
-import Event from '../models/Event.js';
-import User from '../models/User.js';
 import Pair from '../models/Pair.js';
 import SlotProposal from '../models/SlotProposal.js';
-import SpecialStudent from '../models/SpecialStudent.js';
 import bcrypt from 'bcrypt';
 import fs from 'fs';
 import path from 'path';
@@ -11,6 +8,8 @@ import { Readable } from 'stream';
 import { HttpError } from '../utils/errors.js';
 import { supabase } from '../utils/supabase.js';
 import { logActivity } from './adminActivityController.js';
+import Event from '../models/Event.js';
+import User from '../models/User.js';
 
 // Fisher-Yates shuffle algorithm for random array shuffling
 function shuffleArray(array) {
@@ -342,23 +341,15 @@ export async function checkSpecialEventCsv(req, res) {
   // For admins, pre-load related DB records to validate CSV against existing data
   let existingUsersByEmail = new Map();
   let existingUsersById = new Map();
-  let existingSpecialByEmail = new Map();
-  let existingSpecialById = new Map();
   let validCoordinatorIds = new Set();
 
   if (req.user?.role === 'admin') {
     const emails = normalizedRows.map((r) => r.email).filter(Boolean);
     const studentIds = normalizedRows.map((r) => r.studentid).filter(Boolean);
 
-    const [existingUsers, existingSpecials, coordinators] = await Promise.all([
+    const [existingUsers, coordinators] = await Promise.all([
       User.find({
         role: 'student',
-        $or: [
-          { email: { $in: emails } },
-          { studentId: { $in: studentIds } },
-        ],
-      }).select('email studentId name branch semester group course college teacherId').lean(),
-      SpecialStudent.find({
         $or: [
           { email: { $in: emails } },
           { studentId: { $in: studentIds } },
@@ -370,10 +361,6 @@ export async function checkSpecialEventCsv(req, res) {
     existingUsers.forEach((u) => {
       if (u.email) existingUsersByEmail.set(u.email.toLowerCase(), u);
       if (u.studentId) existingUsersById.set(String(u.studentId), u);
-    });
-    existingSpecials.forEach((s) => {
-      if (s.email) existingSpecialByEmail.set(s.email.toLowerCase(), s);
-      if (s.studentId) existingSpecialById.set(String(s.studentId), s);
     });
     validCoordinatorIds = new Set(
       coordinators
@@ -484,8 +471,6 @@ export async function checkSpecialEventCsv(req, res) {
       const lowerEmail = email.toLowerCase();
       const userByEmail = existingUsersByEmail.get(lowerEmail);
       const userById = existingUsersById.get(studentid);
-      const specialByEmail = existingSpecialByEmail.get(lowerEmail);
-      const specialById = existingSpecialById.get(studentid);
 
       // Validate that Teacher ID (if provided) belongs to a coordinator
       if (teacherid && !validCoordinatorIds.has(teacherid)) {
@@ -540,22 +525,21 @@ export async function checkSpecialEventCsv(req, res) {
       };
 
       const userMismatch = validateRecord(userByEmail || userById, 'User');
-      const specialMismatch = validateRecord(specialByEmail || specialById, 'SpecialStudent');
 
-      if (userMismatch || specialMismatch) {
+      if (userMismatch) {
         results.push({
           row: row.__row,
           name,
           email,
           studentid,
           status: 'db_mismatch',
-          message: userMismatch || specialMismatch,
+          message: userMismatch,
         });
         continue;
       }
 
       // If there is an existing record with an assigned coordinator, enforce exact match on Teacher ID
-      const sourceRecord = userByEmail || userById || specialByEmail || specialById;
+      const sourceRecord = userByEmail || userById;
       if (sourceRecord && sourceRecord.teacherId) {
         const expectedTeacherId = String(sourceRecord.teacherId).trim();
         const csvTeacherId = (teacherid || '').trim();
@@ -636,15 +620,9 @@ export async function createSpecialEvent(req, res) {
     const emails = normalizedRows.map((r) => r.email).filter(Boolean);
     const studentIds = normalizedRows.map((r) => r.studentid).filter(Boolean);
 
-    const [existingUsers, existingSpecials, coordinators] = await Promise.all([
+    const [existingUsers, coordinators] = await Promise.all([
       User.find({
         role: 'student',
-        $or: [
-          { email: { $in: emails } },
-          { studentId: { $in: studentIds } },
-        ],
-      }).select('email studentId name branch semester group course college teacherId').lean(),
-      SpecialStudent.find({
         $or: [
           { email: { $in: emails } },
           { studentId: { $in: studentIds } },
@@ -655,15 +633,9 @@ export async function createSpecialEvent(req, res) {
 
     const usersByEmail = new Map();
     const usersById = new Map();
-    const specialsByEmail = new Map();
-    const specialsById = new Map();
     existingUsers.forEach((u) => {
       if (u.email) usersByEmail.set(u.email.toLowerCase(), u);
       if (u.studentId) usersById.set(String(u.studentId), u);
-    });
-    existingSpecials.forEach((s) => {
-      if (s.email) specialsByEmail.set(s.email.toLowerCase(), s);
-      if (s.studentId) specialsById.set(String(s.studentId), s);
     });
     const validCoordinatorIds = new Set(
       coordinators
@@ -677,7 +649,6 @@ export async function createSpecialEvent(req, res) {
 
       const lowerEmail = email.toLowerCase();
       const user = usersByEmail.get(lowerEmail) || usersById.get(studentid);
-      const special = specialsByEmail.get(lowerEmail) || specialsById.get(studentid);
 
       // Teacher ID must reference an existing coordinator when provided
       if (teacherid && !validCoordinatorIds.has(teacherid)) {
@@ -700,14 +671,13 @@ export async function createSpecialEvent(req, res) {
       };
 
       const userMismatch = validateRecord(user, 'User');
-      const specialMismatch = validateRecord(special, 'SpecialStudent');
 
-      if (userMismatch || specialMismatch) {
-        throw new HttpError(400, userMismatch || specialMismatch);
+      if (userMismatch) {
+        throw new HttpError(400, userMismatch);
       }
 
       // If there is an existing record with an assigned coordinator, enforce exact match on Teacher ID
-      const sourceRecord = user || special;
+      const sourceRecord = user;
       if (sourceRecord && sourceRecord.teacherId) {
         const expectedTeacherId = String(sourceRecord.teacherId).trim();
         const csvTeacherId = (teacherid || '').trim();
@@ -739,12 +709,13 @@ export async function createSpecialEvent(req, res) {
     endDate: end || undefined,
     ...tpl,
     isSpecial: true,
-    allowedParticipants: [], // Will be filled with SpecialStudent IDs
-    participants: [], // Will be filled with SpecialStudent IDs
+    // For special events, participants are regular User IDs tagged as special students
+    allowedParticipants: [],
+    participants: [],
     coordinatorId, // Add coordinatorId for coordinator-created special events
   });
 
-  // Process CSV and create SpecialStudent records
+  // Process CSV and create/update special-student Users
   const results = [];
   const requiredFields = ['name', 'email', 'studentid', 'branch'];
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -753,7 +724,7 @@ export async function createSpecialEvent(req, res) {
   const createdStudents = []; // For async email sending
 
   for (const row of normalizedRows) {
-    const { course, name, email, studentid, password, branch, college, semester, teacherid } = row;
+    const { course, name, email, studentid, password, branch, college, semester, group, teacherid } = row;
     // Derive teacher to assign: coordinator who created the event, otherwise CSV-provided teacherid
     const effectiveTeacherId = (coordinatorId && String(coordinatorId)) || (teacherid || undefined);
 
@@ -827,175 +798,103 @@ export async function createSpecialEvent(req, res) {
       }
     }
 
-    // Create or update SpecialStudent
+    // Create or update special-student in unified User model
     try {
       const defaultPassword = password || studentid;
-      
+
       // First check if student exists in User collection
-      const existingUser = await User.findOne({ 
-        $or: [{ email }, { studentId: studentid }] 
+      const existingUser = await User.findOne({
+        $or: [{ email }, { studentId: studentid }]
       });
-      
+
       if (existingUser) {
-        // Student exists in User collection - add event to SpecialStudent with preserved User password
-        let specialStudent = await SpecialStudent.findOne({
-          $or: [{ email }, { studentId: studentid }]
-        });
-        
-        if (specialStudent) {
-          // SpecialStudent record exists - just add event if not already added
-          if (!specialStudent.events.includes(event._id)) {
-            specialStudent.events.push(event._id);
-            // Set/patch teacherId if provided
-            if (effectiveTeacherId && (!specialStudent.teacherId || specialStudent.teacherId !== effectiveTeacherId)) {
-              specialStudent.teacherId = effectiveTeacherId;
-            }
-            await specialStudent.save();
-            results.push({ 
-              row: row.__row, 
-              id: specialStudent._id, 
-              email, 
-              studentid, 
-              status: 'added_event_to_existing',
-              message: 'Student already exists - added to this event'
-            });
-          } else {
-            results.push({ 
-              row: row.__row, 
-              id: specialStudent._id, 
-              email, 
-              studentid, 
-              status: 'already_enrolled',
-              message: 'Student already enrolled in this event'
-            });
-          }
-        } else {
-          // Create SpecialStudent with User's password
-          specialStudent = await SpecialStudent.create({
-            name: existingUser.name,
-            email: existingUser.email,
-            studentId: existingUser.studentId,
-            branch: existingUser.branch || branch,
-            course: existingUser.course || course,
-            college: existingUser.college || college,
-            semester: existingUser.semester,
-            events: [event._id],
-            passwordHash: existingUser.passwordHash,
-            mustChangePassword: existingUser.mustChangePassword,
-            teacherId: effectiveTeacherId || undefined,
-          });
-          
-          results.push({ 
-            row: row.__row, 
-            id: specialStudent._id, 
-            email, 
-            studentid, 
-            status: 'linked_from_users',
-            message: 'Student exists in main database - linked with preserved password'
-          });
+        // Existing user: mark as special and append this event
+        const user = existingUser;
+        user.isSpecialStudent = true;
+        if (!Array.isArray(user.specialEvents)) user.specialEvents = [];
+        const eventIdStr = event._id.toString();
+        if (!user.specialEvents.some(eId => eId.toString() === eventIdStr)) {
+          user.specialEvents.push(event._id);
         }
-        
-        // Add to createdStudents but don't send onboarding email
+        if (effectiveTeacherId && (!user.teacherId || String(user.teacherId) !== String(effectiveTeacherId))) {
+          user.teacherId = effectiveTeacherId;
+        }
+
+        // Update group from CSV if provided
+        if (group) {
+          user.group = group;
+        }
+        await user.save();
+
+        results.push({
+          row: row.__row,
+          id: user._id,
+          email,
+          studentid,
+          status: 'added_event_to_existing',
+          message: 'Existing student tagged as special for this event'
+        });
+
+        // Add to createdStudents but don't send onboarding email (already have credentials)
         createdStudents.push({
-          _id: specialStudent._id,
-          email: specialStudent.email,
-          name: specialStudent.name,
-          studentId: specialStudent.studentId,
+          _id: user._id,
+          email: user.email,
+          name: user.name,
+          studentId: user.studentId,
           password: defaultPassword,
-          shouldSendOnboarding: false, // Don't send - they already have credentials
+          shouldSendOnboarding: false,
         });
         continue;
       }
 
-      // Check if student exists in SpecialStudent collection
-      let specialStudent = await SpecialStudent.findOne({
-        $or: [{ email }, { studentId: studentid }]
+      // No existing user: only admins can create new special-student users
+      if (coordinatorId) {
+        results.push({
+          row: row.__row,
+          email,
+          studentid,
+          status: 'error',
+          message: 'Coordinators cannot create new students. Student must exist in the main database first.'
+        });
+        continue;
+      }
+
+      // New student - create User with special-student tag (admin only)
+      const passwordHash = await User.hashPassword(defaultPassword);
+
+      const user = await User.create({
+        role: 'student',
+        name,
+        email,
+        studentId: studentid,
+        branch,
+        course: course || undefined,
+        college: college || undefined,
+        semester: semester || undefined,
+        group: group || undefined,
+        teacherId: effectiveTeacherId || undefined,
+        passwordHash,
+        mustChangePassword: true,
+        isSpecialStudent: true,
+        specialEvents: [event._id],
       });
 
-      if (specialStudent) {
-        // SpecialStudent exists - add event if not already added
-        if (!specialStudent.events.includes(event._id)) {
-          specialStudent.events.push(event._id);
-          if (effectiveTeacherId && (!specialStudent.teacherId || specialStudent.teacherId !== effectiveTeacherId)) {
-            specialStudent.teacherId = effectiveTeacherId;
-          }
-          await specialStudent.save();
-          
-          results.push({ 
-            row: row.__row, 
-            id: specialStudent._id, 
-            email, 
-            studentid, 
-            status: 'added_event_to_existing',
-            message: 'Student already exists - added to this event with preserved password'
-          });
-        } else {
-          results.push({ 
-            row: row.__row, 
-            id: specialStudent._id, 
-            email, 
-            studentid, 
-            status: 'already_enrolled',
-            message: 'Student already enrolled in this event'
-          });
-        }
-        
-        // Add to createdStudents but don't send onboarding email
-        createdStudents.push({
-          _id: specialStudent._id,
-          email: specialStudent.email,
-          name: specialStudent.name,
-          studentId: specialStudent.studentId,
-          password: defaultPassword,
-          shouldSendOnboarding: false, // Don't send - they already have credentials
-        });
-      } else {
-        // For coordinators, reject new student creation
-        if (coordinatorId) {
-          results.push({ 
-            row: row.__row, 
-            email, 
-            studentid, 
-            status: 'error', 
-            message: 'Coordinators cannot create new students. Student must exist in the main database first.'
-          });
-          continue;
-        }
-        
-        // New student - create SpecialStudent with CSV password (admin only)
-        const passwordHash = await User.hashPassword(defaultPassword);
-        
-        specialStudent = await SpecialStudent.create({
-          name,
-          email,
-          studentId: studentid,
-          branch,
-          course: course || undefined,
-          college: college || undefined,
-          semester: semester || undefined,
-          events: [event._id],
-          passwordHash,
-          mustChangePassword: true,
-          teacherId: effectiveTeacherId || undefined,
-        });
-        
-        results.push({ row: row.__row, id: specialStudent._id, email, studentid, status: 'created' });
-        
-        // Add to createdStudents and send onboarding email
-        createdStudents.push({
-          _id: specialStudent._id,
-          email: specialStudent.email,
-          name: specialStudent.name,
-          studentId: specialStudent.studentId,
-          password: defaultPassword,
-          shouldSendOnboarding: true, // Send onboarding email
-        });
-      }
+      results.push({ row: row.__row, id: user._id, email, studentid, status: 'created' });
+
+      // Add to createdStudents and send onboarding email
+      createdStudents.push({
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        studentId: user.studentId,
+        password: defaultPassword,
+        shouldSendOnboarding: true,
+      });
     } catch (err) {
       results.push({ row: row.__row, email, studentid, status: 'error', message: err.message });
     }
   }
-
+  
   // Update event with created student IDs
   event.allowedParticipants = createdStudents.map(s => s._id);
   event.participants = createdStudents.map(s => s._id);
@@ -1123,7 +1022,7 @@ export async function listEvents(req, res) {
     userId: userId?.toString(),
     role: req.user?.role,
     isSpecialStudent,
-    userType: isSpecialStudent ? 'SpecialStudent' : 'User',
+    userType: isSpecialStudent ? 'special' : 'regular',
     userCreatedAt: userCreatedAt
   });
   
@@ -1165,22 +1064,7 @@ export async function listEvents(req, res) {
     name: e.name,
     allowedParticipants: e.allowedParticipants?.map(p => p.toString())
   })));
-  
-  // If user is a regular User, check if they also exist as SpecialStudent
-  let specialStudentId = null;
-  if (!isSpecialStudent && userId && req.user?.email) {
-    const specialStudent = await SpecialStudent.findOne({
-      $or: [
-        { email: req.user.email },
-        { studentId: req.user.studentId }
-      ]
-    });
-    if (specialStudent) {
-      specialStudentId = specialStudent._id;
-      console.log('[listEvents] User also exists as SpecialStudent:', specialStudentId.toString());
-    }
-  }
-  
+
   const visible = eventsWithCoordinator.filter(e => {
     // Admins and coordinators see all their events (no filtering needed)
     if (isAdmin || req.user?.role === 'coordinator') return true;
@@ -1214,47 +1098,26 @@ export async function listEvents(req, res) {
     // Non-special events are visible to everyone (if created after registration)
     if (!e.isSpecial) return true;
     
-    // Special students can only see events they're enrolled in
-    if (isSpecialStudent && userId) {
-      const canSee = e.allowedParticipants?.some?.(p => p.toString() === userId.toString());
-      console.log('[listEvents] Special event check:', {
-        eventName: e.name,
-        eventId: e._id.toString(),
-        userId: userId.toString(),
-        allowedParticipants: e.allowedParticipants?.map(p => p.toString()),
-        canSee
-      });
-      return canSee;
-    }
-    
-    // Regular students - check if they exist as SpecialStudent and are allowed
-    if (specialStudentId) {
-      const canSee = e.allowedParticipants?.some?.(p => p.toString() === specialStudentId.toString());
-      console.log('[listEvents] User as SpecialStudent check:', {
-        eventName: e.name,
-        specialStudentId: specialStudentId.toString(),
-        allowedParticipants: e.allowedParticipants?.map(p => p.toString()),
-        canSee
-      });
-      return canSee;
-    }
-    
-    // Regular students cannot see special events (unless enrolled - checked above)
+    // For special events, only show if the current student is explicitly allowed
     if (!userId) return false;
-    return e.allowedParticipants?.some?.(p => p.toString() === userId.toString());
+    const canSee = e.allowedParticipants?.some?.(p => p.toString() === userId.toString());
+    console.log('[listEvents] Special event visibility check:', {
+      eventName: e.name,
+      eventId: e._id.toString(),
+      userId: userId.toString(),
+      allowedParticipants: e.allowedParticipants?.map(p => p.toString()),
+      canSee
+    });
+    return canSee;
   });
   
   console.log('[listEvents] Visible events:', visible.length);
-  
-  // For joined status, check both User ID and SpecialStudent ID
+
+  // For joined status, check current User ID against participants
   const mapped = visible.map(e => {
     let joined = false;
     if (userId) {
       joined = e.participants?.some?.(p => p.toString() === userId.toString());
-    }
-    // Also check SpecialStudent ID if exists
-    if (!joined && specialStudentId) {
-      joined = e.participants?.some?.(p => p.toString() === specialStudentId.toString());
     }
     return { ...e, joined };
   });
@@ -1267,7 +1130,7 @@ export async function joinEvent(req, res) {
   if (!event) throw new HttpError(404, 'Event not found');
   const userId = req.user._id;
   // Restrict joining events that were created before the student's registration time
-  // Applies to both regular User and SpecialStudent (both have timestamps)
+  // Applies to all students (timestamps stored on unified User model)
   try {
     const userCreatedAt = req.user?.createdAt ? new Date(req.user.createdAt) : null;
     const eventCreatedAt = event.createdAt ? new Date(event.createdAt) : null;

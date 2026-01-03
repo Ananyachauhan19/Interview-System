@@ -1,7 +1,6 @@
 import Pair from '../models/Pair.js';
 import Progress from '../models/Progress.js';
 import User from '../models/User.js';
-import SpecialStudent from '../models/SpecialStudent.js';
 import StudentActivity from '../models/StudentActivity.js';
 import Subject from '../models/Subject.js';
 import { HttpError } from '../utils/errors.js';
@@ -182,14 +181,13 @@ export async function getStudentActivity(req, res) {
       console.log('[getStudentActivity] All activity dates:', activities.map(a => a._id));
     }
 
-    // 2. Get scheduled sessions within range
-    const isSpecialStudent = Boolean(user.isSpecialStudent);
+    // 2. Get scheduled sessions within range (all pairs now reference User model)
     const scheduledSessions = await Pair.aggregate([
       {
         $match: {
           $or: [
-            { interviewer: user._id, interviewerModel: isSpecialStudent ? 'SpecialStudent' : 'User' },
-            { interviewee: user._id, intervieweeModel: isSpecialStudent ? 'SpecialStudent' : 'User' }
+            { interviewer: user._id, interviewerModel: 'User' },
+            { interviewee: user._id, intervieweeModel: 'User' }
           ],
           finalConfirmedTime: {
             $gte: startDate,
@@ -368,13 +366,8 @@ export async function getStudentActivityByAdmin(req, res) {
   
   if (!studentId) throw new HttpError(400, 'Student ID is required');
 
-  // Find the student
-  let student = await User.findById(studentId);
-  let studentModel = 'User';
-  if (!student) {
-    student = await SpecialStudent.findById(studentId);
-    studentModel = 'SpecialStudent';
-  }
+  // Find the student in unified User collection
+  const student = await User.findById(studentId);
   if (!student) throw new HttpError(404, 'Student not found');
   if (student.role !== 'student' && !student.isSpecialStudent) {
     throw new HttpError(400, 'Invalid student ID');
@@ -415,8 +408,8 @@ export async function getStudentActivityByAdmin(req, res) {
       {
         $match: {
           $or: [
-            { interviewer: student._id, interviewerModel: student.isSpecialStudent ? 'SpecialStudent' : 'User' },
-            { interviewee: student._id, intervieweeModel: student.isSpecialStudent ? 'SpecialStudent' : 'User' }
+            { interviewer: student._id, interviewerModel: 'User' },
+            { interviewee: student._id, intervieweeModel: 'User' }
           ],
           finalConfirmedTime: { 
             $gte: startDate,
@@ -596,11 +589,8 @@ export async function getStudentStats(req, res) {
   }
 
   try {
-    // Find the student
-    let student = await User.findById(studentId);
-    if (!student) {
-      student = await SpecialStudent.findById(studentId);
-    }
+    // Find the student in unified User collection
+    const student = await User.findById(studentId);
     if (!student) throw new HttpError(404, 'Student not found');
 
     // Determine learning scope for this student (semesters/subjects/videos assigned)

@@ -2,7 +2,6 @@ import { sendSlotProposalEmail, sendSlotAcceptanceEmail, sendInterviewScheduledE
 import Event from '../models/Event.js';
 import Pair from '../models/Pair.js';
 import User from '../models/User.js';
-import SpecialStudent from '../models/SpecialStudent.js';
 import mongoose from 'mongoose';
 import { sendMail, renderTemplate } from '../utils/mailer.js';
 import { HttpError } from '../utils/errors.js';
@@ -42,8 +41,8 @@ async function generateRotationPairsForEvent(event) {
   const pairs = shuffledIds.map((id, i) => [id, shuffledIds[(i + 1) % shuffledIds.length]]);
   await Pair.deleteMany({ event: event._id });
   
-  // Determine model type based on whether event is special
-  const modelType = event.isSpecial ? 'SpecialStudent' : 'User';
+  // All pairs now reference the User model; special status is stored on User
+  const modelType = 'User';
   
   // Generate default time slots - evenly distributed between event start and end
   const eventStart = event.startDate ? new Date(event.startDate).getTime() : Date.now();
@@ -96,56 +95,14 @@ export async function listPairs(req, res) {
     query = { event: id };
   } else if (req.user?.role !== 'admin') {
     const userIdToCheck = req.user._id;
-    
-    // Check for cross-collection IDs based on event type
-    let alternateId = null;
-    
-    if (event.isSpecial && !req.user?.isSpecialStudent && req.user?.email) {
-      // Special event + regular User login -> check for SpecialStudent record
-      const specialStudent = await SpecialStudent.findOne({
-        $or: [
-          { email: req.user.email },
-          { studentId: req.user.studentId }
-        ]
-      });
-      if (specialStudent) {
-        alternateId = specialStudent._id;
-        console.log('[listPairs] User also exists as SpecialStudent:', alternateId.toString());
-      }
-    } else if (!event.isSpecial && req.user?.isSpecialStudent && req.user?.email) {
-      // Regular event + SpecialStudent login -> check for User record
-      const regularUser = await User.findOne({
-        $or: [
-          { email: req.user.email },
-          { studentId: req.user.studentId }
-        ]
-      });
-      if (regularUser) {
-        alternateId = regularUser._id;
-        console.log('[listPairs] SpecialStudent also exists as User:', alternateId.toString());
-      }
-    }
-    
-    // Build query to check both primary ID and alternate ID (if exists)
-    if (alternateId) {
-      query = { 
-        event: id, 
-        $or: [
-          { interviewer: userIdToCheck }, 
-          { interviewee: userIdToCheck },
-          { interviewer: alternateId },
-          { interviewee: alternateId }
-        ] 
-      };
-    } else {
-      query = { 
-        event: id, 
-        $or: [
-          { interviewer: userIdToCheck }, 
-          { interviewee: userIdToCheck }
-        ] 
-      };
-    }
+    // Students see only pairs where they are interviewer or interviewee (single User model)
+    query = { 
+      event: id, 
+      $or: [
+        { interviewer: userIdToCheck }, 
+        { interviewee: userIdToCheck }
+      ] 
+    };
   }
 
   let pairs;
@@ -155,44 +112,20 @@ export async function listPairs(req, res) {
     
     console.log('[listPairs] Found pairs:', pairs.length, 'for event:', event.name);
     
-    // Manually populate based on event type
-    if (event.isSpecial) {
-      // For special events, populate from SpecialStudent collection
-      const studentIds = [...new Set([
-        ...pairs.map(p => p.interviewer?.toString()),
-        ...pairs.map(p => p.interviewee?.toString())
-      ].filter(Boolean))];
-      
-      // Find SpecialStudents that are enrolled in this specific event
-      const students = await SpecialStudent.find({ 
-        _id: { $in: studentIds },
-        events: event._id // Must be enrolled in this event
-      }).lean();
-      const studentMap = new Map(students.map(s => [s._id.toString(), s]));
-      
-      // Attach populated data to pairs
-      pairs = pairs.map(p => ({
-        ...p,
-        interviewer: studentMap.get(p.interviewer?.toString()) || null,
-        interviewee: studentMap.get(p.interviewee?.toString()) || null
-      }));
-    } else {
-      // For regular events, populate from User collection
-      const userIds = [...new Set([
-        ...pairs.map(p => p.interviewer?.toString()),
-        ...pairs.map(p => p.interviewee?.toString())
-      ].filter(Boolean))];
-      
-      const users = await User.find({ _id: { $in: userIds } }).lean();
-      const userMap = new Map(users.map(u => [u._id.toString(), u]));
-      
-      // Attach populated data to pairs
-      pairs = pairs.map(p => ({
-        ...p,
-        interviewer: userMap.get(p.interviewer?.toString()) || null,
-        interviewee: userMap.get(p.interviewee?.toString()) || null
-      }));
-    }
+    // Populate from User collection for all events
+    const userIds = [...new Set([
+      ...pairs.map(p => p.interviewer?.toString()),
+      ...pairs.map(p => p.interviewee?.toString())
+    ].filter(Boolean))];
+
+    const users = await User.find({ _id: { $in: userIds } }).lean();
+    const userMap = new Map(users.map(u => [u._id.toString(), u]));
+
+    pairs = pairs.map(p => ({
+      ...p,
+      interviewer: userMap.get(p.interviewer?.toString()) || null,
+      interviewee: userMap.get(p.interviewee?.toString()) || null
+    }));
   } catch (e) {
     // Add lightweight diagnostics (safe) to help track unexpected failures
     console.error('[listPairs] query failed', { eventId: id, user: req.user?._id?.toString(), error: e.message });
@@ -275,19 +208,10 @@ export async function getPairDetails(req, res) {
   }
   console.log('[getPairDetails] Event found:', event.name);
 
-  // Populate interviewer and interviewee based on event type
-  let interviewer = null;
-  let interviewee = null;
-
-  if (event.isSpecial) {
-    console.log('[getPairDetails] Loading SpecialStudent data');
-    interviewer = await SpecialStudent.findById(pair.interviewer).lean();
-    interviewee = await SpecialStudent.findById(pair.interviewee).lean();
-  } else {
-    console.log('[getPairDetails] Loading User data');
-    interviewer = await User.findById(pair.interviewer).lean();
-    interviewee = await User.findById(pair.interviewee).lean();
-  }
+  // Populate interviewer and interviewee from User model for all events
+  console.log('[getPairDetails] Loading User data');
+  const interviewer = await User.findById(pair.interviewer).lean();
+  const interviewee = await User.findById(pair.interviewee).lean();
 
   console.log('[getPairDetails] Returning pair details with event and participants');
   return res.json({

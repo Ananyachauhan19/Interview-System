@@ -10,7 +10,7 @@ const studentActivitySchema = new mongoose.Schema({
   studentModel: {
     type: String,
     required: true,
-    enum: ['User', 'SpecialStudent']
+    enum: ['User']
   },
   activityType: {
     type: String,

@@ -273,6 +273,7 @@ export default function StudentOnboarding() {
       // Check for existing/updated/duplicate users
       const updatedCount = data.results?.filter(r => r.status === 'updated').length || 0;
       const createdCount = data.results?.filter(r => r.status === 'created').length || 0;
+      const existingCount = updatedCount; // existing students are the ones we updated
       
       if (updatedCount > 0 && createdCount === 0) {
         const msg = `Updated ${updatedCount} existing student(s) with new CSV data. No new students were added.`;
