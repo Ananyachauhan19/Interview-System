@@ -560,9 +560,6 @@ export default function EventManagement() {
                       Validating CSV, please wait...
                     </div>
                   )}
-                  <p className="text-xs text-slate-600 dark:text-gray-400 mt-2">
-                    CSV headers: name, email, studentid, branch (required). Optional: course, college, password.
-                  </p>
                   <div className="mt-2">
                     <a
                       href="/sample-students.csv"

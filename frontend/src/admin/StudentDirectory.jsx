@@ -2,11 +2,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, Loader2, X } from "lucide-react";
+import { Search, Users, Loader2, X, Trash2, Edit2, Save } from "lucide-react";
 import Fuse from "fuse.js";
 import ContributionCalendar from "../components/ContributionCalendar";
+import { useToast } from "../components/CustomToast";
 
 export default function StudentDirectory() {
+  const toast = useToast();
   const [students, setStudents] = useState([]);
   const [specialStudents, setSpecialStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
@@ -21,6 +23,9 @@ export default function StudentDirectory() {
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [studentStats, setStudentStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
 
   // Configure Fuse.js for optimized fuzzy search
   const currentStudents = activeTab === "students" ? students : specialStudents;
@@ -150,13 +155,88 @@ export default function StudentDirectory() {
     }, 300);
   };
 
+  const handleDeleteStudent = async (student, e) => {
+    e.stopPropagation(); // Prevent row click from opening profile
+    
+    if (!confirm(`Are you sure you want to delete ${student.name}? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      await api.deleteStudent(student._id);
+      
+      // Remove from local state
+      if (activeTab === "students") {
+        setStudents(prev => prev.filter(s => s._id !== student._id));
+      } else {
+        setSpecialStudents(prev => prev.filter(s => s._id !== student._id));
+      }
+      setFilteredStudents(prev => prev.filter(s => s._id !== student._id));
+      
+      // Show success message
+      toast.success(`Student ${student.name} has been deleted successfully.`);
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete student');
+    }
+  };
+
+  const handleEditStudent = (student, e) => {
+    e.stopPropagation(); // Prevent row click from opening profile
+    setEditingStudent(student);
+    setEditForm({
+      name: student.name || '',
+      email: student.email || '',
+      studentId: student.studentId || '',
+      course: student.course || '',
+      branch: student.branch || '',
+      college: student.college || '',
+      semester: student.semester || '',
+      group: student.group || '',
+      teacherId: student.teacherId || ''
+    });
+  };
+
+  const handleUpdateStudent = async () => {
+    if (!editingStudent) return;
+    
+    setIsSaving(true);
+    try {
+      const updated = await api.updateStudent(editingStudent._id, editForm);
+      
+      // Update local state
+      const updateList = (list) => list.map(s => 
+        s._id === editingStudent._id ? { ...s, ...editForm } : s
+      );
+      
+      if (activeTab === "students") {
+        setStudents(updateList);
+      } else {
+        setSpecialStudents(updateList);
+      }
+      setFilteredStudents(updateList);
+      
+      setEditingStudent(null);
+      setEditForm({});
+      toast.success(`Student ${editForm.name} updated successfully!`);
+    } catch (err) {
+      toast.error(err.message || 'Failed to update student');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingStudent(null);
+    setEditForm({});
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col pt-16">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex-1 w-full max-w-7xl mx-auto px-4 py-6"
+        className="flex-1 w-full mx-auto px-4 py-6"
       >
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-6">
           {/* Tabs */}
@@ -298,9 +378,12 @@ export default function StudentDirectory() {
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Branch</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Course</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Semester</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Group</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">College</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Coordinator Assigned</th>
-                    
+                    {activeTab === "students" && (
+                      <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Actions</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
@@ -338,9 +421,29 @@ export default function StudentDirectory() {
                         <td className="px-4 py-2 text-slate-700 dark:text-white text-sm">{s.branch || "-"}</td>
                         <td className="px-4 py-2 text-slate-600 dark:text-white text-sm">{s.course || "-"}</td>
                         <td className="px-4 py-2 text-slate-600 dark:text-white text-sm">{s.semester || "-"}</td>
+                        <td className="px-4 py-2 text-slate-600 dark:text-white text-sm">{s.group || "-"}</td>
                         <td className="px-4 py-2 text-slate-600 dark:text-white text-sm max-w-[200px]"><span className="truncate block">{s.college || "-"}</span></td>
                         <td className="px-4 py-2 text-slate-700 dark:text-white text-sm">{s.teacherId || "-"}</td>
-                        
+                        {activeTab === "students" && (
+                          <td className="px-4 py-2">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => handleEditStudent(s, e)}
+                                className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                                title="Edit student"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => handleDeleteStudent(s, e)}
+                                className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                title="Delete student"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -442,6 +545,10 @@ export default function StudentDirectory() {
                         <div>
                           <label className="text-xs text-slate-500 dark:text-white">Semester</label>
                           <div className="mt-1 text-slate-800 dark:text-white">{selectedStudent.semester || "-"}</div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500 dark:text-white">Group</label>
+                          <div className="mt-1 text-slate-800 dark:text-white">{selectedStudent.group || "-"}</div>
                         </div>
                       </div>
                     </div>
@@ -574,6 +681,155 @@ export default function StudentDirectory() {
                 </div>
               </div>
             </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Student Modal */}
+      <AnimatePresence>
+        {editingStudent && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={cancelEdit}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+            <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-semibold text-slate-800 dark:text-gray-100">Edit Student</h2>
+                    <button
+                      onClick={cancelEdit}
+                      className="p-2 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <X className="w-5 h-5 text-slate-600 dark:text-gray-400" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Name</label>
+                      <input
+                        type="text"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Student ID</label>
+                      <input
+                        type="text"
+                        value={editForm.studentId}
+                        onChange={(e) => setEditForm({ ...editForm, studentId: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Course</label>
+                      <input
+                        type="text"
+                        value={editForm.course}
+                        onChange={(e) => setEditForm({ ...editForm, course: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Branch</label>
+                      <input
+                        type="text"
+                        value={editForm.branch}
+                        onChange={(e) => setEditForm({ ...editForm, branch: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">College</label>
+                      <input
+                        type="text"
+                        value={editForm.college}
+                        onChange={(e) => setEditForm({ ...editForm, college: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Semester</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="8"
+                        value={editForm.semester}
+                        onChange={(e) => setEditForm({ ...editForm, semester: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Group</label>
+                      <input
+                        type="text"
+                        value={editForm.group}
+                        onChange={(e) => setEditForm({ ...editForm, group: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Coordinator ID</label>
+                      <input
+                        type="text"
+                        value={editForm.teacherId}
+                        onChange={(e) => setEditForm({ ...editForm, teacherId: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      onClick={cancelEdit}
+                      disabled={isSaving}
+                      className="px-4 py-2 text-slate-700 dark:text-gray-300 bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleUpdateStudent}
+                      disabled={isSaving}
+                      className="px-4 py-2 bg-sky-500 dark:bg-sky-600 text-white hover:bg-sky-600 dark:hover:bg-sky-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Save Changes
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>

@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
   branch: String,
   college: String,
   semester: { type: Number, min: 1, max: 8 }, // Required for students: current semester (1-8)
+  group: String, // Student group (e.g., G1, G2, A, B, etc.)
   
   // SECURITY: Password reset tokens with expiration and single-use
   passwordResetToken: String,

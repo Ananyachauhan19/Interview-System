@@ -12,13 +12,8 @@ export default function StudentProtectedRoute({ children }) {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setIsAuthorized(false);
-        setLoading(false);
-        return;
-      }
-
+      // SECURITY: Token is now in HttpOnly cookie, not localStorage
+      // Just call api.me() which will send the cookie automatically
       const user = await api.me();
       if (user && user.role === 'student') {
         setIsAuthorized(true);

@@ -360,10 +360,12 @@ export default function StudentOnboarding() {
     try {
       // Password is auto-generated on backend
       const data = await api.createStudent(singleForm);
-      setSingleMsg(`Student ${data.name || data.email} has been successfully added!`);
+      setSingleMsg(`Student ${data.name || data.email} has been successfully added to the server!`);
+      toast.success(`Student ${data.name || data.email} added successfully!`);
       setTimeout(() => setSingleMsg(''), 4000);
-      const newStudent = { course: singleForm.course || '', name: singleForm.name || '', email: singleForm.email || '', studentid: singleForm.studentid || '', branch: singleForm.branch || '', college: singleForm.college || '', teacherid: singleForm.teacherid || '', semester: singleForm.semester || '', group: singleForm.group || '', __row: 'N/A' };
-      setStudents((s) => [newStudent, ...s]);
+      
+      // Don't add to local students array since it's already uploaded to server
+      // This prevents the "Upload to Server" button from staying enabled
       setSingleForm({ name: '', email: '', studentid: '', branch: '', course: '', college: '', teacherid: '', semester: '', group: '' });
       
       // Log activity

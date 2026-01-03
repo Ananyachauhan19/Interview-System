@@ -123,36 +123,23 @@ export default function StudentDashboard() {
     
     loadData();
     
-    // Fetch user profile from backend
+    // Fetch user profile from backend and set me state for pairing
     api.me().then((userData) => {
       console.log('[Dashboard] User data fetched:', userData);
       setUser(userData);
+      
+      // SECURITY: Since we migrated to HttpOnly cookies, get user identity from API response
+      const meData = {
+        id: userData._id || userData.id,
+        role: userData.role,
+        email: userData.email,
+        name: userData.name,
+      };
+      setMe(meData);
+      console.log('[Dashboard] User identity set for pairing:', meData);
     }).catch((err) => {
       console.error('[Dashboard] Failed to fetch user data:', err);
     });
-    
-    // Decode token for pairing functionality
-    try {
-      const t = localStorage.getItem("token");
-      if (t) {
-        const raw = t.split(".")?.[1];
-        if (raw) {
-          const payload = JSON.parse(atob(raw));
-          const id = payload.sub || payload.id || payload.userId || null;
-          const fallbackId = localStorage.getItem("userId") || null;
-          const meData = {
-            id: id || fallbackId,
-            role: payload.role,
-            email: payload.email,
-            name: payload.name,
-          };
-          setMe(meData);
-          console.log('[Dashboard] User identity set for pairing:', meData);
-        }
-      }
-    } catch (e) {
-      console.warn("Failed to decode token payload", e);
-    }
     
     // Add event listener to refresh data when window regains focus
     // This ensures both interviewer and interviewee see updated status
@@ -312,7 +299,7 @@ export default function StudentDashboard() {
   const combinedRemainingProposals = Math.max(0, 3 - totalProposalCount);
   const myRemainingProposals = Math.max(0, 3 - myProposalCount);
   const partnerRemainingProposals = Math.max(0, 3 - partnerProposalCount);
-  const bothReachedLimit = totalProposalCount >= 3;
+  const bothReachedLimit = totalProposalCount >= 6;
 
   // Memoize isSystemDefault to prevent flicker when proposals update
   const isSystemDefault = useMemo(() => {
@@ -1734,7 +1721,7 @@ export default function StudentDashboard() {
                         </div>
                         {bothReachedLimit && (
                           <div className="mt-3 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-4 py-2 rounded-lg border border-amber-300 dark:border-amber-700 inline-block font-medium">
-                            ⚠ Maximum of 3 combined proposals reached. This time will be automatically confirmed.
+                            ⚠ Maximum of 6 combined proposals reached (3 per participant). This time will be automatically confirmed.
                           </div>
                         )}
                       </div>
@@ -1861,7 +1848,7 @@ export default function StudentDashboard() {
                       <span className="font-semibold text-emerald-600 dark:text-emerald-400">{combinedRemainingProposals}</span> of 3 combined proposals remaining
                     </span>
                   ) : (
-                    <span className="text-red-600 dark:text-red-400 font-medium">⚠ Maximum combined proposals reached (3/3)</span>
+                    <span className="text-red-600 dark:text-red-400 font-medium">⚠ Maximum combined proposals reached (6/6 - 3 per participant)</span>
                   )}
                 </div>
               </div>

@@ -9,6 +9,7 @@ const specialStudentSchema = new mongoose.Schema({
   course: String,
   college: String,
   semester: { type: Number, min: 1, max: 8 }, // Current semester (1-8)
+  group: String, // Student group (e.g., G1, G2, A, B, etc.)
   // Optional coordinator/teacher code (e.g., COO1); populated from CSV or event owner
   teacherId: { type: String },
   events: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' }], // Array of events this student participates in

@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { uploadStudentsCsv, createStudent, checkStudentsCsv, listAllStudents, listAllSpecialStudents, listSpecialStudentsByEvent } from '../controllers/studentController.js';
+import { uploadStudentsCsv, createStudent, checkStudentsCsv, listAllStudents, listAllSpecialStudents, listSpecialStudentsByEvent, deleteStudent, updateStudent } from '../controllers/studentController.js';
 import { getStudentActivityByAdmin, getStudentStats } from '../controllers/activityController.js';
 import { requireAuth, requireAdmin, requireAdminOrCoordinator } from '../middleware/auth.js';
 import { authorizeStudent } from '../middleware/authorization.js';
+import { uploadLimiter, bulkOperationLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -14,12 +15,13 @@ router.get('/special/:eventId', requireAuth, requireAdmin, listSpecialStudentsBy
 // SECURITY: Add authorization check for student-specific data
 router.get('/:studentId/activity', requireAuth, authorizeStudent('studentId'), getStudentActivityByAdmin);
 router.get('/:studentId/stats', requireAuth, authorizeStudent('studentId'), getStudentStats);
-// Admin-only bulk operations (no rate limit - admin is trusted)
-router.post('/check', requireAuth, requireAdmin, upload.single('file'), checkStudentsCsv);
-router.post('/upload', requireAuth, requireAdmin, upload.single('file'), uploadStudentsCsv);
+// SECURITY: Rate limit bulk operations
+router.post('/check', requireAuth, requireAdmin, uploadLimiter, bulkOperationLimiter, upload.single('file'), checkStudentsCsv);
+router.post('/upload', requireAuth, requireAdmin, uploadLimiter, bulkOperationLimiter, upload.single('file'), uploadStudentsCsv);
 router.post('/create', requireAuth, requireAdmin, async (req, res) => {
-	// delegate to controller helper
 	return createStudent(req, res);
 });
+router.put('/:studentId', requireAuth, requireAdmin, updateStudent);
+router.delete('/:studentId', requireAuth, requireAdmin, deleteStudent);
 
 export default router;

@@ -46,7 +46,7 @@ export default function PairingAndScheduling() {
     const partnerPastCount = Array.isArray(currentProposals?.partnerPast) ? currentProposals.partnerPast.length : 0;
     const combinedAttempts = myActiveCount + myPastCount + partnerActiveCount + partnerPastCount;
     if (!slotInput) return 'Select a time to propose.';
-    if (combinedAttempts >= 3) return 'Maximum of 3 combined proposals reached by both participants.';
+    if (combinedAttempts >= 6) return 'Maximum of 6 combined proposals reached (3 per participant)';
     if (myActiveCount > 0) return 'You already have a pending proposal; wait for a response.';
     if (partnerActiveCount > 0) return 'Your partner has a pending proposal; accept or reject it first.';
     return null;

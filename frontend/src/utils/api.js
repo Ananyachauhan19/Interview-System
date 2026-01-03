@@ -107,6 +107,8 @@ export const api = {
     return request('/students/upload', { method: 'POST', formData: fd });
   },
   createStudent: (body) => request('/students/create', { method: 'POST', body }),
+  updateStudent: (studentId, body) => request(`/students/${studentId}`, { method: 'PUT', body }),
+  deleteStudent: (studentId) => request(`/students/${studentId}`, { method: 'DELETE' }),
 
   // Coordinators
   listAllCoordinators: (search = '') => request(`/coordinators/list${search ? '?search=' + encodeURIComponent(search) : ''}`),

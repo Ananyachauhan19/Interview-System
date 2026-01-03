@@ -279,6 +279,7 @@ function normalizeSpecialEventRow(row) {
     course: row.course || row.Course || row.COURSE || '',
     college: row.college || row.College || row.COLLEGE || '',
     semester: row.semester || row.Semester || row.SEMESTER || '',
+    group: row.group || row.Group || row.GROUP || '',
     password: row.password || row.Password || row.PASSWORD || '',
     // Support multiple header variants for Teacher/Coordinator ID (with or without spaces/underscore)
     teacherid: (
@@ -333,7 +334,7 @@ export async function checkSpecialEventCsv(req, res) {
     assignedStudents = await User.find({ 
       role: 'student', 
       teacherId: coordinatorId 
-    }).select('email studentId name');
+    }).select('email studentId name branch semester group teacherId');
   }
 
   const normalizedRows = rows.map((r, idx) => ({ ...normalizeSpecialEventRow(r), __row: idx + 2 }));
@@ -356,13 +357,13 @@ export async function checkSpecialEventCsv(req, res) {
           { email: { $in: emails } },
           { studentId: { $in: studentIds } },
         ],
-      }).select('email studentId teacherId').lean(),
+      }).select('email studentId name branch semester group course college teacherId').lean(),
       SpecialStudent.find({
         $or: [
           { email: { $in: emails } },
           { studentId: { $in: studentIds } },
         ],
-      }).select('email studentId teacherId').lean(),
+      }).select('email studentId name branch semester group course college teacherId').lean(),
       User.find({ role: 'coordinator' }).select('coordinatorId').lean(),
     ]);
 
@@ -415,21 +416,64 @@ export async function checkSpecialEventCsv(req, res) {
     seenEmails.add(email);
     seenStudentIds.add(studentid);
 
-    // For coordinators, validate that student is assigned to them
+    // For coordinators, validate that student is assigned to them AND exists in User database
     if (assignedStudents !== null) {
-      const isAssigned = assignedStudents.some(s => 
+      const assignedStudent = assignedStudents.find(s => 
         s.email.toLowerCase() === email.toLowerCase() && 
         s.studentId === studentid
       );
       
-      if (!isAssigned) {
+      if (!assignedStudent) {
         results.push({ 
           row: row.__row, 
           name,
           email, 
           studentid, 
           status: 'not_assigned_to_coordinator',
-          message: `Student "${name}" (${studentid}) is not assigned to you`
+          message: `Student "${name}" (${studentid}) is either not assigned to you or does not exist in the system. Coordinators can only add existing assigned students to special events.`
+        });
+        continue;
+      }
+      
+      // Validate that CSV fields match the existing User record
+      const mismatches = [];
+      
+      if (assignedStudent.name && assignedStudent.name.trim().toLowerCase() !== name.trim().toLowerCase()) {
+        mismatches.push(`name (expected: ${assignedStudent.name}, got: ${name})`);
+      }
+      
+      if (assignedStudent.email && assignedStudent.email.toLowerCase() !== email.toLowerCase()) {
+        mismatches.push(`email (expected: ${assignedStudent.email}, got: ${email})`);
+      }
+      
+      if (assignedStudent.studentId && String(assignedStudent.studentId) !== studentid) {
+        mismatches.push(`studentId (expected: ${assignedStudent.studentId}, got: ${studentid})`);
+      }
+      
+      if (assignedStudent.branch && branch && assignedStudent.branch.trim().toLowerCase() !== branch.trim().toLowerCase()) {
+        mismatches.push(`branch (expected: ${assignedStudent.branch}, got: ${branch})`);
+      }
+      
+      if (assignedStudent.semester && row.semester && String(assignedStudent.semester) !== String(row.semester)) {
+        mismatches.push(`semester (expected: ${assignedStudent.semester}, got: ${row.semester})`);
+      }
+      
+      if (assignedStudent.group && row.group && assignedStudent.group.trim().toLowerCase() !== row.group.trim().toLowerCase()) {
+        mismatches.push(`group (expected: ${assignedStudent.group}, got: ${row.group})`);
+      }
+      
+      if (assignedStudent.teacherId && teacherid && String(assignedStudent.teacherId).trim() !== teacherid.trim()) {
+        mismatches.push(`teacherId (expected: ${assignedStudent.teacherId}, got: ${teacherid})`);
+      }
+      
+      if (mismatches.length > 0) {
+        results.push({ 
+          row: row.__row, 
+          name,
+          email, 
+          studentid, 
+          status: 'data_mismatch',
+          message: `CSV data does not match database record for this student. Mismatched fields: ${mismatches.join(', ')}`
         });
         continue;
       }
@@ -456,14 +500,41 @@ export async function checkSpecialEventCsv(req, res) {
         continue;
       }
 
-      // Helper to validate consistency between CSV and an existing record (email & studentId only)
+      // Helper to validate consistency between CSV and an existing record (all fields)
       const validateRecord = (record, source) => {
         if (!record) return null;
+        const mismatches = [];
+        
+        // Check required fields
         if (record.email && record.email.toLowerCase() !== lowerEmail) {
-          return `CSV email does not match existing ${source} email for this student.`;
+          mismatches.push(`email (expected: ${record.email}, got: ${email})`);
         }
         if (record.studentId && String(record.studentId) !== studentid) {
-          return `CSV Student ID does not match existing ${source} Student ID for this student.`;
+          mismatches.push(`studentId (expected: ${record.studentId}, got: ${studentid})`);
+        }
+        if (record.name && record.name.trim().toLowerCase() !== name.trim().toLowerCase()) {
+          mismatches.push(`name (expected: ${record.name}, got: ${name})`);
+        }
+        if (record.branch && record.branch.trim().toLowerCase() !== branch.trim().toLowerCase()) {
+          mismatches.push(`branch (expected: ${record.branch}, got: ${branch})`);
+        }
+        
+        // Check optional fields if they exist in database
+        if (record.course && row.course && record.course.trim().toLowerCase() !== row.course.trim().toLowerCase()) {
+          mismatches.push(`course (expected: ${record.course}, got: ${row.course})`);
+        }
+        if (record.college && row.college && record.college.trim().toLowerCase() !== row.college.trim().toLowerCase()) {
+          mismatches.push(`college (expected: ${record.college}, got: ${row.college})`);
+        }
+        if (record.semester && row.semester && String(record.semester) !== String(row.semester)) {
+          mismatches.push(`semester (expected: ${record.semester}, got: ${row.semester})`);
+        }
+        if (record.group && row.group && record.group.trim().toLowerCase() !== row.group.trim().toLowerCase()) {
+          mismatches.push(`group (expected: ${record.group}, got: ${row.group})`);
+        }
+        
+        if (mismatches.length > 0) {
+          return `CSV data does not match existing ${source} record. Mismatched fields: ${mismatches.join(', ')}`;
         }
         return null;
       };
@@ -572,13 +643,13 @@ export async function createSpecialEvent(req, res) {
           { email: { $in: emails } },
           { studentId: { $in: studentIds } },
         ],
-      }).select('email studentId teacherId').lean(),
+      }).select('email studentId name branch semester group course college teacherId').lean(),
       SpecialStudent.find({
         $or: [
           { email: { $in: emails } },
           { studentId: { $in: studentIds } },
         ],
-      }).select('email studentId teacherId').lean(),
+      }).select('email studentId name branch semester group course college teacherId').lean(),
       User.find({ role: 'coordinator' }).select('coordinatorId').lean(),
     ]);
 
@@ -731,7 +802,26 @@ export async function createSpecialEvent(req, res) {
           email, 
           studentid, 
           status: 'not_assigned_to_coordinator',
-          error: `Student "${name}" (${studentid}) is not assigned to you`
+          error: `Student "${name}" (${studentid}) is either not assigned to you or does not exist in the system. Coordinators can only add existing assigned students.`
+        });
+        continue;
+      }
+      
+      // For coordinators, student MUST exist in User collection - no new student creation allowed
+      const existingUser = await User.findOne({ 
+        role: 'student',
+        $or: [{ email }, { studentId: studentid }],
+        teacherId: coordinatorId
+      });
+      
+      if (!existingUser) {
+        results.push({ 
+          row: row.__row, 
+          name,
+          email, 
+          studentid, 
+          status: 'student_not_found',
+          error: `Student "${name}" (${studentid}) does not exist in the main database. Coordinators cannot create new students via special events.`
         });
         continue;
       }
@@ -860,7 +950,19 @@ export async function createSpecialEvent(req, res) {
           shouldSendOnboarding: false, // Don't send - they already have credentials
         });
       } else {
-        // New student - create SpecialStudent with CSV password
+        // For coordinators, reject new student creation
+        if (coordinatorId) {
+          results.push({ 
+            row: row.__row, 
+            email, 
+            studentid, 
+            status: 'error', 
+            message: 'Coordinators cannot create new students. Student must exist in the main database first.'
+          });
+          continue;
+        }
+        
+        // New student - create SpecialStudent with CSV password (admin only)
         const passwordHash = await User.hashPassword(defaultPassword);
         
         specialStudent = await SpecialStudent.create({

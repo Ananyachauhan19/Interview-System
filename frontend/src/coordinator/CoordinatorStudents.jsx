@@ -238,6 +238,7 @@ export default function CoordinatorStudents() {
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-gray-300">Branch</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-gray-300">Course</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-gray-300">Semester</th>
+                    <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-gray-300">Group</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-gray-300">College</th>
                     <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-gray-300">Coordinator Assigned</th>
                   </tr>
@@ -270,6 +271,7 @@ export default function CoordinatorStudents() {
                         <td className="px-4 py-2 text-slate-700 dark:text-gray-300 text-sm">{s.branch || "-"}</td>
                         <td className="px-4 py-2 text-slate-600 dark:text-gray-400 text-sm">{s.course || "-"}</td>
                         <td className="px-4 py-2 text-slate-600 dark:text-gray-400 text-sm">{s.semester || "-"}</td>
+                        <td className="px-4 py-2 text-slate-600 dark:text-gray-400 text-sm">{s.group || "-"}</td>
                         <td className="px-4 py-2 text-slate-600 dark:text-gray-400 text-sm max-w-[200px]"><span className="truncate block">{s.college || "-"}</span></td>
                         <td className="px-4 py-2 text-slate-700 dark:text-gray-300 text-sm">{s.teacherId || "-"}</td>
                       </tr>
@@ -370,6 +372,10 @@ export default function CoordinatorStudents() {
                         <div>
                           <label className="text-xs text-slate-500 dark:text-gray-400">Semester</label>
                           <div className="mt-1 text-slate-800 dark:text-gray-100">{selectedStudent.semester || "-"}</div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500 dark:text-gray-400">Group</label>
+                          <div className="mt-1 text-slate-800 dark:text-gray-100">{selectedStudent.group || "-"}</div>
                         </div>
                       </div>
                     </div>

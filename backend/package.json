@@ -13,6 +13,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",
     "bcrypt": "^5.1.1",
+    "cloudinary": "^1.41.0",
     "cookie": "^0.6.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -33,6 +34,7 @@
     "papaparse": "^5.5.2",
     "socket.io": "^4.8.1",
     "uuid": "^9.0.1",
+    "winston": "^3.11.0",
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {

@@ -87,9 +87,9 @@ async function checkAndAutoAssign(pair) {
   if (pair.status === 'scheduled') return false;
   const ip = pair.interviewerProposalCount || 0;
   const ep = pair.intervieweeProposalCount || 0;
-  // Changed to combined limit: auto-assign when combined attempts reach 3
+  // Auto-assign when combined attempts reach 6 (3 per person)
   const combined = ip + ep;
-  if (combined < 3) return false;
+  if (combined < 6) return false;
   
   // Both hit limits; use the last submitted time as final
   // Get both users' proposals
@@ -639,9 +639,9 @@ export async function proposeSlots(req, res) {
   const hadPreviousProposal = doc?.slots?.length > 0;
   
   // Enforce combined proposal limit (EVERY submission counts, including replacements)
-  // Changed from 3 per user (6 total) to 3 combined total across both users
+  // Allow 3 proposals per user (6 total combined across both users)
   const combinedProposalCount = (pair.interviewerProposalCount || 0) + (pair.intervieweeProposalCount || 0);
-  if (combinedProposalCount >= 3) throw new HttpError(400, 'Maximum of 3 combined proposals reached by both participants');
+  if (combinedProposalCount >= 6) throw new HttpError(400, 'Maximum of 6 combined proposals reached (3 per participant)');
   
   if (!doc) doc = new SlotProposal({ pair: pair._id, user: effectiveUserId, event: pair.event, slots: [], pastSlots: [], pastEntries: [] });
   

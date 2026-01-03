@@ -44,7 +44,7 @@ export async function listAllStudents(req, res) {
     }
     
     const students = await User.find(query)
-      .select('name email studentId course branch college semester teacherId avatarUrl createdAt')
+      .select('name email studentId course branch college semester group teacherId avatarUrl createdAt')
       .sort({ createdAt: -1 })
       .lean();
     
@@ -296,6 +296,7 @@ export async function uploadStudentsCsv(req, res) {
           branch: branch || existingSpecial.branch,
           college: college || existingSpecial.college,
           mustChangePassword: existingSpecial.mustChangePassword, // Preserve password change status
+          group: row.group || existingSpecial.group,
         });
         
         results.push({ 
@@ -323,6 +324,7 @@ export async function uploadStudentsCsv(req, res) {
         role: 'student', course, name, email, studentId: studentid, passwordHash, branch, college,
         teacherId: teacherid,
         semester: semesterNum,
+        group: row.group,
         mustChangePassword: true,
       });
       results.push({ row: row.__row, id: user._id, email, studentid, status: 'created' });
@@ -381,7 +383,7 @@ export async function uploadStudentsCsv(req, res) {
 
 export async function createStudent(req, res) {
   try {
-    const { name, email, studentid, branch, course, college, teacherid, semester } = req.body || {};
+    const { name, email, studentid, branch, course, college, teacherid, semester, group } = req.body || {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     // Check all required fields (password is auto-generated)
@@ -408,7 +410,14 @@ export async function createStudent(req, res) {
     // Generate random password (7-8 characters)
     const generatedPassword = generateRandomPassword();
     const passwordHash = await User.hashPassword(generatedPassword);
-    const user = await User.create({ role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, teacherId: teacherid, semester: semesterNum, mustChangePassword: true });
+    const userData = { role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, teacherId: teacherid, semester: semesterNum, mustChangePassword: true };
+    
+    // Add group if provided
+    if (group) {
+      userData.group = group;
+    }
+    
+    const user = await User.create(userData);
 
     // Send password via email
     if (process.env.EMAIL_ON_ONBOARD === 'true' && email) {
@@ -483,7 +492,7 @@ export async function listAllSpecialStudents(req, res) {
         path: 'events',
         select: 'name isSpecial coordinatorId'
       })
-      .select('name email studentId course branch college semester events createdAt teacherId avatarUrl')
+      .select('name email studentId course branch college semester group events createdAt teacherId avatarUrl')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -578,7 +587,7 @@ export async function listSpecialStudentsByEvent(req, res) {
     }
     
     const specialStudents = await SpecialStudent.find({ events: eventId })
-      .select('name email studentId course branch college semester createdAt teacherId')
+      .select('name email studentId course branch college semester group createdAt teacherId')
       .sort({ createdAt: -1 })
       .lean();
     
@@ -595,3 +604,82 @@ export async function listSpecialStudentsByEvent(req, res) {
     res.status(500).json({ error: 'Failed to fetch special students for event' });
   }
 }
+
+// Delete a student (admin only)
+export async function deleteStudent(req, res) {
+  try {
+    const { studentId } = req.params;
+    
+    // Find and delete the student
+    const student = await User.findOneAndDelete({ _id: studentId, role: 'student' });
+    
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    console.log(`[Delete Student] Student deleted: ${student.name} (${student.email})`);
+    
+    res.json({ 
+      message: 'Student deleted successfully', 
+      student: {
+        id: student._id,
+        name: student.name,
+        email: student.email,
+        studentId: student.studentId
+      }
+    });
+  } catch (err) {
+    console.error('Error deleting student:', err);
+    res.status(500).json({ error: 'Failed to delete student' });
+  }
+}
+
+// Update a student (admin only)
+export async function updateStudent(req, res) {
+  try {
+    const { studentId } = req.params;
+    const { name, email, studentId: sid, course, branch, college, semester, group, teacherId } = req.body;
+    
+    // Find student
+    const student = await User.findOne({ _id: studentId, role: 'student' });
+    
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    // Update fields
+    if (name) student.name = name;
+    if (email) student.email = email;
+    if (sid) student.studentId = sid;
+    if (course) student.course = course;
+    if (branch) student.branch = branch;
+    if (college) student.college = college;
+    if (semester) student.semester = semester;
+    if (group !== undefined) student.group = group;
+    if (teacherId !== undefined) student.teacherId = teacherId;
+    
+    await student.save();
+    
+    console.log(`[Update Student] Student updated: ${student.name} (${student.email})`);
+    
+    res.json({ 
+      message: 'Student updated successfully', 
+      student: {
+        id: student._id,
+        name: student.name,
+        email: student.email,
+        studentId: student.studentId,
+        course: student.course,
+        branch: student.branch,
+        college: student.college,
+        semester: student.semester,
+        group: student.group,
+        teacherId: student.teacherId
+      }
+    });
+  } catch (err) {
+    console.error('Error updating student:', err);
+    res.status(500).json({ error: 'Failed to update student' });
+  }
+}
+

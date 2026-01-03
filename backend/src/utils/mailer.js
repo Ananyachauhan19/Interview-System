@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
+  secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
   auth: process.env.SMTP_USER && process.env.SMTP_PASS ? {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -11,6 +11,13 @@ const transporter = nodemailer.createTransport({
   pool: true, // Use pooled connections for faster sending
   maxConnections: 5, // Allow up to 5 parallel connections
   maxMessages: 100, // Reuse connections for multiple messages
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000, // 10 seconds
+  socketTimeout: 30000, // 30 seconds
+  tls: {
+    rejectUnauthorized: false, // Allow self-signed certificates (for development)
+    ciphers: 'SSLv3' // Compatibility with older servers
+  }
 });
 
 export async function sendMail({ to, subject, html, text, attachments }) {

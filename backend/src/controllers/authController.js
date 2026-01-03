@@ -490,7 +490,12 @@ export async function requestPasswordReset(req, res) {
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
-    throw new HttpError(500, 'Failed to send reset email. Please try again later.');
+    
+    // Provide more helpful error message based on error type
+    if (err.code === 'ESOCKET' || err.code === 'ETIMEDOUT' || err.code === 'ECONNECTION') {
+      throw new HttpError(500, 'Email service is temporarily unavailable. Please ensure SMTP is configured correctly with a Gmail App Password, or try again later.');
+    }
+    throw new HttpError(500, 'Failed to send reset email. Please contact support if this persists.');
   }
 
   res.json({ message: 'If an account exists with this email or student ID, a password reset link has been sent.' });
