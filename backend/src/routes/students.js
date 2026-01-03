@@ -3,7 +3,6 @@ import multer from 'multer';
 import { uploadStudentsCsv, createStudent, checkStudentsCsv, listAllStudents, listAllSpecialStudents, listSpecialStudentsByEvent } from '../controllers/studentController.js';
 import { getStudentActivityByAdmin, getStudentStats } from '../controllers/activityController.js';
 import { requireAuth, requireAdmin, requireAdminOrCoordinator } from '../middleware/auth.js';
-import { bulkOperationLimiter, uploadLimiter } from '../middleware/rateLimiter.js';
 import { authorizeStudent } from '../middleware/authorization.js';
 
 const router = Router();
@@ -15,9 +14,9 @@ router.get('/special/:eventId', requireAuth, requireAdmin, listSpecialStudentsBy
 // SECURITY: Add authorization check for student-specific data
 router.get('/:studentId/activity', requireAuth, authorizeStudent('studentId'), getStudentActivityByAdmin);
 router.get('/:studentId/stats', requireAuth, authorizeStudent('studentId'), getStudentStats);
-// SECURITY: Rate limit bulk operations
-router.post('/check', requireAuth, requireAdmin, uploadLimiter, bulkOperationLimiter, upload.single('file'), checkStudentsCsv);
-router.post('/upload', requireAuth, requireAdmin, uploadLimiter, bulkOperationLimiter, upload.single('file'), uploadStudentsCsv);
+// Admin-only bulk operations (no rate limit - admin is trusted)
+router.post('/check', requireAuth, requireAdmin, upload.single('file'), checkStudentsCsv);
+router.post('/upload', requireAuth, requireAdmin, upload.single('file'), uploadStudentsCsv);
 router.post('/create', requireAuth, requireAdmin, async (req, res) => {
 	// delegate to controller helper
 	return createStudent(req, res);
