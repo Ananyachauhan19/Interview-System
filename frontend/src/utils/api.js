@@ -113,6 +113,8 @@ export const api = {
   // Coordinators
   listAllCoordinators: (search = '') => request(`/coordinators/list${search ? '?search=' + encodeURIComponent(search) : ''}`),
   createCoordinator: (body) => request('/coordinators/create', { method: 'POST', body }),
+  updateCoordinator: (coordinatorId, body) => request(`/coordinators/${coordinatorId}`, { method: 'PUT', body }),
+  deleteCoordinator: (coordinatorId) => request(`/coordinators/${coordinatorId}`, { method: 'DELETE' }),
 
   // Events
   listEvents: () => request('/events'),

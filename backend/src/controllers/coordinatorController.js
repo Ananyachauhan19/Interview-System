@@ -159,3 +159,101 @@ export async function createCoordinator(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
+export async function updateCoordinator(req, res) {
+  try {
+    const { coordinatorId } = req.params;
+    const { coordinatorName, coordinatorEmail, coordinatorID } = req.body || {};
+
+    const coordinator = await User.findOne({ _id: coordinatorId, role: 'coordinator' });
+    if (!coordinator) {
+      return res.status(404).json({ error: 'Coordinator not found' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (coordinatorEmail && !emailRegex.test(coordinatorEmail)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Check for duplicates if email or coordinatorID is changing
+    if (coordinatorEmail && coordinatorEmail !== coordinator.email) {
+      const exists = await User.findOne({
+        _id: { $ne: coordinatorId },
+        email: coordinatorEmail,
+      });
+      if (exists) {
+        return res.status(409).json({ error: 'Another coordinator with this email already exists' });
+      }
+    }
+
+    if (coordinatorID && coordinatorID !== coordinator.coordinatorId) {
+      const exists = await User.findOne({
+        _id: { $ne: coordinatorId },
+        coordinatorId: coordinatorID,
+      });
+      if (exists) {
+        return res.status(409).json({ error: 'Another coordinator with this Coordinator ID already exists' });
+      }
+    }
+
+    if (coordinatorName) coordinator.name = coordinatorName;
+    if (coordinatorEmail) coordinator.email = coordinatorEmail;
+    if (coordinatorID) coordinator.coordinatorId = coordinatorID;
+
+    await coordinator.save();
+
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'UPDATE',
+      targetType: 'COORDINATOR',
+      targetId: coordinator._id.toString(),
+      description: `Updated coordinator: ${coordinator.name} (${coordinator.email})`,
+      metadata: { coordinatorId: coordinator.coordinatorId },
+      req,
+    });
+
+    return res.json({
+      id: coordinator._id,
+      email: coordinator.email,
+      coordinatorID: coordinator.coordinatorId,
+      status: 'updated',
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+export async function deleteCoordinator(req, res) {
+  try {
+    const { coordinatorId } = req.params;
+
+    const coordinator = await User.findOneAndDelete({ _id: coordinatorId, role: 'coordinator' });
+    if (!coordinator) {
+      return res.status(404).json({ error: 'Coordinator not found' });
+    }
+
+    logActivity({
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: 'DELETE',
+      targetType: 'COORDINATOR',
+      targetId: coordinator._id.toString(),
+      description: `Deleted coordinator: ${coordinator.name} (${coordinator.email})`,
+      metadata: { coordinatorId: coordinator.coordinatorId },
+      req,
+    });
+
+    return res.json({
+      message: 'Coordinator deleted successfully',
+      coordinator: {
+        id: coordinator._id,
+        name: coordinator.name,
+        email: coordinator.email,
+        coordinatorId: coordinator.coordinatorId,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}

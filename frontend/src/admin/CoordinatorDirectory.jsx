@@ -2,11 +2,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, Loader2, X } from "lucide-react";
+import { Search, Users, Loader2, X, Trash2, Edit2, Save } from "lucide-react";
 import Fuse from "fuse.js";
 import ContributionCalendar from "../components/ContributionCalendar";
+import { useToast } from "../components/CustomToast";
 
 export default function CoordinatorDirectory() {
+  const toast = useToast();
   const [coordinators, setCoordinators] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -15,6 +17,9 @@ export default function CoordinatorDirectory() {
   const [selectedCoordinator, setSelectedCoordinator] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [activity, setActivity] = useState({});
+  const [editingCoordinator, setEditingCoordinator] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
 
   const fuse = useMemo(() => {
     return new Fuse(coordinators, {
@@ -92,6 +97,64 @@ export default function CoordinatorDirectory() {
       setSelectedCoordinator(null);
       setActivity({});
     }, 300);
+  };
+
+  // Edit Coordinator Modal actions
+  const handleChangeEdit = (field, value) => {
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleDeleteCoordinator = async (coord, e) => {
+    e.stopPropagation();
+
+    if (!confirm(`Are you sure you want to delete coordinator ${coord.name || coord.email}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await api.deleteCoordinator(coord._id);
+      setCoordinators(prev => prev.filter(c => c._id !== coord._id));
+      setFiltered(prev => prev.filter(c => c._id !== coord._id));
+      toast.success(`Coordinator ${coord.name || coord.email} deleted successfully.`);
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete coordinator');
+    }
+  };
+
+  const handleEditCoordinator = (coord, e) => {
+    e.stopPropagation();
+    setEditingCoordinator(coord);
+    setEditForm({
+      coordinatorName: coord.name || '',
+      coordinatorEmail: coord.email || '',
+      coordinatorID: coord.coordinatorId || '',
+    });
+  };
+
+  const handleUpdateCoordinator = async () => {
+    if (!editingCoordinator) return;
+
+    setIsSaving(true);
+    try {
+      await api.updateCoordinator(editingCoordinator._id, editForm);
+
+      const updateList = (list) => list.map(c =>
+        c._id === editingCoordinator._id
+          ? { ...c, name: editForm.coordinatorName, email: editForm.coordinatorEmail, coordinatorId: editForm.coordinatorID }
+          : c
+      );
+
+      setCoordinators(updateList);
+      setFiltered(updateList);
+
+      setEditingCoordinator(null);
+      setEditForm({});
+      toast.success(`Coordinator ${editForm.coordinatorName} updated successfully.`);
+    } catch (err) {
+      toast.error(err.message || 'Failed to update coordinator');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -199,6 +262,7 @@ export default function CoordinatorDirectory() {
                     <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Events Created</th>
                     <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Students Assigned</th>
                     <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Created</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
@@ -250,6 +314,24 @@ export default function CoordinatorDirectory() {
                         </td>
                         <td className="px-4 py-2 text-slate-700 dark:text-white text-sm">{c.studentsAssigned ?? 0}</td>
                         <td className="px-4 py-2 text-slate-600 dark:text-white text-sm">{registered}</td>
+                        <td className="px-4 py-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => handleEditCoordinator(c, e)}
+                              className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                              title="Edit coordinator"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteCoordinator(c, e)}
+                              className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                              title="Delete coordinator"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -386,6 +468,95 @@ export default function CoordinatorDirectory() {
                     className="px-4 py-2 bg-slate-800 dark:bg-gray-600 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-gray-500 transition-colors"
                   >
                     Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Coordinator Modal */}
+      <AnimatePresence>
+        {editingCoordinator && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              onClick={() => { if (!isSaving) { setEditingCoordinator(null); setEditForm({}); } }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={() => { if (!isSaving) { setEditingCoordinator(null); setEditForm({}); } }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 dark:border-gray-700"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Edit Coordinator</h3>
+                  <button
+                    onClick={() => { if (!isSaving) { setEditingCoordinator(null); setEditForm({}); } }}
+                    className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-gray-700"
+                  >
+                    <X className="w-4 h-4 text-slate-600 dark:text-white" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-gray-300 mb-1">Name</label>
+                    <input
+                      type="text"
+                      value={editForm.coordinatorName || ''}
+                      onChange={(e) => handleChangeEdit('coordinatorName', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-gray-300 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={editForm.coordinatorEmail || ''}
+                      onChange={(e) => handleChangeEdit('coordinatorEmail', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-gray-300 mb-1">Coordinator ID</label>
+                    <input
+                      type="text"
+                      value={editForm.coordinatorID || ''}
+                      onChange={(e) => handleChangeEdit('coordinatorID', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { if (!isSaving) { setEditingCoordinator(null); setEditForm({}); } }}
+                    className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-gray-600 text-slate-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-slate-50 dark:hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUpdateCoordinator}
+                    disabled={isSaving}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg text-white flex items-center gap-2 ${
+                      isSaving ? 'bg-slate-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
+                    }`}
+                  >
+                    <Save className="w-4 h-4" />
+                    {isSaving ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </div>
