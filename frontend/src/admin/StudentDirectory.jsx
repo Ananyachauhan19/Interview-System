@@ -26,6 +26,7 @@ export default function StudentDirectory() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [eventsStudent, setEventsStudent] = useState(null);
 
   // Configure Fuse.js for optimized fuzzy search
   const currentStudents = activeTab === "students" ? students : specialStudents;
@@ -384,6 +385,9 @@ export default function StudentDirectory() {
                     {activeTab === "students" && (
                       <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Actions</th>
                     )}
+                    {activeTab === "special" && (
+                      <th scope="col" className="px-4 py-2 text-left text-xs font-semibold tracking-wider text-slate-600 dark:text-white">Special Events</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
@@ -442,6 +446,16 @@ export default function StudentDirectory() {
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
+                          </td>
+                        )}
+                        {activeTab === "special" && (
+                          <td className="px-4 py-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setEventsStudent(s); }}
+                              className="px-3 py-1.5 text-xs font-medium rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors"
+                            >
+                              See Events
+                            </button>
                           </td>
                         )}
                       </tr>
@@ -833,6 +847,69 @@ export default function StudentDirectory() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Special Student Events Modal - centered with blurred background */}
+      {eventsStudent && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center">
+          {/* Light blurred backdrop */}
+          <div
+            className="absolute inset-0 bg-slate-200/60 dark:bg-black/40 backdrop-blur-sm"
+            onClick={() => setEventsStudent(null)}
+          />
+          {/* Modal card */}
+          <div className="relative z-50 w-full max-w-2xl mx-4 rounded-xl bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 shadow-2xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-gray-700">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-white">
+                  Special Events for {eventsStudent.name || 'Student'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-gray-300">
+                  Showing all special events this student has been invited to.
+                </p>
+              </div>
+              <button
+                onClick={() => setEventsStudent(null)}
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-gray-700 text-slate-600 dark:text-gray-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-4 py-3 max-h-80 overflow-y-auto">
+              {Array.isArray(eventsStudent.specialEvents) && eventsStudent.specialEvents.length > 0 ? (
+                <table className="min-w-full text-xs divide-y divide-slate-200 dark:divide-gray-700">
+                  <thead className="bg-slate-50 dark:bg-gray-700/60">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-semibold text-slate-600 dark:text-gray-200">Event Name</th>
+                      <th className="px-3 py-2 text-left font-semibold text-slate-600 dark:text-gray-200">Created On</th>
+                      <th className="px-3 py-2 text-left font-semibold text-slate-600 dark:text-gray-200">Created By</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                    {eventsStudent.specialEvents.map((ev) => {
+                      if (!ev) return null;
+                      const createdAt = ev.createdAt ? new Date(ev.createdAt) : null;
+                      const createdOnLabel = createdAt ? createdAt.toLocaleDateString() : '-';
+                      const createdByLabel = ev.createdBy || (ev.coordinatorId ? 'Coordinator' : 'Admin');
+                      return (
+                        <tr key={ev._id || `${ev.name}-${createdOnLabel}`}>
+                          <td className="px-3 py-2 text-slate-800 dark:text-gray-100 whitespace-nowrap">{ev.name || '-'}</td>
+                          <td className="px-3 py-2 text-slate-700 dark:text-gray-200 whitespace-nowrap">{createdOnLabel}</td>
+                          <td className="px-3 py-2 text-slate-700 dark:text-gray-200 whitespace-nowrap">{createdByLabel}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-xs text-slate-500 dark:text-gray-300">
+                  This student has not been added to any special events yet.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

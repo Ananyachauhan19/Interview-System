@@ -502,7 +502,7 @@ export async function listAllSpecialStudents(req, res) {
     const specialStudents = await User.find(query)
       .populate({
         path: 'specialEvents',
-        select: 'name isSpecial coordinatorId'
+        select: 'name isSpecial coordinatorId createdAt'
       })
       .select('name email studentId course branch college semester group specialEvents createdAt teacherId avatarUrl')
       .sort({ createdAt: -1 })
@@ -529,7 +529,7 @@ export async function listAllSpecialStudents(req, res) {
           (validateObjectId(teacherFromStudent) ? coordinatorsById.get(teacherFromStudent) : null);
       }
 
-      // If no coordinator found from student's teacherId, try from special events
+      // If no coordinator found from student's teacherId, try from any special event
       if (!coordinator && Array.isArray(student.specialEvents)) {
         for (const ev of student.specialEvents) {
           if (!ev || !ev.coordinatorId) continue;
@@ -541,8 +541,32 @@ export async function listAllSpecialStudents(req, res) {
         }
       }
 
+      // Enrich each special event with a human-readable creator label
+      const eventsWithCreator = Array.isArray(student.specialEvents)
+        ? student.specialEvents.map((ev) => {
+            if (!ev) return ev;
+            const evCopy = { ...ev };
+            let createdBy = 'Admin';
+
+            if (evCopy.coordinatorId) {
+              const id = evCopy.coordinatorId.toString();
+              const evCoordinator =
+                coordinatorsByCode.get(id) ||
+                (validateObjectId(id) ? coordinatorsById.get(id) : null);
+
+              if (evCoordinator) {
+                createdBy = evCoordinator.name || `Coordinator ${evCoordinator.coordinatorId || ''}`;
+              }
+            }
+
+            evCopy.createdBy = createdBy;
+            return evCopy;
+          })
+        : [];
+
       return {
         ...student,
+        specialEvents: eventsWithCreator,
         // Prefer teacherId stored on student (from CSV/admin), then event coordinator, then coordinator name
         teacherId: teacherFromStudent || coordinator?.coordinatorId || coordinator?.name || '-',
         coordinatorEmail: coordinator?.email || '-',
