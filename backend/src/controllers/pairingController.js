@@ -200,6 +200,28 @@ export async function getPairDetails(req, res) {
   }
   console.log('[getPairDetails] Pair found:', pair._id);
 
+  // SECURITY: Enforce access control at controller level
+  // Admins and coordinators can view any pair; students must be part of the pair
+  const user = req.user;
+  if (!user) {
+    throw new HttpError(401, 'Not authenticated');
+  }
+
+  if (user.role !== 'admin' && user.role !== 'coordinator') {
+    const userIdStr = user._id.toString();
+    const isParticipant =
+      pair.interviewer?.toString() === userIdStr ||
+      pair.interviewee?.toString() === userIdStr;
+
+    if (!isParticipant) {
+      console.warn('[getPairDetails] Unauthorized pair access attempt', {
+        userId: userIdStr,
+        pairId: pair._id.toString()
+      });
+      throw new HttpError(403, 'Access denied');
+    }
+  }
+
   // Fetch event
   const event = await Event.findById(pair.event).lean();
   if (!event) {
