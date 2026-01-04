@@ -58,7 +58,7 @@ function AppContent() {
   const isLoginPage = isMain || isStudentLogin || isResetPassword;
 
   return (
-    <div className={gradientBg + " dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen w-full flex flex-col"}>
+    <div className="min-h-screen w-full flex flex-col">
       {!isFeedbackForm && !isPublicPage && (
         isAdmin ? <AdminNavbar /> :
         isCoordinator ? <CoordinatorNavbar /> :
@@ -66,7 +66,8 @@ function AppContent() {
         null
       )}
      
-      <Routes>
+      <main className={gradientBg + " dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex-grow"}>
+        <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/student" element={<StudentLogin />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -110,6 +111,7 @@ function AppContent() {
         <Route path="/coordinator/change-password" element={<CoordinatorProtectedRoute><CoordinatorChangePassword /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/activity" element={<CoordinatorProtectedRoute><CoordinatorActivity /></CoordinatorProtectedRoute>} />
       </Routes>
+      </main>
       
       {!isLoginPage && !isFeedbackForm && !isPublicPage && <Footer />}
     </div>

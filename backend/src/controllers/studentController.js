@@ -99,9 +99,14 @@ export async function checkStudentsCsv(req, res) {
   const studentIds = normalizedRows.map((r) => r.studentid).filter(Boolean);
 
   // Bulk query existing users in DB to avoid per-row queries
-  const existing = await User.find({ $or: [{ email: { $in: emails } }, { studentId: { $in: studentIds } }] }).select('email studentId').lean();
-  const existingEmails = new Set(existing.map((u) => (u.email || '').toLowerCase()));
-  const existingStudentIds = new Set(existing.map((u) => (u.studentId || '').toString()));
+  const existing = await User.find({ $or: [{ email: { $in: emails } }, { studentId: { $in: studentIds } }] }).select('email studentId name branch course college teacherId semester group').lean();
+  const existingByEmail = new Map();
+  const existingByStudentId = new Map();
+  
+  existing.forEach((u) => {
+    if (u.email) existingByEmail.set(u.email.toLowerCase(), u);
+    if (u.studentId) existingByStudentId.set(u.studentId.toString(), u);
+  });
 
   // Coordinators are required for valid teacher assignments
   const coordinators = await User.find({ role: 'coordinator' }).select('coordinatorId').lean();
@@ -159,9 +164,55 @@ export async function checkStudentsCsv(req, res) {
       continue;
     }
 
-    // Check existing in User DB (keep this check for regular students)
-    if (existingEmails.has(lowerEmail) || existingStudentIds.has(studentid)) {
-      results.push({ row: row.__row, email, studentid, status: 'exists' });
+    // Check existing in User DB
+    const existingUser = existingByEmail.get(lowerEmail) || existingByStudentId.get(studentid);
+    
+    if (existingUser) {
+      // Check if this will be an update (any field different)
+      const changes = [];
+      const semesterNum = parseInt(row.semester);
+      
+      if (existingUser.name !== name) changes.push('name');
+      if (existingUser.studentId !== studentid) {
+        // Check if new studentId conflicts with another user
+        const studentIdConflict = existingByStudentId.get(studentid);
+        if (studentIdConflict && studentIdConflict._id.toString() !== existingUser._id.toString()) {
+          results.push({ 
+            row: row.__row, 
+            email, 
+            studentid, 
+            status: 'studentid_conflict',
+            message: `Student ID ${studentid} is already assigned to another user (${studentIdConflict.email})`
+          });
+          continue;
+        }
+        changes.push('studentid');
+      }
+      if (existingUser.branch !== branch) changes.push('branch');
+      if (existingUser.course !== course) changes.push('course');
+      if (existingUser.college !== college) changes.push('college');
+      if (existingUser.teacherId !== teacherid) changes.push('teacherid');
+      if (existingUser.semester !== semesterNum) changes.push('semester');
+      if (existingUser.group !== row.group) changes.push('group');
+      
+      if (changes.length > 0) {
+        results.push({ 
+          row: row.__row, 
+          email, 
+          studentid, 
+          status: 'will_update',
+          changes,
+          message: `Will update: ${changes.join(', ')}`
+        });
+      } else {
+        results.push({ 
+          row: row.__row, 
+          email, 
+          studentid, 
+          status: 'exists_no_change',
+          message: 'Student exists with identical data'
+        });
+      }
       continue;
     }
 
@@ -292,6 +343,21 @@ export async function uploadStudentsCsv(req, res) {
           continue;
         }
         
+        // Check if the new studentId is different and already belongs to another user
+        if (studentid !== existingUser.studentId) {
+          const studentIdConflict = existingByStudentId.get(studentid);
+          if (studentIdConflict && studentIdConflict._id.toString() !== existingUser._id.toString()) {
+            results.push({ 
+              row: row.__row, 
+              email, 
+              studentid, 
+              status: 'error', 
+              message: `Student ID ${studentid} is already assigned to another user (${studentIdConflict.email})`
+            });
+            continue;
+          }
+        }
+        
         const updateData = {
           name,
           studentId: studentid,
@@ -304,6 +370,12 @@ export async function uploadStudentsCsv(req, res) {
         };
         
         await User.findByIdAndUpdate(existingUser._id, updateData);
+        
+        // Update the cache if studentId changed
+        if (studentid !== existingUser.studentId) {
+          existingByStudentId.delete(existingUser.studentId);
+          existingByStudentId.set(studentid, { ...existingUser, studentId: studentid });
+        }
         
         results.push({ 
           row: row.__row, 

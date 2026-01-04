@@ -29,7 +29,14 @@ export default function AdminProtectedRoute({ children }) {
   };
 
   if (loading) {
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900 w-full">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-800 dark:text-gray-200 text-xl font-semibold">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthorized) {

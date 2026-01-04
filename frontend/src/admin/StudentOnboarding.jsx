@@ -184,15 +184,21 @@ export default function StudentOnboarding() {
             const checkResult = await api.checkStudentsCsv(file);
             setUploadResult(checkResult); // Set the check result
             
-            const existingCount = checkResult.results?.filter(r => r.status === 'exists').length || 0;
+            const existingCount = checkResult.results?.filter(r => r.status === 'exists' || r.status === 'exists_no_change').length || 0;
+            const updateCount = checkResult.results?.filter(r => r.status === 'will_update').length || 0;
             const readyCount = checkResult.results?.filter(r => r.status === 'ready').length || 0;
             
-            if (existingCount > 0 && readyCount === 0) {
-              const msg = `All ${existingCount} student(s) already exist in the system. Upload is not needed.`;
+            if (existingCount > 0 && readyCount === 0 && updateCount === 0) {
+              const msg = `All ${existingCount} student(s) already exist in the system with identical data. Upload is not needed.`;
               setError(msg);
               toast.info(msg);
-            } else if (existingCount > 0 && readyCount > 0) {
-              const msg = `${readyCount} new student(s) ready to upload. ${existingCount} student(s) already exist and will be skipped during upload.`;
+            } else if (updateCount > 0 || readyCount > 0) {
+              let msg = '';
+              const parts = [];
+              if (readyCount > 0) parts.push(`${readyCount} new student(s) will be created`);
+              if (updateCount > 0) parts.push(`${updateCount} student(s) will be updated`);
+              if (existingCount > 0) parts.push(`${existingCount} student(s) already exist with identical data`);
+              msg = parts.join('. ') + '.';
               setSuccess(msg);
               toast.success(msg);
             } else {
@@ -699,13 +705,13 @@ export default function StudentOnboarding() {
                     clientErrors.length > 0 || 
                     isUploading || 
                     uploadSuccess || 
-                    (uploadResult?.results && uploadResult.results.every(r => r.status === 'exists'))
+                    (uploadResult?.results && uploadResult.results.every(r => r.status === 'exists' || r.status === 'exists_no_change'))
                   }
                   className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     clientErrors.length > 0 || 
                     isUploading || 
                     uploadSuccess || 
-                    (uploadResult?.results && uploadResult.results.every(r => r.status === 'exists'))
+                    (uploadResult?.results && uploadResult.results.every(r => r.status === 'exists' || r.status === 'exists_no_change'))
                       ? 'bg-slate-300 dark:bg-gray-600 text-slate-600 dark:text-gray-400 cursor-not-allowed'
                       : 'bg-emerald-500 dark:bg-emerald-600 text-white hover:bg-emerald-600 dark:hover:bg-emerald-700'
                   }`}
@@ -912,10 +918,20 @@ export default function StudentOnboarding() {
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Updated
                           </span>
-                        ) : uploadResult?.results?.[idx]?.status === 'exists' ? (
+                        ) : uploadResult?.results?.[idx]?.status === 'will_update' ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300" title={uploadResult.results[idx].message}>
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Will Update: {uploadResult.results[idx].changes?.join(', ')}
+                          </span>
+                        ) : uploadResult?.results?.[idx]?.status === 'exists' || uploadResult?.results?.[idx]?.status === 'exists_no_change' ? (
                           <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
                             <AlertCircle className="w-3 h-3 mr-1" />
                             Already exists
+                          </span>
+                        ) : uploadResult?.results?.[idx]?.status === 'studentid_conflict' ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300" title={uploadResult.results[idx].message}>
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Student ID Conflict
                           </span>
                         ) : uploadResult?.results?.[idx]?.status === 'ready' ? (
                           <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
