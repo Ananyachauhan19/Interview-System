@@ -28,16 +28,23 @@ const emailResetAttempts = new Map(); // Map<email, { count: number, resetTime: 
 
 const EMAIL_RESET_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
 const EMAIL_RESET_MAX_ATTEMPTS = 3; // Max 3 reset emails per hour per email address
+const MAX_TRACKED_EMAILS = 10000; // Maximum emails to track (prevents memory exhaustion)
 
 /**
  * Clean up expired entries periodically to prevent memory leaks
+ * Runs every 15 minutes - very lightweight operation
  */
 setInterval(() => {
   const now = Date.now();
+  let cleaned = 0;
   for (const [email, data] of emailResetAttempts.entries()) {
     if (now > data.resetTime) {
       emailResetAttempts.delete(email);
+      cleaned++;
     }
+  }
+  if (cleaned > 0) {
+    console.log(`[Rate Limiter] Cleaned ${cleaned} expired email entries. Current size: ${emailResetAttempts.size}`);
   }
 }, 15 * 60 * 1000); // Clean up every 15 minutes
 
@@ -90,6 +97,26 @@ export function recordEmailResetAttempt(email) {
   const normalizedEmail = email.trim().toLowerCase();
   const now = Date.now();
   const data = emailResetAttempts.get(normalizedEmail);
+  
+  // MEMORY PROTECTION: If map is too large, clean expired entries first
+  if (emailResetAttempts.size >= MAX_TRACKED_EMAILS) {
+    for (const [e, d] of emailResetAttempts.entries()) {
+      if (now > d.resetTime) {
+        emailResetAttempts.delete(e);
+      }
+    }
+    // If still too large after cleanup, remove oldest entries
+    if (emailResetAttempts.size >= MAX_TRACKED_EMAILS) {
+      const entriesToRemove = emailResetAttempts.size - MAX_TRACKED_EMAILS + 100;
+      let removed = 0;
+      for (const key of emailResetAttempts.keys()) {
+        if (removed >= entriesToRemove) break;
+        emailResetAttempts.delete(key);
+        removed++;
+      }
+      console.warn(`[Rate Limiter] Memory limit reached, removed ${removed} oldest entries`);
+    }
+  }
   
   // Start new window or window expired
   if (!data || now > data.resetTime) {
