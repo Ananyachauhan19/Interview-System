@@ -26,8 +26,8 @@ import rateLimit from 'express-rate-limit';
  */
 const emailResetAttempts = new Map(); // Map<email, { count: number, resetTime: number }>
 
-const EMAIL_RESET_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
-const EMAIL_RESET_MAX_ATTEMPTS = 3; // Max 3 reset emails per hour per email address
+const EMAIL_RESET_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hour window
+const EMAIL_RESET_MAX_ATTEMPTS = 1; // Max 1 reset email per 2 hours per email address
 const MAX_TRACKED_EMAILS = 10000; // Maximum emails to track (prevents memory exhaustion)
 
 /**
