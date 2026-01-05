@@ -8,6 +8,7 @@ import { logActivity } from './adminActivityController.js';
 import { logStudentActivity } from './activityController.js';
 import { logAuthAttempt, logSuspiciousActivity } from '../utils/logger.js';
 import { validatePasswordStrength, validateEmail, generateSecureToken, hashToken } from '../utils/validators.js';
+import { checkEmailResetLimit, recordEmailResetAttempt } from '../middleware/rateLimiter.js';
 
 // Change password for student (requires current password)
 export async function changePassword(req, res) {
@@ -401,6 +402,17 @@ export async function requestPasswordReset(req, res) {
     return res.json({ message: 'If an account exists with this email or student ID, a password reset link has been sent.' });
   }
 
+  // SECURITY: Per-email rate limiting to prevent email bombing
+  // This protects individual users from receiving too many reset emails
+  const emailLimit = checkEmailResetLimit(user.email);
+  if (!emailLimit.allowed) {
+    console.warn(`[SECURITY] Password reset limit exceeded for email: ${user.email}`);
+    // Return generic message to prevent email enumeration while still blocking the request
+    return res.status(429).json({ 
+      error: `Too many password reset requests for this account. Please try again in ${emailLimit.minutesLeft} minute(s).`
+    });
+  }
+
   // SECURITY: Generate secure token with shorter expiration (15 minutes)
   const resetToken = generateSecureToken();
   const resetTokenHash = hashToken(resetToken);
@@ -422,6 +434,11 @@ export async function requestPasswordReset(req, res) {
       name: user.name,
       resetUrl,
     });
+    
+    // SECURITY: Record this attempt for per-email rate limiting
+    // Only record after successful email send to prevent false positives
+    recordEmailResetAttempt(user.email);
+    
     console.log('[Password Reset] Email sent successfully to:', user.email);
   } catch (err) {
     console.error('Failed to send password reset email:', err);

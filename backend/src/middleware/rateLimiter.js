@@ -13,6 +13,98 @@ import rateLimit from 'express-rate-limit';
  * while protecting against malicious patterns.
  */
 
+/**
+ * SECURITY: Per-Email Rate Limiting for Password Reset
+ * 
+ * This prevents email bombing attacks where an attacker repeatedly
+ * requests password resets for a victim's email address.
+ * 
+ * Unlike IP-based limiting, this ensures:
+ * - Each email can only receive X reset emails per time window
+ * - One user's abuse doesn't affect other users
+ * - Attackers can't spam a specific user from multiple IPs
+ */
+const emailResetAttempts = new Map(); // Map<email, { count: number, resetTime: number }>
+
+const EMAIL_RESET_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
+const EMAIL_RESET_MAX_ATTEMPTS = 3; // Max 3 reset emails per hour per email address
+
+/**
+ * Clean up expired entries periodically to prevent memory leaks
+ */
+setInterval(() => {
+  const now = Date.now();
+  for (const [email, data] of emailResetAttempts.entries()) {
+    if (now > data.resetTime) {
+      emailResetAttempts.delete(email);
+    }
+  }
+}, 15 * 60 * 1000); // Clean up every 15 minutes
+
+/**
+ * Check if email has exceeded reset request limit
+ * @param {string} email - The email address to check
+ * @returns {{ allowed: boolean, remainingAttempts: number, resetTime: number }}
+ */
+export function checkEmailResetLimit(email) {
+  if (!email) return { allowed: true, remainingAttempts: EMAIL_RESET_MAX_ATTEMPTS, resetTime: 0 };
+  
+  const normalizedEmail = email.trim().toLowerCase();
+  const now = Date.now();
+  const data = emailResetAttempts.get(normalizedEmail);
+  
+  // No previous attempts or window expired
+  if (!data || now > data.resetTime) {
+    return { 
+      allowed: true, 
+      remainingAttempts: EMAIL_RESET_MAX_ATTEMPTS,
+      resetTime: 0
+    };
+  }
+  
+  // Check if limit exceeded
+  if (data.count >= EMAIL_RESET_MAX_ATTEMPTS) {
+    const minutesLeft = Math.ceil((data.resetTime - now) / (60 * 1000));
+    return { 
+      allowed: false, 
+      remainingAttempts: 0,
+      resetTime: data.resetTime,
+      minutesLeft
+    };
+  }
+  
+  return { 
+    allowed: true, 
+    remainingAttempts: EMAIL_RESET_MAX_ATTEMPTS - data.count,
+    resetTime: data.resetTime
+  };
+}
+
+/**
+ * Record a password reset attempt for an email
+ * @param {string} email - The email address that requested reset
+ */
+export function recordEmailResetAttempt(email) {
+  if (!email) return;
+  
+  const normalizedEmail = email.trim().toLowerCase();
+  const now = Date.now();
+  const data = emailResetAttempts.get(normalizedEmail);
+  
+  // Start new window or window expired
+  if (!data || now > data.resetTime) {
+    emailResetAttempts.set(normalizedEmail, {
+      count: 1,
+      resetTime: now + EMAIL_RESET_WINDOW_MS
+    });
+    return;
+  }
+  
+  // Increment existing count
+  data.count++;
+  emailResetAttempts.set(normalizedEmail, data);
+}
+
 // Strict rate limiting for authentication endpoints
 // Prevents brute force password attacks
 export const authLimiter = rateLimit({
