@@ -409,7 +409,7 @@ export async function requestPasswordReset(req, res) {
     console.warn(`[SECURITY] Password reset limit exceeded for email: ${user.email}`);
     // Return generic message to prevent email enumeration while still blocking the request
     return res.status(429).json({ 
-      error: `Too many password reset requests for this account. Please try again in ${emailLimit.minutesLeft} minute(s).`
+      error: 'Too many password reset requests. Please try again later.'
     });
   }
 

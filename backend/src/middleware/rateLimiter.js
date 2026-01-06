@@ -26,7 +26,7 @@ import rateLimit from 'express-rate-limit';
  */
 const emailResetAttempts = new Map(); // Map<email, { count: number, resetTime: number }>
 
-const EMAIL_RESET_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hour window
+const EMAIL_RESET_WINDOW_MS = 2 * 60 * 60 * 1000;  // 2 hour window
 const EMAIL_RESET_MAX_ATTEMPTS = 1; // Max 1 reset email per 2 hours per email address
 const MAX_TRACKED_EMAILS = 10000; // Maximum emails to track (prevents memory exhaustion)
 
@@ -151,14 +151,23 @@ export const authLimiter = rateLimit({
 });
 
 // Password reset limiter - prevent mass email bombing
+// Rate limits by email address instead of IP to allow different users
+// to reset passwords independently, while preventing abuse of a single email
 export const passwordResetLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5, // 5 password reset requests per hour
+  windowMs: 2 * 60 * 60 * 1000, // 2 hours
+  max: 3, // 3 password reset requests per 2 hours per email
   message: 'Too many password reset requests',
   standardHeaders: true,
   legacyHeaders: false,
+  // Use email as the key instead of IP address
+  keyGenerator: (req) => {
+    // Extract email from request body and normalize it
+    const email = req.body?.email || req.body?.identifier || '';
+    return email.trim().toLowerCase() || req.ip; // Fallback to IP if no email provided
+  },
   handler: (req, res) => {
-    console.warn(`[SECURITY] Password reset limit exceeded for ${req.ip}`);
+    const email = req.body?.email || req.body?.identifier || '';
+    console.warn(`[SECURITY] Password reset limit exceeded for email: ${email} from IP: ${req.ip}`);
     res.status(429).json({
       error: 'Too many password reset requests. Please try again later.'
     });
