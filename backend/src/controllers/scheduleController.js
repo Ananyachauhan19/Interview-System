@@ -585,10 +585,11 @@ export async function proposeSlots(req, res) {
   let doc = await SlotProposal.findOne({ pair: pair._id, user: effectiveUserId, event: pair.event });
   const hadPreviousProposal = doc?.slots?.length > 0;
   
-  // Enforce combined proposal limit (EVERY submission counts, including replacements)
-  // Allow 3 proposals per user (6 total combined across both users)
-  const combinedProposalCount = (pair.interviewerProposalCount || 0) + (pair.intervieweeProposalCount || 0);
-  if (combinedProposalCount >= 6) throw new HttpError(400, 'Maximum of 6 combined proposals reached (3 per participant)');
+  // Check current combined proposal count BEFORE incrementing
+  const currentCombinedCount = (pair.interviewerProposalCount || 0) + (pair.intervieweeProposalCount || 0);
+  
+  // Prevent proposals if already at 6 (scheduled state should have caught this earlier)
+  if (currentCombinedCount >= 6) throw new HttpError(400, 'Maximum of 6 combined proposals reached');
   
   if (!doc) doc = new SlotProposal({ pair: pair._id, user: effectiveUserId, event: pair.event, slots: [], pastSlots: [], pastEntries: [] });
   
@@ -614,25 +615,54 @@ export async function proposeSlots(req, res) {
   // Debug: Log what was saved
   console.log('[Propose] User', effectiveUserId, 'saved slot:', dates[0].toISOString());
   
-  // Increment per-user counters on pair (count every attempt)
+  // Increment per-user counters on pair (count every attempt, including replacements)
   const isInterviewerProposing = isInterviewer;
   if (isInterviewerProposing) pair.interviewerProposalCount = (pair.interviewerProposalCount || 0) + 1; 
   else pair.intervieweeProposalCount = (pair.intervieweeProposalCount || 0) + 1;
-  await pair.save();
 
   // Update unified currentProposedTime on pair always (default or latest user proposal)
   pair.currentProposedTime = dates[0];
+  
+  // Check if this is the 6th proposal - if so, AUTO-SCHEDULE immediately
+  const newCombinedCount = (pair.interviewerProposalCount || 0) + (pair.intervieweeProposalCount || 0);
+  if (newCombinedCount >= 6 && pair.status !== 'scheduled') {
+    console.log('[Propose] 6th proposal reached - auto-scheduling interview');
+    pair.scheduledAt = dates[0];
+    pair.finalConfirmedTime = dates[0];
+    pair.status = 'scheduled';
+    
+    // Auto-generate Jitsi meeting link
+    if (!pair.meetingLink) {
+      const base = (process.env.MEETING_LINK_BASE || 'https://meet.jit.si').replace(/\/$/, '');
+      const room = `Interview-${pair._id}-${crypto.randomBytes(3).toString('hex')}`;
+      pair.meetingLink = `${base}/${room}`;
+    }
+    
+    // Log activity for both participants
+    await logStudentActivity({
+      studentId: effectiveUserId,
+      studentModel: 'User',
+      activityType: 'SESSION_SCHEDULED',
+      metadata: {
+        pairId: pair._id,
+        eventId: pair.event,
+        scheduledAt: dates[0],
+        role: isInterviewer ? 'interviewer' : 'interviewee',
+        autoScheduled: true
+      }
+    });
+  }
+  
   await pair.save();
 
-  // If both reached max attempts and still not scheduled, auto-assign and skip proposal email
-  let autoAssigned = false;
-  try { autoAssigned = await checkAndAutoAssign(pair); } catch {}
-
-  // Send email notification to the other party (only if not auto-assigned)
+  // Send email notifications
+  const justScheduled = newCombinedCount >= 6 && pair.status === 'scheduled';
   
-  
-  // Always send slot proposal/acceptance emails (part of the 4-email flow)
-  if (!autoAssigned && isInterviewerProposing && pair.interviewee?.email) {
+  if (justScheduled) {
+    // Send final scheduled emails to both parties
+    await sendMailForPair(pair);
+    console.log('[Propose] 6th proposal - interview auto-scheduled and emails sent');
+  } else if (isInterviewerProposing && pair.interviewee?.email) {
     // Interviewer proposed slots -> notify interviewee
     const slotsList = dates.map(d => formatDateTime(d)).join(' | '); // Use | as separator to avoid comma conflict
     await sendSlotProposalEmail({
@@ -641,7 +671,7 @@ export async function proposeSlots(req, res) {
       slot: slotsList,
     });
     console.log(`[Email] Slot proposal sent to interviewee: ${pair.interviewee.email}`);
-  } else if (!autoAssigned && !isInterviewerProposing && pair.interviewer?.email) {
+  } else if (!isInterviewerProposing && pair.interviewer?.email) {
     // Interviewee proposed alternative slots -> notify interviewer
     const slotsList = dates.map(d => formatDateTime(d)).join(' | '); // Use | as separator to avoid comma conflict
     await sendSlotAcceptanceEmail({
@@ -760,12 +790,22 @@ export async function confirmSlot(req, res) {
   if (scheduled.getTime() <= Date.now()) throw new HttpError(400, 'Cannot confirm past time');
   if (!isWithinAllowedHours(scheduled)) throw new HttpError(400, 'Scheduled time must be between 10:00 and 22:00');
 
-  // Validate the selected time equals the OTHER party's latest proposed slot (only latest is actionable)
-  const otherUserId = confirmerIsInterviewer ? pair.interviewee?._id : pair.interviewer?._id;
-  const otherProposal = await SlotProposal.findOne({ pair: pair._id, user: otherUserId, event: pair.event });
-  if (!otherProposal || !otherProposal.slots?.length) throw new HttpError(400, 'No slots proposed by the other party to confirm');
-  const latest = otherProposal.slots[otherProposal.slots.length - 1];
-  if (!latest || new Date(latest).getTime() !== scheduled.getTime()) throw new HttpError(400, 'Only the latest proposed time can be confirmed');
+  // Check if this is confirming the default time slot
+  const isConfirmingDefault = pair.defaultTimeSlot && 
+    Math.abs(new Date(pair.defaultTimeSlot).getTime() - scheduled.getTime()) < 60000; // Within 1 minute
+
+  if (!isConfirmingDefault) {
+    // For non-default confirmations, validate the time exists in the OTHER party's proposals
+    const otherUserId = confirmerIsInterviewer ? pair.interviewee?._id : pair.interviewer?._id;
+    const otherProposal = await SlotProposal.findOne({ pair: pair._id, user: otherUserId, event: pair.event });
+    if (!otherProposal || !otherProposal.slots?.length) {
+      throw new HttpError(400, 'No slots proposed by the other party to confirm');
+    }
+    const latest = otherProposal.slots[otherProposal.slots.length - 1];
+    if (!latest || new Date(latest).getTime() !== scheduled.getTime()) {
+      throw new HttpError(400, 'Only the latest proposed time can be confirmed');
+    }
+  }
 
   // Enforce event window on confirmation too
   if (event?.startDate && scheduled.getTime() < new Date(event.startDate).getTime()) throw new HttpError(400, 'Scheduled time before event start');

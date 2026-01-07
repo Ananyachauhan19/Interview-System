@@ -18,8 +18,6 @@ export default function StudentDashboard() {
   const [joinMsg, setJoinMsg] = useState("");
   const [showJoinRestriction, setShowJoinRestriction] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  // Unified selection across all 6 tabs: regular/special + all/active/upcoming, and past
-  // Allowed values: 'regular-all','regular-active','regular-upcoming','special-all','special-active','special-upcoming','past'
   const [selectedKey, setSelectedKey] = useState("regular-all");
   
   // Pairing-related states
@@ -296,7 +294,7 @@ export default function StudentDashboard() {
   }, [selectedPair, isInterviewer]);
   
   const totalProposalCount = myProposalCount + partnerProposalCount;
-  const combinedRemainingProposals = Math.max(0, 3 - totalProposalCount);
+  const combinedRemainingProposals = Math.max(0, 6 - totalProposalCount);
   const myRemainingProposals = Math.max(0, 3 - myProposalCount);
   const partnerRemainingProposals = Math.max(0, 3 - partnerProposalCount);
   const bothReachedLimit = totalProposalCount >= 6;
@@ -583,6 +581,25 @@ export default function StudentDashboard() {
       return false;
     }
     
+    // Check if time has already been proposed before (in history)
+    const allPastTimes = [
+      ...(currentProposals?.minePastEntries || []).map(e => new Date(e.time).getTime()),
+      ...(currentProposals?.partnerPastEntries || []).map(e => new Date(e.time).getTime())
+    ];
+    const proposedTime = parsedSlots[0].getTime();
+    if (allPastTimes.some(pastTime => Math.abs(pastTime - proposedTime) < 60000)) { // Within 1 minute = same slot
+      setMessage("⚠ This time has already been proposed before. Please select a different time.");
+      setIsLoadingPairs(false);
+      return false;
+    }
+    
+    // Check if combined proposals will exceed limit (frontend validation)
+    if (totalProposalCount >= 6) {
+      setMessage("⚠ Maximum proposals (6 combined) already reached. Interview should be automatically scheduled.");
+      setIsLoadingPairs(false);
+      return false;
+    }
+    
     try {
       const ev = selectedPair.event || {};
       const startBoundary = ev.startDate
@@ -634,16 +651,25 @@ export default function StudentDashboard() {
         }));
       }
       
-      if (res.common)
+      if (res.status === 'scheduled') {
+        setMessage(
+          `✓ Interview automatically scheduled! This was the 6th combined proposal, so the interview is now confirmed at ${fmt(res.currentProposedTime || res.scheduledAt)}`
+        );
+      } else if (res.common) {
         setMessage(
           `✓ Interview time confirmed: ${fmt(res.common)}`
         );
-      else {
-        const remaining = myRemainingProposals - 1;
-        if (remaining > 0) {
-          setMessage(`✓ Time slot proposed successfully. You have ${remaining} proposal${remaining !== 1 ? 's' : ''} remaining.`);
+      } else {
+        // Calculate user's remaining proposals (max 3 per user)
+        const myNewCount = isInterviewer 
+          ? (res.interviewerProposalCount || 0)
+          : (res.intervieweeProposalCount || 0);
+        const myRemaining = Math.max(0, 3 - myNewCount);
+        
+        if (myRemaining > 0) {
+          setMessage(`Time proposal sent! You have ${myRemaining} proposal${myRemaining !== 1 ? 's' : ''} remaining.`);
         } else {
-          setMessage("✓ Final proposal submitted. Awaiting confirmation from the other party.");
+          setMessage("Final proposal submitted. You've used all 3 of your proposals. Waiting for the other party to respond.");
         }
       }
       
@@ -671,13 +697,32 @@ export default function StudentDashboard() {
 
   const handleConfirm = async (dt, link) => {
     if (!selectedPair || !selectedEvent) return;
+    if (isLoadingPairs) return;
+    setIsLoadingPairs(true);
     try {
-      const iso = dt && dt.includes("T") ? new Date(dt).toISOString() : dt;
-      await api.confirmSlot(selectedPair._id, iso, link);
-      setMessage("✓ Interview time confirmed successfully. Both parties have been notified.");
+      let iso;
       
-      // Refresh pairs for this event
-      const pairsData = await api.listPairs(selectedEvent._id);
+      // Handle different input formats
+      if (typeof dt === 'object' && dt.proposedStart) {
+        // Object format (from default time confirmation)
+        iso = new Date(dt.proposedStart).toISOString();
+      } else if (typeof dt === 'string') {
+        // String format (from proposal confirmation)
+        iso = dt.includes("T") ? new Date(dt).toISOString() : dt;
+      } else {
+        // Direct date
+        iso = new Date(dt).toISOString();
+      }
+      
+      await api.confirmSlot(selectedPair._id, iso, link);
+      setMessage("Interview time confirmed. Notification sent to both parties.");
+
+      // Fetch updated pairs and proposals in parallel for faster response
+      const [pairsData, ro] = await Promise.all([
+        api.listPairs(selectedEvent._id),
+        api.proposeSlots(selectedPair._id, []),
+      ]);
+
       const pairsWithEvent = pairsData.map((p) => ({ ...p, event: selectedEvent }));
       setPairs(prevPairs => {
         const filteredPairs = prevPairs.filter(p => p.event._id !== selectedEvent._id);
@@ -689,9 +734,8 @@ export default function StudentDashboard() {
       if (updatedPair) {
         setSelectedPair(updatedPair);
       }
-      
-      // Refresh proposals
-      const ro = await api.proposeSlots(selectedPair._id, []);
+
+      // Refresh proposals state
       setCurrentProposals(ro);
       
       // Update selectedPair with fresh proposal counts
@@ -705,6 +749,8 @@ export default function StudentDashboard() {
       }
     } catch (err) {
       setMessage(err.message);
+    } finally {
+      setIsLoadingPairs(false);
     }
   };
 
@@ -712,7 +758,7 @@ export default function StudentDashboard() {
     if (!selectedPair || !selectedEvent) return;
     try {
       await api.rejectSlots(selectedPair._id);
-      setMessage("✓ Proposal declined. The other party may submit a new time slot.");
+      setMessage("Time declined. Your partner can now suggest a different time.");
       
       // Refresh pairs for this event
       const pairsData = await api.listPairs(selectedEvent._id);
@@ -1058,6 +1104,7 @@ export default function StudentDashboard() {
                               if (selectedPairRole !== "interviewer" || selectedPair?._id !== interviewerPair._id) {
                                 setSelectedPairRole("interviewer");
                                 setSelectedPair(interviewerPair);
+                                setMessage("");
                               }
                             }}
                             className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ml-3 ${
@@ -1105,6 +1152,7 @@ export default function StudentDashboard() {
                               if (selectedPairRole !== "interviewee" || selectedPair?._id !== intervieweePair._id) {
                                 setSelectedPairRole("interviewee");
                                 setSelectedPair(intervieweePair);
+                                setMessage("");
                               }
                             }}
                             className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ml-3 ${
@@ -1264,6 +1312,7 @@ export default function StudentDashboard() {
                           if (selectedPairRole !== "interviewer" || selectedPair?._id !== interviewerPair._id) {
                             setSelectedPairRole("interviewer");
                             setSelectedPair(interviewerPair);
+                            setMessage("");
                           }
                         }}
                         className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ${
@@ -1304,6 +1353,7 @@ export default function StudentDashboard() {
                           if (selectedPairRole !== "interviewee" || selectedPair?._id !== intervieweePair._id) {
                             setSelectedPairRole("interviewee");
                             setSelectedPair(intervieweePair);
+                            setMessage("");
                           }
                         }}
                         className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ${
@@ -1348,15 +1398,15 @@ export default function StudentDashboard() {
   );
 
   const PairingDetails = () => (
-    <div className="space-y-3 sm:space-y-4 md:space-y-6">
+    <div className="w-full">
       {/* Mobile Back Button */}
-      <div className="lg:hidden flex items-center gap-2 -mt-2 mb-3 sm:mb-4 pb-3 border-b border-slate-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10">
+      <div className="lg:hidden flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-gray-700">
         <button
           onClick={() => {
             setSelectedPairRole(null);
             setSelectedPair(null);
           }}
-          className="p-2 rounded-lg bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 active:bg-slate-300 dark:active:bg-gray-600 transition-colors touch-manipulation"
+          className="p-2 rounded-lg bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 transition-colors"
         >
           <ChevronLeft className="w-5 h-5 text-slate-700 dark:text-gray-300" />
         </button>
@@ -1368,599 +1418,714 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      <div className="flex flex-col items-center justify-center gap-3 mb-6">
-        <div className="text-center">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900 dark:text-gray-100 mb-3 break-words">
-            <span className="text-sky-600 dark:text-sky-400">Interviewer:</span> {selectedPair.interviewer?.name || selectedPair.interviewer?.email}
-            <span className="mx-3 text-slate-400 dark:text-gray-500">➜</span>
-            <span className="text-emerald-600 dark:text-emerald-400">Candidate:</span> {selectedPair.interviewee?.name || selectedPair.interviewee?.email}
-          </h2>
-
-          <div className="flex flex-wrap gap-2 mb-3 justify-center">
-            <span
-              className={`text-xs px-2 py-1 rounded font-medium ${
-                isInterviewer
-                  ? "bg-sky-100 dark:bg-sky-900/40 text-sky-800 dark:text-sky-300"
-                  : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300"
-              }`}
-            >
-              You are the{" "}
-              {isInterviewer ? "Interviewer" : "Candidate"}
-            </span>
-
-            <span
-              className={`text-xs px-2 py-1 rounded font-medium ${
-                selectedPair.status === "scheduled"
-                  ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300"
-                  : selectedPair.status === "rejected"
-                  ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
-                  : "bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300"
-              }`}
-            >
-              {selectedPair.status || "Pending"}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {isLocked && (
-        <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-700 text-sm flex items-start">
-          <CheckCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-          <div>
-            <div className="font-medium">
-              Interview scheduled and confirmed
-            </div>
-            {selectedPair?.scheduledAt && (
-              <div className="text-emerald-800 mt-1 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" />
-                {fmt(selectedPair.scheduledAt)}
+      {/* Centered Single Card Container */}
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm">
+          
+          {/* Header - Participant Info */}
+          <div className="px-6 py-5 border-b border-slate-200 dark:border-gray-700">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+              {/* Interviewer */}
+              <div className="flex items-center gap-3 flex-1">
+                <div className="w-10 h-10 rounded-full bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center flex-shrink-0">
+                  <span className="text-base font-bold text-sky-700 dark:text-sky-300">
+                    {(selectedPair.interviewer?.name || selectedPair.interviewer?.email)?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="text-left">
+                  <div className="text-xs text-slate-500 dark:text-gray-400">Interviewer</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-gray-100 truncate">
+                    {selectedPair.interviewer?.name || selectedPair.interviewer?.email}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
+              
+              <div className="text-slate-300 dark:text-gray-600 text-xl hidden sm:block">→</div>
+              
+              {/* Candidate */}
+              <div className="flex items-center gap-3 flex-1 sm:flex-row-reverse">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+                  <span className="text-base font-bold text-emerald-700 dark:text-emerald-300">
+                    {(selectedPair.interviewee?.name || selectedPair.interviewee?.email)?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="text-left sm:text-right">
+                  <div className="text-xs text-slate-500 dark:text-gray-400">Candidate</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-gray-100 truncate">
+                    {selectedPair.interviewee?.name || selectedPair.interviewee?.email}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      {/* Single Page Time Slot Interface */}
-      <div className="space-y-4">
-        {/* Default Time Slot Display */}
-        <div className="bg-gradient-to-br from-indigo-50 to-sky-50 dark:from-indigo-950/40 dark:to-sky-950/40 rounded-xl p-4 border border-indigo-200 dark:border-indigo-700">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-gray-100">Interview Time Slot</h3>
-            {/* Past Time Slots Button (right side) */}
-            <div className="relative" ref={pastDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setShowPastDropdown(v => !v)}
-                className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700 shadow-sm flex items-center gap-2 text-slate-700 dark:text-gray-200"
+            {/* Status Pills */}
+            <div className="flex flex-wrap gap-2 justify-center pt-3 border-t border-slate-100 dark:border-gray-700">
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                  isInterviewer
+                    ? "bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300"
+                    : "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300"
+                }`}
               >
-                Past Time Allotment
-                {(() => {
-                  const count = Array.isArray(currentProposals?.pastTimeSlots)
-                    ? currentProposals.pastTimeSlots.length
-                    : ((currentProposals?.minePastEntries || []).length + (currentProposals?.partnerPastEntries || []).length);
-                  return count > 0 ? (
-                    <span className="inline-flex items-center justify-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 dark:bg-slate-600 text-white min-w-[18px]">
-                      {count}
-                    </span>
-                  ) : null;
-                })()}
-              </button>
-              {showPastDropdown && (
-                <div className="absolute right-0 mt-2 w-96 z-10 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg">
-                  <div className="p-4">
-                    <div className="text-xs font-semibold text-slate-700 dark:text-gray-200 mb-2">Past Time Slots History</div>
-                    <div className="text-[10px] text-slate-500 dark:text-gray-400 mb-3">Detailed history of expired, rejected, and replaced proposals</div>
-                    {(() => {
-                      // Collect all past entries from both users
-                      const entries = Array.isArray(currentProposals?.pastTimeSlots)
-                        ? currentProposals.pastTimeSlots
-                        : [
-                            ...(currentProposals?.minePastEntries || []),
-                            ...(currentProposals?.partnerPastEntries || []),
-                          ];
-                      
-                      // Filter to only show expired, rejected, replaced, and superseded entries
-                      const filteredEntries = entries
-                        .filter(e => {
-                          const reason = e.reason?.toLowerCase();
-                          return reason === 'expired' || reason === 'rejected' || 
-                                 reason === 'replaced' || reason === 'superseded';
-                        })
-                        .sort((a, b) => new Date(b.time) - new Date(a.time));
-                      
-                      if (!filteredEntries || filteredEntries.length === 0) {
-                        return (
-                          <div className="text-sm text-slate-500 dark:text-gray-400 py-4 text-center">No past time slots yet.</div>
-                        );
-                      }
-                      
-                      const toLabel = (r) => {
-                        if (!r) return 'Replaced';
-                        const map = { rejected: 'Rejected', expired: 'Expired', superseded: 'Replaced', replaced: 'Replaced' };
-                        return map[r] || (r.charAt(0).toUpperCase() + r.slice(1));
-                      };
-                      
-                      const color = (r) => {
-                        if (r === 'rejected') return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700';
-                        if (r === 'expired') return 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700';
-                        return 'bg-slate-50 dark:bg-gray-800 border-slate-200 dark:border-gray-700';
-                      };
-                      
-                      const getRoleLabel = (user) => {
-                        if (!user) return 'Unknown';
-                        const userId = user._id || user;
-                        const interviewerId = selectedPair?.interviewer?._id || selectedPair?.interviewer;
-                        const intervieweeId = selectedPair?.interviewee?._id || selectedPair?.interviewee;
+                <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                You · {isInterviewer ? "Interviewer" : "Candidate"}
+              </span>
+
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                  selectedPair.status === "scheduled"
+                    ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300"
+                    : selectedPair.status === "rejected"
+                    ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
+                    : "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                {selectedPair.status === "scheduled" ? "Confirmed" : selectedPair.status === "rejected" ? "Declined" : "Awaiting"}
+              </span>
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="px-6 py-6 space-y-5">
+            {/* Scheduled Time - Primary Display */}
+            {isLocked && selectedPair?.scheduledAt ? (
+              isScheduledTimeExpired ? (
+                /* Expired Time */
+                <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <div className="font-semibold text-red-900 dark:text-red-100 mb-1">Scheduled Time Has Passed</div>
+                      <div className="text-3xl font-bold text-red-700 dark:text-red-300 mb-2 tracking-tight">
+                        {fmt(selectedPair.scheduledAt)}
+                      </div>
+                      <div className="text-sm text-red-700 dark:text-red-300">Please request a new time below</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Confirmed Time - Large Prominent Display */
+                <div className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-1" />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-emerald-800 dark:text-emerald-300 mb-2">Interview Confirmed</div>
+                      <div className="text-3xl font-bold text-emerald-900 dark:text-emerald-100 mb-2 tracking-tight">
+                        {fmt(selectedPair.scheduledAt)}
+                      </div>
+                      <div className="text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        {new Date(selectedPair.scheduledAt).toLocaleString('en-US', { timeZoneName: 'short' }).split(', ').pop()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            ) : (
+              /* Pending Time Display - Show most recent proposal ONLY if actual proposals exist (not just default) */
+              (() => {
+                const mySlots = currentProposals?.mine || [];
+                const partnerSlots = currentProposals?.partner || [];
+                const hasActiveProposals = mySlots.length > 0 || partnerSlots.length > 0;
+                
+                // Check if we have proposal counts - if both are 0, no one has proposed yet (only default exists)
+                const myProposalCountValue = isInterviewer 
+                  ? selectedPair?.interviewerProposalCount || 0
+                  : selectedPair?.intervieweeProposalCount || 0;
+                const partnerProposalCountValue = isInterviewer
+                  ? selectedPair?.intervieweeProposalCount || 0
+                  : selectedPair?.interviewerProposalCount || 0;
+                const totalProposals = myProposalCountValue + partnerProposalCountValue;
+                
+                // Only show this section if someone has actually made a proposal (count > 0)
+                if (!hasActiveProposals || totalProposals === 0) {
+                  return null;
+                }
+                
+                // Determine which proposal is the most recent one to display
+                const myTimestamp = currentProposals.mineUpdatedAt ? new Date(currentProposals.mineUpdatedAt).getTime() : 0;
+                const partnerTimestamp = currentProposals.partnerUpdatedAt ? new Date(currentProposals.partnerUpdatedAt).getTime() : 0;
+                
+                // Show the most recent proposal
+                const showMyProposal = mySlots.length > 0 && (partnerSlots.length === 0 || myTimestamp >= partnerTimestamp);
+                const displayTime = showMyProposal ? mySlots[0] : partnerSlots[0];
+                const proposedByMe = showMyProposal;
+                
+                // Get partner name
+                const partnerName = proposedByMe 
+                  ? (isInterviewer ? (selectedPair?.interviewee?.name || 'Candidate') : (selectedPair?.interviewer?.name || 'Interviewer'))
+                  : (isInterviewer ? (selectedPair?.interviewee?.name || 'Candidate') : (selectedPair?.interviewer?.name || 'Interviewer'));
+                
+                const displayTimeDate = new Date(displayTime);
+                
+                return (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-5">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-600 flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                          {proposedByMe ? 'Your Proposed Time' : `${partnerName} Proposed Time`}
+                        </h4>
+                        <p className="text-sm text-amber-700 dark:text-amber-300">
+                          {proposedByMe 
+                            ? 'Waiting for the other party to confirm or propose a different time.'
+                            : 'Please confirm this time or propose a different one.'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 border border-amber-100 dark:border-amber-900">
+                      <div className="text-2xl font-bold text-amber-900 dark:text-amber-100 mb-2">
+                        {displayTimeDate.toLocaleString('en-US', {
+                          weekday: 'short', month: 'short', day: 'numeric', 
+                          hour: 'numeric', minute: '2-digit', hour12: true
+                        })}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {displayTimeDate.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').slice(-1)[0]}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            )}
+
+            {/* Past Time Slots Button */}
+            <div className="flex justify-end">
+              <div className="relative" ref={pastDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowPastDropdown(v => !v)}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700 shadow-sm flex items-center gap-2 text-slate-700 dark:text-gray-200 transition-colors"
+                >
+                  Past Time Allotment
+                  {(() => {
+                    const count = Array.isArray(currentProposals?.pastTimeSlots)
+                      ? currentProposals.pastTimeSlots.length
+                      : ((currentProposals?.minePastEntries || []).length + (currentProposals?.partnerPastEntries || []).length);
+                    return count > 0 ? (
+                      <span className="inline-flex items-center justify-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 dark:bg-slate-600 text-white min-w-[18px]">
+                        {count}
+                      </span>
+                    ) : null;
+                  })()}
+                </button>
+                {showPastDropdown && (
+                  <div className="absolute right-0 mt-2 w-96 z-10 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg">
+                    <div className="p-4">
+                      <div className="text-xs font-semibold text-slate-700 dark:text-gray-200 mb-2">Past Time Slots History</div>
+                      <div className="text-[10px] text-slate-500 dark:text-gray-400 mb-3">Detailed history of expired, rejected, and replaced proposals</div>
+                      {(() => {
+                        const entries = Array.isArray(currentProposals?.pastTimeSlots)
+                          ? currentProposals.pastTimeSlots
+                          : [
+                              ...(currentProposals?.minePastEntries || []),
+                              ...(currentProposals?.partnerPastEntries || []),
+                            ];
                         
-                        if (String(userId) === String(interviewerId)) return 'Interviewer';
-                        if (String(userId) === String(intervieweeId)) return 'Candidate';
-                        return user.name || user.email || 'User';
-                      };
-                      
-                      return (
-                        <ul className="space-y-3 max-h-96 overflow-auto">
-                          {filteredEntries.map((e, idx) => (
-                            <li key={`${e.time}-${idx}`} className={`text-xs px-3 py-3 rounded-lg border ${color(e.reason)}`}>
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <div className="flex-1">
-                                  <div className="font-semibold text-slate-900 dark:text-gray-100 mb-1">{fmt(e.time)}</div>
-                                  {e.proposedBy && (
-                                    <div className="text-[10px] text-slate-600 dark:text-gray-400 mb-1">
-                                      <span className="font-medium">Proposed by:</span>{' '}
-                                      <span className="text-indigo-700 dark:text-indigo-400 font-semibold">
-                                        {getRoleLabel(e.proposedBy)}
-                                      </span>
-                                      {e.proposedBy.name && (
-                                        <span className="text-slate-500 dark:text-gray-500"> ({e.proposedBy.name})</span>
+                        const filteredEntries = entries
+                          .filter(e => {
+                            const reason = e.reason?.toLowerCase();
+                            return reason === 'expired' || reason === 'rejected' || 
+                                   reason === 'replaced' || reason === 'superseded';
+                          })
+                          .sort((a, b) => new Date(b.time) - new Date(a.time));
+                        
+                        if (!filteredEntries || filteredEntries.length === 0) {
+                          return (
+                            <div className="text-sm text-slate-500 dark:text-gray-400 py-4 text-center">No past time slots yet.</div>
+                          );
+                        }
+                        
+                        const toLabel = (r) => {
+                          if (!r) return 'Replaced';
+                          const map = { rejected: 'Rejected', expired: 'Expired', superseded: 'Replaced', replaced: 'Replaced' };
+                          return map[r] || (r.charAt(0).toUpperCase() + r.slice(1));
+                        };
+                        
+                        const color = (r) => {
+                          if (r === 'rejected') return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700';
+                          if (r === 'expired') return 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700';
+                          return 'bg-slate-50 dark:bg-gray-800 border-slate-200 dark:border-gray-700';
+                        };
+                        
+                        const getRoleLabel = (user) => {
+                          if (!user) return 'Unknown';
+                          const userId = user._id || user;
+                          const interviewerId = selectedPair?.interviewer?._id || selectedPair?.interviewer;
+                          const intervieweeId = selectedPair?.interviewee?._id || selectedPair?.interviewee;
+                          
+                          if (String(userId) === String(interviewerId)) return 'Interviewer';
+                          if (String(userId) === String(intervieweeId)) return 'Candidate';
+                          return user.name || user.email || 'User';
+                        };
+                        
+                        // Determine who actually caused the replacement by analyzing the chronological sequence
+                        const getActualReplacer = (entry, index, allEntries) => {
+                          if (!entry) return null;
+                          
+                          // For superseded entries, we need to figure out who ACTUALLY replaced it
+                          if (entry.reason === 'superseded') {
+                            // Sort entries by time to understand the sequence
+                            const sortedByReplacedAt = [...allEntries].sort((a, b) => 
+                              new Date(a.replacedAt || 0).getTime() - new Date(b.replacedAt || 0).getTime()
+                            );
+                            
+                            const currentIndex = sortedByReplacedAt.findIndex(e => 
+                              new Date(e.time).getTime() === new Date(entry.time).getTime() &&
+                              new Date(e.replacedAt).getTime() === new Date(entry.replacedAt).getTime()
+                            );
+                            
+                            // Find the next entry after this one (chronologically)
+                            if (currentIndex >= 0 && currentIndex < sortedByReplacedAt.length - 1) {
+                              const nextEntry = sortedByReplacedAt[currentIndex + 1];
+                              // The person who proposed the next slot is the one who replaced this one
+                              if (nextEntry && nextEntry.proposedBy) {
+                                const currentProposerId = entry.proposedBy?._id || entry.proposedBy;
+                                const nextProposerId = nextEntry.proposedBy._id || nextEntry.proposedBy;
+                                
+                                // If same person, they updated their own proposal
+                                if (String(currentProposerId) === String(nextProposerId)) {
+                                  return { user: entry.proposedBy, isSelf: true };
+                                } else {
+                                  // Different person replaced it
+                                  return { user: nextEntry.proposedBy, isSelf: false };
+                                }
+                              }
+                            }
+                            
+                            // Fallback to the replacedBy field
+                            if (entry.proposedBy && entry.replacedBy) {
+                              const proposerId = entry.proposedBy._id || entry.proposedBy;
+                              const replacerId = entry.replacedBy._id || entry.replacedBy;
+                              
+                              if (String(proposerId) === String(replacerId)) {
+                                return { user: entry.proposedBy, isSelf: true };
+                              } else {
+                                return { user: entry.replacedBy, isSelf: false };
+                              }
+                            }
+                            
+                            return { user: entry.replacedBy, isSelf: false };
+                          }
+                          
+                          return { user: entry.replacedBy, isSelf: false };
+                        };
+                        
+                        // Check if this is a default/auto-assigned slot
+                        const isDefaultSlot = (entry) => {
+                          // Check if the time matches the pair's defaultTimeSlot
+                          if (selectedPair?.defaultTimeSlot) {
+                            const entryTime = new Date(entry.time).getTime();
+                            const defaultTime = new Date(selectedPair.defaultTimeSlot).getTime();
+                            if (Math.abs(entryTime - defaultTime) < 60000) { // Within 1 minute
+                              return true;
+                            }
+                          }
+                          // If no proposedBy info, it might be a default slot
+                          if (!entry.proposedBy || !entry.proposedBy._id) {
+                            return true;
+                          }
+                          return false;
+                        };
+                        
+                        return (
+                          <ul className="space-y-3 max-h-96 overflow-auto">
+                            {filteredEntries.map((e, idx) => {
+                              const isDefault = isDefaultSlot(e);
+                              const replacerInfo = getActualReplacer(e, idx, filteredEntries);
+                              const actualReplacer = replacerInfo?.user;
+                              const selfReplaced = replacerInfo?.isSelf;
+                              
+                              return (
+                                <li key={`${e.time}-${idx}`} className={`text-xs px-3 py-3 rounded-lg border ${color(e.reason)}`}>
+                                  <div className="flex items-start justify-between gap-2 mb-2">
+                                    <div className="flex-1">
+                                      <div className="font-semibold text-slate-900 dark:text-gray-100 mb-1">{fmt(e.time)}</div>
+                                      
+                                      {/* Show who proposed */}
+                                      {isDefault ? (
+                                        <div className="text-[10px] text-slate-600 dark:text-gray-400 mb-1">
+                                          <span className="font-medium">Assigned by:</span>{' '}
+                                          <span className="text-blue-700 dark:text-blue-400 font-semibold">System (Auto)</span>
+                                        </div>
+                                      ) : e.proposedBy && (
+                                        <div className="text-[10px] text-slate-600 dark:text-gray-400 mb-1">
+                                          <span className="font-medium">Proposed by:</span>{' '}
+                                          <span className="text-indigo-700 dark:text-indigo-400 font-semibold">
+                                            {getRoleLabel(e.proposedBy)}
+                                          </span>
+                                          {e.proposedBy.name && (
+                                            <span className="text-slate-500 dark:text-gray-500"> ({e.proposedBy.name})</span>
+                                          )}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Show who/what caused the change */}
+                                      {e.reason === 'rejected' && actualReplacer && (
+                                        <div className="text-[10px] text-red-700 dark:text-red-400">
+                                          <span className="font-medium">Declined by:</span>{' '}
+                                          <span className="font-semibold">{getRoleLabel(actualReplacer)}</span>
+                                          {actualReplacer.name && <span> ({actualReplacer.name})</span>}
+                                        </div>
+                                      )}
+                                      
+                                      {e.reason === 'superseded' && actualReplacer && (
+                                        <div className="text-[10px] text-slate-600 dark:text-gray-400">
+                                          {selfReplaced ? (
+                                            <>
+                                              <span className="font-medium">Updated by:</span>{' '}
+                                              <span className="font-semibold">{getRoleLabel(actualReplacer)}</span>
+                                              {actualReplacer.name && <span> ({actualReplacer.name})</span>}
+                                              <span className="text-slate-500 dark:text-gray-500"> (own proposal)</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <span className="font-medium">Replaced by:</span>{' '}
+                                              <span className="font-semibold">{getRoleLabel(actualReplacer)}</span>
+                                              {actualReplacer.name && <span> ({actualReplacer.name})</span>}
+                                            </>
+                                          )}
+                                        </div>
+                                      )}
+                                      
+                                      {e.reason === 'expired' && (
+                                        <div className="text-[10px] text-amber-700 dark:text-amber-400">
+                                          <span className="font-medium">Status:</span> Time slot expired automatically
+                                        </div>
+                                      )}
+                                      
+                                      {e.replacedAt && (
+                                        <div className="text-[9px] text-slate-500 dark:text-gray-500 mt-1">
+                                          {new Date(e.replacedAt).toLocaleString(undefined, {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
+                                        </div>
                                       )}
                                     </div>
-                                  )}
-                                  {e.reason === 'rejected' && e.replacedBy && (
-                                    <div className="text-[10px] text-red-700 dark:text-red-400">
-                                      <span className="font-medium">Declined by:</span>{' '}
-                                      <span className="font-semibold">{getRoleLabel(e.replacedBy)}</span>
-                                      {e.replacedBy.name && <span> ({e.replacedBy.name})</span>}
+                                    <div className={`text-[9px] font-bold uppercase px-2 py-1 rounded whitespace-nowrap ${
+                                      e.reason === 'expired' ? 'bg-amber-200 dark:bg-amber-900/40 text-amber-900 dark:text-amber-300' :
+                                      e.reason === 'rejected' ? 'bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-300' :
+                                      'bg-slate-300 dark:bg-gray-700 text-slate-900 dark:text-gray-300'
+                                    }`}>
+                                      {toLabel(e.reason)}
                                     </div>
-                                  )}
-                                  {e.reason === 'superseded' && e.replacedBy && (
-                                    <div className="text-[10px] text-slate-600 dark:text-gray-400">
-                                      <span className="font-medium">Replaced by:</span>{' '}
-                                      <span className="font-semibold">{getRoleLabel(e.replacedBy)}</span>
-                                      {e.replacedBy.name && <span> ({e.replacedBy.name})</span>}
-                                    </div>
-                                  )}
-                                  {e.replacedAt && (
-                                    <div className="text-[9px] text-slate-500 dark:text-gray-500 mt-1">
-                                      {new Date(e.replacedAt).toLocaleString(undefined, {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className={`text-[9px] font-bold uppercase px-2 py-1 rounded whitespace-nowrap ${
-                                  e.reason === 'expired' ? 'bg-amber-200 dark:bg-amber-900/40 text-amber-900 dark:text-amber-300' :
-                                  e.reason === 'rejected' ? 'bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-300' :
-                                  'bg-slate-300 dark:bg-gray-700 text-slate-900 dark:text-gray-300'
-                                }`}>
-                                  {toLabel(e.reason)}
-                                </div>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      );
-                    })()}
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        );
+                      })()}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Show Scheduled/Default Time */}
-          {isLocked && selectedPair?.scheduledAt ? (
-            isScheduledTimeExpired ? (
-              /* Expired Scheduled Time UI */
-              <div className="text-center py-4">
-                <div className="max-w-lg mx-auto rounded-xl border-2 border-red-300 dark:border-red-700 bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 dark:from-red-950/40 dark:via-orange-950/40 dark:to-amber-950/40 shadow-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-red-500 to-orange-500 dark:from-red-600 dark:to-orange-600 px-4 py-2">
-                    <div className="flex items-center justify-center gap-2 text-white">
-                      <AlertCircle className="w-5 h-5" />
-                      <span className="font-bold text-base">Scheduled Time Expired</span>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4">
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/40">
-                        <Clock className="w-7 h-7 text-red-600 dark:text-red-400" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-sm font-semibold text-red-900 dark:text-red-300 mb-2">Your scheduled time has expired.</p>
-                        <p className="text-xs text-red-700 dark:text-red-400 leading-relaxed mb-3">
-                          The meeting time that was scheduled has now passed. To continue with your interview, please propose a new time that works for both you and your partner.
-                        </p>
-                        <div className="bg-white dark:bg-gray-800 rounded-lg px-4 py-3 border border-red-200 dark:border-red-700 mb-4">
-                          <div className="text-xs text-slate-500 dark:text-gray-400 mb-1">Previous Time:</div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-slate-700 dark:text-gray-300 line-through">
-                              {fmt(selectedPair.scheduledAt)}
-                            </span>
-                            <span className="text-[10px] font-bold uppercase tracking-wide text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/40 px-2 py-1 rounded">
-                              Expired
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700 rounded-lg px-4 py-3 mb-4">
-                      <div className="flex items-start gap-2">
-                        <div className="p-1 rounded bg-sky-200 dark:bg-sky-800">
-                          <span className="text-sky-700 dark:text-sky-300 text-xs font-bold">📝</span>
-                        </div>
-                        <div className="flex-1 text-left">
-                          <p className="text-xs font-semibold text-sky-900 dark:text-sky-300 mb-1">Next Steps:</p>
-                          <p className="text-xs text-sky-800 dark:text-sky-400 leading-relaxed">
-                            Please propose a new time below. Your partner will be notified and can accept or suggest alternatives.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setShowProposeForm(true)}
-                      className="w-full px-5 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-lg font-semibold text-sm hover:from-sky-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02]"
-                    >
-                      Propose New Time
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* Active Scheduled Time UI */
-              <div className="text-center py-4">
-                <div className="inline-flex flex-col items-center gap-2 px-6 py-4 bg-white dark:bg-gray-800 rounded-xl border-2 border-emerald-300 dark:border-emerald-700 shadow-lg">
-                  <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
-                  <div>
-                    <div className="text-sm font-medium text-slate-600 dark:text-gray-400 mb-1">Your interview time:</div>
-                    <div className="text-xl font-bold text-emerald-700 dark:text-emerald-400">
-                      {fmt(selectedPair.scheduledAt)}
-                    </div>
-                    {bothReachedLimit && (
-                      <div className="mt-3 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-4 py-2 rounded-lg border border-emerald-200 dark:border-emerald-700 font-medium">
-                        ✓ Automatically confirmed after both parties reached proposal limit
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )
-          ) : (
-            <div className="space-y-3">
-              {/* Single common proposal tab showing the most recent proposal from either party */}
-              {(() => {
-                const mySlots = isInterviewer ? interviewerSlots : intervieweeSlots;
-                const partnerSlots = isInterviewer ? intervieweeSlots : interviewerSlots;
-                
-                // Use memoized isSystemDefault to prevent flicker
-                // Show Default Time first if it exists
-                if (isSystemDefault && !selectedPair?.defaultTimeExpired) {
-                  return (
-                    <div>
-                      <div className="text-center mb-3">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-100 dark:bg-sky-900/30 rounded-lg border border-sky-300 dark:border-sky-700">
-                          <Clock className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-                          <span className="text-sm font-medium text-sky-900 dark:text-sky-300">
-                            Default Time Slot Assigned
-                          </span>
-                        </div>
-                      </div>
-                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-sky-200 dark:border-sky-700 shadow-md text-center">
-                        <div className="text-xs text-slate-600 dark:text-gray-400 mb-2">Your scheduled time:</div>
-                        <div className="text-lg font-semibold text-slate-900 dark:text-gray-100 mb-3">
-                          {fmt(mySlots[0])}
-                        </div>
-                        <div className="flex gap-3 justify-center flex-wrap">
-                          <button
-                            onClick={() => handleConfirm(mySlots[0], "")}
-                            className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm"
-                          >
-                            Confirm Default Time
-                          </button>
-                          <button
-                            onClick={() => setShowProposeForm(true)}
-                            className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
-                          >
-                            Propose Different Time
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-                
-                // Single common proposal tab: show the MOST RECENT proposal (regardless of who made it)
-                // Use timestamps to determine which proposal is newer
-                const hasAnyProposal = (partnerSlots.length > 0 || mySlots.length > 0) && !isSystemDefault;
-                
-                if (hasAnyProposal) {
-                  // Determine whose proposal to show based on most recent timestamp
-                  const myTimestamp = currentProposals.mineUpdatedAt ? new Date(currentProposals.mineUpdatedAt).getTime() : 0;
-                  const partnerTimestamp = currentProposals.partnerUpdatedAt ? new Date(currentProposals.partnerUpdatedAt).getTime() : 0;
-                  
-                  // If both have proposals, show the most recent one. Otherwise show whichever exists.
-                  let showingMyProposal;
-                  if (mySlots.length > 0 && partnerSlots.length > 0) {
-                    showingMyProposal = myTimestamp >= partnerTimestamp;
-                  } else {
-                    showingMyProposal = mySlots.length > 0;
-                  }
-                  
-                  const proposedByMe = showingMyProposal;
-                  const displaySlot = showingMyProposal ? mySlots[0] : partnerSlots[0];
-                  const proposerName = showingMyProposal 
-                    ? 'You'
-                    : (isInterviewer ? 'Candidate' : 'Interviewer');
-                  const totalProposals = myProposalCount + partnerProposalCount;
-                  
-                  return (
-                    <div>
-                      <div className="text-center mb-3">
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-200 dark:border-indigo-700">
-                          <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                          <span className="text-sm font-medium text-indigo-900 dark:text-indigo-300">
-                            Current Proposal
-                          </span>
-                          <span className="inline-flex items-center justify-center min-w-[42px] px-2 py-1 bg-indigo-600 dark:bg-indigo-700 text-white text-xs font-bold rounded">
-                            {totalProposals}/3
-                          </span>
-                        </div>
-                        <div className="mt-2 text-xs text-slate-600 dark:text-gray-400">
-                          Proposed by <span className="font-semibold text-indigo-700 dark:text-indigo-400">{proposerName}</span>
-                          {proposedByMe && <span className="ml-1">(awaiting {isInterviewer ? 'candidate' : 'interviewer'} response)</span>}
-                        </div>
-                        {bothReachedLimit && (
-                          <div className="mt-3 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-4 py-2 rounded-lg border border-amber-300 dark:border-amber-700 inline-block font-medium">
-                            ⚠ Maximum of 6 combined proposals reached (3 per participant). This time will be automatically confirmed.
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-indigo-300 dark:border-indigo-700 shadow-md text-center">
-                        <div className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 mb-2">Proposed Time</div>
-                        <div className="text-xl font-bold text-slate-900 dark:text-gray-100 mb-3 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
-                          {fmt(displaySlot)}
-                        </div>
-                        
-                        {/* Show appropriate actions based on who proposed */}
-                        {proposedByMe ? (
-                          <div className="flex gap-3 justify-center flex-wrap">
-                            <button
-                              onClick={() => setShowProposeForm(true)}
-                              className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
-                            >
-                              Change Proposal
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-3 justify-center flex-wrap">
-                            <button
-                              onClick={() => handleConfirm(displaySlot, "")}
-                              disabled={isLoadingPairs}
-                              className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-700 shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {isLoadingPairs ? <span className="animate-spin">⏳</span> : <CheckCircle className="w-4 h-4" />}
-                              {isLoadingPairs ? 'Processing...' : 'Accept Time'}
-                            </button>
-                            <button
-                              onClick={() => setShowProposeForm(true)}
-                              disabled={isLoadingPairs}
-                              className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Propose Different Time
-                            </button>
-                            <button
-                              onClick={async () => {
-                                await handleReject();
-                              }}
-                              disabled={isLoadingPairs}
-                              className="px-6 py-2.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg font-medium text-sm hover:from-slate-600 hover:to-slate-700 shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {isLoadingPairs && <span className="animate-spin">⏳</span>}
-                              {isLoadingPairs ? 'Processing...' : 'Decline'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
-                
-                // No proposals - show empty state or expired default
+            {/* Default/System Time Display - When auto-assigned but not confirmed and no actual proposals made */}
+            {!isLocked && !isScheduledTimeExpired && !showProposeForm && selectedPair?.defaultTimeSlot && (() => {
+              // Check proposal counts - if anyone has made a proposal, don't show default time
+              const myProposalCountValue = isInterviewer 
+                ? selectedPair?.interviewerProposalCount || 0
+                : selectedPair?.intervieweeProposalCount || 0;
+              const partnerProposalCountValue = isInterviewer
+                ? selectedPair?.intervieweeProposalCount || 0
+                : selectedPair?.interviewerProposalCount || 0;
+              const totalProposals = myProposalCountValue + partnerProposalCountValue;
+              
+              // Only show default time if no one has made any proposals yet
+              if (totalProposals > 0) {
+                return null;
+              }
+              
+              const defaultSlotTime = new Date(selectedPair.defaultTimeSlot);
+              const isDefaultExpired = defaultSlotTime < new Date();
+              
+              if (!isDefaultExpired) {
                 return (
-                  <div>
-                    {selectedPair?.defaultTimeExpired ? (
-                      <div className="text-center py-6">
-                        <div className="max-w-md mx-auto">
-                          <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-950/30 px-6 py-5 shadow-sm">
-                            <div className="flex items-start gap-3">
-                              <div className="p-2 rounded-lg bg-amber-200/60 dark:bg-amber-900/40">
-                                <Clock className="w-6 h-6 text-amber-700 dark:text-amber-400" />
-                              </div>
-                              <div className="flex-1">
-                                <div className="text-sm font-semibold text-amber-800 dark:text-amber-300 tracking-wide mb-1">Previous Default Time Expired</div>
-                                <div className="text-xs text-amber-700 dark:text-amber-400 mb-3 leading-relaxed">
-                                  The originally suggested time has passed and is no longer valid. Please select a new time to keep the scheduling moving forward.
-                                </div>
-                                <div className="inline-flex items-center gap-2 mb-4">
-                                  <span className="text-sm font-medium text-slate-600 dark:text-gray-400 line-through">
-                                    {fmt(selectedPair.defaultTimeSlot)}
-                                  </span>
-                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300 bg-amber-200 dark:bg-amber-900/40 px-2 py-1 rounded">Expired</span>
-                                </div>
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                  <button
-                                    onClick={() => setShowProposeForm(true)}
-                                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
-                                  >
-                                    Propose New Time
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                  <div className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-lg p-5">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-sky-600 flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-white" />
                       </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sky-900 dark:text-sky-100 mb-1">Default Time Assigned</h4>
+                        <p className="text-sm text-sky-700 dark:text-sky-300">A time slot has been automatically assigned. Please confirm or propose a different time.</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 border border-sky-100 dark:border-sky-900">
+                      <div className="text-2xl font-bold text-sky-900 dark:text-sky-100 mb-2">
+                        {defaultSlotTime.toLocaleString('en-US', {
+                          weekday: 'short', month: 'short', day: 'numeric', 
+                          hour: 'numeric', minute: '2-digit', hour12: true
+                        })}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {defaultSlotTime.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').slice(-1)[0]}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={() => handleConfirm({ proposedStart: selectedPair.defaultTimeSlot, proposedEnd: new Date(defaultSlotTime.getTime() + 30 * 60000).toISOString() }, "default")}
+                        disabled={isLoadingPairs}
+                        className="flex-1 min-h-[44px] px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isLoadingPairs ? <span className="animate-spin">⏳</span> : <CheckCircle className="w-5 h-5" />}
+                        {isLoadingPairs ? 'Confirming...' : 'Confirm This Time'}
+                      </button>
+                      <button
+                        onClick={() => setShowProposeForm(true)}
+                        disabled={isLoadingPairs}
+                        className="flex-1 min-h-[44px] px-6 py-3 bg-white dark:bg-gray-700 hover:bg-slate-50 dark:hover:bg-gray-600 text-sky-600 dark:text-sky-400 border-2 border-sky-500 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        <Clock className="w-4 h-4" />
+                        Propose Different Time
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+            {/* Action Buttons based on proposal state */}
+            {!isLocked && !isScheduledTimeExpired && !showProposeForm && (() => {
+              // Don't show this section if default time is being displayed
+              const myProposalCountValue = isInterviewer 
+                ? selectedPair?.interviewerProposalCount || 0
+                : selectedPair?.intervieweeProposalCount || 0;
+              const partnerProposalCountValue = isInterviewer
+                ? selectedPair?.intervieweeProposalCount || 0
+                : selectedPair?.interviewerProposalCount || 0;
+              const totalProposals = myProposalCountValue + partnerProposalCountValue;
+              
+              // If no proposals made yet and default time exists, don't show these buttons (default time has its own buttons)
+              if (totalProposals === 0 && selectedPair?.defaultTimeSlot) {
+                return null;
+              }
+              
+              const mySlots = currentProposals?.mine || [];
+              const partnerSlots = currentProposals?.partner || [];
+              
+              // Check if 6 combined proposals reached - should auto-schedule
+              if (bothReachedLimit) {
+                return (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Interview Scheduled</h4>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">Maximum proposals (6 combined) reached. Interview has been automatically scheduled.</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              
+              // Re-use the variables already defined above
+              if (mySlots.length > 0 || partnerSlots.length > 0) {
+                const myTimestamp = currentProposals.mineUpdatedAt ? new Date(currentProposals.mineUpdatedAt).getTime() : 0;
+                const partnerTimestamp = currentProposals.partnerUpdatedAt ? new Date(currentProposals.partnerUpdatedAt).getTime() : 0;
+                const showingMyProposal = mySlots.length > 0 && partnerSlots.length > 0 
+                  ? myTimestamp >= partnerTimestamp 
+                  : mySlots.length > 0;
+                const displaySlot = showingMyProposal ? mySlots[0] : partnerSlots[0];
+                const proposedByMe = showingMyProposal;
+                
+                // Check if user can still propose (hasn't used all 3 personal attempts)
+                const canStillPropose = myProposalCount < 3 && !bothReachedLimit;
+                
+                return (
+                  <div className="space-y-3">
+                    {proposedByMe ? (
+                      /* My proposal pending their response */
+                      <button
+                        onClick={() => setShowProposeForm(true)}
+                        disabled={!canStillPropose}
+                        className="w-full min-h-[44px] px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={!canStillPropose ? 'You have used all your proposals' : ''}
+                      >
+                        <Clock className="w-4 h-4" />
+                        {canStillPropose ? 'Change Proposal' : 'Proposal Limit Reached'}
+                      </button>
                     ) : (
-                      <div className="text-center py-4">
-                        <div className="inline-flex items-center gap-2 px-5 py-3 bg-slate-100 dark:bg-gray-800 rounded-lg border border-slate-300 dark:border-gray-700 mb-3">
-                          <Clock className="w-5 h-5 text-slate-500 dark:text-gray-400" />
-                          <div className="text-sm font-medium text-slate-700 dark:text-gray-300">
-                            No time slot scheduled yet
-                          </div>
-                        </div>
+                      /* Their proposal - I can confirm or suggest new */
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={() => handleConfirm(displaySlot, "")}
+                          disabled={isLoadingPairs}
+                          className="flex-1 min-h-[44px] px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {isLoadingPairs ? <span className="animate-spin">⏳</span> : <CheckCircle className="w-5 h-5" />}
+                          {isLoadingPairs ? 'Confirming...' : 'Confirm Time'}
+                        </button>
                         <button
                           onClick={() => setShowProposeForm(true)}
-                          className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 shadow-sm"
+                          disabled={isLoadingPairs || !canStillPropose}
+                          className="flex-1 min-h-[44px] px-6 py-3 bg-white dark:bg-gray-700 hover:bg-slate-50 dark:hover:bg-gray-600 text-sky-600 dark:text-sky-400 border-2 border-sky-500 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={!canStillPropose ? 'You have used all your proposals' : ''}
                         >
-                          Propose a time slot
+                          <Clock className="w-4 h-4" />
+                          {canStillPropose ? 'Request New Time' : 'Limit Reached'}
                         </button>
                       </div>
                     )}
                   </div>
                 );
-              })()}
-            </div>
-          )}
-        </div>
+              } else {
+                /* No proposals yet */
+                const canPropose = myProposalCount < 3 && !bothReachedLimit;
+                return (
+                  <button
+                    onClick={() => setShowProposeForm(true)}
+                    disabled={!canPropose}
+                    className="w-full min-h-[44px] px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={!canPropose ? 'Proposal limit reached' : ''}
+                  >
+                    <Clock className="w-4 h-4" />
+                    {canPropose ? 'Suggest Interview Time' : 'Proposal Limit Reached'}
+                  </button>
+                );
+              }
+            })()}
 
-        {/* Propose New Time Form (shown when user clicks "Propose a new time") */}
-        {showProposeForm && !isLocked && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-slate-200 dark:border-gray-700 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="font-semibold text-slate-900 dark:text-gray-100">
-                  {isInterviewer ? 'Propose Interview Time' : 'Propose Alternative Time'}
-                </h3>
-                <div className="text-xs mt-1">
-                  {combinedRemainingProposals > 0 ? (
-                    <span className="text-slate-600 dark:text-gray-400">
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{combinedRemainingProposals}</span> of 3 combined proposals remaining
-                    </span>
-                  ) : (
-                    <span className="text-red-600 dark:text-red-400 font-medium">⚠ Maximum combined proposals reached (6/6 - 3 per participant)</span>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowProposeForm(false);
-                  setSlots([""]);
-                }}
-                className="p-1.5 rounded-lg bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 text-slate-600 dark:text-gray-300"
+            {/* Inline Propose Form */}
+            {showProposeForm && !isLocked && (
+              <div
+                className="border-t border-slate-200 dark:border-gray-700 pt-5 mt-2"
               >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="space-y-3">
-              <DateTimePicker
-                value={slots[0] || ""}
-                onChange={(isoDateTime) => {
-                  const v = isoDateTime;
-                  
-                  // Check if selected time is in the past
-                  if (v) {
-                    const selectedTime = new Date(v).getTime();
-                    const currentTime = Date.now();
-                    if (selectedTime <= currentTime) {
-                      setMessage("⚠ Cannot select past time. Please choose a future time.");
-                      return;
-                    }
-                  }
-                  
-                  const ev = selectedPair?.event || {};
-                  const toLocal = (val) => {
-                    if (!val) return "";
-                    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(val))
-                      return val;
-                    const d = new Date(val);
-                    if (isNaN(d.getTime())) return "";
-                    const pad = (n) => String(n).padStart(2, "0");
-                    return `${d.getFullYear()}-${pad(
-                      d.getMonth() + 1
-                    )}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
-                      d.getMinutes()
-                    )}`;
-                  };
-                  const startLocal = ev.startDate
-                    ? toLocal(ev.startDate)
-                    : null;
-                  const endLocal = ev.endDate
-                    ? toLocal(ev.endDate)
-                    : null;
-                  if (startLocal && v < startLocal) {
-                    setMessage(
-                      "⚠ Selected time was before the event start. It has been adjusted to the event start time."
-                    );
-                    setSlots([startLocal]);
-                    return;
-                  }
-                  if (endLocal && v > endLocal) {
-                    setMessage(
-                      "⚠ Selected time was after the event end. It has been adjusted to the event end time."
-                    );
-                    setSlots([endLocal]);
-                    return;
-                  }
-                  setSlots([v]);
-                }}
-                min={getCurrentMinDateTime()}
-                max={selectedPair?.event?.endDate}
-                placeholder="Select interview time"
-                className="w-full text-sm"
-                disabled={isLocked || isLoadingPairs}
-              />
-            </div>
-
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={() => {
-                    setShowProposeForm(false);
-                    setSlots([""]);
-                    setMessage("");
-                  }}
-                  disabled={isLoadingPairs}
-                  className="flex-1 px-4 py-2.5 bg-slate-200 dark:bg-gray-700 hover:bg-slate-300 dark:hover:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={async () => {
-                    const success = await handlePropose();
-                    // Only close form if proposal was successful
-                    if (success !== false) {
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h4 className="text-base font-semibold text-slate-900 dark:text-gray-100 mb-1">
+                      {isInterviewer ? 'Suggest Interview Time' : 'Request Alternative Time'}
+                    </h4>
+                    <p className="text-sm text-slate-600 dark:text-gray-400">
+                      {isInterviewer 
+                        ? 'Choose a time that works best for you.'
+                        : 'Suggest a different time that works better.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
                       setShowProposeForm(false);
                       setSlots([""]);
-                    }
-                  }}
-                  disabled={isLoadingPairs}
-                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 dark:from-sky-600 dark:to-sky-700 text-white rounded-lg font-medium text-sm hover:from-sky-600 hover:to-sky-700 dark:hover:from-sky-700 dark:hover:to-sky-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isLoadingPairs && <span className="animate-spin">⏳</span>}
-                  {isLoadingPairs ? 'Processing...' : 'Propose Time'}
-                </button>
-              </div>
+                    }}
+                    className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700 text-slate-600 dark:text-gray-300 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+                      Select Date & Time
+                    </label>
+                    <DateTimePicker
+                      value={slots[0] || ""}
+                      onChange={(isoDateTime) => {
+                        const v = isoDateTime;
+                        
+                        if (v) {
+                          const selectedTime = new Date(v).getTime();
+                          const currentTime = Date.now();
+                          if (selectedTime <= currentTime) {
+                            setMessage("⚠ Cannot select past time. Please choose a future time.");
+                            return;
+                          }
+                        }
+                        
+                        const ev = selectedPair?.event || {};
+                        const toLocal = (val) => {
+                          if (!val) return "";
+                          if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(val)) return val;
+                          const d = new Date(val);
+                          if (isNaN(d.getTime())) return "";
+                          const pad = (n) => String(n).padStart(2, "0");
+                          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                        };
+                        const startLocal = ev.startDate ? toLocal(ev.startDate) : null;
+                        const endLocal = ev.endDate ? toLocal(ev.endDate) : null;
+                        if (startLocal && v < startLocal) {
+                          setMessage("⚠ Selected time was before the event start. It has been adjusted.");
+                          setSlots([startLocal]);
+                          return;
+                        }
+                        if (endLocal && v > endLocal) {
+                          setMessage("⚠ Selected time was after the event end. It has been adjusted.");
+                          setSlots([endLocal]);
+                          return;
+                        }
+                        setSlots([v]);
+                      }}
+                      min={getCurrentMinDateTime()}
+                      max={selectedPair?.event?.endDate}
+                      placeholder="Choose a time slot..."
+                      className="w-full text-sm"
+                      disabled={isLocked || isLoadingPairs}
+                    />
+                  </div>
 
-              <div className="mt-3 p-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-                <p className="text-xs text-blue-800 dark:text-blue-300 text-center">
-                  <Info className="w-3.5 h-3.5 inline mr-1 dark:text-blue-400" />
-                  Each party can propose up to 3 different times. If all proposals expire, the last proposed time will be automatically scheduled.
-                </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setShowProposeForm(false);
+                        setSlots([""]);
+                      }}
+                      disabled={isLoadingPairs}
+                      className="flex-1 min-h-[44px] px-5 py-3 bg-white dark:bg-gray-700 hover:bg-slate-50 dark:hover:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg font-medium text-sm border border-slate-300 dark:border-gray-600 disabled:opacity-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await handlePropose();
+                        if (!message || !message.toLowerCase().includes('error')) {
+                          setShowProposeForm(false);
+                        }
+                      }}
+                      disabled={isLoadingPairs || !slots[0]}
+                      className="flex-1 min-h-[44px] px-5 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm transition-all"
+                    >
+                      {isLoadingPairs ? (
+                        <>
+                          <span className="animate-spin">⏳</span>
+                          <span>Sending...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-4 h-4" />
+                          <span>Send Proposal</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                    <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed flex items-start gap-2">
+                      <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                      <span>Both parties can propose up to 3 times each. If no agreement is reached, the most recent proposal will be automatically confirmed.</span>
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-        )}
+            )}
+          </div>
+        </div>
       </div>
 
+      {/* Meeting Link Section - Outside the card */}
       {isLocked && selectedPair.meetingLink && (
         <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
@@ -2024,7 +2189,7 @@ export default function StudentDashboard() {
                       navigator.clipboard.writeText(
                         selectedPair.meetingLink
                       );
-                      setMessage("✅ Meeting link copied to clipboard successfully!");
+                      setMessage("Meeting link copied to clipboard!");
                       startFeedbackCountdown(selectedPair);
                     }}
                     className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation ${
@@ -2054,14 +2219,6 @@ export default function StudentDashboard() {
           <span className="flex-1">{message}</span>
         </div>
       )}
-
-      {/* Disclaimer */}
-      <div className="mt-4 pt-4 border-t border-slate-200">
-        <p className="text-xs text-slate-500 text-center italic">
-          <Info className="w-3 h-3 inline mr-1" />
-          Interviewer proposes available time slots. Candidate can accept a proposed slot or suggest up to 3 alternative time slots for consideration. All interview scheduling and joining must take place between 10:00 AM and 10:00 PM.
-        </p>
-      </div>
     </div>
   );
 
