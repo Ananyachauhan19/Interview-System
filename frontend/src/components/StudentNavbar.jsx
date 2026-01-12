@@ -61,7 +61,7 @@ export function StudentNavbar() {
   // Close profile dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isProfileOpen && !event.target.closest(".profile-container")) {
+      if (isProfileOpen && !event.target.closest(".desktop-profile-container")) {
         setIsProfileOpen(false);
       }
     };
@@ -175,7 +175,7 @@ export function StudentNavbar() {
           <DarkModeToggle className="hidden md:flex ml-1" />
 
           {/* Desktop Profile */}
-          <div className="relative profile-container ml-1">
+          <div className="hidden md:block relative desktop-profile-container ml-1">
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-900 hover:bg-sky-50 dark:hover:bg-slate-800 text-gray-700 dark:text-white transition-all duration-200 border border-gray-200 dark:border-slate-700"
@@ -278,102 +278,7 @@ export function StudentNavbar() {
               </AnimatePresence>
           </div>
 
-          {/* Mobile Profile */}
-          <div className="relative profile-container md:hidden">
-            <button
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-sky-500 text-white font-semibold text-sm shadow-md overflow-hidden"
-            >
-              {studentAvatarUrl ? (
-                <img
-                  src={studentAvatarUrl}
-                  alt={studentName}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                studentName.charAt(0).toUpperCase()
-              )}
-            </button>
 
-            <AnimatePresence>
-              {isProfileOpen && (
-                <motion.div
-                  variants={dropdownVariants}
-                  initial="closed"
-                  animate="open"
-                  exit="closed"
-                  className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50"
-                >
-                  {/* Profile Header */}
-                  <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/40 dark:to-blue-900/40 px-4 py-3 border-b border-gray-200 dark:border-slate-700">
-                    <div className="flex items-center gap-3">
-                      {studentAvatarUrl ? (
-                        <img
-                          src={studentAvatarUrl}
-                          alt={studentName}
-                          className="w-10 h-10 rounded-full object-cover border border-white/30"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold">
-                          {studentName.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-slate-900 dark:text-white truncate">{studentName}</div>
-                        <div className="text-xs text-slate-600 dark:text-gray-300 truncate">{studentEmail}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Menu Items */}
-                  <div className="py-2">
-                    <Link
-                      to="/student/profile"
-                      onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-white hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-slate-800 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-slate-700 transition-colors">
-                        <User className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium dark:text-white">Profile</div>
-                        <div className="text-xs text-slate-500 dark:text-gray-300">View and edit your details</div>
-                      </div>
-                    </Link>
-                    <Link
-                      to="/student/change-password"
-                      onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-white hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-slate-800 flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-slate-700 transition-colors">
-                        <Lock className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium dark:text-white">Change Password</div>
-                        <div className="text-xs text-slate-500 dark:text-gray-300">Update your account password</div>
-                      </div>
-                    </Link>
-
-                    <button
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        handleLogout();
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-white hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                        <LogOut className="w-4 h-4 text-red-600" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="text-sm font-medium text-red-600">Logout</div>
-                        <div className="text-xs text-slate-500 dark:text-gray-300">Sign out of your account</div>
-                      </div>
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
 
           {/* Mobile Menu Toggle */}
           <button
@@ -410,15 +315,26 @@ export function StudentNavbar() {
               exit="closed"
               className="md:hidden fixed top-14 right-0 bottom-0 z-50 w-64 max-w-full"
             >
-              <div className="bg-white h-full rounded-l-lg border-l border-slate-200 p-4 flex flex-col">
-                {/* Mobile Menu Header */}
-                <div className="flex items-center pb-4 mb-3 border-b border-gray-200">
-                  <img 
-                    src="/images/logo.png" 
-                    alt="PeerPrep Logo" 
-                    className="w-auto object-contain"
-                    style={{ height: '109px' }}
-                  />
+              <div className="bg-white dark:bg-slate-900 h-full rounded-l-lg border-l border-slate-200 dark:border-slate-700 p-4 flex flex-col">
+                {/* Mobile Menu Header - Profile Info */}
+                <div className="pb-4 mb-3 border-b border-gray-200 dark:border-slate-700">
+                  <div className="flex items-center gap-3 mb-3">
+                    {studentAvatarUrl ? (
+                      <img
+                        src={studentAvatarUrl}
+                        alt={studentName}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-sky-500"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold text-lg">
+                        {studentName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-slate-900 dark:text-white truncate">{studentName}</div>
+                      <div className="text-xs text-slate-600 dark:text-slate-400 truncate">{studentEmail}</div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Mobile Menu Items */}
@@ -447,19 +363,28 @@ export function StudentNavbar() {
                 </div>
 
                 {/* Mobile Menu Footer Actions */}
-                <div className="space-y-2 pt-4 border-t border-gray-200">
+                <div className="space-y-2 pt-4 border-t border-gray-200 dark:border-slate-700">
+                  <Link
+                    to="/student/profile"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-700 dark:text-white hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors group"
+                  >
+                    <User className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                    <span className="font-medium text-sm">Profile</span>
+                  </Link>
+                  
                   <Link
                     to="/student/change-password"
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-700 hover:bg-sky-50 transition-colors group"
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-700 dark:text-white hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors group"
                   >
-                    <Lock className="w-4 h-4 text-sky-600" />
+                    <Lock className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                     <span className="font-medium text-sm">Change Password</span>
                   </Link>
                   
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     <span className="font-medium text-sm">Logout</span>
