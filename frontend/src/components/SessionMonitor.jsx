@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from './CustomToast';
 
 /**
@@ -11,13 +11,14 @@ import { useToast } from './CustomToast';
  * 
  * Features:
  * - Periodic session validation (every 30 seconds)
- * - Only checks when user is logged in
+ * - Only checks when user is logged in and on protected routes
  * - Automatic logout on session expiration
  * - Uses React Router for navigation (no page reload)
  * - Shows toast notification instead of alert
  */
 export default function SessionMonitor() {
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const intervalRef = useRef(null);
   const isCheckingRef = useRef(false);
@@ -34,9 +35,16 @@ export default function SessionMonitor() {
              localStorage.getItem('coordinatorEmail');
     };
 
+    // Check if current route is a protected route (not landing page, login, etc.)
+    const isProtectedRoute = () => {
+      const path = location.pathname;
+      const publicPaths = ['/', '/student', '/reset-password', '/privacy', '/terms', '/contact'];
+      return !publicPaths.includes(path) && isLoggedIn();
+    };
+
     const checkSession = async () => {
-      // Skip if already checking or not logged in
-      if (isCheckingRef.current || !isLoggedIn()) return;
+      // Skip if already checking, not logged in, or on public page
+      if (isCheckingRef.current || !isLoggedIn() || !isProtectedRoute()) return;
       
       isCheckingRef.current = true;
       
@@ -48,7 +56,7 @@ export default function SessionMonitor() {
         });
 
         if (!response.ok) {
-          if (response.status === 401 && !hasNotifiedRef.current) {
+          if (response.status === 401 && !hasNotifiedRef.current && isProtectedRoute()) {
             hasNotifiedRef.current = true;
             
             // Try to get the error details
@@ -86,8 +94,8 @@ export default function SessionMonitor() {
       }
     };
 
-    // Start periodic session checks every 30 seconds
-    if (isLoggedIn()) {
+    // Start periodic session checks every 30 seconds, but only on protected routes
+    if (isProtectedRoute()) {
       // Initial check after 5 seconds
       const initialTimeout = setTimeout(checkSession, 5000);
       
@@ -101,8 +109,15 @@ export default function SessionMonitor() {
           intervalRef.current = null;
         }
       };
+    } else {
+      // Clean up if we navigate to a public page
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      hasNotifiedRef.current = false; // Reset notification flag on public pages
     }
-  }, [navigate, toast]);
+  }, [navigate, toast, location.pathname]);
 
   // This component doesn't render anything
   return null;
