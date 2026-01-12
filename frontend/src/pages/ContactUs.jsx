@@ -64,12 +64,12 @@ export default function ContactUs() {
                       <span>geuashishgarg@gmail.com</span>
                       <Send size={16} />
                     </a>
-                    <div className="flex items-center space-x-2 text-gray-700">
+                    {/* <div className="flex items-center space-x-2 text-gray-700">
                       <Phone size={18} className="text-blue-600" />
                       <a href="tel:+919045942411" className="hover:text-blue-600 transition-colors duration-200">
                         +91 90459 42411
                       </a>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>
