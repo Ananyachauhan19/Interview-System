@@ -20,6 +20,8 @@ export default function CoordinatorDirectory() {
   const [editingCoordinator, setEditingCoordinator] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const fuse = useMemo(() => {
     return new Fuse(coordinators, {
@@ -52,7 +54,19 @@ export default function CoordinatorDirectory() {
       const results = fuse.search(normalizedQuery);
       setFiltered(results.map(r => r.item));
     }
+    setCurrentPage(1); // Reset to first page on search
   }, [searchQuery, coordinators, fuse]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCoordinators = filtered.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -266,7 +280,7 @@ export default function CoordinatorDirectory() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                  {filtered.map((c) => {
+                  {paginatedCoordinators.map((c) => {
                     const initial = c.name?.charAt(0)?.toUpperCase() || "?";
                     const registered = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "-";
                     return (
@@ -338,6 +352,78 @@ export default function CoordinatorDirectory() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {filtered.length > 0 && (
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-white">
+                  <span>Show</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-3 py-1 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-slate-700 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span>
+                    Showing {startIndex + 1}-{Math.min(endIndex, filtered.length)} of {filtered.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex items-center gap-1">
+                    {[...Array(totalPages)].map((_, i) => {
+                      const page = i + 1;
+                      // Show first page, last page, current page, and pages around current
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                              currentPage === page
+                                ? 'bg-indigo-600 dark:bg-indigo-500 text-white'
+                                : 'border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      } else if (page === currentPage - 2 || page === currentPage + 2) {
+                        return <span key={page} className="px-2 text-slate-500 dark:text-gray-400">...</span>;
+                      }
+                      return null;
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
             </div>
           )}
         </div>

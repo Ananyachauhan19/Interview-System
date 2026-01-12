@@ -92,8 +92,20 @@ export const api = {
   resetPassword: (token, newPassword) => request('/auth/password/reset', { method: 'POST', body: { token, newPassword } }),
 
   // Students
-  listAllStudents: (search = '') => request(`/students/list${search ? '?search=' + encodeURIComponent(search) : ''}`),
-  listAllSpecialStudents: (search = '') => request(`/students/special${search ? '?search=' + encodeURIComponent(search) : ''}`),
+  listAllStudents: (search = '', sortOrder = 'asc') => {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (sortOrder) params.append('sortOrder', sortOrder);
+    const queryString = params.toString();
+    return request(`/students/list${queryString ? '?' + queryString : ''}`);
+  },
+  listAllSpecialStudents: (search = '', sortOrder = 'asc') => {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (sortOrder) params.append('sortOrder', sortOrder);
+    const queryString = params.toString();
+    return request(`/students/special${queryString ? '?' + queryString : ''}`);
+  },
   listSpecialStudentsByEvent: (eventId) => request(`/students/special/${eventId}`),
   getStudentActivityByAdmin: (studentId) => request(`/students/${studentId}/activity`),
   getStudentStatsByAdmin: (studentId) => request(`/students/${studentId}/stats`),

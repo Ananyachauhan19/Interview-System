@@ -19,7 +19,7 @@ function generateRandomPassword() {
 
 export async function listAllStudents(req, res) {
   try {
-    const { search } = req.query;
+    const { search, sortOrder } = req.query;
     const user = req.user;
     // Show ALL users with role='student' regardless of special tag
     // Since special-event CSV creates users with role='student' AND isSpecialStudent=true,
@@ -47,9 +47,12 @@ export async function listAllStudents(req, res) {
       };
     }
     
+    // Sort order: 'asc' or 1 for ascending (oldest first, Excel order), 'desc' or -1 for descending (newest first)
+    const sort = sortOrder === 'desc' || sortOrder === '-1' ? -1 : 1;
+    
     const students = await User.find(query)
       .select('name email studentId course branch college semester group teacherId avatarUrl createdAt isSpecialStudent')
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: sort })
       .lean();
     
     res.json({ count: students.length, students });
@@ -551,7 +554,7 @@ function generateTempPassword() {
 // List all special students across all special events (from User model with special tag)
 export async function listAllSpecialStudents(req, res) {
   try {
-    const { search } = req.query;
+    const { search, sortOrder } = req.query;
     let query = { isSpecialStudent: true };
     
     // Add search filter if provided
@@ -570,6 +573,9 @@ export async function listAllSpecialStudents(req, res) {
       };
     }
     
+    // Sort order: 'asc' or 1 for ascending (oldest first, Excel order), 'desc' or -1 for descending (newest first)
+    const sort = sortOrder === 'desc' || sortOrder === '-1' ? -1 : 1;
+    
     // Get special students from unified User collection
     const specialStudents = await User.find(query)
       .populate({
@@ -577,7 +583,7 @@ export async function listAllSpecialStudents(req, res) {
         select: 'name isSpecial coordinatorId createdAt'
       })
       .select('name email studentId course branch college semester group specialEvents createdAt teacherId avatarUrl')
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: sort })
       .lean();
     // Fetch all coordinators once to avoid per-student queries
     const coordinators = await User.find({ role: 'coordinator' })

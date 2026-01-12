@@ -27,6 +27,9 @@ export default function StudentDirectory() {
   const [editForm, setEditForm] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [eventsStudent, setEventsStudent] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
 
   // Configure Fuse.js for optimized fuzzy search
   const currentStudents = activeTab === "students" ? students : specialStudents;
@@ -60,7 +63,7 @@ export default function StudentDirectory() {
 
   useEffect(() => {
     loadData();
-  }, [activeTab]);
+  }, [activeTab, sortOrder]);
 
   useEffect(() => {
     // Use Fuse.js for optimized fuzzy search
@@ -74,7 +77,19 @@ export default function StudentDirectory() {
       const filtered = results.map(result => result.item);
       setFilteredStudents(filtered);
     }
+    setCurrentPage(1); // Reset to first page on search
   }, [searchQuery, currentStudents, fuse]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -82,11 +97,11 @@ export default function StudentDirectory() {
     setSearchQuery(""); // Clear search when switching tabs
     try {
       if (activeTab === "students") {
-        const data = await api.listAllStudents();
+        const data = await api.listAllStudents('', sortOrder);
         setStudents(data.students || []);
         setFilteredStudents(data.students || []);
       } else {
-        const data = await api.listAllSpecialStudents();
+        const data = await api.listAllSpecialStudents('', sortOrder);
         setSpecialStudents(data.students || []);
         setFilteredStudents(data.students || []);
       }
@@ -264,7 +279,7 @@ export default function StudentDirectory() {
             </button>
           </div>
           
-          {/* Header Section with Search */}
+          {/* Header Section with Search and Sort */}
           <div className="flex items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
               <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
@@ -286,31 +301,48 @@ export default function StudentDirectory() {
               </div>
             </div>
 
-            {/* Compact Search Bar */}
-            <form onSubmit={handleSearch} className="w-80">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search students..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-9 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-600 focus:border-emerald-500 dark:focus:border-emerald-600 text-slate-700 dark:text-white bg-white dark:bg-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-400"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-gray-600 rounded transition-colors"
-                  >
-                    <X className="w-3 h-3 text-slate-500" />
-                  </button>
-                )}
+            <div className="flex items-center gap-3">
+              {/* Sort Order Dropdown */}
+              <div className="flex flex-col">
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="px-3 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-600 focus:border-emerald-500 dark:focus:border-emerald-600 text-slate-700 dark:text-white bg-white dark:bg-gray-700 cursor-pointer"
+                >
+                  <option value="asc">Oldest First</option>
+                  <option value="desc">Newest First</option>
+                </select>
+                <p className="text-xs text-slate-500 dark:text-white mt-1 ml-1">
+                  Sort by creation date
+                </p>
               </div>
-              <p className="text-xs text-slate-500 dark:text-white mt-1 ml-1">
-                Search by name, ID, email, branch, course, or college
-              </p>
-            </form>
+
+              {/* Compact Search Bar */}
+              <form onSubmit={handleSearch} className="w-80">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search students..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-9 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-600 focus:border-emerald-500 dark:focus:border-emerald-600 text-slate-700 dark:text-white bg-white dark:bg-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-400"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-gray-600 rounded transition-colors"
+                    >
+                      <X className="w-3 h-3 text-slate-500" />
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-white mt-1 ml-1">
+                  Search by name, ID, email, branch, course, or college
+                </p>
+              </form>
+            </div>
           </div>
 
           {/* Stats */}
@@ -391,7 +423,7 @@ export default function StudentDirectory() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                  {filteredStudents.map((s) => {
+                  {paginatedStudents.map((s) => {
                     const initial = s.name?.charAt(0)?.toUpperCase() || "?";
                     return (
                       <tr key={s._id} className="hover:bg-slate-50 dark:hover:bg-gray-700">
@@ -464,6 +496,78 @@ export default function StudentDirectory() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {filteredStudents.length > 0 && (
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-white">
+                  <span>Show</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-3 py-1 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-slate-700 dark:text-white focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span>
+                    Showing {startIndex + 1}-{Math.min(endIndex, filteredStudents.length)} of {filteredStudents.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex items-center gap-1">
+                    {[...Array(totalPages)].map((_, i) => {
+                      const page = i + 1;
+                      // Show first page, last page, current page, and pages around current
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                              currentPage === page
+                                ? 'bg-sky-600 dark:bg-sky-500 text-white'
+                                : 'border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      } else if (page === currentPage - 2 || page === currentPage + 2) {
+                        return <span key={page} className="px-2 text-slate-500 dark:text-gray-400">...</span>;
+                      }
+                      return null;
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
             </div>
           )}
         </div>
