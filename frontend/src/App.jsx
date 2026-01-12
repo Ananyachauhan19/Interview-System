@@ -41,6 +41,7 @@ import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
 import { CoordinatorNavbar } from "./coordinator/CoordinatorNavbar";
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/CustomToast';
+import SessionMonitor from './components/SessionMonitor';
 
 const gradientBg = "bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100";
 
@@ -59,6 +60,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen w-full flex flex-col">
+      <SessionMonitor />
       {!isFeedbackForm && !isPublicPage && (
         isAdmin ? <AdminNavbar /> :
         isCoordinator ? <CoordinatorNavbar /> :

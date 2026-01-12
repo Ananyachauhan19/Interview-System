@@ -260,6 +260,13 @@ export async function login(req, res) {
     logAuthAttempt(req, true, admin.email, admin._id);
     const token = signToken({ sub: admin._id, role: admin.role, email: admin.email });
     
+    // SECURITY: Single session per user - store session token hash
+    const sessionTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    admin.activeSessionToken = sessionTokenHash;
+    admin.activeSessionCreatedAt = new Date();
+    await admin.save();
+    console.log('[Session] Admin session created:', admin.email, sessionTokenHash.substring(0, 10) + '...');
+    
     // SECURITY: Store JWT in HttpOnly cookie instead of sending in response
     res.cookie('accessToken', token, {
       httpOnly: true, // Cannot be accessed via JavaScript (XSS protection)
@@ -302,6 +309,13 @@ export async function login(req, res) {
       email: student.email,
       studentId: student.studentId
     });
+    
+    // SECURITY: Single session per user - store session token hash
+    const sessionTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    student.activeSessionToken = sessionTokenHash;
+    student.activeSessionCreatedAt = new Date();
+    await student.save();
+    console.log('[Session] Student session created:', student.email, sessionTokenHash.substring(0, 10) + '...');
     
     // SECURITY: Store JWT in HttpOnly cookie
     res.cookie('accessToken', token, {

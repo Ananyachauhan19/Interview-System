@@ -31,6 +31,10 @@ const userSchema = new mongoose.Schema({
   emailVerificationToken: String,
   emailVerificationExpires: Date,
   
+  // SECURITY: Session management - one active session per user
+  activeSessionToken: String, // Hash of the current valid JWT token
+  activeSessionCreatedAt: Date, // When this session was created
+  
   // Additional fields
   avatarUrl: String,
   department: String, // For coordinators
