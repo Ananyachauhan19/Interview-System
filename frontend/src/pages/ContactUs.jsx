@@ -193,7 +193,7 @@ export default function ContactUs() {
               </div>
               <div>
                 <h4 className="font-semibold text-gray-800 mb-2">How do I report inappropriate behavior?</h4>
-                <p className="text-gray-600 text-sm">Email us immediately at peerprep62@gmail.com with details of the incident.</p>
+                <p className="text-gray-600 text-sm">Email us immediately at peerprep26@gmail.com with details of the incident.</p>
               </div>
             </div>
           </div>
