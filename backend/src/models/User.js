@@ -31,6 +31,9 @@ const userSchema = new mongoose.Schema({
   emailVerificationToken: String,
   emailVerificationExpires: Date,
   
+  // SECURITY: Single device login - stores the active session token
+  activeSessionToken: String,
+  
   // Additional fields
   avatarUrl: String,
   department: String, // For coordinators

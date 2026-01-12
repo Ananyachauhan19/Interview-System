@@ -75,7 +75,12 @@ export function AdminNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isProfileOpen, isInterviewOpen, isAddMembersOpen, isDatabaseOpen]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } catch (err) {
+      // Ignore errors - just clear localStorage
+    }
     localStorage.removeItem("token");
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("adminName");

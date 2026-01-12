@@ -25,6 +25,21 @@ export function setToken(t) {
   clearLegacyToken();
 }
 
+// SECURITY: Handle session expiration (401 errors) automatically
+let isLoggingOut = false;
+
+function handleSessionExpired() {
+  if (isLoggingOut) return; // Prevent multiple logout attempts
+  isLoggingOut = true;
+  
+  // Clear all localStorage
+  localStorage.clear();
+  
+  // Show alert and redirect
+  alert('Your session has expired. You have been logged in from another device.');
+  window.location.href = '/';
+}
+
 async function request(path, { method = 'GET', body, headers = {}, formData } = {}) {
   const opts = { 
     method, 
@@ -51,6 +66,14 @@ async function request(path, { method = 'GET', body, headers = {}, formData } = 
     console.log(`[API] Response status: ${res.status}`);
     
     if (!res.ok) {
+      // SECURITY: Handle session expiration (401 Unauthorized)
+      if (res.status === 401 && !path.includes('/auth/login')) {
+        handleSessionExpired();
+        const err = new Error('Session expired');
+        err.response = { status: 401 };
+        throw err;
+      }
+      
       let err;
       try { 
         const j = await res.json(); 
@@ -84,6 +107,8 @@ export const api = {
   debugStudentActivity: () => request('/auth/activity/debug'),
   getStudentStats: () => request('/auth/stats'),
   login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password } }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
+  sessionCheck: () => request('/auth/me'), // Used for periodic session validation
   changePassword: (currentPassword, newPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword: newPassword } }),
   changeStudentPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),
   changeAdminPassword: (currentPassword, newPassword, confirmPassword) => request('/auth/password/admin-change', { method: 'POST', body: { currentPassword, newPassword, confirmPassword } }),

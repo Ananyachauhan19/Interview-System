@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, forcePasswordChange, me, changePassword, changeAdminPassword, requestPasswordReset, resetPassword, updateMe, updateMyAvatar } from '../controllers/authController.js';
+import { login, forcePasswordChange, me, changePassword, changeAdminPassword, requestPasswordReset, resetPassword, updateMe, updateMyAvatar, logout } from '../controllers/authController.js';
 import { getStudentActivity, getStudentStats, debugStudentActivity } from '../controllers/activityController.js';
 import { requireAuth } from '../middleware/auth.js';
 import { authLimiter, passwordResetLimiter, uploadLimiter } from '../middleware/rateLimiter.js';
@@ -11,16 +11,8 @@ const router = Router();
 // SECURITY: Rate limit authentication endpoints
 router.post('/login', authLimiter, login);
 
-// SECURITY: Logout endpoint to clear HttpOnly cookie
-router.post('/logout', (req, res) => {
-  res.clearCookie('accessToken', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/'
-  });
-  res.json({ message: 'Logged out successfully' });
-});
+// SECURITY: Logout endpoint to clear HttpOnly cookie and session token
+router.post('/logout', logout);
 
 router.post('/password/change', requireAuth, changePassword);
 router.post('/password/admin-change', requireAuth, changeAdminPassword);

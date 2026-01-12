@@ -39,6 +39,15 @@ export async function requireAuth(req, res, next) {
     }
   }
   
+  // SECURITY: Single device login check for students
+  // Verify session token matches the active session
+  if (user.role === 'student' && payload.sessionToken) {
+    if (!user.activeSessionToken || user.activeSessionToken !== payload.sessionToken) {
+      // Session was invalidated - user logged in from another device
+      throw new HttpError(401, 'Session expired. You have logged in from another device.');
+    }
+  }
+  
   req.user = user;
   next();
 }

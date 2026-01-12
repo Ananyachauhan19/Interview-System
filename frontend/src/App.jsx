@@ -41,6 +41,7 @@ import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
 import { CoordinatorNavbar } from "./coordinator/CoordinatorNavbar";
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/CustomToast';
+import SessionMonitor from './components/SessionMonitor';
 
 const gradientBg = "bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100";
 
@@ -58,7 +59,10 @@ function AppContent() {
   const isLoginPage = isMain || isStudentLogin || isResetPassword;
 
   return (
-    <div className="min-h-screen w-full flex flex-col">
+    <div className={gradientBg + " dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen w-full flex flex-col"}>
+      {/* Session Monitor - Automatically detects when user logs in from another device */}
+      <SessionMonitor />
+      
       {!isFeedbackForm && !isPublicPage && (
         isAdmin ? <AdminNavbar /> :
         isCoordinator ? <CoordinatorNavbar /> :
@@ -66,8 +70,7 @@ function AppContent() {
         null
       )}
      
-      <main className={gradientBg + " dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex-grow"}>
-        <Routes>
+      <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/student" element={<StudentLogin />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -111,7 +114,6 @@ function AppContent() {
         <Route path="/coordinator/change-password" element={<CoordinatorProtectedRoute><CoordinatorChangePassword /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/activity" element={<CoordinatorProtectedRoute><CoordinatorActivity /></CoordinatorProtectedRoute>} />
       </Routes>
-      </main>
       
       {!isLoginPage && !isFeedbackForm && !isPublicPage && <Footer />}
     </div>

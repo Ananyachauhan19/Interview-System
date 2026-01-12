@@ -296,12 +296,20 @@ export async function login(req, res) {
       metadata: { email: student.email, studentId: student.studentId, isSpecialStudent: Boolean(student.isSpecialStudent) }
     });
     
+    // SECURITY: Generate unique session token for single device login
+    const sessionToken = generateSecureToken();
+    
     const token = signToken({ 
       sub: student._id, 
       role: student.role,
       email: student.email,
-      studentId: student.studentId
+      studentId: student.studentId,
+      sessionToken // Include session token in JWT
     });
+    
+    // SECURITY: Store session token - logging in from new device will invalidate old session
+    student.activeSessionToken = sessionToken;
+    await student.save();
     
     // SECURITY: Store JWT in HttpOnly cookie
     res.cookie('accessToken', token, {
@@ -349,6 +357,43 @@ export async function login(req, res) {
   // No match found - SECURITY: Log failed attempt without revealing if user exists
   logAuthAttempt(req, false, id, null, 'User not found');
   throw new HttpError(401, 'Invalid credentials');
+}
+
+// SECURITY: Logout - clear cookie and invalidate session token
+export async function logout(req, res) {
+  try {
+    // Try to get token and user to clear session token from DB
+    const token = req.cookies?.accessToken;
+    if (token) {
+      try {
+        const { verifyToken } = await import('../utils/jwt.js');
+        const payload = verifyToken(token);
+        
+        // Clear session token for students
+        if (payload.sub && payload.role === 'student') {
+          const user = await User.findById(payload.sub);
+          if (user) {
+            user.activeSessionToken = null;
+            await user.save();
+          }
+        }
+      } catch (err) {
+        // Token might be invalid/expired - that's okay, just clear the cookie
+      }
+    }
+  } catch (err) {
+    // Ignore errors - just clear the cookie
+  }
+  
+  // Always clear the cookie
+  res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/'
+  });
+  
+  res.json({ message: 'Logged out successfully' });
 }
 
 export async function forcePasswordChange(req, res) {
