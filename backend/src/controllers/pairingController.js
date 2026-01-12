@@ -168,7 +168,13 @@ export async function listPairs(req, res) {
   }
 
   const oneHourMs = 60 * 60 * 1000;
-  const sanitized = pairs.map((p) => ({ ...p, status: p.status || 'pending' }));
+  const sanitized = pairs.map((p) => ({ 
+    ...p, 
+    status: p.status || 'pending',
+    // Ensure proposal counts are always present (default to 0 for backwards compatibility)
+    interviewerProposalCount: p.interviewerProposalCount ?? 0,
+    intervieweeProposalCount: p.intervieweeProposalCount ?? 0
+  }));
   
   // Log first pair to verify defaultTimeSlot is included
   if (sanitized.length > 0) {
@@ -177,7 +183,9 @@ export async function listPairs(req, res) {
       hasDefaultTimeSlot: !!sanitized[0].defaultTimeSlot,
       defaultTimeSlot: sanitized[0].defaultTimeSlot,
       defaultTimeExpired: sanitized[0].defaultTimeExpired,
-      status: sanitized[0].status
+      status: sanitized[0].status,
+      interviewerProposalCount: sanitized[0].interviewerProposalCount,
+      intervieweeProposalCount: sanitized[0].intervieweeProposalCount
     });
   }
   

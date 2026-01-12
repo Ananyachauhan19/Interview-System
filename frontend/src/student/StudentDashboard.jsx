@@ -1894,6 +1894,33 @@ export default function StudentDashboard() {
                   </div>
                 );
               }
+              
+              // If default time expired and no proposals yet, show expired message with action
+              if (isDefaultExpired) {
+                return (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-5">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-600 flex items-center justify-center">
+                        <AlertCircle className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">Default Time Expired</h4>
+                        <p className="text-sm text-amber-700 dark:text-amber-300">The automatically assigned time has passed. Please propose a new time for your interview.</p>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={() => setShowProposeForm(true)}
+                      disabled={isLoadingPairs}
+                      className="w-full min-h-[44px] px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <Clock className="w-5 h-5" />
+                      Propose Interview Time
+                    </button>
+                  </div>
+                );
+              }
+              
               return null;
             })()}
 
@@ -1908,7 +1935,7 @@ export default function StudentDashboard() {
                 : selectedPair?.interviewerProposalCount || 0;
               const totalProposals = myProposalCountValue + partnerProposalCountValue;
               
-              // If no proposals made yet and default time exists, don't show these buttons (default time has its own buttons)
+              // If no proposals made yet and default time exists (expired or not), don't show these buttons (default time section has its own buttons)
               if (totalProposals === 0 && selectedPair?.defaultTimeSlot) {
                 return null;
               }
