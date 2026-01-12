@@ -38,10 +38,10 @@ export default function ContactUs() {
                     <h3 className="text-xl font-semibold text-gray-800 mb-2">Primary Support Email</h3>
                     <p className="text-gray-600 mb-2">For general inquiries and support</p>
                     <a 
-                      href="mailto:peerprep62@gmail.com" 
+                      href="mailto:peerprep26@gmail.com" 
                       className="text-sky-600 hover:text-sky-700 font-medium text-lg flex items-center space-x-2 transition-colors duration-200"
                     >
-                      <span>peerprep62@gmail.com</span>
+                      <span>peerprep26@gmail.com</span>
                       <Send size={16} />
                     </a>
                   </div>
