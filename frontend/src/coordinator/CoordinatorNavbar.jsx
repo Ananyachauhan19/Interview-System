@@ -59,12 +59,7 @@ export function CoordinatorNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isProfileOpen, isInterviewOpen]);
 
-  const handleLogout = async () => {
-    try {
-      await api.logout();
-    } catch (err) {
-      // Ignore errors - just clear localStorage
-    }
+  const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("coordinatorName");
     localStorage.removeItem("coordinatorEmail");

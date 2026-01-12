@@ -70,12 +70,7 @@ export function StudentNavbar() {
   }, [isProfileOpen]);
 
   const navigate = useNavigate();
-  const handleLogout = async () => {
-    try {
-      await api.logout();
-    } catch (err) {
-      // Ignore errors - just clear localStorage
-    }
+  const handleLogout = () => {
     localStorage.removeItem("isStudent");
     localStorage.removeItem("studentName");
     localStorage.removeItem("studentEmail");
