@@ -53,11 +53,33 @@ async function generateRotationPairsForEvent(event) {
   const created = await Pair.insertMany(
     pairs.map(([a, b], index) => {
       // Calculate default time slot for this pair
-      const defaultTime = new Date(eventStart + (timeGap * index));
-      // Round to nearest 30 minutes
+      let defaultTime = new Date(eventStart + (timeGap * index));
+      
+      // Ensure default time is at least 1 hour after current time
+      const oneHourFromNow = new Date(Date.now() + (60 * 60 * 1000));
+      if (defaultTime < oneHourFromNow) {
+        defaultTime = oneHourFromNow;
+      }
+      
+      // Round to nearest 30 minutes first
       const minutes = defaultTime.getMinutes();
       const roundedMinutes = Math.round(minutes / 30) * 30;
       defaultTime.setMinutes(roundedMinutes, 0, 0);
+      
+      // Ensure time is greater than 10 AM and less than 10 PM (after rounding)
+      const hour = defaultTime.getHours();
+      const totalMinutes = hour * 60 + defaultTime.getMinutes();
+      const tenAM = 10 * 60; // 10:00 AM in minutes
+      const tenPM = 22 * 60; // 10:00 PM in minutes
+      
+      if (totalMinutes <= tenAM) {
+        // If at or before 10 AM, set to 10:30 AM
+        defaultTime.setHours(10, 30, 0, 0);
+      } else if (totalMinutes >= tenPM) {
+        // If at or after 10 PM, set to next day at 10:30 AM
+        defaultTime.setDate(defaultTime.getDate() + 1);
+        defaultTime.setHours(10, 30, 0, 0);
+      }
       
       return { 
         event: event._id, 

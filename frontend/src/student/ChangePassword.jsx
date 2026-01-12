@@ -24,7 +24,7 @@ export default function ChangePassword() {
   React.useEffect(() => {
     if (newPassword) {
       setPasswordStrength({
-        hasMinLength: newPassword.length >= 6,
+        hasMinLength: newPassword.length >= 8,
         hasSpecialChar: /[@#]/.test(newPassword)
       });
     } else {
@@ -60,8 +60,8 @@ export default function ChangePassword() {
       setIsLoading(false);
       return;
     }
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters');
       setIsLoading(false);
       return;
     }
@@ -169,7 +169,7 @@ export default function ChangePassword() {
                       <AlertCircle size={14} className="text-red-500" />
                     )}
                     <span className={passwordStrength.hasMinLength ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                      At least 6 characters
+                      At least 8 characters
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">

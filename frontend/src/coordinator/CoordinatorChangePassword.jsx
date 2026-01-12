@@ -24,7 +24,7 @@ export default function CoordinatorChangePassword() {
   useEffect(() => {
     if (newPassword) {
       setPasswordStrength({
-        hasMinLength: newPassword.length >= 6
+        hasMinLength: newPassword.length >= 8
       });
     } else {
       setPasswordStrength({
@@ -57,8 +57,8 @@ export default function CoordinatorChangePassword() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters long");
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters long");
       return;
     }
 
@@ -182,7 +182,7 @@ export default function CoordinatorChangePassword() {
                     <AlertCircle size={14} className="text-red-500" />
                   )}
                   <span className={passwordStrength.hasMinLength ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                    At least 6 characters
+                    At least 8 characters
                   </span>
                 </div>
               </div>
