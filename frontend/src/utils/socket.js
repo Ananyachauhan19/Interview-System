@@ -1,6 +1,20 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:4000';
+// Determine Socket URL: use environment variable, or detect production, or fallback to localhost
+const getSocketURL = () => {
+  // If VITE_API_URL is set, use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace('/api', '');
+  }
+  
+  // If running on production domain, use production URL
+  if (typeof window !== 'undefined' && window.location.hostname === 'peerprep.co.in') {
+    return 'https://peerprep.co.in';
+  }
+  
+  // Default to localhost for development
+  return 'http://localhost:4000';
+};
 
 class SocketService {
   constructor() {
@@ -16,6 +30,7 @@ class SocketService {
     // SECURITY: Use withCredentials to send HttpOnly cookies for authentication
     // This allows the server to read the JWT from the cookie instead of auth object
     // Prevents XSS attacks from stealing tokens stored in JavaScript
+    const SOCKET_URL = getSocketURL();
     this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       autoConnect: true,
