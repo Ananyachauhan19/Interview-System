@@ -30,7 +30,7 @@ router.get('/me', requireAuth, me);
 router.put('/me', requireAuth, updateMe);
 router.put('/me/avatar', requireAuth, uploadLimiter, upload.single('avatar'), updateMyAvatar);
 router.get('/activity/debug', requireAuth, debugStudentActivity);
-router.get('/activity', requireAuth, getStudentStats);
+router.get('/activity', requireAuth, getStudentActivity);
 router.get('/stats', requireAuth, getStudentStats);
 
 export default router;
