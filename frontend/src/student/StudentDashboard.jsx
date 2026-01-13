@@ -50,17 +50,14 @@ export default function StudentDashboard() {
 
   const startFeedbackCountdown = useCallback((pair) => {
     if (!pair) {
-      console.log('[Feedback] No pair provided');
       return;
     }
     const myId = (typeof window !== 'undefined') ? localStorage.getItem('userId') : null;
     const interviewerId = pair?.interviewer?._id || pair?.interviewer;
     const isInterviewer = myId && String(interviewerId) === String(myId);
     
-    console.log('[Feedback] User check:', { myId, interviewerId, isInterviewer });
     
     if (!isInterviewer) {
-      console.log('[Feedback] User is not interviewer, skipping countdown');
       return;
     }
     
@@ -72,16 +69,13 @@ export default function StudentDashboard() {
     
     try {
       localStorage.setItem(key, JSON.stringify(payload));
-      console.log('[Feedback] Timer started:', { pairId: pair._id, delay: '10 seconds' });
     } catch (e) {
       console.error('[Feedback] Failed to save timer:', e);
     }
     
     const delay = Math.max(0, dueAt - Date.now());
-    console.log('[Feedback] Will navigate in', delay, 'ms');
     
     setTimeout(() => {
-      console.log('[Feedback] Navigating to feedback form:', `/student/feedback/${pair._id}`);
       navigate(`/student/feedback/${pair._id}`);
     }, delay);
   }, [navigate]);
@@ -115,7 +109,6 @@ export default function StudentDashboard() {
     // Check if feedback was just submitted
     const feedbackFlag = localStorage.getItem('feedbackJustSubmitted');
     if (feedbackFlag === 'true') {
-      console.log('[Dashboard] Feedback just submitted, forcing immediate refresh...');
       localStorage.removeItem('feedbackJustSubmitted');
     }
     
@@ -123,7 +116,6 @@ export default function StudentDashboard() {
     
     // Fetch user profile from backend and set me state for pairing
     api.me().then((userData) => {
-      console.log('[Dashboard] User data fetched:', userData);
       setUser(userData);
       
       // SECURITY: Since we migrated to HttpOnly cookies, get user identity from API response
@@ -134,7 +126,6 @@ export default function StudentDashboard() {
         name: userData.name,
       };
       setMe(meData);
-      console.log('[Dashboard] User identity set for pairing:', meData);
     }).catch((err) => {
       console.error('[Dashboard] Failed to fetch user data:', err);
     });
@@ -142,7 +133,6 @@ export default function StudentDashboard() {
     // Add event listener to refresh data when window regains focus
     // This ensures both interviewer and interviewee see updated status
     const handleFocus = () => {
-      console.log('[Dashboard] Window focused, refreshing data...');
       loadData();
     };
     
@@ -308,7 +298,6 @@ export default function StudentDashboard() {
 
   const getUserRoleInPair = (pair) => {
     if (!me || !pair) {
-      console.log('[Dashboard] getUserRoleInPair: Missing me or pair', { me, pair: !!pair });
       return null;
     }
 
@@ -316,30 +305,18 @@ export default function StudentDashboard() {
     const intervieweeId = pair.interviewee?._id || pair.interviewee;
 
     if (me.id && String(interviewerId) === String(me.id)) {
-      console.log('[Dashboard] User is interviewer in pair', { userId: me.id, interviewerId });
       return "interviewer";
     }
     if (me.id && String(intervieweeId) === String(me.id)) {
-      console.log('[Dashboard] User is interviewee in pair', { userId: me.id, intervieweeId });
       return "interviewee";
     }
     if (me.email && pair.interviewer?.email === me.email) {
-      console.log('[Dashboard] User is interviewer by email', { email: me.email });
       return "interviewer";
     }
     if (me.email && pair.interviewee?.email === me.email) {
-      console.log('[Dashboard] User is interviewee by email', { email: me.email });
       return "interviewee";
     }
 
-    console.log('[Dashboard] User not found in pair', { 
-      userId: me.id, 
-      userEmail: me.email, 
-      interviewerId, 
-      intervieweeId,
-      interviewerEmail: pair.interviewer?.email,
-      intervieweeEmail: pair.interviewee?.email
-    });
     return null;
   };
 
@@ -630,13 +607,6 @@ export default function StudentDashboard() {
       const res = await api.proposeSlots(selectedPair._id, isoSlots);
       
       // Debug: Log the proposed time and response
-      console.log('[Propose] Submitted slots:', isoSlots);
-      console.log('[Propose] Backend response mine:', res.mine);
-      console.log('[Propose] Backend response partner:', res.partner);
-      console.log('[Propose] Backend response counts:', {
-        interviewer: res.interviewerProposalCount,
-        interviewee: res.intervieweeProposalCount
-      });
       
       // Immediately update currentProposals with the response
       setCurrentProposals(res);
@@ -997,17 +967,6 @@ export default function StudentDashboard() {
             const interviewerPair = eventPairs.find(p => getUserRoleInPair(p) === "interviewer");
             const intervieweePair = eventPairs.find(p => getUserRoleInPair(p) === "interviewee");
             
-            console.log('[Dashboard] Event pair check (selected view):', { 
-              eventId: event._id, 
-              eventName: event.name,
-              joined: event.joined,
-              active,
-              totalPairs: pairs.length,
-              eventPairs: eventPairs.length,
-              hasInterviewerPair: !!interviewerPair,
-              hasIntervieweePair: !!intervieweePair,
-              meId: me?.id
-            });
             
             return (
               <div key={event._id} className="space-y-1">
@@ -1215,13 +1174,6 @@ export default function StudentDashboard() {
             
             // Debug logging (can be removed in production)
             if (eventPairs.length > 0) {
-              console.log(`Event ${event.name} pairs:`, eventPairs.map(p => ({
-                id: p._id,
-                interviewer: p.interviewer?.name || p.interviewer?.email,
-                interviewee: p.interviewee?.name || p.interviewee?.email,
-                status: p.status,
-                userRole: getUserRoleInPair(p)
-              })));
             }
             
             return (

@@ -43,7 +43,6 @@ export default function SubjectManagement() {
     socketService.connect();
 
     const handleLearningUpdate = (data) => {
-      console.log('[Socket] Learning updated:', data);
       loadSubjects();
     };
 
@@ -95,7 +94,6 @@ export default function SubjectManagement() {
     
     // HARD LOCK: Prevent duplicate submissions using ref
     if (isSavingSubjectRef.current) {
-      console.log('[Subject Save] Blocked: Save already in progress');
       return;
     }
     
@@ -128,7 +126,6 @@ export default function SubjectManagement() {
       lastSaveSubjectTimeRef.current = now;
       setIsSavingSubject(true);
       
-      console.log('[Subject Save] Starting save for:', newSubject.subjectName);
       
       await api.createSubject(newSubject.subjectName, newSubject.subjectDescription);
       toast.success('Subject added successfully');
@@ -136,7 +133,6 @@ export default function SubjectManagement() {
       setShowAddSubject(false);
       loadSubjects();
       
-      console.log('[Subject Save] Success - form closed');
     } catch (err) {
       console.error('[Subject Save] Failed:', err);
       toast.error(err.message || 'Failed to add subject');
@@ -320,7 +316,6 @@ export default function SubjectManagement() {
       
       // HARD LOCK: Prevent duplicate submissions using ref (blocks instantly)
       if (isSavingRef.current) {
-        console.log('[Chapter Save] Blocked: Save already in progress');
         return;
       }
       
@@ -353,7 +348,6 @@ export default function SubjectManagement() {
         lastSaveTimeRef.current = now;
         setIsSavingChapter(true);
         
-        console.log('[Chapter Save] Starting save for:', newChapter.chapterName);
         
         await api.addChapter(subject._id, newChapter.chapterName, newChapter.importanceLevel);
         toast.success('Chapter added');
@@ -370,7 +364,6 @@ export default function SubjectManagement() {
         loadSubjects();
         
         // Keep lock active (success - don't allow re-save of same data)
-        console.log('[Chapter Save] Success - form closed');
       } catch (err) {
         console.error('[Chapter Save] Failed:', err);
         toast.error(err.message || 'Failed to add chapter');
@@ -617,7 +610,6 @@ export default function SubjectManagement() {
       
       // HARD LOCK: Prevent duplicate submissions using ref
       if (isSavingTopicRef.current) {
-        console.log('[Topic Save] Blocked: Save already in progress');
         return;
       }
       
@@ -650,7 +642,6 @@ export default function SubjectManagement() {
         lastSaveTopicTimeRef.current = now;
         setIsSavingTopic(true);
         
-        console.log('[Topic Save] Starting save for:', newTopic.topicName);
         
         const formData = new FormData();
         formData.append('topicName', newTopic.topicName);
@@ -682,7 +673,6 @@ export default function SubjectManagement() {
         setShowAddTopic(false);
         loadSubjects();
         
-        console.log('[Topic Save] Success - form closed');
       } catch (err) {
         console.error('[Topic Save] Failed:', err);
         toast.error('Failed to add topic');

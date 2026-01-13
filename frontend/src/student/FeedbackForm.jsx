@@ -40,23 +40,18 @@ export default function FeedbackForm() {
   }, [submitted]);
 
   useEffect(() => {
-    console.log('[FeedbackForm] Component mounted, pairId:', pairId);
     
     const loadPairDetails = async () => {
       try {
         setLoading(true);
-        console.log('[FeedbackForm] Fetching pair details for:', pairId);
         
         const data = await api.getPairDetails(pairId);
-        console.log('[FeedbackForm] Pair data received:', data);
         setPair(data);
 
         // Verify current user is the interviewer
         const interviewerId = data.interviewer?._id || data.interviewer;
-        console.log('[FeedbackForm] User verification:', { userId, interviewerId, match: String(interviewerId) === String(userId) });
         
         if (!userId || String(interviewerId) !== String(userId)) {
-          console.log('[FeedbackForm] User is not the interviewer');
           setError("Only the interviewer can submit feedback for this session.");
           return;
         }
@@ -64,20 +59,17 @@ export default function FeedbackForm() {
         // Check if feedback already submitted
         try {
           const existingFeedback = await api.myFeedback(data.event._id);
-          console.log('[FeedbackForm] Existing feedback check:', existingFeedback);
           if (existingFeedback.some(f => f.pair === pairId)) {
             setSubmitted(true);
             setNotification("Feedback already submitted for this session.");
           }
         } catch (err) {
-          console.log('[FeedbackForm] Could not check existing feedback:', err);
         }
       } catch (err) {
         console.error('[FeedbackForm] Error loading pair details:', err);
         setError(err.message || "Failed to load session details");
       } finally {
         setLoading(false);
-        console.log('[FeedbackForm] Loading complete');
       }
     };
 
@@ -132,7 +124,6 @@ export default function FeedbackForm() {
   };
 
   if (loading) {
-    console.log('[FeedbackForm] Showing loading state');
     return (
       <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center overflow-hidden">
         <div className="text-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-slate-200 dark:border-gray-700">
@@ -144,7 +135,6 @@ export default function FeedbackForm() {
   }
 
   if (error) {
-    console.log('[FeedbackForm] Showing error state:', error);
     return (
       <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center overflow-hidden px-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-red-200 dark:border-red-700 p-6 max-w-md shadow-lg">
@@ -165,7 +155,6 @@ export default function FeedbackForm() {
   }
 
   if (!pair) {
-    console.log('[FeedbackForm] Showing no pair state');
     return (
       <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center overflow-hidden">
         <div className="text-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-slate-200 dark:border-gray-700">
@@ -193,7 +182,6 @@ export default function FeedbackForm() {
     return emojis[rating] || '';
   };
 
-  console.log('[FeedbackForm] Rendering feedback form for pair:', pair._id);
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 overflow-hidden flex items-center justify-center">
       <div className="w-full max-w-6xl px-4 py-3">

@@ -44,11 +44,9 @@ async function request(path, { method = 'GET', body, headers = {}, formData } = 
   // if (token) opts.headers['Authorization'] = `Bearer ${token}`;
   
   const url = `${API_BASE}${path}`;
-  console.log(`[API] ${method} ${url}`, body ? { body } : '');
   
   try {
     const res = await fetch(url, opts);
-    console.log(`[API] Response status: ${res.status}`);
     
     if (!res.ok) {
       let err;
@@ -65,7 +63,6 @@ async function request(path, { method = 'GET', body, headers = {}, formData } = 
     const ct = res.headers.get('content-type') || '';
     return ct.includes('application/json') ? res.json() : res.text();
   } catch (err) {
-    console.error(`[API] Error:`, err);
     throw err;
   }
 }

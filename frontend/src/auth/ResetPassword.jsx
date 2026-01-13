@@ -27,7 +27,6 @@ export default function ResetPassword() {
       setError('Invalid reset link. Please request a new password reset.');
     } else {
       setToken(tokenParam);
-      console.log('Reset token received:', tokenParam.substring(0, 10) + '...');
     }
   }, [searchParams]);
 
@@ -84,7 +83,6 @@ export default function ResetPassword() {
     setLoading(true);
     try {
       const response = await api.resetPassword(token, newPassword);
-      console.log('Password reset response:', response);
       setSuccess(true);
       setTimeout(() => {
         navigate('/', { replace: true });

@@ -74,11 +74,6 @@ export default function LearningDetail() {
   }, [teacherId]);
 
   useEffect(() => {
-    console.log('[LearningDetail] Initial state from navigation:');
-    console.log('  - semesterId:', semesterId);
-    console.log('  - subjectId:', subjectId);
-    console.log('  - coordinatorName:', initialCoordinatorName);
-    console.log('  - coordinatorId:', initialCoordinatorId);
     if (semesterId && subjectId) {
       loadSubjectDetails(semesterId, subjectId);
       setSelectedSubject({ semesterId, subjectId });
@@ -91,7 +86,6 @@ export default function LearningDetail() {
     socketService.connect();
 
     const handleLearningUpdate = async (data) => {
-      console.log('[Socket] Learning updated:', data);
       
       // Reload subjects first to get updated list
       await loadCoordinatorSubjects();
@@ -164,17 +158,13 @@ export default function LearningDetail() {
   const loadSubjectDetails = async (semId, subjId) => {
     try {
       const data = await api.getSubjectDetails(semId, subjId);
-      console.log('[LearningDetail] Subject details loaded:', data);
-      console.log('[LearningDetail] Coordinator Name:', data.coordinatorName);
       setSubjectDetails(data);
       // Update current coordinator info from loaded data
       if (data.coordinatorId) {
         setCurrentCoordinatorId(data.coordinatorId);
-        console.log('[LearningDetail] Set coordinator ID:', data.coordinatorId);
       }
       if (data.coordinatorName) {
         setCurrentCoordinatorName(data.coordinatorName);
-        console.log('[LearningDetail] Set coordinator name:', data.coordinatorName);
       }
     } catch (error) {
       console.error('Error loading subject details:', error);

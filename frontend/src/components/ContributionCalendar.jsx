@@ -61,21 +61,6 @@ export default function ContributionCalendar({
 }) {
   const months = useMemo(() => getRolling365Days(), []);
   
-  // Debug logging
-  React.useEffect(() => {
-    console.log('[ContributionCalendar] Activity data:', activity);
-    console.log('[ContributionCalendar] Activity keys:', Object.keys(activity || {}));
-    console.log('[ContributionCalendar] Activity values:', Object.values(activity || {}));
-    console.log('[ContributionCalendar] Stats data:', stats);
-    console.log('[ContributionCalendar] Activity keys count:', Object.keys(activity || {}).length);
-    
-    // Sample a few dates to check format
-    const sampleKeys = Object.keys(activity || {}).slice(0, 5);
-    console.log('[ContributionCalendar] Sample activity entries:', 
-      sampleKeys.map(key => ({ date: key, count: activity[key] }))
-    );
-  }, [activity, stats]);
-  
   return (
     <div className="w-full">
       <h3 className="text-base font-semibold text-slate-800 dark:text-gray-100 mb-4">{title}</h3>
@@ -168,12 +153,6 @@ export default function ContributionCalendar({
                     const cls = intensityClass(v);
                     const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
                     const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    
-                    // Debug for today's date
-                    const todayKey = new Date().toISOString().slice(0, 10);
-                    if (key === todayKey) {
-                      console.log('[ContributionCalendar] TODAY:', { key, value: v, class: cls, hasActivity: !!activity[key], activityValue: activity[key] });
-                    }
                     
                     return (
                       <div

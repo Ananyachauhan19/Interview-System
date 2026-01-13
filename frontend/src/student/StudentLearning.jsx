@@ -23,7 +23,6 @@ export default function StudentLearning() {
     socketService.connect();
 
     const handleLearningUpdate = (data) => {
-      console.log('[Socket] Learning updated:', data);
       loadSemesters();
     };
 

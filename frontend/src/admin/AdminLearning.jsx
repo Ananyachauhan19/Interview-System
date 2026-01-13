@@ -25,7 +25,7 @@ export default function AdminLearning() {
     socketService.connect();
 
     const handleLearningUpdate = (data) => {
-      console.log('[Socket] Learning updated:', data);
+
       loadSemesters();
     };
 

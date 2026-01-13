@@ -93,7 +93,6 @@ export default function AdminLearningDetail() {
     socketService.connect();
 
     const handleLearningUpdate = (data) => {
-      console.log('[Socket] Learning updated:', data);
       loadCoordinatorSubjects();
       if (semesterId && subjectId) {
         loadSubjectDetails(semesterId, subjectId);

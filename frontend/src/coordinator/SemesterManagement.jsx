@@ -138,7 +138,6 @@ export default function SemesterManagement() {
   const ensureDefaultSemesters = async (existingSemesters) => {
     // Prevent concurrent execution
     if (defaultSemestersCreated) {
-      console.log('Semesters already created, skipping...');
       return false;
     }
 
@@ -163,20 +162,16 @@ export default function SemesterManagement() {
       }
     }
 
-    console.log('Existing semesters:', Array.from(existingSemesterMap.keys()).sort((a, b) => a - b));
-    console.log('Semesters to create:', semestersToCreate);
 
     if (semestersToCreate.length > 0) {
       try {
         setDefaultSemestersCreated(true); // Set flag before creating
-        console.log(`Creating ${semestersToCreate.length} missing semesters...`);
         
         // Create all semesters in parallel (backend will handle duplicates)
         const createPromises = semestersToCreate.map(async (num) => {
           const semesterName = `Semester ${num}`;
           try {
             const result = await api.createSemester(semesterName, `Default semester ${num}`);
-            console.log(`✓ ${semesterName}`);
             return result;
           } catch (err) {
             console.error(`✗ Failed to create ${semesterName}:`, err.message);
@@ -185,7 +180,6 @@ export default function SemesterManagement() {
         });
         
         await Promise.all(createPromises);
-        console.log('✓ Semester creation complete');
         
         // Reload to get the newly created semesters
         return true;
@@ -195,7 +189,6 @@ export default function SemesterManagement() {
         return false;
       }
     } else {
-      console.log('All 12 semesters already exist');
       setDefaultSemestersCreated(true); // All semesters exist
     }
     return false;
@@ -208,7 +201,6 @@ export default function SemesterManagement() {
 
     // Listen for learning module updates
     const handleLearningUpdate = (data) => {
-      console.log('[Socket] Learning updated:', data);
       // Reload semesters to get latest data
       loadSemesters();
     };
@@ -228,12 +220,10 @@ export default function SemesterManagement() {
       
       // Only on initial load: cleanup duplicates first, then create missing semesters
       if (isInitialLoad && !defaultSemestersCreated) {
-        console.log('Running initial setup: cleanup duplicates + create missing semesters');
         
         // Step 1: Cleanup any existing duplicates
         try {
           const cleanupResult = await api.cleanupDuplicateSemesters();
-          console.log('Cleanup result:', cleanupResult);
         } catch (err) {
           console.error('Cleanup failed (continuing anyway):', err);
         }
@@ -907,23 +897,18 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
     }
     
     try {
-      console.log('[handleAddTopic] Creating FormData...');
       const formData = new FormData();
       formData.append('topicName', newTopic.topicName);
       formData.append('difficulty', newTopic.difficulty);
       if (newTopic.videoLink) formData.append('topicVideoLink', newTopic.videoLink);
       if (newTopic.notesPDF) {
-        console.log('[handleAddTopic] Adding notes PDF file:', newTopic.notesPDF.name);
         formData.append('notesPDF', newTopic.notesPDF);
       }
       if (newTopic.questionPDF) {
-        console.log('[handleAddTopic] Adding PDF file:', newTopic.questionPDF.name);
         formData.append('questionPDF', newTopic.questionPDF);
       }
       
-      console.log('[handleAddTopic] Calling API...');
       await api.addTopic(semesterId, subjectId, chapter._id, formData);
-      console.log('[handleAddTopic] Topic added successfully');
       toast.success('Topic added');
       setNewTopic({ topicName: '', difficulty: 'medium', videoLink: '', notesPDF: null, questionPDF: null });
       setShowAddTopic(false);

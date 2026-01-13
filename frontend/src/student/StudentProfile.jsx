@@ -60,23 +60,11 @@ export default function StudentProfile() {
   const loadActivityData = async () => {
     setLoadingActivity(true);
     try {
-      // Debug: Check raw activity data first
-      try {
-        const debugData = await api.debugStudentActivity();
-        console.log('[StudentProfile] DEBUG - Raw activity data:', debugData);
-      } catch (debugErr) {
-        console.error('[StudentProfile] Debug failed:', debugErr);
-      }
-      
       const data = await api.getStudentActivity();
-      console.log('[StudentProfile] Activity API response:', data);
-      console.log('[StudentProfile] activityByDate:', data.activityByDate);
-      console.log('[StudentProfile] activityByDate keys:', Object.keys(data.activityByDate || {}));
-      console.log('[StudentProfile] stats:', data.stats);
       setActivity(data.activityByDate || {});
       setActivityStats(data.stats || null);
     } catch (e) {
-      console.error('[StudentProfile] Failed to load activity:', e);
+      console.error('Failed to load activity:', e);
       setActivity({});
     } finally {
       setLoadingActivity(false);
@@ -107,7 +95,6 @@ export default function StudentProfile() {
     socketService.connect();
 
     const handleLearningUpdate = (data) => {
-      console.log('[StudentProfile] Learning updated:', data);
       // Refresh both activity and stats when content is updated/deleted
       loadActivityData();
       loadStats();

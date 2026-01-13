@@ -30,12 +30,11 @@ export function SocketProvider({ children }) {
     socketRef.current = socketInstance;
 
     socketInstance.on('connect', () => {
-      console.log('Socket connected:', socketInstance.id);
-    });
+        // Socket connected
+      });
 
-    socketInstance.on('disconnect', () => {
-      console.log('Socket disconnected');
-    });
+      socketInstance.on('disconnect', () => {
+        // Socket disconnected
 
     socketInstance.on('connect_error', (error) => {
       console.error('Socket connection error:', error.message);
