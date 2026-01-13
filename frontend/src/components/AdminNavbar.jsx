@@ -14,33 +14,38 @@ export function AdminNavbar() {
   const [isInterviewOpen, setIsInterviewOpen] = useState(false);
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
   const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
-  const [adminName, setAdminName] = useState(localStorage.getItem("adminName") || "Admin");
-  const [adminEmail, setAdminEmail] = useState(localStorage.getItem("adminEmail") || "admin@example.com");
-  const [adminAvatarUrl, setAdminAvatarUrl] = useState(localStorage.getItem("adminAvatarUrl") || "");
+  const [adminName, setAdminName] = useState("Loading...");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminAvatarUrl, setAdminAvatarUrl] = useState("");
 
-  // Fetch admin profile from backend
+  // Fetch admin profile from backend dynamically
   useEffect(() => {
     async function fetchAdminProfile() {
-      // Avoid hitting /auth/me without a token which causes 401 spam
-      const existingToken = localStorage.getItem("token");
-      if (!existingToken) return;
       try {
         const data = await api.me();
-        if (data && data.email) {
-          setAdminEmail(data.email);
-          localStorage.setItem("adminEmail", data.email);
-        }
-        if (data && data.name) {
-          setAdminName(data.name);
-          localStorage.setItem("adminName", data.name);
-        }
-        if (data && Object.prototype.hasOwnProperty.call(data, "avatarUrl")) {
-          setAdminAvatarUrl(data.avatarUrl || "");
-          localStorage.setItem("adminAvatarUrl", data.avatarUrl || "");
+        if (data) {
+          // Set name from database
+          if (data.name) {
+            setAdminName(data.name);
+            localStorage.setItem("adminName", data.name);
+          }
+          // Set email from database
+          if (data.email) {
+            setAdminEmail(data.email);
+            localStorage.setItem("adminEmail", data.email);
+          }
+          // Set avatar from database
+          if (Object.prototype.hasOwnProperty.call(data, "avatarUrl")) {
+            setAdminAvatarUrl(data.avatarUrl || "");
+            localStorage.setItem("adminAvatarUrl", data.avatarUrl || "");
+          }
         }
       } catch (err) {
-        // Silently ignore 401s and keep local data
+        // On error, fallback to localStorage or defaults
         console.warn("Admin profile fetch failed:", err?.message || err);
+        setAdminName(localStorage.getItem("adminName") || "");
+        setAdminEmail(localStorage.getItem("adminEmail") || "");
+        setAdminAvatarUrl(localStorage.getItem("adminAvatarUrl") || "");
       }
     }
     fetchAdminProfile();

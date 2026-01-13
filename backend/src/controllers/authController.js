@@ -146,21 +146,27 @@ export function me(req, res) {
   res.json(response);
 }
 
-// Update current student's profile (name, course, branch, college)
+// Update current user's profile (students, coordinators, and admins can update their name)
 export async function updateMe(req, res) {
   const u = req.user;
   if (!u) return res.status(401).json({ error: 'Unauthorized' });
-  // Only students (regular or special) can update profile
-  if (u.role !== 'student') return res.status(403).json({ error: 'Only students can update profile' });
+  
   const { name, course, branch, college } = req.body || {};
-  // Basic validation: strings only, trim
   const trim = (v) => (typeof v === 'string' ? v.trim() : undefined);
-  const updates = {
-    ...(name !== undefined ? { name: trim(name) } : {}),
-    ...(course !== undefined ? { course: trim(course) } : {}),
-    ...(branch !== undefined ? { branch: trim(branch) } : {}),
-    ...(college !== undefined ? { college: trim(college) } : {}),
-  };
+  
+  // All users can update their name
+  const updates = {};
+  if (name !== undefined) {
+    updates.name = trim(name);
+  }
+  
+  // Only students can update additional fields
+  if (u.role === 'student') {
+    if (course !== undefined) updates.course = trim(course);
+    if (branch !== undefined) updates.branch = trim(branch);
+    if (college !== undefined) updates.college = trim(college);
+  }
+  
   // Persist on underlying User model
   Object.assign(u, updates);
   await u.save();
@@ -170,14 +176,23 @@ export async function updateMe(req, res) {
     userEmail: u.email,
     userRole: u.role,
     actionType: 'UPDATE',
-    targetType: 'STUDENT',
+    targetType: u.role === 'student' ? 'STUDENT' : u.role === 'coordinator' ? 'COORDINATOR' : 'ADMIN',
     targetId: u._id.toString(),
     description: `Updated profile`,
     metadata: updates,
     req
   });
   
-  res.json({ message: 'Profile updated', user: { _id: u._id, name: u.name, email: u.email, studentId: u.studentId, course: u.course, branch: u.branch, college: u.college } });
+  // Return response based on role
+  const response = { message: 'Profile updated', user: { _id: u._id, name: u.name, email: u.email, role: u.role } };
+  if (u.role === 'student') {
+    response.user.studentId = u.studentId;
+    response.user.course = u.course;
+    response.user.branch = u.branch;
+    response.user.college = u.college;
+  }
+  
+  res.json(response);
 }
 
 // Upload/update current user's avatar image
