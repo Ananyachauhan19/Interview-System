@@ -292,18 +292,10 @@ export async function login(req, res) {
       throw new HttpError(401, 'Invalid credentials');
     }
     
-    // SECURITY: Log successful auth
+      // SECURITY: Log successful auth
     logAuthAttempt(req, true, student.email, student._id);
     
-    // Log student login activity
-    await logStudentActivity({
-      studentId: student._id,
-      studentModel: 'User',
-      activityType: 'LOGIN',
-      metadata: { email: student.email, studentId: student.studentId, isSpecialStudent: Boolean(student.isSpecialStudent) }
-    });
-    
-    const token = signToken({ 
+    const token = signToken({  
       sub: student._id, 
       role: student.role,
       email: student.email,
