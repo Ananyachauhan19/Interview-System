@@ -107,7 +107,7 @@ export async function sendOnboardingEmail({ to, studentId, password }) {
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
           <tr>
             <td style="border-radius:8px;background:#0ea5e9;">
-              <a href="http://69.164.247.196/" target="_blank" style="display:inline-block;padding:16px 40px;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:8px;background:#0ea5e9;">Go to Dashboard</a>
+              <a href="http://peerprep.co.in/" target="_blank" style="display:inline-block;padding:16px 40px;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:8px;background:#0ea5e9;">Go to Dashboard</a>
             </td>
           </tr>
         </table>
