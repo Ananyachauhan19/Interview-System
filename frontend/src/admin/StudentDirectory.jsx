@@ -254,7 +254,7 @@ export default function StudentDirectory() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="flex-1 w-full mx-auto px-4 py-6"
       >
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-3 sm:p-4 lg:p-6">
           {/* Tabs */}
           <div className="flex items-center gap-2 mb-6 border-b border-slate-200 dark:border-gray-700">
             <button
@@ -280,20 +280,20 @@ export default function StudentDirectory() {
           </div>
           
           {/* Header Section with Search and Sort */}
-          <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                 activeTab === "students" ? "bg-emerald-100 dark:bg-emerald-900" : "bg-indigo-100 dark:bg-indigo-900"
               }`}>
-                <Users className={`w-6 h-6 ${
+                <Users className={`w-5 h-5 sm:w-6 sm:h-6 ${
                   activeTab === "students" ? "text-emerald-600" : "text-indigo-600"
                 }`} />
               </div>
               <div>
-                <h2 className="text-2xl font-semibold text-slate-800 dark:text-white">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-slate-800 dark:text-white">
                   {activeTab === "students" ? "Student Database" : "Special Event Students"}
                 </h2>
-                <p className="text-slate-600 dark:text-white text-sm">
+                <p className="text-slate-600 dark:text-white text-xs sm:text-sm hidden sm:block">
                   {activeTab === "students" 
                     ? "View and search all registered students" 
                     : "View students from special events"}
@@ -301,7 +301,7 @@ export default function StudentDirectory() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Sort Order Dropdown */}
               <div className="flex flex-col">
                 <select
@@ -312,13 +312,13 @@ export default function StudentDirectory() {
                   <option value="asc">Oldest First</option>
                   <option value="desc">Newest First</option>
                 </select>
-                <p className="text-xs text-slate-500 dark:text-white mt-1 ml-1">
+                <p className="text-xs text-slate-500 dark:text-white mt-1 ml-1 hidden sm:block">
                   Sort by creation date
                 </p>
               </div>
 
               {/* Compact Search Bar */}
-              <form onSubmit={handleSearch} className="w-80">
+              <form onSubmit={handleSearch} className="w-full sm:w-64 lg:w-80">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
@@ -338,7 +338,7 @@ export default function StudentDirectory() {
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-slate-500 dark:text-white mt-1 ml-1">
+                <p className="text-xs text-slate-500 dark:text-white mt-1 ml-1 hidden lg:block">
                   Search by name, ID, email, branch, course, or college
                 </p>
               </form>
@@ -346,11 +346,11 @@ export default function StudentDirectory() {
           </div>
 
           {/* Stats */}
-          <div className="mb-6 p-4 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600">
-            <div className="flex items-center justify-between">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-slate-600 dark:text-white" />
-                <span className="text-sm font-medium text-slate-700 dark:text-white">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600 dark:text-white" />
+                <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-white">
                   Total {activeTab === "students" ? "Students" : "Special Students"}: <span className={`font-semibold ${
                     activeTab === "students" ? "text-emerald-600 dark:text-emerald-400" : "text-indigo-600 dark:text-indigo-400"
                   }`}>{currentStudents.length}</span>
@@ -358,7 +358,7 @@ export default function StudentDirectory() {
               </div>
               {searchQuery && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-600 dark:text-white">
+                  <span className="text-xs sm:text-sm text-slate-600 dark:text-white">
                     Showing: <span className="font-semibold text-slate-800 dark:text-white">{filteredStudents.length}</span> results
                   </span>
                 </div>

@@ -53,29 +53,29 @@ export default function CoordinatorOnboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col items-center py-6 px-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 p-6">
-        <div className="flex items-center gap-4 mb-6 mt-10">
-          <div className="flex-shrink-0 w-12 h-12 bg-indigo-800 dark:bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
-            <Users className="text-white w-6 h-6" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col items-center py-4 sm:py-6 px-3 sm:px-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 p-3 sm:p-4 lg:p-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 mt-8 sm:mt-10">
+          <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-indigo-800 dark:bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+            <Users className="text-white w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-slate-900 dark:text-gray-100">Add Coordinator</h1>
-            <p className="text-slate-600 dark:text-gray-400 text-sm mt-1">Create a coordinator account with required details.</p>
+            <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-gray-100">Add Coordinator</h1>
+            <p className="text-slate-600 dark:text-gray-400 text-xs sm:text-sm mt-0.5 sm:mt-1 hidden sm:block">Create a coordinator account with required details.</p>
           </div>
         </div>
 
-        <div className="flex gap-3 mb-4">
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowForm(!showForm)} className="flex items-center px-4 py-2 bg-sky-500 dark:bg-sky-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-sky-600 dark:hover:bg-sky-700">
-            <Plus className="w-4 h-4 mr-2" />
+        <div className="flex gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowForm(!showForm)} className="flex items-center px-3 sm:px-4 py-2 bg-sky-500 dark:bg-sky-600 text-white text-xs sm:text-sm font-medium rounded-lg shadow-sm hover:bg-sky-600 dark:hover:bg-sky-700">
+            <Plus className="w-4 h-4 mr-1 sm:mr-2" />
             {showForm ? 'Hide Form' : 'Add Coordinator'}
           </motion.button>
         </div>
 
         {showForm && (
-          <div className="bg-slate-50 dark:bg-gray-700 p-4 rounded-lg mb-6 border border-slate-200 dark:border-gray-600">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-gray-100 mb-4">Coordinator Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="bg-slate-50 dark:bg-gray-700 p-3 sm:p-4 rounded-lg mb-4 sm:mb-6 border border-slate-200 dark:border-gray-600">
+            <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-gray-100 mb-3 sm:mb-4">Coordinator Details</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
                 { key: 'coordinatorName', label: 'Full Name *', placeholder: 'Jane Doe' },
                 { key: 'coordinatorEmail', label: 'Email Address *', placeholder: 'jane@university.edu' },

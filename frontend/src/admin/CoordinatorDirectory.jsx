@@ -179,21 +179,21 @@ export default function CoordinatorDirectory() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="flex-1 w-full max-w-7xl mx-auto px-4 py-6"
       >
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-3 sm:p-4 lg:p-6">
           {/* Header Section with Search */}
-          <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-                <Users className="w-6 h-6 text-indigo-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
               </div>
               <div>
-                <h2 className="text-2xl font-semibold text-slate-800 dark:text-white">Coordinator Database</h2>
-                <p className="text-slate-600 dark:text-white text-sm">View and search all coordinators</p>
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-slate-800 dark:text-white">Coordinator Database</h2>
+                <p className="text-slate-600 dark:text-white text-xs sm:text-sm hidden sm:block">View and search all coordinators</p>
               </div>
             </div>
 
             {/* Search Bar */}
-            <div className="w-80">
+            <div className="w-full sm:w-64 lg:w-80">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
@@ -213,22 +213,22 @@ export default function CoordinatorDirectory() {
                   </button>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-white mt-1 ml-1">Search by name, coordinator ID, or email</p>
+              <p className="text-xs text-slate-500 dark:text-white mt-1 ml-1 hidden lg:block">Search by name, coordinator ID, or email</p>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="mb-6 p-4 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600">
-            <div className="flex items-center justify-between">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-slate-600 dark:text-white" />
-                <span className="text-sm font-medium text-slate-700 dark:text-white">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600 dark:text-white" />
+                <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-white">
                   Total Coordinators: <span className="font-semibold text-indigo-600 dark:text-indigo-400">{coordinators.length}</span>
                 </span>
               </div>
               {searchQuery && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-600 dark:text-gray-400">
+                  <span className="text-xs sm:text-sm text-slate-600 dark:text-gray-400">
                     Showing: <span className="font-semibold text-slate-800 dark:text-gray-200">{filtered.length}</span> results
                   </span>
                 </div>

@@ -320,51 +320,51 @@ export default function EventManagement() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex-1 w-full max-w-2xl mx-auto px-4 py-4"
+        className="flex-1 w-full max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4"
       >
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-3 sm:p-4">
           {/* Header Section */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-indigo-800 dark:bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Calendar className="text-white w-5 h-5" />
+          <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-800 dark:bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Calendar className="text-white w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-slate-800 dark:text-gray-100">Create Interview</h2>
-              <p className="text-slate-600 dark:text-gray-400 text-sm">Set up a new interview practice session</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-gray-100">Create Interview</h2>
+              <p className="text-slate-600 dark:text-gray-400 text-xs sm:text-sm hidden sm:block">Set up a new interview practice session</p>
             </div>
           </div>
 
           {/* Modern Sliding Switch for Interview Type */}
-          <div className="flex justify-center mb-6">
-            <div className="relative inline-flex items-center bg-slate-200 dark:bg-gray-700 rounded-full p-1.5 w-full max-w-[15rem] sm:max-w-[18rem]">
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <div className="relative inline-flex items-center bg-slate-200 dark:bg-gray-700 rounded-full p-1 sm:p-1.5 w-full max-w-[14rem] sm:max-w-[18rem]">
               <div
-                className={`absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] bg-gradient-to-r transition-all duration-300 ease-in-out rounded-full shadow-lg ${
+                className={`absolute top-1 sm:top-1.5 bottom-1 sm:bottom-1.5 w-[calc(50%-0.25rem)] sm:w-[calc(50%-0.375rem)] bg-gradient-to-r transition-all duration-300 ease-in-out rounded-full shadow-lg ${
                   specialMode
-                    ? 'left-[calc(50%+0.375rem)] from-purple-500 to-purple-600'
-                    : 'left-1.5 from-sky-500 to-sky-600'
+                    ? 'left-[calc(50%+0.25rem)] sm:left-[calc(50%+0.375rem)] from-purple-500 to-purple-600'
+                    : 'left-1 sm:left-1.5 from-sky-500 to-sky-600'
                 }`}
               />
               <button
                 type="button"
                 onClick={() => { setSpecialMode(false); setMsg(""); }}
-                className={`relative z-10 flex-1 px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 ${
+                className={`relative z-10 flex-1 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-full transition-colors duration-300 ${
                   !specialMode
                     ? 'text-white'
                     : 'text-slate-600 dark:text-gray-300 hover:text-slate-800 dark:hover:text-gray-100'
                 }`}
               >
-                Regular Interview
+                Regular
               </button>
               <button
                 type="button"
                 onClick={() => { setSpecialMode(true); setMsg(""); }}
-                className={`relative z-10 flex-1 px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 ${
+                className={`relative z-10 flex-1 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-full transition-colors duration-300 ${
                   specialMode
                     ? 'text-white'
                     : 'text-slate-600 dark:text-gray-300 hover:text-slate-800 dark:hover:text-gray-100'
                 }`}
               >
-                Special Interview
+                Special
               </button>
             </div>
           </div>

@@ -86,33 +86,33 @@ export default function AdminChangePassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12">
       <div className="w-full max-w-2xl">
         {/* Back Button */}
         <button
           onClick={() => navigate('/admin/event')}
-          className="mb-6 flex items-center gap-2 text-slate-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          className="mb-4 sm:mb-6 flex items-center gap-2 text-slate-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm font-medium">Back to Dashboard</span>
+          <span className="text-xs sm:text-sm font-medium">Back to Dashboard</span>
         </button>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-blue-100 dark:border-gray-700 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-700 px-8 py-8 border-b-2 border-blue-200 dark:border-gray-600">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-500 dark:bg-blue-600 rounded-xl shadow-md">
-                <Lock className="w-8 h-8 text-white" />
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-700 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 border-b-2 border-blue-200 dark:border-gray-600">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-blue-500 dark:bg-blue-600 rounded-lg sm:rounded-xl shadow-md flex-shrink-0">
+                <Lock className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-800 dark:text-gray-100">Change Password</h1>
-                <p className="text-slate-600 dark:text-gray-400 mt-1">Update your admin account credentials</p>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800 dark:text-gray-100">Change Password</h1>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 mt-0.5 sm:mt-1 hidden sm:block">Update your admin account credentials</p>
               </div>
             </div>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
             {/* Current Password */}
             <div>
               <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2">

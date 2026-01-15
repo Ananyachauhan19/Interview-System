@@ -405,21 +405,21 @@ export default function StudentOnboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col items-center py-6 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col items-center py-4 sm:py-6 px-3 sm:px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-7xl bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 p-6 flex flex-col"
+        className="w-full max-w-7xl bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 p-3 sm:p-4 lg:p-6 flex flex-col"
       >
         {/* Header Section - Logo Left, Text Right */}
-        <div className="flex items-center gap-4 mb-6 mt-10">
-          <div className="flex-shrink-0 w-12 h-12 bg-indigo-800 dark:bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
-            <Users className="text-white w-6 h-6" />
+        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 mt-8 sm:mt-10">
+          <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-indigo-800 dark:bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+            <Users className="text-white w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-slate-900 dark:text-gray-100">Add Students</h1>
-            <p className="text-slate-600 dark:text-gray-400 text-sm mt-1">
+            <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-gray-100">Add Students</h1>
+            <p className="text-slate-600 dark:text-gray-400 text-xs sm:text-sm mt-0.5 sm:mt-1 hidden sm:block">
               Efficiently onboard students via bulk CSV upload or individual entry with real-time validation.
             </p>
           </div>
@@ -430,19 +430,19 @@ export default function StudentOnboarding() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg p-4 mb-6"
+          className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6"
         >
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-2 sm:gap-3">
             <BookOpen className="w-4 h-4 text-slate-600 dark:text-gray-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-gray-200 mb-2">CSV Upload Guidelines</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700 dark:text-gray-300">
+              <h3 className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-gray-200 mb-1 sm:mb-2">CSV Upload Guidelines</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 text-xs text-slate-700 dark:text-gray-300">
                 <div className="space-y-1">
                   <p><strong>Required columns:</strong> Course, Name, Email, Student ID, Branch, College, Teacher ID, Semester</p>
-                  <p><strong>Optional columns:</strong> Group (G1-G5)</p>
-                  <p><strong>Header format:</strong> Keep the same order as the sample CSV so every column is picked up correctly.</p>
+                  <p className="hidden sm:block"><strong>Optional columns:</strong> Group (G1-G5)</p>
+                  <p className="hidden sm:block"><strong>Header format:</strong> Keep the same order as the sample CSV so every column is picked up correctly.</p>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 hidden lg:block">
                   <p><strong>Passwords:</strong> Automatically generated (7-8 characters) and sent via email to each student.</p>
                   <p><strong>Teacher ID & Semester:</strong> Teacher ID must match the coordinator code; Semester must be a number from 1-8.</p>
                 </div>
@@ -452,13 +452,13 @@ export default function StudentOnboarding() {
         </motion.div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6">
           <motion.a
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             href="/sample-students.csv"
             download
-            className="flex items-center px-4 py-2 bg-emerald-500 dark:bg-emerald-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-emerald-600 dark:hover:bg-emerald-700 transition-all duration-200"
+            className="flex items-center justify-center sm:justify-start px-3 sm:px-4 py-2 bg-emerald-500 dark:bg-emerald-600 text-white text-xs sm:text-sm font-medium rounded-lg shadow-sm hover:bg-emerald-600 dark:hover:bg-emerald-700 transition-all duration-200"
           >
             <Download className="w-4 h-4 mr-2" />
             Download Sample CSV
@@ -467,7 +467,7 @@ export default function StudentOnboarding() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowSingleForm(!showSingleForm)}
-            className="flex items-center px-4 py-2 bg-sky-500 dark:bg-sky-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-sky-600 dark:hover:bg-sky-700 transition-all duration-200"
+            className="flex items-center justify-center sm:justify-start px-3 sm:px-4 py-2 bg-sky-500 dark:bg-sky-600 text-white text-xs sm:text-sm font-medium rounded-lg shadow-sm hover:bg-sky-600 dark:hover:bg-sky-700 transition-all duration-200"
           >
             <Plus className="w-4 h-4 mr-2" />
             {showSingleForm ? 'Hide Single Entry' : 'Add Single Student'}
@@ -480,10 +480,10 @@ export default function StudentOnboarding() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-slate-50 dark:bg-gray-700 p-4 rounded-lg mb-6 border border-slate-200 dark:border-gray-600"
+            className="bg-slate-50 dark:bg-gray-700 p-3 sm:p-4 rounded-lg mb-4 sm:mb-6 border border-slate-200 dark:border-gray-600"
           >
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-gray-100 mb-4">Add Individual Student</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-gray-100 mb-3 sm:mb-4">Add Individual Student</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {[
                 { key: 'name', label: 'Full Name *', placeholder: 'John Doe' },
                 { key: 'email', label: 'Email Address *', placeholder: 'john@university.edu' },

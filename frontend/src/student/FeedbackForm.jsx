@@ -324,18 +324,19 @@ export default function FeedbackForm() {
               </table>
             </div>
 
-            {/* Additional Suggestions */}
+            {/* Additional Suggestions / Comments (Required) */}
             <div className="mt-3">
               <label className="block text-xs font-semibold text-slate-700 dark:text-gray-300 mb-1">
-                Additional Suggestions (Optional)
+                Additional Comments (Required)
               </label>
               <textarea
                 value={suggestions}
                 onChange={(e) => setSuggestions(e.target.value)}
                 disabled={submitted}
                 rows={2}
+                required
                 className="w-full border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-sky-500 focus:border-sky-500 disabled:bg-slate-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed placeholder:text-slate-400 dark:placeholder:text-gray-500"
-                placeholder="Share any additional feedback or suggestions..."
+                placeholder="Share your detailed feedback and suggestions (required)..."
               />
             </div>
           </div>

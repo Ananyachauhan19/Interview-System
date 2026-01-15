@@ -20,11 +20,19 @@ export async function submitFeedback(req, res) {
     if (!integrity || !communication || !preparedness || !problemSolving || !attitude) {
       throw new HttpError(400, 'All rating criteria required');
     }
+
+    // Require a textual comment/suggestion when submitting detailed ratings
+    const finalComments = (suggestions ?? comments ?? '').trim();
+    if (!finalComments) {
+      throw new HttpError(400, 'Comments are required');
+    }
+
     const totalMarks = integrity + communication + preparedness + problemSolving + attitude;
-    finalMarks = (totalMarks / 25) * 100; // Convert 25-point scale to 100-point scale
+    // Store marks on a 25-point scale (sum of all criteria)
+    finalMarks = totalMarks;
     feedbackData = {
       marks: finalMarks,
-      comments: suggestions || comments,
+      comments: finalComments,
       integrity,
       communication,
       preparedness,
@@ -33,8 +41,19 @@ export async function submitFeedback(req, res) {
       totalMarks,
       suggestions
     };
-  } else if (marks == null || isNaN(marks)) {
-    throw new HttpError(400, 'Marks required');
+  } else {
+    // Legacy numeric marks + comments flow
+    if (marks == null || isNaN(marks)) {
+      throw new HttpError(400, 'Marks required');
+    }
+
+    const finalComments = (comments ?? '').trim();
+    if (!finalComments) {
+      throw new HttpError(400, 'Comments are required');
+    }
+
+    finalMarks = Number(marks);
+    feedbackData = { marks: finalMarks, comments: finalComments };
   }
   
   const pair = await Pair.findById(pairId);
@@ -107,6 +126,13 @@ export async function listFeedback(req, res) {
     intervieweeCollege: f.to?.college,
     marks: f.marks,
     comments: f.comments,
+    integrity: f.integrity,
+    communication: f.communication,
+    preparedness: f.preparedness,
+    problemSolving: f.problemSolving,
+    attitude: f.attitude,
+    totalMarks: f.totalMarks,
+    suggestions: f.suggestions,
     submittedAt: f.createdAt,
   })));
 }
@@ -233,6 +259,13 @@ export async function listCoordinatorFeedback(req, res) {
     intervieweeCollege: f.to?.college,
     marks: f.marks,
     comments: f.comments,
+    integrity: f.integrity,
+    communication: f.communication,
+    preparedness: f.preparedness,
+    problemSolving: f.problemSolving,
+    attitude: f.attitude,
+    totalMarks: f.totalMarks,
+    suggestions: f.suggestions,
     submittedAt: f.createdAt,
   })));
 }

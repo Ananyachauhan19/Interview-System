@@ -133,16 +133,16 @@ export default function AdminLearning() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 pt-20 px-4 pb-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 pt-20 px-3 sm:px-4 pb-8">
       <div className="max-w-7xl mx-auto">
         {/* Header with Edit Toggle */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex items-center justify-between"
+          className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
         >
           <div>
-            <h1 className="text-xl font-bold text-slate-800 dark:text-white mb-0.5">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-white mb-0.5">
               Learning Modules
             </h1>
             <p className="text-xs text-slate-500 dark:text-white">
@@ -186,7 +186,7 @@ export default function AdminLearning() {
             <p className="text-xs text-slate-600 dark:text-gray-400 font-medium">No courses available yet</p>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {semesters.map((semester, idx) => (
               <motion.div
                 key={semester.semesterName}

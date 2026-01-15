@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 // Feedback Card Component for Mobile
-const FeedbackCard = ({ feedback }) => (
+const FeedbackCard = ({ feedback, onMarksClick, onCommentsClick }) => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
@@ -33,10 +33,14 @@ const FeedbackCard = ({ feedback }) => (
           {new Date(feedback.submittedAt).toLocaleString()}
         </p>
       </div>
-      <div className="flex items-center gap-1 bg-sky-50 dark:bg-sky-900/30 px-1.5 py-0.5 rounded">
+      <button
+        type="button"
+        onClick={() => onMarksClick?.(feedback)}
+        className="flex items-center gap-1 bg-sky-50 dark:bg-sky-900/30 px-1.5 py-0.5 rounded cursor-pointer hover:bg-sky-100 dark:hover:bg-sky-900/60"
+      >
         <Star className="w-3 h-3 text-sky-500 dark:text-sky-400" />
-        <span className="text-xs font-semibold text-sky-700 dark:text-sky-300">{feedback.marks}/25</span>
-      </div>
+        <span className="text-xs font-semibold text-sky-700 dark:text-sky-300">{(feedback.totalMarks ?? (feedback.marks <= 25 ? feedback.marks : Math.round((feedback.marks || 0) * 25 / 100)))}/25</span>
+      </button>
     </div>
 
     <div className="grid grid-cols-1 gap-1.5 text-sm">
@@ -68,13 +72,17 @@ const FeedbackCard = ({ feedback }) => (
     </div>
 
     {feedback.comments && (
-      <div className="bg-slate-50 dark:bg-gray-700 rounded p-2">
+      <button
+        type="button"
+        onClick={() => onCommentsClick?.(feedback)}
+        className="bg-slate-50 dark:bg-gray-700 rounded p-2 w-full text-left hover:bg-slate-100 dark:hover:bg-gray-600 cursor-pointer"
+      >
         <div className="flex items-center gap-1.5 mb-1">
           <MessageSquare className="w-3 h-3 text-slate-500 dark:text-white" />
           <div className="text-xs font-semibold text-slate-600 dark:text-white">Comments</div>
         </div>
         <p className="text-sm text-slate-700 dark:text-white line-clamp-2">{feedback.comments}</p>
-      </div>
+      </button>
     )}
   </motion.div>
 );
@@ -90,6 +98,9 @@ export default function FeedbackReview() {
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef(null);
+
+  const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const [dialogMode, setDialogMode] = useState(null); // 'marks' | 'comments'
 
   const loadEvents = async () => {
     try { 
@@ -194,7 +205,12 @@ export default function FeedbackReview() {
   const stats = {
     total: feedback.length,
     averageScore: feedback.length > 0 
-      ? (feedback.reduce((sum, f) => sum + (parseFloat(f.marks) || 0), 0) / feedback.length).toFixed(1)
+      ? (
+          feedback.reduce((sum, f) => {
+            const baseMarks = f.totalMarks ?? (f.marks <= 25 ? f.marks : (f.marks || 0) * 25 / 100);
+            return sum + (parseFloat(baseMarks) || 0);
+          }, 0) / feedback.length
+        ).toFixed(1)
       : 0,
     uniqueColleges: new Set(feedback.filter(f => f.intervieweeCollege).map(f => f.intervieweeCollege)).size
   };
@@ -202,30 +218,30 @@ export default function FeedbackReview() {
   const selectedEvent = events.find(e => e._id === selectedEventId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex pt-14">
-      {/* Left Sidebar - Events List */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col lg:flex-row pt-14">
+      {/* Left Sidebar - Events List (hidden on mobile by default) */}
       <div
         ref={sidebarRef}
-        style={{ width: `${sidebarWidth}px`, height: 'calc(100vh - 3.5rem)' }}
-        className="bg-white dark:bg-gray-800 border-r border-slate-200 dark:border-gray-700 flex flex-col relative"
+        style={{ width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${sidebarWidth}px` : '100%', height: 'auto' }}
+        className="bg-white dark:bg-gray-800 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-gray-700 flex flex-col relative lg:h-[calc(100vh-3.5rem)]"
       >
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-slate-200 dark:border-gray-700">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-sky-500 dark:bg-sky-600 rounded-lg flex items-center justify-center">
-              <Calendar className="w-4 h-4 text-white" />
+        <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-gray-700">
+          <div className="flex items-center gap-2 mb-1 sm:mb-2">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-sky-500 dark:bg-sky-600 rounded-lg flex items-center justify-center">
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h2 className="text-sm font-bold text-slate-800 dark:text-white">Events</h2>
+            <h2 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">Events</h2>
           </div>
-          <p className="text-xs text-slate-500 dark:text-white">Select an event to view feedback</p>
+          <p className="text-xs text-slate-500 dark:text-white hidden sm:block">Select an event to view feedback</p>
         </div>
 
         {/* Events List */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        <div className="flex-1 overflow-y-auto lg:overflow-x-hidden p-2 sm:p-3 space-y-2 flex lg:flex-col gap-2 overflow-x-auto">
           {/* All Events Option */}
           <motion.button
             onClick={() => handleEventClick('')}
-            className={`w-full text-left p-3 rounded-lg border transition-all ${
+            className={`w-full min-w-[140px] lg:min-w-0 text-left p-2 sm:p-3 rounded-lg border transition-all ${
               selectedEventId === ''
                 ? 'bg-sky-50 dark:bg-sky-900/30 border-sky-300 dark:border-sky-700 shadow-sm'
                 : 'bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 hover:border-sky-200 dark:hover:border-sky-700 hover:bg-sky-50 dark:hover:bg-sky-900/30'
@@ -254,7 +270,7 @@ export default function FeedbackReview() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.05 }}
               onClick={() => handleEventClick(event._id)}
-              className={`w-full text-left p-3 rounded-lg border transition-all ${
+              className={`w-full min-w-[140px] lg:min-w-0 text-left p-2 sm:p-3 rounded-lg border transition-all ${
                 selectedEventId === event._id
                   ? 'bg-sky-50 dark:bg-sky-900/30 border-sky-300 dark:border-sky-700 shadow-sm'
                   : 'bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 hover:border-sky-200 dark:hover:border-sky-700 hover:bg-sky-50 dark:hover:bg-sky-900/30'
@@ -277,33 +293,33 @@ export default function FeedbackReview() {
           ))}
         </div>
 
-        {/* Resize Handle */}
+        {/* Resize Handle - only visible on desktop */}
         <div
-          className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-sky-400 dark:hover:bg-sky-600 transition-colors"
+          className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-sky-400 dark:hover:bg-sky-600 transition-colors hidden lg:block"
           onMouseDown={startResizing}
           style={{ cursor: isResizing ? 'col-resize' : 'ew-resize' }}
         />
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 3.5rem)' }}>
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 flex flex-col overflow-hidden lg:h-[calc(100vh-3.5rem)]">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 sm:py-4">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4"
+            className="mb-3 sm:mb-4"
           >
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-indigo-800 dark:bg-indigo-600 rounded-lg flex items-center justify-center">
-                  <GraduationCap className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-800 dark:bg-indigo-600 rounded-lg flex items-center justify-center">
+                  <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-slate-800 dark:text-gray-100">
+                  <h1 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-gray-100">
                     {selectedEvent ? selectedEvent.name : 'All Feedback'}
                   </h1>
-                  <p className="text-slate-600 dark:text-gray-400 text-sm">
+                  <p className="text-slate-600 dark:text-gray-400 text-xs sm:text-sm hidden sm:block">
                     {selectedEvent 
                       ? `Reviews for ${selectedEvent.name}`
                       : 'Review and analyze all interview feedback'
@@ -313,17 +329,17 @@ export default function FeedbackReview() {
               </div>
             
               {/* Stats */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 sm:gap-4">
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-sky-600 dark:text-sky-400">{stats.total}</div>
+                  <div className="text-base sm:text-lg font-semibold text-sky-600 dark:text-sky-400">{stats.total}</div>
                   <div className="text-xs text-slate-500 dark:text-gray-400">Total</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">{stats.averageScore}/25</div>
+                  <div className="text-base sm:text-lg font-semibold text-emerald-600 dark:text-emerald-400">{stats.averageScore}/25</div>
                   <div className="text-xs text-slate-500 dark:text-gray-400">Avg Score</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">{stats.uniqueColleges}</div>
+                  <div className="text-base sm:text-lg font-semibold text-indigo-600 dark:text-indigo-400">{stats.uniqueColleges}</div>
                   <div className="text-xs text-slate-500 dark:text-gray-400">Colleges</div>
                 </div>
               </div>
@@ -430,7 +446,18 @@ export default function FeedbackReview() {
                   </div>
                 ) : (
                   feedback.map((f, index) => (
-                    <FeedbackCard key={f.id || index} feedback={f} />
+                    <FeedbackCard
+                      key={f.id || index}
+                      feedback={f}
+                      onMarksClick={(fb) => {
+                        setSelectedFeedback(fb);
+                        setDialogMode('marks');
+                      }}
+                      onCommentsClick={(fb) => {
+                        setSelectedFeedback(fb);
+                        setDialogMode('comments');
+                      }}
+                    />
                   ))
                 )}
               </div>
@@ -498,15 +525,35 @@ export default function FeedbackReview() {
                                 {f.intervieweeCollege || '-'}
                               </td>
                               <td className="py-2 px-3">
-                                <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedFeedback(f);
+                                    setDialogMode('marks');
+                                  }}
+                                  className="flex items-center gap-1 hover:bg-slate-100 dark:hover:bg-gray-700 px-2 py-1 rounded cursor-pointer"
+                                >
                                   <Star className="w-3 h-3 text-amber-500" />
                                   <span className="text-sm font-semibold text-slate-800 dark:text-gray-200">
-                                    {f.marks}/25
+                                    {(f.totalMarks ?? (f.marks <= 25 ? f.marks : Math.round((f.marks || 0) * 25 / 100)))}/25
                                   </span>
-                                </div>
+                                </button>
                               </td>
                               <td className="py-2 px-3 text-sm text-slate-700 dark:text-gray-300 max-w-xs">
-                                <div className="line-clamp-2">{f.comments || '-'}</div>
+                                {f.comments ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedFeedback(f);
+                                      setDialogMode('comments');
+                                    }}
+                                    className="w-full text-left hover:bg-slate-100 dark:hover:bg-gray-700 px-2 py-1 rounded cursor-pointer"
+                                  >
+                                    <div className="truncate">{f.comments}</div>
+                                  </button>
+                                ) : (
+                                  <span className="text-slate-400 dark:text-gray-500">-</span>
+                                )}
                               </td>
                               <td className="py-2 px-3 text-sm text-slate-500 dark:text-gray-400">
                                 {new Date(f.submittedAt).toLocaleDateString()}
@@ -523,6 +570,100 @@ export default function FeedbackReview() {
           )}
         </div>
       </div>
+
+      {/* Detail Dialog for Marks Distribution / Full Comments */}
+      <AnimatePresence>
+        {selectedFeedback && dialogMode && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-slate-200 dark:border-gray-700 max-w-md w-full mx-4"
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-gray-700">
+                <div className="flex items-center gap-2">
+                  {dialogMode === 'marks' ? (
+                    <Star className="w-4 h-4 text-amber-500" />
+                  ) : (
+                    <MessageSquare className="w-4 h-4 text-sky-500" />
+                  )}
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                      {dialogMode === 'marks' ? 'Marks Distribution' : 'Full Comments'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-gray-400">
+                      {selectedFeedback.interviewee} · {selectedFeedback.event}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedFeedback(null);
+                    setDialogMode(null);
+                  }}
+                  className="p-1 rounded hover:bg-slate-100 dark:hover:bg-gray-700"
+                >
+                  <X className="w-4 h-4 text-slate-500" />
+                </button>
+              </div>
+
+              <div className="px-4 py-3">
+                {dialogMode === 'marks' ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-slate-700 dark:text-gray-200">Total</span>
+                      <span className="font-semibold text-sky-600 dark:text-sky-400">
+                        {(selectedFeedback.totalMarks ?? (selectedFeedback.marks <= 25 ? selectedFeedback.marks : Math.round((selectedFeedback.marks || 0) * 25 / 100)))}/25
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 text-xs">
+                      {[{
+                        key: 'integrity',
+                        label: 'Integrity and Ethical Behavior',
+                      }, {
+                        key: 'communication',
+                        label: 'Communication Skills',
+                      }, {
+                        key: 'preparedness',
+                        label: 'Preparedness and Initiative',
+                      }, {
+                        key: 'problemSolving',
+                        label: 'Problem Solving and Learning Ability',
+                      }, {
+                        key: 'attitude',
+                        label: 'Attitude and Respect',
+                      }].map((item) => (
+                        <div
+                          key={item.key}
+                          className="flex items-center justify-between bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded px-3 py-1.5"
+                        >
+                          <span className="text-slate-700 dark:text-gray-200 mr-2 flex-1">
+                            {item.label}
+                          </span>
+                          <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                            {selectedFeedback[item.key] ?? '-'} / 5
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-800 dark:text-gray-100 whitespace-pre-wrap max-h-80 overflow-y-auto">
+                    {selectedFeedback.comments || 'No comments provided.'}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

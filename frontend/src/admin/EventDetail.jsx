@@ -352,18 +352,18 @@ export default function EventDetail() {
             )}
           </AnimatePresence>          {/* Main Content */}
           <div className="flex-1">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-4 h-[calc(100vh-8rem)] overflow-y-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-3 sm:p-4 h-[calc(100vh-8rem)] overflow-y-auto">
               {event ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {/* Header */}
-                  <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div>
-                        <div className="flex items-center gap-3">
-                          <h1 className="text-xl font-semibold text-slate-800 dark:text-gray-100">{event.name}</h1>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                          <h1 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-gray-100">{event.name}</h1>
                           {(event.startDate || event.endDate) && (
-                            <div className="text-sm text-slate-500 dark:text-gray-400">
+                            <div className="text-xs sm:text-sm text-slate-500 dark:text-gray-400 flex flex-col sm:flex-row sm:gap-2">
                               {event.startDate && (
-                                <span className="mr-2">Starts: {new Date(event.startDate).toLocaleString()}</span>
+                                <span>Starts: {new Date(event.startDate).toLocaleString()}</span>
                               )}
                               {event.endDate && (
                                 <span>Ends: {new Date(event.endDate).toLocaleString()}</span>
@@ -371,11 +371,11 @@ export default function EventDetail() {
                             </div>
                           )}
                         </div>
-                        <p className="text-slate-600 dark:text-gray-400 text-sm mt-0.5">{event.description}</p>
+                        <p className="text-slate-600 dark:text-gray-400 text-xs sm:text-sm mt-0.5">{event.description}</p>
                       </div>
                     <Link
                       to="/admin/event"
-                      className="flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 text-sm"
+                      className="flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 text-sm self-start sm:self-auto"
                     >
                       <ArrowLeft className="w-3 h-3" />
                       Back to Interviews

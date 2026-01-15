@@ -151,10 +151,10 @@ export function AdminNavbar() {
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm"
     >
-      <div className="w-full h-16 px-6 flex items-center justify-between">
+      <div className="w-full h-14 sm:h-16 px-3 sm:px-4 lg:px-6 flex items-center justify-between">
         {/* Left: Brand Logo */}
         <motion.div
-          className="flex items-center min-w-[200px]"
+          className="flex items-center min-w-0 sm:min-w-[140px] lg:min-w-[200px]"
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
         >
@@ -162,7 +162,7 @@ export function AdminNavbar() {
             src="/images/logo.png" 
             alt="PeerPrep Logo" 
             className="w-auto object-contain"
-            style={{ height: '90px' }}
+            style={{ height: '70px' }}
           />
         </motion.div>
 
@@ -384,7 +384,7 @@ export function AdminNavbar() {
         </div>
 
         {/* Right: Dark Mode Toggle & Profile with increased spacing */}
-        <div className="hidden lg:flex items-center gap-3 min-w-[200px] justify-end ml-6">
+        <div className="hidden lg:flex items-center gap-2 lg:gap-3 min-w-0 lg:min-w-[200px] justify-end ml-4 lg:ml-6">
           {/* Dark Mode Toggle */}
           <DarkModeToggle />
 

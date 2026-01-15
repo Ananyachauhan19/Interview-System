@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Search, RefreshCw, ChevronLeft, ChevronRight, Filter, X, ChevronDown, ChevronUp, Shield, Users } from 'lucide-react';
+import { Download, Search, RefreshCw, ChevronLeft, ChevronRight, Filter, X, ChevronDown, ChevronUp, Shield, Users, Menu } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from '../components/CustomToast';
 
@@ -46,6 +46,7 @@ export default function AdminActivity() {
   const [selectedView, setSelectedView] = useState('admin'); // 'admin' or coordinator ID
   const [showCoordinatorDropdown, setShowCoordinatorDropdown] = useState(false);
   const [loadingCoordinators, setLoadingCoordinators] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const loadActivities = useCallback(async (isRefresh = false) => {
     try {
@@ -237,8 +238,24 @@ export default function AdminActivity() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="flex min-h-screen">
+        {/* Mobile Sidebar Toggle */}
+        <button
+          onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+          className="lg:hidden fixed top-20 left-4 z-40 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700"
+        >
+          <Menu className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        </button>
+        
+        {/* Mobile Overlay */}
+        {mobileSidebarOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black/50 z-30"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
+        
         {/* Left Sidebar - Fixed with independent scroll */}
-        <div className="activity-sidebar w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0 sticky top-0 h-screen overflow-y-auto" style={{
+        <div className={`activity-sidebar fixed lg:sticky top-0 left-0 h-screen w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0 overflow-y-auto z-40 transform transition-transform duration-300 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`} style={{
           scrollbarWidth: 'thin',
           scrollbarColor: '#9ca3af #f3f4f6'
         }}>
@@ -249,7 +266,7 @@ export default function AdminActivity() {
             
             {/* Admin Option */}
             <button
-              onClick={() => handleViewChange('admin')}
+              onClick={() => { handleViewChange('admin'); setMobileSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors mb-2 ${
                 selectedView === 'admin'
                   ? 'bg-purple-600 text-white'
@@ -300,7 +317,7 @@ export default function AdminActivity() {
                         coordinators.map((coordinator) => (
                           <button
                             key={coordinator._id}
-                            onClick={() => handleCoordinatorSelect(coordinator._id)}
+                            onClick={() => { handleCoordinatorSelect(coordinator._id); setMobileSidebarOpen(false); }}
                             className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-colors ${
                               selectedView === coordinator._id
                                 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
@@ -320,14 +337,14 @@ export default function AdminActivity() {
         </div>
         
         {/* Right Content Area - Scrollable */}
-        <div className="flex-1 overflow-y-auto min-h-screen">
-          <div className="p-6">
+        <div className="flex-1 overflow-y-auto min-h-screen lg:ml-0 pt-4 lg:pt-0">
+          <div className="p-3 sm:p-4 lg:p-6">
             {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <div className="mb-4 sm:mb-6 pl-10 lg:pl-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
                 {getSelectedCoordinatorName()}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 {selectedView === 'admin' 
                   ? 'View and monitor all admin activities across the system'
                   : 'View coordinator activities and actions'}

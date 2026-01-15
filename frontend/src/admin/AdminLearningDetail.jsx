@@ -371,24 +371,24 @@ export default function AdminLearningDetail() {
           )}
 
           {subjectDetails ? (
-            <div className="max-w-5xl mx-auto p-6">
+            <div className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-6">
               {/* Header */}
-              <div className="mb-8 flex items-start justify-between">
+              <div className="mb-4 sm:mb-6 lg:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
                       {subjectDetails.subjectName}
                     </h1>
                     <button
                       onClick={() => navigate('/admin/learning')}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-white hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-white hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors self-start sm:self-auto"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       Back
                     </button>
                   </div>
-                  <p className="text-gray-600 dark:text-white">{subjectDetails.subjectDescription}</p>
-                  <p className="text-sm text-gray-500 dark:text-white mt-2">
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-white">{subjectDetails.subjectDescription}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-white mt-2">
                     Taught by <span className="font-medium dark:text-white">
                       {currentCoordinatorName || subjectDetails?.coordinatorName || initialCoordinatorName || 'Teacher'}
                     </span>
@@ -396,9 +396,9 @@ export default function AdminLearningDetail() {
                 </div>
                 <button
                   onClick={openCreateChapterModal}
-                  className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors ml-4"
+                  className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm sm:text-base"
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>Add Chapter</span>
                 </button>
               </div>
