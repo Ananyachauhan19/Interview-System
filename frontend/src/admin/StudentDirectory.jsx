@@ -280,16 +280,6 @@ export default function StudentDirectory() {
             >
               Students
             </button>
-            <button
-              onClick={() => setActiveTab("special")}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "special"
-                  ? "border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-slate-600 dark:text-white hover:text-slate-800 dark:hover:text-white"
-              }`}
-            >
-              Special Students
-            </button>
           </div>
           
           {/* Header Section with Search and Sort */}

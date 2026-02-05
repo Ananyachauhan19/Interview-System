@@ -539,7 +539,7 @@ export async function addTopic(req, res) {
     console.log('[addTopic] Request files:', req.files);
     
     const { semesterId, subjectId, chapterId } = req.params;
-    const { topicName, difficulty, difficultyLevel, topicVideoLink } = req.body;
+    const { topicName, difficulty, difficultyLevel, topicVideoLink, problemLink, importanceLevel } = req.body;
     
     if (!topicName) throw new HttpError(400, 'Topic name is required');
     
@@ -629,6 +629,8 @@ export async function addTopic(req, res) {
     const order = chapter.topics.length;
     chapter.topics.push({
       topicName,
+      problemLink: problemLink || '',
+      importanceLevel: importanceLevel ? Number(importanceLevel) : 3,
       difficultyLevel: difficultyLevel || difficulty || 'medium',
       topicVideoLink: videoLink,
       notesPDF,
@@ -657,7 +659,7 @@ export async function addTopic(req, res) {
 export async function updateTopic(req, res) {
   try {
     const { semesterId, subjectId, chapterId, topicId } = req.params;
-      const { topicName, difficultyLevel, difficulty, topicVideoLink } = req.body;
+      const { topicName, difficultyLevel, difficulty, topicVideoLink, problemLink, importanceLevel } = req.body;
     
     let ownerFilter = {};
       // Legacy fallback: some semesters stored coordinator ObjectId string in coordinatorId
@@ -689,6 +691,8 @@ export async function updateTopic(req, res) {
     
     // Update fields
     if (topicName !== undefined) topic.topicName = topicName;
+    if (problemLink !== undefined) topic.problemLink = problemLink;
+    if (importanceLevel !== undefined) topic.importanceLevel = Number(importanceLevel);
     // Accept both 'difficultyLevel' and legacy 'difficulty' keys
     if (difficultyLevel !== undefined) topic.difficultyLevel = difficultyLevel;
     else if (difficulty !== undefined) topic.difficultyLevel = difficulty;

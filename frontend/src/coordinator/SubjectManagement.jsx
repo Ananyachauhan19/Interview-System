@@ -587,6 +587,8 @@ export default function SubjectManagement() {
     const [isSavingTopic, setIsSavingTopic] = useState(false);
     const [newTopic, setNewTopic] = useState({
       topicName: '',
+      problemLink: '',
+      importanceLevel: 3,
       topicVideoLink: '',
       notesLink: '',
       difficultyLevel: 'medium',
@@ -645,6 +647,8 @@ export default function SubjectManagement() {
         
         const formData = new FormData();
         formData.append('topicName', newTopic.topicName);
+        formData.append('problemLink', newTopic.problemLink || '');
+        formData.append('importanceLevel', newTopic.importanceLevel || 3);
         formData.append('difficultyLevel', newTopic.difficultyLevel);
         if (newTopic.topicVideoLink) formData.append('topicVideoLink', newTopic.topicVideoLink);
         if (newTopic.notesLink) formData.append('notesLink', newTopic.notesLink);
@@ -665,6 +669,8 @@ export default function SubjectManagement() {
         
         setNewTopic({
           topicName: '',
+          problemLink: '',
+          importanceLevel: 3,
           topicVideoLink: '',
           notesLink: '',
           difficultyLevel: 'medium',
@@ -691,6 +697,8 @@ export default function SubjectManagement() {
       try {
         const formData = new FormData();
         formData.append('topicName', editingTopic.topicName);
+        formData.append('problemLink', editingTopic.problemLink || '');
+        formData.append('importanceLevel', editingTopic.importanceLevel || 3);
         formData.append('difficultyLevel', editingTopic.difficultyLevel);
         if (editingTopic.topicVideoLink) formData.append('topicVideoLink', editingTopic.topicVideoLink);
         if (editingTopic.notesLink) formData.append('notesLink', editingTopic.notesLink);
@@ -748,18 +756,51 @@ export default function SubjectManagement() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Difficulty Level</label>
-                  <select
-                    value={editingTopic.difficultyLevel}
-                    onChange={(e) => setEditingTopic({ ...editingTopic, difficultyLevel: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
-                  >
-                    <option value="easy">Easy</option>
-                    <option value="easy-medium">Easy-Medium</option>
-                    <option value="medium">Medium</option>
-                    <option value="medium-hard">Medium-Hard</option>
-                    <option value="hard">Hard</option>
-                  </select>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Problem Link (Optional)</label>
+                  <input
+                    type="url"
+                    placeholder="https://leetcode.com/problems/..."
+                    value={editingTopic.problemLink || ''}
+                    onChange={(e) => setEditingTopic({ ...editingTopic, problemLink: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Importance (1-5 stars)</label>
+                    <div className="flex items-center gap-1 mt-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setEditingTopic({ ...editingTopic, importanceLevel: star })}
+                          className="p-1 hover:scale-110 transition-transform"
+                        >
+                          <Star
+                            className={`w-6 h-6 ${
+                              star <= (editingTopic.importanceLevel || 3)
+                                ? 'text-yellow-500 fill-yellow-500'
+                                : 'text-slate-300 dark:text-gray-600'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Difficulty Level</label>
+                    <select
+                      value={editingTopic.difficultyLevel}
+                      onChange={(e) => setEditingTopic({ ...editingTopic, difficultyLevel: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
+                    >
+                      <option value="easy">Easy</option>
+                      <option value="easy-medium">Easy-Medium</option>
+                      <option value="medium">Medium</option>
+                      <option value="medium-hard">Medium-Hard</option>
+                      <option value="hard">Hard</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Video Link (Optional)</label>
@@ -880,7 +921,7 @@ export default function SubjectManagement() {
                           <Star
                             key={i}
                             className={`w-3.5 h-3.5 ${
-                              i < (chapter.importanceLevel || 3)
+                              i < (topic.importanceLevel || 3)
                                 ? 'text-yellow-500 fill-yellow-500'
                                 : 'text-slate-300 dark:text-gray-600'
                             }`}
@@ -950,6 +991,8 @@ export default function SubjectManagement() {
                           onClick={() => setEditingTopic({
                             _id: topic._id,
                             topicName: topic.topicName,
+                            problemLink: topic.problemLink || '',
+                            importanceLevel: topic.importanceLevel || 3,
                             topicVideoLink: topic.topicVideoLink || '',
                             notesLink: topic.notesLink || '',
                             difficultyLevel: topic.difficultyLevel,
@@ -990,18 +1033,51 @@ export default function SubjectManagement() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Difficulty Level</label>
-              <select
-                value={newTopic.difficultyLevel}
-                onChange={(e) => setNewTopic({ ...newTopic, difficultyLevel: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
-              >
-                <option value="easy">Easy</option>
-                <option value="easy-medium">Easy-Medium</option>
-                <option value="medium">Medium</option>
-                <option value="medium-hard">Medium-Hard</option>
-                <option value="hard">Hard</option>
-              </select>
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Problem Link (Optional)</label>
+              <input
+                type="url"
+                placeholder="https://leetcode.com/problems/..."
+                value={newTopic.problemLink}
+                onChange={(e) => setNewTopic({ ...newTopic, problemLink: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Importance (1-5 stars)</label>
+                <div className="flex items-center gap-1 mt-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setNewTopic({ ...newTopic, importanceLevel: star })}
+                      className="p-1 hover:scale-110 transition-transform"
+                    >
+                      <Star
+                        className={`w-6 h-6 ${
+                          star <= newTopic.importanceLevel
+                            ? 'text-yellow-500 fill-yellow-500'
+                            : 'text-slate-300 dark:text-gray-600'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Difficulty Level</label>
+                <select
+                  value={newTopic.difficultyLevel}
+                  onChange={(e) => setNewTopic({ ...newTopic, difficultyLevel: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="easy-medium">Easy-Medium</option>
+                  <option value="medium">Medium</option>
+                  <option value="medium-hard">Medium-Hard</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Video Link (Optional)</label>

@@ -860,7 +860,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ ...chapter });
   const [showAddTopic, setShowAddTopic] = useState(false);
-  const [newTopic, setNewTopic] = useState({ topicName: '', difficulty: 'medium', videoLink: '', notesPDF: null, questionPDF: null });
+  const [newTopic, setNewTopic] = useState({ topicName: '', problemLink: '', importanceLevel: 3, difficulty: 'medium', videoLink: '', notesPDF: null, questionPDF: null });
 
   const handleUpdate = async () => {
     if (!editData.chapterName.trim()) {
@@ -899,6 +899,8 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
     try {
       const formData = new FormData();
       formData.append('topicName', newTopic.topicName);
+      formData.append('problemLink', newTopic.problemLink || '');
+      formData.append('importanceLevel', newTopic.importanceLevel || 3);
       formData.append('difficulty', newTopic.difficulty);
       if (newTopic.videoLink) formData.append('topicVideoLink', newTopic.videoLink);
       if (newTopic.notesPDF) {
@@ -910,7 +912,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
       
       await api.addTopic(semesterId, subjectId, chapter._id, formData);
       toast.success('Topic added');
-      setNewTopic({ topicName: '', difficulty: 'medium', videoLink: '', notesPDF: null, questionPDF: null });
+      setNewTopic({ topicName: '', problemLink: '', importanceLevel: 3, difficulty: 'medium', videoLink: '', notesPDF: null, questionPDF: null });
       setShowAddTopic(false);
       loadSemesters();
     } catch (err) {
@@ -1069,18 +1071,51 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Difficulty Level</label>
-                      <select
-                        value={newTopic.difficulty}
-                        onChange={(e) => setNewTopic({ ...newTopic, difficulty: e.target.value })}
+                      <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Problem Link (Optional)</label>
+                      <input
+                        type="url"
+                        placeholder="https://leetcode.com/problems/..."
+                        value={newTopic.problemLink || ''}
+                        onChange={(e) => setNewTopic({ ...newTopic, problemLink: e.target.value })}
                         className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                      >
-                        <option value="easy">Easy</option>
-                        <option value="easy-medium">Easy-Medium</option>
-                        <option value="medium">Medium</option>
-                        <option value="medium-hard">Medium-Hard</option>
-                        <option value="hard">Hard</option>
-                      </select>
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Importance (1-5 stars)</label>
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setNewTopic({ ...newTopic, importanceLevel: star })}
+                              className="p-0.5 hover:scale-110 transition-transform"
+                            >
+                              <Star
+                                className={`w-5 h-5 ${
+                                  star <= newTopic.importanceLevel
+                                    ? 'text-amber-500 fill-amber-500'
+                                    : 'text-slate-300 dark:text-gray-600'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Difficulty Level</label>
+                        <select
+                          value={newTopic.difficulty}
+                          onChange={(e) => setNewTopic({ ...newTopic, difficulty: e.target.value })}
+                          className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                        >
+                          <option value="easy">Easy</option>
+                          <option value="easy-medium">Easy-Medium</option>
+                          <option value="medium">Medium</option>
+                          <option value="medium-hard">Medium-Hard</option>
+                          <option value="hard">Hard</option>
+                        </select>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Video Link (Optional)</label>
@@ -1119,7 +1154,7 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                     <button
                       onClick={() => {
                         setShowAddTopic(false);
-                        setNewTopic({ topicName: '', difficulty: 'medium', videoLink: '', notesPDF: null, questionPDF: null });
+                        setNewTopic({ topicName: '', problemLink: '', importanceLevel: 3, difficulty: 'medium', videoLink: '', notesPDF: null, questionPDF: null });
                       }}
                       className="flex items-center gap-1 bg-slate-200 dark:bg-gray-600 text-slate-700 dark:text-gray-200 px-2.5 py-1.5 rounded hover:bg-slate-300 dark:hover:bg-gray-500 text-xs font-medium transition-colors"
                     >

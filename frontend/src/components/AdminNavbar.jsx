@@ -95,7 +95,7 @@ export function AdminNavbar() {
 
   const interviewItems = [
     { path: "/admin/event", label: "Create Interview", Icon: CalendarDays },
-    { path: "/admin/event/:id", label: "Schedule Interview", Icon: BookOpen },
+    { path: "/admin/event/:id", label: "Scheduled Interview", Icon: BookOpen },
   ];
 
   const addMembersItems = [
@@ -238,7 +238,7 @@ export function AdminNavbar() {
               }`}
             >
               <UserPlus className="w-4 h-4" />
-              <span className="font-medium text-sm whitespace-nowrap">Members</span>
+              <span className="font-medium text-sm whitespace-nowrap">Add Users</span>
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isAddMembersOpen ? 'rotate-180' : ''}`} />
             </motion.button>
 
@@ -290,7 +290,7 @@ export function AdminNavbar() {
               }`}
             >
               <Database className="w-4 h-4" />
-              <span className="font-medium text-sm whitespace-nowrap">Database</span>
+              <span className="font-medium text-sm whitespace-nowrap">Users</span>
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDatabaseOpen ? 'rotate-180' : ''}`} />
             </motion.button>
 
@@ -668,7 +668,7 @@ export function AdminNavbar() {
                   <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-2 px-2.5 py-1 text-gray-500 dark:text-gray-400">
                       <UserPlus className="w-3 h-3" />
-                      <span className="text-[10px] font-semibold uppercase tracking-wider">Members</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider">Add Users</span>
                     </div>
                     {addMembersItems.map(({ path, label, Icon }) => {
                       const isActive = active === path || location.pathname === path;
