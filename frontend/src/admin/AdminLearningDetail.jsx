@@ -76,6 +76,7 @@ export default function AdminLearningDetail() {
   const [editingChapter, setEditingChapter] = useState(null);
   const [editingTopic, setEditingTopic] = useState(null);
   const [selectedChapter, setSelectedChapter] = useState(null);
+  const [topicImportanceLevel, setTopicImportanceLevel] = useState(3);
 
   useEffect(() => {
     loadCoordinatorSubjects();
@@ -197,12 +198,14 @@ export default function AdminLearningDetail() {
   const openCreateTopicModal = (chapter) => {
     setSelectedChapter(chapter);
     setEditingTopic(null);
+    setTopicImportanceLevel(3);
     setShowTopicModal(true);
   };
 
   const openEditTopicModal = (chapter, topic) => {
     setSelectedChapter(chapter);
     setEditingTopic(topic);
+    setTopicImportanceLevel(topic.importanceLevel || 3);
     setShowTopicModal(true);
   };
 
@@ -846,6 +849,50 @@ export default function AdminLearningDetail() {
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-100"
                       placeholder="https://youtube.com/embed/..."
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Problem Link
+                    </label>
+                    <input
+                      type="url"
+                      name="problemLink"
+                      defaultValue={editingTopic?.problemLink || ''}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-100"
+                      placeholder="https://leetcode.com/problems/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Importance Level
+                    </label>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((level) => (
+                        <button
+                          key={level}
+                          type="button"
+                          onClick={() => setTopicImportanceLevel(level)}
+                          className="focus:outline-none"
+                        >
+                          <svg
+                            className={`w-8 h-8 transition-colors ${
+                              level <= topicImportanceLevel
+                                ? 'text-yellow-400 fill-yellow-400'
+                                : 'text-gray-300 dark:text-gray-600'
+                            } hover:text-yellow-400 hover:fill-yellow-400`}
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      ))}
+                      <input type="hidden" name="importanceLevel" value={topicImportanceLevel} />
+                      <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                        ({topicImportanceLevel}/5)
+                      </span>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
