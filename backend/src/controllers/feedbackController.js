@@ -230,7 +230,7 @@ export async function listCoordinatorFeedback(req, res) {
   
   // Get students assigned to this coordinator
   const assignedStudents = await User.find({ 
-    teacherId: req.user.coordinatorId,
+    teacherIds: req.user.coordinatorId,
     role: 'student' 
   }, '_id');
   
@@ -276,7 +276,7 @@ export async function exportCoordinatorFeedback(req, res) {
   
   // Get students assigned to this coordinator
   const assignedStudents = await User.find({ 
-    teacherId: req.user.coordinatorId,
+    teacherIds: req.user.coordinatorId,
     role: 'student' 
   }, '_id');
   

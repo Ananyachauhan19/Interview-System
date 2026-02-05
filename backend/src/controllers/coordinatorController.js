@@ -29,27 +29,26 @@ export async function listAllCoordinators(req, res) {
     const coordinatorIds = users.map(u => (u.coordinatorId || '').trim()).filter(Boolean);
     let countsMap = new Map();
     if (coordinatorIds.length) {
-      // Count students assigned to a coordinator by either teacherId (preferred linkage)
-      // or fallback to student.coordinatorId if data was populated that way.
+      // Count students assigned to a coordinator using teacherIds array
+      // A student with teacherIds: ['COO1', 'COO2'] will be counted for both coordinators
     const pipeline = [
       {
         $match: {
           role: 'student',
-          $or: [
-            { teacherId: { $in: coordinatorIds } },
-            { coordinatorId: { $in: coordinatorIds } },
-          ],
+          teacherIds: { $in: coordinatorIds },
         },
       },
       {
+        $unwind: '$teacherIds'
+      },
+      {
+        $match: {
+          teacherIds: { $in: coordinatorIds }
+        }
+      },
+      {
         $group: {
-          _id: {
-            $cond: [
-              { $and: [ { $ne: ['$teacherId', null] }, { $ne: ['$teacherId', ''] } ] },
-              '$teacherId',
-              '$coordinatorId',
-            ],
-          },
+          _id: '$teacherIds',
           count: { $sum: 1 },
         },
       },

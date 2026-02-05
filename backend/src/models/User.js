@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true, sparse: true },
   studentId: { type: String, unique: true, sparse: true },
   coordinatorId: { type: String, unique: true, sparse: true },
-  teacherId: String, // For students: links to coordinator's coordinatorID
+  teacherIds: [String], // For students: links to coordinator's coordinatorID (supports multiple)
   passwordHash: { type: String, required: true },
   mustChangePassword: { type: Boolean, default: false },
   course: String,

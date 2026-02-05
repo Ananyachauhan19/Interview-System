@@ -167,7 +167,7 @@ export async function createEvent(req, res) {
         const students = await User.find({
           _id: { $in: finalAllowed },
           role: 'student',
-          teacherId: coordinatorId,
+          teacherIds: coordinatorId,
         }).select('_id');
         finalAllowed = students.map(s => s._id);
       }
@@ -205,7 +205,7 @@ export async function createEvent(req, res) {
       let studentsQuery = { role: 'student', email: { $exists: true, $ne: null } };
       // If coordinator event, restrict to assigned students
       if (event.coordinatorId) {
-        studentsQuery = { ...studentsQuery, teacherId: event.coordinatorId };
+        studentsQuery = { ...studentsQuery, teacherIds: event.coordinatorId };
       }
       let students = await User.find(studentsQuery, '_id email name');
       // If allowedParticipants was provided, intersect with it
@@ -332,8 +332,8 @@ export async function checkSpecialEventCsv(req, res) {
     // Get all students assigned to this coordinator
     assignedStudents = await User.find({ 
       role: 'student', 
-      teacherId: coordinatorId 
-    }).select('email studentId name branch semester group teacherId');
+      teacherIds: coordinatorId 
+    }).select('email studentId name branch semester group teacherIds');
   }
 
   const normalizedRows = rows.map((r, idx) => ({ ...normalizeSpecialEventRow(r), __row: idx + 2 }));
@@ -354,7 +354,7 @@ export async function checkSpecialEventCsv(req, res) {
           { email: { $in: emails } },
           { studentId: { $in: studentIds } },
         ],
-      }).select('email studentId name branch semester group course college teacherId').lean(),
+      }).select('email studentId name branch semester group course college teacherIds').lean(),
       User.find({ role: 'coordinator' }).select('coordinatorId').lean(),
     ]);
 
@@ -449,8 +449,10 @@ export async function checkSpecialEventCsv(req, res) {
         mismatches.push(`group (expected: ${assignedStudent.group}, got: ${row.group})`);
       }
       
-      if (assignedStudent.teacherId && teacherid && String(assignedStudent.teacherId).trim() !== teacherid.trim()) {
-        mismatches.push(`teacherId (expected: ${assignedStudent.teacherId}, got: ${teacherid})`);
+      // Check teacherIds array - teacherid from CSV should be in the student's teacherIds
+      const studentTeacherIds = Array.isArray(assignedStudent.teacherIds) ? assignedStudent.teacherIds : [];
+      if (teacherid && studentTeacherIds.length > 0 && !studentTeacherIds.includes(teacherid.trim())) {
+        mismatches.push(`teacherId (expected one of: ${studentTeacherIds.join(', ')}, got: ${teacherid})`);
       }
       
       if (mismatches.length > 0) {
@@ -538,10 +540,10 @@ export async function checkSpecialEventCsv(req, res) {
         continue;
       }
 
-      // If there is an existing record with an assigned coordinator, enforce exact match on Teacher ID
+      // If there is an existing record with assigned coordinators, enforce match on Teacher ID
       const sourceRecord = userByEmail || userById;
-      if (sourceRecord && sourceRecord.teacherId) {
-        const expectedTeacherId = String(sourceRecord.teacherId).trim();
+      const sourceTeacherIds = Array.isArray(sourceRecord?.teacherIds) ? sourceRecord.teacherIds : [];
+      if (sourceRecord && sourceTeacherIds.length > 0) {
         const csvTeacherId = (teacherid || '').trim();
 
         if (!csvTeacherId) {
@@ -551,19 +553,19 @@ export async function checkSpecialEventCsv(req, res) {
             email,
             studentid,
             status: 'missing_teacherid',
-            message: 'Teacher ID / Coordinator code is required for existing students and must match their assigned coordinator.',
+            message: 'Teacher ID / Coordinator code is required for existing students and must match one of their assigned coordinators.',
           });
           continue;
         }
 
-        if (csvTeacherId !== expectedTeacherId) {
+        if (!sourceTeacherIds.includes(csvTeacherId)) {
           results.push({
             row: row.__row,
             name,
             email,
             studentid,
             status: 'db_mismatch',
-            message: 'CSV Teacher ID / Coordinator code does not match the assigned coordinator for this student.',
+            message: `CSV Teacher ID / Coordinator code does not match any assigned coordinator for this student. Expected one of: ${sourceTeacherIds.join(', ')}`,
           });
           continue;
         }
@@ -600,7 +602,7 @@ export async function createSpecialEvent(req, res) {
     // Get all students assigned to this coordinator for validation
     assignedStudents = await User.find({ 
       role: 'student', 
-      teacherId: coordinatorId 
+      teacherIds: coordinatorId 
     }).select('email studentId name');
   }
 
@@ -627,7 +629,7 @@ export async function createSpecialEvent(req, res) {
           { email: { $in: emails } },
           { studentId: { $in: studentIds } },
         ],
-      }).select('email studentId name branch semester group course college teacherId').lean(),
+      }).select('email studentId name branch semester group course college teacherIds').lean(),
       User.find({ role: 'coordinator' }).select('coordinatorId').lean(),
     ]);
 
@@ -676,23 +678,23 @@ export async function createSpecialEvent(req, res) {
         throw new HttpError(400, userMismatch);
       }
 
-      // If there is an existing record with an assigned coordinator, enforce exact match on Teacher ID
+      // If there is an existing record with assigned coordinators, enforce match on Teacher ID
       const sourceRecord = user;
-      if (sourceRecord && sourceRecord.teacherId) {
-        const expectedTeacherId = String(sourceRecord.teacherId).trim();
+      const sourceTeacherIds = Array.isArray(sourceRecord?.teacherIds) ? sourceRecord.teacherIds : [];
+      if (sourceRecord && sourceTeacherIds.length > 0) {
         const csvTeacherId = (teacherid || '').trim();
 
         if (!csvTeacherId) {
           throw new HttpError(
             400,
-            `Row ${row.__row}: Teacher ID / Coordinator code is required for existing students and must match their assigned coordinator.`,
+            `Row ${row.__row}: Teacher ID / Coordinator code is required for existing students and must match one of their assigned coordinators.`,
           );
         }
 
-        if (csvTeacherId !== expectedTeacherId) {
+        if (!sourceTeacherIds.includes(csvTeacherId)) {
           throw new HttpError(
             400,
-            `Row ${row.__row}: CSV Teacher ID / Coordinator code does not match the assigned coordinator for this student.`,
+            `Row ${row.__row}: CSV Teacher ID / Coordinator code does not match any assigned coordinator for this student. Expected one of: ${sourceTeacherIds.join(', ')}`,
           );
         }
       }

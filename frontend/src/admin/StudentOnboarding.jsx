@@ -444,7 +444,7 @@ export default function StudentOnboarding() {
                 </div>
                 <div className="space-y-1 hidden lg:block">
                   <p><strong>Passwords:</strong> Automatically generated (7-8 characters) and sent via email to each student.</p>
-                  <p><strong>Teacher ID & Semester:</strong> Teacher ID must match the coordinator code; Semester must be a number from 1-8.</p>
+                  <p><strong>Teacher ID & Semester:</strong> Teacher ID must match coordinator code(s); use commas for multiple (e.g., COO1,COO2). Semester must be 1-8.</p>
                 </div>
               </div>
             </div>
@@ -489,11 +489,11 @@ export default function StudentOnboarding() {
                 { key: 'email', label: 'Email Address *', placeholder: 'john@university.edu' },
                 { key: 'studentid', label: 'Student ID *', placeholder: 'STU2024001' },
                 { key: 'branch', label: 'Branch *', placeholder: 'Computer Science' },
-                { key: 'teacherid', label: 'Teacher ID *', placeholder: 'COORD123' },
+                { key: 'teacherid', label: 'Teacher ID(s) *', placeholder: 'COO1 or COO1,COO2', hint: 'Comma-separated for multiple' },
                 { key: 'semester', label: 'Semester *', placeholder: '1-8', type: 'number' },
                 { key: 'course', label: 'Course', placeholder: 'B.Tech' },
                 { key: 'college', label: 'College', placeholder: 'University Name' },
-              ].map(({ key, label, placeholder, type }) => (
+              ].map(({ key, label, placeholder, type, hint }) => (
                 <div key={key} className="flex flex-col">
                   <label className="text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">{label}</label>
                   <input
@@ -503,6 +503,7 @@ export default function StudentOnboarding() {
                     placeholder={placeholder}
                     className="p-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-600 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   />
+                  {hint && <span className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{hint}</span>}
                 </div>
               ))}
               <div className="flex flex-col">

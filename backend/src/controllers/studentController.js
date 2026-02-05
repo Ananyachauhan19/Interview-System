@@ -17,6 +17,16 @@ function generateRandomPassword() {
   return password;
 }
 
+// Helper to parse comma-separated coordinator IDs from CSV
+function parseTeacherIds(teacheridField) {
+  if (!teacheridField) return [];
+  return teacheridField
+    .toString()
+    .split(/[,;|]/)
+    .map(id => id.trim())
+    .filter(Boolean);
+}
+
 export async function listAllStudents(req, res) {
   try {
     const { search, sortOrder } = req.query;
@@ -25,7 +35,7 @@ export async function listAllStudents(req, res) {
     // Since special-event CSV creates users with role='student' AND isSpecialStudent=true,
     // querying by role='student' will include both regular and special students
     const baseQuery = user.role === 'coordinator'
-      ? { role: 'student', teacherId: user.coordinatorId }
+      ? { role: 'student', teacherIds: user.coordinatorId }
       : { role: 'student' };
 
     let query = baseQuery;
@@ -51,11 +61,17 @@ export async function listAllStudents(req, res) {
     const sort = sortOrder === 'desc' || sortOrder === '-1' ? -1 : 1;
     
     const students = await User.find(query)
-      .select('name email studentId course branch college semester group teacherId avatarUrl createdAt isSpecialStudent')
+      .select('name email studentId course branch college semester group teacherIds avatarUrl createdAt isSpecialStudent')
       .sort({ createdAt: sort })
       .lean();
     
-    res.json({ count: students.length, students });
+    // Map teacherIds to teacherId for backwards compatibility with frontend
+    const studentsWithTeacherId = students.map(s => ({
+      ...s,
+      teacherId: Array.isArray(s.teacherIds) ? s.teacherIds.join(', ') : (s.teacherIds || '')
+    }));
+    
+    res.json({ count: studentsWithTeacherId.length, students: studentsWithTeacherId });
   } catch (err) {
     console.error('Error listing students:', err);
     res.status(500).json({ error: 'Failed to fetch students' });
@@ -102,7 +118,7 @@ export async function checkStudentsCsv(req, res) {
   const studentIds = normalizedRows.map((r) => r.studentid).filter(Boolean);
 
   // Bulk query existing users in DB to avoid per-row queries
-  const existing = await User.find({ $or: [{ email: { $in: emails } }, { studentId: { $in: studentIds } }] }).select('email studentId name branch course college teacherId semester group').lean();
+  const existing = await User.find({ $or: [{ email: { $in: emails } }, { studentId: { $in: studentIds } }] }).select('email studentId name branch course college teacherIds semester group').lean();
   const existingByEmail = new Map();
   const existingByStudentId = new Map();
   
@@ -155,14 +171,28 @@ export async function checkStudentsCsv(req, res) {
     seenEmails.add(lowerEmail);
     seenStudentIds.add(studentid);
 
-    // Validate that assigned coordinator exists
-    if (!validCoordinatorIds.has(teacherid)) {
+    // Parse multiple coordinator IDs (comma, semicolon, or pipe separated)
+    const teacherIdList = parseTeacherIds(teacherid);
+    if (teacherIdList.length === 0) {
       results.push({
         row: row.__row,
         email,
         studentid,
         status: 'invalid_teacherid',
-        message: `Teacher ID / Coordinator code "${teacherid}" does not match any existing coordinator. Please correct it before uploading.`,
+        message: `Teacher ID / Coordinator code is required.`,
+      });
+      continue;
+    }
+    
+    // Validate that ALL assigned coordinators exist
+    const invalidIds = teacherIdList.filter(id => !validCoordinatorIds.has(id));
+    if (invalidIds.length > 0) {
+      results.push({
+        row: row.__row,
+        email,
+        studentid,
+        status: 'invalid_teacherid',
+        message: `Teacher ID / Coordinator code(s) "${invalidIds.join(', ')}" do not match any existing coordinator. Please correct it before uploading.`,
       });
       continue;
     }
@@ -194,7 +224,10 @@ export async function checkStudentsCsv(req, res) {
       if (existingUser.branch !== branch) changes.push('branch');
       if (existingUser.course !== course) changes.push('course');
       if (existingUser.college !== college) changes.push('college');
-      if (existingUser.teacherId !== teacherid) changes.push('teacherid');
+      // Compare teacherIds arrays
+      const existingTeacherIds = Array.isArray(existingUser.teacherIds) ? existingUser.teacherIds.sort().join(',') : '';
+      const newTeacherIds = teacherIdList.sort().join(',');
+      if (existingTeacherIds !== newTeacherIds) changes.push('teacherid');
       if (existingUser.semester !== semesterNum) changes.push('semester');
       if (existingUser.group !== row.group) changes.push('group');
       
@@ -290,11 +323,23 @@ export async function uploadStudentsCsv(req, res) {
   const invalidTeacherRows = normalizedRows.filter((row) => {
     const { teacherid, email, studentid, name } = row;
     if (!email && !studentid && !name) return false;
-    return !teacherid || !validCoordinatorIds.has(teacherid);
+    if (!teacherid) return true;
+    // Parse multiple IDs and check all are valid
+    const teacherIdList = parseTeacherIds(teacherid);
+    return teacherIdList.length === 0 || teacherIdList.some(id => !validCoordinatorIds.has(id));
   });
 
   if (invalidTeacherRows.length > 0) {
-    const invalidIds = Array.from(new Set(invalidTeacherRows.map((r) => r.teacherid).filter(Boolean)));
+    // Collect all invalid IDs from all rows
+    const allInvalidIds = new Set();
+    invalidTeacherRows.forEach(r => {
+      const ids = parseTeacherIds(r.teacherid);
+      ids.forEach(id => {
+        if (!validCoordinatorIds.has(id)) allInvalidIds.add(id);
+      });
+      if (ids.length === 0 && r.teacherid) allInvalidIds.add(r.teacherid);
+    });
+    const invalidIds = Array.from(allInvalidIds).filter(Boolean);
     return res.status(400).json({
       error: `One or more Teacher ID / Coordinator codes in the CSV do not match any existing coordinator: ${invalidIds.join(', ')}. Please correct them and try again.`,
     });
@@ -367,7 +412,7 @@ export async function uploadStudentsCsv(req, res) {
           branch,
           course,
           college,
-          teacherId: teacherid,
+          teacherIds: parseTeacherIds(teacherid),
           semester: semesterNum,
           group: row.group,
         };
@@ -407,7 +452,7 @@ export async function uploadStudentsCsv(req, res) {
       }
       const user = await User.create({
         role: 'student', course, name, email, studentId: studentid, passwordHash, branch, college,
-        teacherId: teacherid,
+        teacherIds: parseTeacherIds(teacherid),
         semester: semesterNum,
         group: row.group,
         mustChangePassword: true,
@@ -483,10 +528,18 @@ export async function createStudent(req, res) {
     
     if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
 
-    // Validate that the provided Teacher ID belongs to an existing coordinator
-    const coordinator = await User.findOne({ role: 'coordinator', coordinatorId: teacherid }).select('_id coordinatorId').lean();
-    if (!coordinator) {
-      return res.status(400).json({ error: `Teacher ID / Coordinator code "${teacherid}" does not match any existing coordinator. Please create the coordinator first or correct the Teacher ID.` });
+    // Parse and validate multiple coordinator IDs
+    const teacherIdList = parseTeacherIds(teacherid);
+    if (teacherIdList.length === 0) {
+      return res.status(400).json({ error: 'At least one Teacher ID / Coordinator code is required.' });
+    }
+    
+    // Validate ALL provided coordinator IDs exist
+    const coordinators = await User.find({ role: 'coordinator', coordinatorId: { $in: teacherIdList } }).select('coordinatorId').lean();
+    const validIds = new Set(coordinators.map(c => c.coordinatorId));
+    const invalidIds = teacherIdList.filter(id => !validIds.has(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ error: `Teacher ID / Coordinator code(s) "${invalidIds.join(', ')}" do not match any existing coordinator. Please create the coordinator first or correct the Teacher ID.` });
     }
 
     const exists = await User.findOne({ $or: [{ email }, { studentId: studentid }] });
@@ -495,7 +548,7 @@ export async function createStudent(req, res) {
     // Generate random password (7-8 characters)
     const generatedPassword = generateRandomPassword();
     const passwordHash = await User.hashPassword(generatedPassword);
-    const userData = { role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, teacherId: teacherid, semester: semesterNum, mustChangePassword: true };
+    const userData = { role: 'student', name, email, studentId: studentid, passwordHash, branch, course, college, teacherIds: teacherIdList, semester: semesterNum, mustChangePassword: true };
     
     // Add group if provided
     if (group) {
@@ -521,7 +574,7 @@ export async function createStudent(req, res) {
       targetType: 'STUDENT',
       targetId: user._id.toString(),
       description: `Created student: ${name} (${email})`,
-      metadata: { studentId: studentid, teacherId: teacherid },
+      metadata: { studentId: studentid, teacherIds: teacherIdList },
       req
     });
 
@@ -582,7 +635,7 @@ export async function listAllSpecialStudents(req, res) {
         path: 'specialEvents',
         select: 'name isSpecial coordinatorId createdAt'
       })
-      .select('name email studentId course branch college semester group specialEvents createdAt teacherId avatarUrl')
+      .select('name email studentId course branch college semester group specialEvents createdAt teacherIds avatarUrl')
       .sort({ createdAt: sort })
       .lean();
     // Fetch all coordinators once to avoid per-student queries
@@ -598,7 +651,9 @@ export async function listAllSpecialStudents(req, res) {
     );
 
     const studentsWithCoordinator = specialStudents.map(student => {
-      const teacherFromStudent = student.teacherId?.toString().trim() || null;
+      // Get first teacherId from array for backwards compatibility
+      const teacherIds = Array.isArray(student.teacherIds) ? student.teacherIds : [];
+      const teacherFromStudent = teacherIds.length > 0 ? teacherIds[0].toString().trim() : null;
       let coordinator = null;
 
       if (teacherFromStudent) {
@@ -645,8 +700,8 @@ export async function listAllSpecialStudents(req, res) {
       return {
         ...student,
         specialEvents: eventsWithCreator,
-        // Prefer teacherId stored on student (from CSV/admin), then event coordinator, then coordinator name
-        teacherId: teacherFromStudent || coordinator?.coordinatorId || coordinator?.name || '-',
+        // Map teacherIds array to comma-separated string for backwards compatibility
+        teacherId: teacherIds.length > 0 ? teacherIds.join(', ') : (coordinator?.coordinatorId || coordinator?.name || '-'),
         coordinatorEmail: coordinator?.email || '-',
       };
     });
@@ -688,16 +743,19 @@ export async function listSpecialStudentsByEvent(req, res) {
     }
     
     const specialStudents = await User.find({ isSpecialStudent: true, specialEvents: eventId })
-      .select('name email studentId course branch college semester group createdAt teacherId')
+      .select('name email studentId course branch college semester group createdAt teacherIds')
       .sort({ createdAt: -1 })
       .lean();
     
     // Add coordinator info to each student
-    const studentsWithCoordinator = specialStudents.map(student => ({
-      ...student,
-      teacherId: student.teacherId || coordinator?.coordinatorId || coordinator?.name || '-',
-      coordinatorEmail: coordinator?.email || '-'
-    }));
+    const studentsWithCoordinator = specialStudents.map(student => {
+      const teacherIds = Array.isArray(student.teacherIds) ? student.teacherIds : [];
+      return {
+        ...student,
+        teacherId: teacherIds.length > 0 ? teacherIds.join(', ') : (coordinator?.coordinatorId || coordinator?.name || '-'),
+        coordinatorEmail: coordinator?.email || '-'
+      };
+    });
     
     res.json({ count: studentsWithCoordinator.length, students: studentsWithCoordinator });
   } catch (err) {
@@ -757,7 +815,21 @@ export async function updateStudent(req, res) {
     if (college) student.college = college;
     if (semester) student.semester = semester;
     if (group !== undefined) student.group = group;
-    if (teacherId !== undefined) student.teacherId = teacherId;
+    
+    // Handle teacherId - can be comma-separated string or array
+    if (teacherId !== undefined) {
+      const teacherIdList = parseTeacherIds(teacherId);
+      // Validate all coordinator IDs if provided
+      if (teacherIdList.length > 0) {
+        const coordinators = await User.find({ role: 'coordinator', coordinatorId: { $in: teacherIdList } }).select('coordinatorId').lean();
+        const validIds = new Set(coordinators.map(c => c.coordinatorId));
+        const invalidIds = teacherIdList.filter(id => !validIds.has(id));
+        if (invalidIds.length > 0) {
+          return res.status(400).json({ error: `Coordinator ID(s) "${invalidIds.join(', ')}" do not exist.` });
+        }
+      }
+      student.teacherIds = teacherIdList;
+    }
     
     await student.save();
     
@@ -775,7 +847,7 @@ export async function updateStudent(req, res) {
         college: student.college,
         semester: student.semester,
         group: student.group,
-        teacherId: student.teacherId
+        teacherId: Array.isArray(student.teacherIds) ? student.teacherIds.join(', ') : ''
       }
     });
   } catch (err) {

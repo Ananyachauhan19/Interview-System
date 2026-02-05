@@ -909,13 +909,15 @@ export default function StudentDirectory() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Coordinator ID</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Coordinator ID(s)</label>
                       <input
                         type="text"
                         value={editForm.teacherId}
                         onChange={(e) => setEditForm({ ...editForm, teacherId: e.target.value })}
+                        placeholder="COO1 or COO1,COO2"
                         className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent"
                       />
+                      <span className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Comma-separated for multiple coordinators</span>
                     </div>
                   </div>
 

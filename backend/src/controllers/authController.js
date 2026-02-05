@@ -134,7 +134,8 @@ export function me(req, res) {
     response.course = u.course;
     response.branch = u.branch;
     response.college = u.college;
-    response.teacherId = u.teacherId;
+    // Map teacherIds array to comma-separated string for backwards compatibility
+    response.teacherId = Array.isArray(u.teacherIds) ? u.teacherIds.join(', ') : '';
     response.semester = u.semester;
   } else if (u.role === 'coordinator') {
     response.teacherId = u.coordinatorId; // Coordinators use coordinatorId as their teacherId
