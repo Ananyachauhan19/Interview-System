@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, Loader2, X, Trash2, Edit2, Save } from "lucide-react";
+import { Search, Users, Loader2, X, Trash2, Edit2, Save, Download } from "lucide-react";
 import Fuse from "fuse.js";
 import ContributionCalendar from "../components/ContributionCalendar";
 import { useToast } from "../components/CustomToast";
@@ -30,6 +30,7 @@ export default function StudentDirectory() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
+  const [isExporting, setIsExporting] = useState(false);
 
   // Configure Fuse.js for optimized fuzzy search
   const currentStudents = activeTab === "students" ? students : specialStudents;
@@ -246,6 +247,18 @@ export default function StudentDirectory() {
     setEditForm({});
   };
 
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    try {
+      await api.exportStudentsCsv();
+      toast.success('Students exported successfully!');
+    } catch (err) {
+      toast.error(err.message || 'Failed to export students');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col pt-16">
       <motion.div
@@ -302,6 +315,20 @@ export default function StudentDirectory() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Export CSV Button */}
+              <button
+                onClick={handleExportCsv}
+                disabled={isExporting}
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 rounded-lg transition-colors"
+              >
+                {isExporting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                {isExporting ? 'Exporting...' : 'Export CSV'}
+              </button>
+
               {/* Sort Order Dropdown */}
               <div className="flex flex-col">
                 <select

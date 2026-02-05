@@ -78,6 +78,52 @@ export async function listAllStudents(req, res) {
   }
 }
 
+// Export all students as CSV (same format as upload template)
+export async function exportStudentsCsv(req, res) {
+  try {
+    const user = req.user;
+    const baseQuery = user.role === 'coordinator'
+      ? { role: 'student', teacherIds: user.coordinatorId }
+      : { role: 'student' };
+    
+    const students = await User.find(baseQuery)
+      .select('name email studentId course branch college semester group teacherIds')
+      .sort({ createdAt: 1 }) // Oldest first (Excel order)
+      .lean();
+    
+    // Build CSV with same columns as upload template
+    const header = 'Name,Email,Studentid,Branch,TeacherId,Semester,Course,College,Group';
+    const rows = students.map(s => {
+      const teacherId = Array.isArray(s.teacherIds) ? s.teacherIds.join(',') : '';
+      // Escape fields that might contain commas
+      const escape = (val) => {
+        const str = (val ?? '').toString();
+        return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
+      };
+      return [
+        escape(s.name),
+        escape(s.email),
+        escape(s.studentId),
+        escape(s.branch),
+        escape(teacherId),
+        s.semester || '',
+        escape(s.course),
+        escape(s.college),
+        escape(s.group)
+      ].join(',');
+    });
+    
+    const csv = header + '\n' + rows.join('\n');
+    
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="students-export.csv"');
+    res.send(csv);
+  } catch (err) {
+    console.error('Error exporting students:', err);
+    res.status(500).json({ error: 'Failed to export students' });
+  }
+}
+
 export async function checkStudentsCsv(req, res) {
   if (!req.file) return res.status(400).json({ error: 'CSV file required' });
   

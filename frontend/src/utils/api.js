@@ -119,6 +119,21 @@ export const api = {
   createStudent: (body) => request('/students/create', { method: 'POST', body }),
   updateStudent: (studentId, body) => request(`/students/${studentId}`, { method: 'PUT', body }),
   deleteStudent: (studentId) => request(`/students/${studentId}`, { method: 'DELETE' }),
+  exportStudentsCsv: async () => {
+    // Direct download - fetch the CSV and trigger download
+    const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000/api';
+    const res = await fetch(`${API_BASE}/students/export`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to export students');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'students-export.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
 
   // Coordinators
   listAllCoordinators: (search = '') => request(`/coordinators/list${search ? '?search=' + encodeURIComponent(search) : ''}`),

@@ -818,8 +818,12 @@ export async function createSpecialEvent(req, res) {
         if (!user.specialEvents.some(eId => eId.toString() === eventIdStr)) {
           user.specialEvents.push(event._id);
         }
-        if (effectiveTeacherId && (!user.teacherId || String(user.teacherId) !== String(effectiveTeacherId))) {
-          user.teacherId = effectiveTeacherId;
+        // Add coordinator to teacherIds array if not already present
+        if (effectiveTeacherId) {
+          if (!Array.isArray(user.teacherIds)) user.teacherIds = [];
+          if (!user.teacherIds.includes(effectiveTeacherId)) {
+            user.teacherIds.push(effectiveTeacherId);
+          }
         }
 
         // Update group from CSV if provided
@@ -874,7 +878,7 @@ export async function createSpecialEvent(req, res) {
         college: college || undefined,
         semester: semester || undefined,
         group: group || undefined,
-        teacherId: effectiveTeacherId || undefined,
+        teacherIds: effectiveTeacherId ? [effectiveTeacherId] : [],
         passwordHash,
         mustChangePassword: true,
         isSpecialStudent: true,
