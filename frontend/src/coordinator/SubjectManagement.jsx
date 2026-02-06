@@ -201,7 +201,7 @@ export default function SubjectManagement() {
     return (
       <motion.div
         layout
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-slate-200 dark:border-gray-700 overflow-hidden">
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-slate-200 dark:border-gray-700 overflow-hidden"
       >
         {/* Subject Header */}
         <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-b border-slate-200 dark:border-gray-700">
@@ -225,15 +225,15 @@ export default function SubjectManagement() {
               />
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleUpdateSubject(subject._id)}
-                  className="px-4 py-2 bg-emerald-600 dark:bg-emerald-700 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-800 transition-colors flex items-center gap-2">
+                  onClick={() => handleUpdateSubject(subject)}
+                  className="px-4 py-2 bg-emerald-600 dark:bg-emerald-700 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-800 transition-colors flex items-center gap-2"
                 >
                   <Save className="w-4 h-4" />
                   Save
                 </button>
                 <button
                   onClick={() => setEditingSubject(null)}
-                  className="px-4 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors">
+                  className="px-4 py-2 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded-lg hover:bg-slate-400 dark:hover:bg-gray-500 transition-colors"
                 >
                   Cancel
                 </button>
@@ -260,13 +260,13 @@ export default function SubjectManagement() {
                   subjectName: subject.subjectName,
                   subjectDescription: subject.subjectDescription || ''
                 })}
-                className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
+                className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
               >
                 <Edit2 className="w-5 h-5 text-blue-600" />
               </button>
               <button
                 onClick={() => handleDeleteSubject(subject._id)}
-                className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors">
+                className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
               >
                 <Trash2 className="w-5 h-5 text-red-600" />
               </button>
@@ -453,13 +453,13 @@ export default function SubjectManagement() {
                       </div>
                       <button
                         onClick={() => handleUpdateChapter(chapter._id)}
-                        className="p-1.5 bg-emerald-600 dark:bg-emerald-700 text-white rounded hover:bg-emerald-700 dark:hover:bg-emerald-800">
+                        className="p-1.5 bg-emerald-600 dark:bg-emerald-700 text-white rounded hover:bg-emerald-700 dark:hover:bg-emerald-800"
                       >
                         <Save className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setEditingChapter(null)}
-                        className="p-1.5 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded hover:bg-slate-400 dark:hover:bg-gray-500">
+                        className="p-1.5 bg-slate-300 dark:bg-gray-600 text-slate-700 dark:text-gray-200 rounded hover:bg-slate-400 dark:hover:bg-gray-500"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -484,13 +484,13 @@ export default function SubjectManagement() {
                       </button>
                       <button
                         onClick={() => setEditingChapter({ _id: chapter._id, chapterName: chapter.chapterName, importanceLevel: chapter.importanceLevel })}
-                        className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors">
+                        className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
                       >
                         <Edit2 className="w-4 h-4 text-blue-600" />
                       </button>
                       <button
                         onClick={() => handleDeleteChapter(chapter._id)}
-                        className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors">
+                        className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
                       >
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
@@ -504,7 +504,7 @@ export default function SubjectManagement() {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      className="p-3 bg-white dark:bg-gray-800">
+                      className="p-3 bg-white dark:bg-gray-800"
                     >
                       <TopicsList subject={subject} chapter={chapter} />
                     </motion.div>
@@ -590,7 +590,7 @@ export default function SubjectManagement() {
       problemLink: '',
       importanceLevel: 3,
       topicVideoLink: '',
-      notesLink: '',
+      notesPDF: null,
       difficultyLevel: 'medium',
       questionPDF: null
     });
@@ -651,10 +651,10 @@ export default function SubjectManagement() {
         formData.append('importanceLevel', newTopic.importanceLevel || 3);
         formData.append('difficultyLevel', newTopic.difficultyLevel);
         if (newTopic.topicVideoLink) formData.append('topicVideoLink', newTopic.topicVideoLink);
-        if (newTopic.notesLink) formData.append('notesLink', newTopic.notesLink);
+        if (newTopic.notesPDF) formData.append('notesPDF', newTopic.notesPDF);
         if (newTopic.questionPDF) formData.append('questionPDF', newTopic.questionPDF);
 
-        await api.addTopic(subject._id, chapter._id, formData);
+        await api.addTopic(subject.semesterId, subject._id, chapter._id, formData);
         toast.success('Topic added');
         
         // Log activity
@@ -672,7 +672,7 @@ export default function SubjectManagement() {
           problemLink: '',
           importanceLevel: 3,
           topicVideoLink: '',
-          notesLink: '',
+          notesPDF: null,
           difficultyLevel: 'medium',
           questionPDF: null
         });
@@ -701,10 +701,10 @@ export default function SubjectManagement() {
         formData.append('importanceLevel', editingTopic.importanceLevel || 3);
         formData.append('difficultyLevel', editingTopic.difficultyLevel);
         if (editingTopic.topicVideoLink) formData.append('topicVideoLink', editingTopic.topicVideoLink);
-        if (editingTopic.notesLink) formData.append('notesLink', editingTopic.notesLink);
+        if (editingTopic.notesPDF) formData.append('notesPDF', editingTopic.notesPDF);
         if (editingTopic.questionPDF) formData.append('questionPDF', editingTopic.questionPDF);
 
-        await api.updateTopic(subject._id, chapter._id, topicId, formData);
+        await api.updateTopic(subject.semesterId, subject._id, chapter._id, topicId, formData);
         toast.success('Topic updated');
         setEditingTopic(null);
         loadSubjects();
@@ -717,7 +717,7 @@ export default function SubjectManagement() {
     const handleDeleteTopic = async (topicId) => {
       if (!confirm('Delete this topic?')) return;
       try {
-        await api.deleteTopic(subject._id, chapter._id, topicId);
+        await api.deleteTopic(subject.semesterId, subject._id, chapter._id, topicId);
         toast.success('Topic deleted');
         loadSubjects();
       } catch (err) {
@@ -730,7 +730,7 @@ export default function SubjectManagement() {
       setTopics(newOrder);
       try {
         const topicIds = newOrder.map(t => t._id);
-        await api.reorderTopics(subject._id, chapter._id, topicIds);
+        await api.reorderTopics(subject.semesterId, subject._id, chapter._id, topicIds);
       } catch (err) {
         console.error('Failed to reorder topics:', err);
         toast.error('Failed to save topic order');
@@ -813,14 +813,25 @@ export default function SubjectManagement() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Notes Link (Optional)</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Notes PDF (Optional)</label>
                   <input
-                    type="url"
-                    placeholder="https://example.com/notes"
-                    value={editingTopic.notesLink || ''}
-                    onChange={(e) => setEditingTopic({ ...editingTopic, notesLink: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const maxSize = 1 * 1024 * 1024; // 1MB in bytes
+                        if (file.size > maxSize) {
+                          toast.error('File size must be less than 1MB');
+                          e.target.value = '';
+                          return;
+                        }
+                      }
+                      setEditingTopic({ ...editingTopic, notesPDF: file });
+                    }}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
                   />
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Maximum file size: 1MB</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Question PDF (Optional)</label>
@@ -994,7 +1005,7 @@ export default function SubjectManagement() {
                             problemLink: topic.problemLink || '',
                             importanceLevel: topic.importanceLevel || 3,
                             topicVideoLink: topic.topicVideoLink || '',
-                            notesLink: topic.notesLink || '',
+                            notesPDF: null,
                             difficultyLevel: topic.difficultyLevel,
                             questionPDF: null
                           })}
@@ -1090,14 +1101,25 @@ export default function SubjectManagement() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Notes Link (Optional)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Notes PDF (Optional)</label>
               <input
-                type="url"
-                placeholder="https://example.com/notes"
-                value={newTopic.notesLink}
-                onChange={(e) => setNewTopic({ ...newTopic, notesLink: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const maxSize = 1 * 1024 * 1024; // 1MB in bytes
+                    if (file.size > maxSize) {
+                      toast.error('File size must be less than 1MB');
+                      e.target.value = '';
+                      return;
+                    }
+                  }
+                  setNewTopic({ ...newTopic, notesPDF: file });
+                }}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 rounded-lg text-sm"
               />
+              <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Maximum file size: 1MB</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Question PDF (Optional)</label>
@@ -1187,7 +1209,7 @@ export default function SubjectManagement() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-emerald-200 dark:border-emerald-800 p-6 mb-6">
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-emerald-200 dark:border-emerald-800 p-6 mb-6"
           >
             <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100 mb-4">New Subject</h2>
             <input

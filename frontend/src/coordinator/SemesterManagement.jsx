@@ -1203,7 +1203,6 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
                           semesters={semesters}
                           setSemesters={setSemesters}
                           isLastRow={idx === chapter.topics.length - 1}
-                          chapterImportanceLevel={chapter.importanceLevel}
                         />
                       ))}
                     </tbody>
@@ -1225,13 +1224,14 @@ function ChapterCard({ chapter, semesterId, subjectId, isExpanded, onToggle, onD
   );
 }
 
-function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSemesters, isLastRow, chapterImportanceLevel }) {
+function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSemesters, isLastRow }) {
   const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ 
     topicName: topic.topicName, 
     difficulty: topic.difficultyLevel || topic.difficulty, 
     problemLink: topic.problemLink || '',
+    importanceLevel: topic.importanceLevel || 3,
     videoLink: topic.topicVideoLink || '',
     notesPDF: null,
     questionPDF: null
@@ -1255,6 +1255,7 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
       const formData = new FormData();
       formData.append('topicName', editData.topicName);
       formData.append('difficulty', editData.difficulty);
+      formData.append('importanceLevel', editData.importanceLevel || 3);
       if (editData.problemLink) formData.append('problemLink', editData.problemLink);
       if (editData.videoLink) formData.append('topicVideoLink', editData.videoLink);
       if (editData.notesPDF) formData.append('notesPDF', editData.notesPDF);
@@ -1295,19 +1296,42 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
                 className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Difficulty Level</label>
-              <select
-                value={editData.difficulty}
-                onChange={(e) => setEditData({ ...editData, difficulty: e.target.value })}
-                className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-              >
-                <option value="easy">Easy</option>
-                <option value="easy-medium">Easy-Medium</option>
-                <option value="medium">Medium</option>
-                <option value="medium-hard">Medium-Hard</option>
-                <option value="hard">Hard</option>
-              </select>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Importance (1-5 stars)</label>
+                <div className="flex items-center gap-1 mt-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setEditData({ ...editData, importanceLevel: star })}
+                      className="p-0.5 hover:scale-110 transition-transform"
+                    >
+                      <Star
+                        className={`w-5 h-5 ${
+                          star <= (editData.importanceLevel || 3)
+                            ? 'text-yellow-500 fill-yellow-500'
+                            : 'text-slate-300 dark:text-gray-600'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Difficulty Level</label>
+                <select
+                  value={editData.difficulty}
+                  onChange={(e) => setEditData({ ...editData, difficulty: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded text-xs text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="easy-medium">Easy-Medium</option>
+                  <option value="medium">Medium</option>
+                  <option value="medium-hard">Medium-Hard</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-0.5">Video Link (Optional)</label>
@@ -1391,7 +1415,7 @@ function TopicCard({ topic, semesterId, subjectId, chapterId, onDelete, loadSeme
             <Star
               key={i}
               className={`w-3.5 h-3.5 ${
-                i < (chapterImportanceLevel || 3)
+                i < (topic.importanceLevel || 3)
                   ? 'text-yellow-500 fill-yellow-500'
                   : 'text-slate-300 dark:text-gray-600'
               }`}

@@ -543,7 +543,7 @@ export default function AdminLearningDetail() {
                                             <Star
                                               key={i}
                                               className={`w-3.5 h-3.5 ${
-                                                i < (chapter.importanceLevel || 3)
+                                                i < (topic.importanceLevel || 3)
                                                   ? 'text-yellow-500 fill-yellow-500'
                                                   : 'text-slate-300 dark:text-gray-600'
                                               }`}

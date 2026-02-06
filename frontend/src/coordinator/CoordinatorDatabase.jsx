@@ -471,7 +471,6 @@ function ChapterCard({ chapter, isExpanded, onToggle }) {
                           key={topic._id || idx}
                           topic={topic}
                           isLastRow={idx === chapter.topics.length - 1}
-                          chapterImportanceLevel={chapter.importanceLevel}
                         />
                       ))}
                     </tbody>
@@ -491,7 +490,7 @@ function ChapterCard({ chapter, isExpanded, onToggle }) {
   );
 }
 
-function TopicRow({ topic, isLastRow, chapterImportanceLevel }) {
+function TopicRow({ topic, isLastRow }) {
   const getDifficultyBadge = (difficulty) => {
     const colors = difficultyColors[difficulty] || difficultyColors['medium'];
     return (
@@ -534,7 +533,7 @@ function TopicRow({ topic, isLastRow, chapterImportanceLevel }) {
             <Star
               key={i}
               className={`w-3.5 h-3.5 ${
-                i < (chapterImportanceLevel || 3)
+                i < (topic.importanceLevel || 3)
                   ? 'text-yellow-500 fill-yellow-500'
                   : 'text-slate-300 dark:text-gray-600'
               }`}
