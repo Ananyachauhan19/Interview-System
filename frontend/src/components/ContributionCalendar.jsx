@@ -107,14 +107,6 @@ export default function ContributionCalendar({
               {stats.totalVideosWatched || 0} / {stats.totalVideosTotal || 0}
             </div>
           </div>
-          
-          {/* Problems Solved */}
-          <div className="bg-cyan-50 dark:bg-cyan-900/30 p-3 rounded-lg border border-cyan-100 dark:border-cyan-800">
-            <div className="text-xs text-slate-600 dark:text-gray-400 mb-1">Problems Solved</div>
-            <div className="text-lg font-bold text-cyan-700 dark:text-cyan-400">
-              {stats.totalProblemsSolved || 0}
-            </div>
-          </div>
         </div>
       )}
       

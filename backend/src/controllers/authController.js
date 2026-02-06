@@ -239,15 +239,7 @@ export async function updateMyAvatar(req, res) {
       req
     });
     
-    // Log student activity for profile update (always using User model)
-    if (u.role === 'student') {
-      await logStudentActivity({
-        studentId: u._id,
-        studentModel: 'User',
-        activityType: 'PROFILE_UPDATED',
-        metadata: { action: 'avatar_updated', isSpecialStudent: Boolean(u.isSpecialStudent) }
-      });
-    }
+    // Removed PROFILE_UPDATED activity logging - not essential
     
     res.json({ message: 'Avatar updated', avatarUrl });
   } catch (e) {

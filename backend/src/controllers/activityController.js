@@ -320,11 +320,7 @@ export async function getStudentActivity(req, res) {
     ]);
     const videoWatchCount = videosWatchedAgg[0]?.totalVideos || 0;
 
-    // 5. Get total problems solved (all time)
-    const problemsSolvedCount = await StudentActivity.countDocuments({
-      studentId: user._id,
-      activityType: 'PROBLEM_SOLVED'
-    });
+    // 5. Removed PROBLEM_SOLVED count - not tracking this anymore
 
     // 6. Use learning scope helper for total subjects and total videos in curriculum
     const totalSubjects = totalCourses;
@@ -341,7 +337,6 @@ export async function getStudentActivity(req, res) {
         totalSubjects,
         totalVideosWatched: videoWatchCount,
         totalVideosTotal,
-        totalProblemsSolved: problemsSolvedCount,
         totalActivities: Object.values(activityMap).reduce((sum, val) => sum + val, 0)
       }
     });
@@ -537,11 +532,7 @@ export async function getStudentActivityByAdmin(req, res) {
     ]);
     const videoWatchCount = videosWatchedAgg[0]?.totalVideos || 0;
 
-    // 5. Get total problems solved (all time)
-    const problemsSolvedCount = await StudentActivity.countDocuments({
-      studentId: student._id,
-      activityType: 'PROBLEM_SOLVED'
-    });
+    // 5. Removed PROBLEM_SOLVED count - not tracking this anymore
 
     // 6. Use learning scope helper for total subjects and total videos in curriculum
     const totalSubjects = totalCourses;
@@ -558,7 +549,6 @@ export async function getStudentActivityByAdmin(req, res) {
         totalSubjects,
         totalVideosWatched: videoWatchCount,
         totalVideosTotal,
-        totalProblemsSolved: problemsSolvedCount,
         totalSessions: scheduledSessions.reduce((sum, item) => sum + item.count, 0),
         totalCompletions: completedTopics.reduce((sum, item) => sum + item.count, 0),
         totalActivities: Object.values(activityMap).reduce((sum, val) => sum + val, 0)

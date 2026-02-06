@@ -229,21 +229,8 @@ export const getSubjectDetails = async (req, res) => {
       coordinatorId: response.coordinatorId
     });
 
-    // Log subject access activity
-    if (req.user && req.user.role === 'student') {
-      await logStudentActivity({
-        studentId: req.user._id,
-        studentModel: 'User',
-        activityType: 'SUBJECT_ACCESSED',
-        metadata: {
-          semesterId: semester._id,
-          subjectId: subject._id,
-          subjectName: subject.subjectName,
-          semesterName: semester.semesterName
-        }
-      });
-    }
-
+    // Removed SUBJECT_ACCESSED activity logging - not essential
+    
     res.json(response);
   } catch (error) {
     console.error('Error fetching subject details:', error);
@@ -350,20 +337,7 @@ export const updateTopicProgress = async (req, res) => {
           totalWatchedSeconds: videoWatchedSeconds
         }
       });
-
-      // Also log as problem solved
-      await logStudentActivity({
-        studentId,
-        studentModel: 'User',
-        activityType: 'PROBLEM_SOLVED',
-        metadata: {
-          topicId,
-          subjectId,
-          chapterId,
-          semesterId,
-          coordinatorId
-        }
-      });
+      // Removed PROBLEM_SOLVED activity logging - not essential
     }
 
     res.json({
@@ -520,25 +494,9 @@ export const startVideoTracking = async (req, res) => {
     // Find or create progress record
     let progress = await Progress.findOne({ studentId, topicId });
 
-    // Check if this is first time accessing this subject (course enrollment)
+    // Removed COURSE_ENROLLED activity logging - not essential
     const isNewProgress = !progress;
     if (isNewProgress) {
-      const existingProgressInSubject = await Progress.findOne({ studentId, subjectId });
-      
-      // Log course enrollment if this is the first topic in this subject
-      if (!existingProgressInSubject) {
-        await logStudentActivity({
-          studentId,
-          studentModel: 'User',
-          activityType: 'COURSE_ENROLLED',
-          metadata: {
-            semesterId,
-            subjectId,
-            coordinatorId
-          }
-        });
-      }
-
       progress = new Progress({
         studentId,
         semesterId,
@@ -556,33 +514,7 @@ export const startVideoTracking = async (req, res) => {
     progress.lastAccessedAt = new Date();
     await progress.save();
 
-    // Log video started activity
-    await logStudentActivity({
-      studentId,
-      studentModel: 'User',
-      activityType: 'VIDEO_STARTED',
-      metadata: {
-        topicId,
-        subjectId,
-        chapterId,
-        semesterId,
-        coordinatorId
-      }
-    });
-
-    // Log topic viewed activity
-    await logStudentActivity({
-      studentId,
-      studentModel: 'User',
-      activityType: 'TOPIC_VIEWED',
-      metadata: {
-        topicId,
-        subjectId,
-        chapterId,
-        semesterId,
-        coordinatorId
-      }
-    });
+    // Removed VIDEO_STARTED and TOPIC_VIEWED activity logging - not essential
 
     // Set video watched to 180 seconds and mark as completed immediately
     // This ensures progress is saved even if the server restarts
@@ -622,19 +554,7 @@ export const startVideoTracking = async (req, res) => {
           totalWatchedSeconds: 180
         }
       });
-
-      await logStudentActivity({
-        studentId,
-        studentModel: 'User',
-        activityType: 'PROBLEM_SOLVED',
-        metadata: {
-          topicId,
-          subjectId,
-          chapterId,
-          semesterId,
-          coordinatorId
-        }
-      });
+      // Removed PROBLEM_SOLVED activity logging - not essential
     }
 
     res.json({
@@ -706,18 +626,7 @@ export const markTopicComplete = async (req, res) => {
 
     // Log completion activities if this is the first completion
     if (!wasCompleted) {
-      await logStudentActivity({
-        studentId,
-        studentModel: 'User',
-        activityType: 'TOPIC_VIEWED',
-        metadata: {
-          topicId,
-          subjectId,
-          chapterId,
-          semesterId,
-          coordinatorId
-        }
-      });
+      // Removed TOPIC_VIEWED activity logging - not essential
 
       await logStudentActivity({
         studentId,
@@ -732,19 +641,7 @@ export const markTopicComplete = async (req, res) => {
           totalWatchedSeconds: 180
         }
       });
-
-      await logStudentActivity({
-        studentId,
-        studentModel: 'User',
-        activityType: 'PROBLEM_SOLVED',
-        metadata: {
-          topicId,
-          subjectId,
-          chapterId,
-          semesterId,
-          coordinatorId
-        }
-      });
+      // Removed PROBLEM_SOLVED activity logging - not essential
     }
 
     res.json({
