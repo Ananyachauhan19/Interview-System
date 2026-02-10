@@ -10,6 +10,50 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000/api';
  * during transition period. Remove localStorage token on logout.
  */
 
+// Simple in-memory cache for GET requests (5 minute TTL)
+const apiCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(path, method) {
+  return `${method}:${path}`;
+}
+
+function getFromCache(key) {
+  const cached = apiCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  apiCache.delete(key);
+  return null;
+}
+
+function setCache(key, data) {
+  apiCache.set(key, { data, timestamp: Date.now() });
+  
+  // Clean old cache entries (keep cache size manageable)
+  if (apiCache.size > 50) {
+    const entries = Array.from(apiCache.entries());
+    const sortedByAge = entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    // Remove oldest 10 entries
+    sortedByAge.slice(0, 10).forEach(([key]) => apiCache.delete(key));
+  }
+}
+
+// Clear cache (useful after mutations)
+export function clearApiCache(pathPattern) {
+  if (pathPattern) {
+    // Clear specific pattern
+    for (const key of apiCache.keys()) {
+      if (key.includes(pathPattern)) {
+        apiCache.delete(key);
+      }
+    }
+  } else {
+    // Clear all
+    apiCache.clear();
+  }
+}
+
 // Clear legacy localStorage token if it exists
 export function clearLegacyToken() {
   localStorage.removeItem('token');
@@ -25,7 +69,16 @@ export function setToken(t) {
   clearLegacyToken();
 }
 
-async function request(path, { method = 'GET', body, headers = {}, formData } = {}) {
+async function request(path, { method = 'GET', body, headers = {}, formData, skipCache = false } = {}) {
+  // Check cache for GET requests
+  const cacheKey = getCacheKey(path, method);
+  if (method === 'GET' && !skipCache) {
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+  
   const opts = { 
     method, 
     headers: { ...headers },
@@ -61,7 +114,19 @@ async function request(path, { method = 'GET', body, headers = {}, formData } = 
       throw err;
     }
     const ct = res.headers.get('content-type') || '';
-    return ct.includes('application/json') ? res.json() : res.text();
+    const result = ct.includes('application/json') ? await res.json() : await res.text();
+    
+    // Cache GET requests
+    if (method === 'GET' && !skipCache) {
+      setCache(cacheKey, result);
+    }
+    
+    // Clear relevant cache on mutations
+    if (method !== 'GET') {
+      clearApiCache(path.split('/')[1]); // Clear cache for the resource type
+    }
+    
+    return result;
   } catch (err) {
     throw err;
   }

@@ -1,47 +1,67 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
-import StudentLogin from "./auth/StudentLogin";
-import ResetPassword from "./auth/ResetPassword";
-import LandingPage from "./pages/LandingPage";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsAndConditions from "./pages/TermsAndConditions";
-import ContactUs from "./pages/ContactUs";
-import StudentDashboard from "./student/StudentDashboard";
-import ChangePassword from "./student/ChangePassword";
-import SessionAndFeedback from "./student/SessionAndFeedback";
-import FeedbackForm from "./student/FeedbackForm";
-import StudentLearning from "./student/StudentLearning";
-import LearningDetail from "./student/LearningDetail";
-import StudentProfile from "./student/StudentProfile";
-import HelpAndSupport from "./student/HelpAndSupport";
-import StudentProtectedRoute from "./student/StudentProtectedRoute";
-import AdminDashboard from "./admin/AdminDashboard";
-import AdminLearning from "./admin/AdminLearning";
-import AdminLearningDetail from "./admin/AdminLearningDetail";
-import StudentOnboarding from "./admin/StudentOnboarding";
-import StudentDirectory from "./admin/StudentDirectory";
-import EventManagement from "./admin/EventManagement";
-import EventDetail from "./admin/EventDetail";
-import FeedbackReview from "./admin/FeedbackReview";
-import CoordinatorOnboarding from "./admin/CoordinatorOnboarding";
-import CoordinatorDirectory from "./admin/CoordinatorDirectory";
-import AdminChangePassword from "./admin/AdminChangePassword";
-import AdminActivity from "./admin/AdminActivity";
-import AdminProtectedRoute from "./admin/AdminProtectedRoute";
-import CoordinatorDashboard from "./coordinator/CoordinatorDashboard";
-import CoordinatorStudents from "./coordinator/CoordinatorStudents";
-import CoordinatorChangePassword from "./coordinator/CoordinatorChangePassword";
-import CoordinatorEventDetail from "./coordinator/CoordinatorEventDetail";
-import CoordinatorProfile from "./coordinator/CoordinatorProfile";
-import SemesterManagement from "./coordinator/SemesterManagement";
-import CoordinatorFeedback from "./coordinator/CoordinatorFeedback";
-import CoordinatorActivity from "./coordinator/CoordinatorActivity";
-import CoordinatorDatabase from "./coordinator/CoordinatorDatabase";
-import CoordinatorProtectedRoute from "./coordinator/CoordinatorProtectedRoute";
-import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
-import { CoordinatorNavbar } from "./coordinator/CoordinatorNavbar";
+import { lazy, Suspense } from "react";
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/CustomToast';
 import SessionMonitor from './components/SessionMonitor';
+import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
+import { CoordinatorNavbar } from "./coordinator/CoordinatorNavbar";
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 dark:border-blue-400 mx-auto"></div>
+      <p className="mt-4 text-slate-600 dark:text-gray-300 font-medium">Loading...</p>
+    </div>
+  </div>
+);
+
+// Lazy load all route components for code splitting
+// Auth & Public Pages
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const StudentLogin = lazy(() => import("./auth/StudentLogin"));
+const ResetPassword = lazy(() => import("./auth/ResetPassword"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
+const ContactUs = lazy(() => import("./pages/ContactUs"));
+
+// Student Pages
+const StudentProtectedRoute = lazy(() => import("./student/StudentProtectedRoute"));
+const StudentDashboard = lazy(() => import("./student/StudentDashboard"));
+const ChangePassword = lazy(() => import("./student/ChangePassword"));
+const SessionAndFeedback = lazy(() => import("./student/SessionAndFeedback"));
+const FeedbackForm = lazy(() => import("./student/FeedbackForm"));
+const StudentLearning = lazy(() => import("./student/StudentLearning"));
+const LearningDetail = lazy(() => import("./student/LearningDetail"));
+const StudentProfile = lazy(() => import("./student/StudentProfile"));
+const HelpAndSupport = lazy(() => import("./student/HelpAndSupport"));
+
+// Admin Pages
+const AdminProtectedRoute = lazy(() => import("./admin/AdminProtectedRoute"));
+const AdminDashboard = lazy(() => import("./admin/AdminDashboard"));
+const AdminLearning = lazy(() => import("./admin/AdminLearning"));
+const AdminLearningDetail = lazy(() => import("./admin/AdminLearningDetail"));
+const StudentOnboarding = lazy(() => import("./admin/StudentOnboarding"));
+const StudentDirectory = lazy(() => import("./admin/StudentDirectory"));
+const EventManagement = lazy(() => import("./admin/EventManagement"));
+const EventDetail = lazy(() => import("./admin/EventDetail"));
+const FeedbackReview = lazy(() => import("./admin/FeedbackReview"));
+const CoordinatorOnboarding = lazy(() => import("./admin/CoordinatorOnboarding"));
+const CoordinatorDirectory = lazy(() => import("./admin/CoordinatorDirectory"));
+const AdminChangePassword = lazy(() => import("./admin/AdminChangePassword"));
+const AdminActivity = lazy(() => import("./admin/AdminActivity"));
+
+// Coordinator Pages
+const CoordinatorProtectedRoute = lazy(() => import("./coordinator/CoordinatorProtectedRoute"));
+const CoordinatorDashboard = lazy(() => import("./coordinator/CoordinatorDashboard"));
+const CoordinatorStudents = lazy(() => import("./coordinator/CoordinatorStudents"));
+const CoordinatorChangePassword = lazy(() => import("./coordinator/CoordinatorChangePassword"));
+const CoordinatorEventDetail = lazy(() => import("./coordinator/CoordinatorEventDetail"));
+const CoordinatorProfile = lazy(() => import("./coordinator/CoordinatorProfile"));
+const SemesterManagement = lazy(() => import("./coordinator/SemesterManagement"));
+const CoordinatorFeedback = lazy(() => import("./coordinator/CoordinatorFeedback"));
+const CoordinatorActivity = lazy(() => import("./coordinator/CoordinatorActivity"));
+const CoordinatorDatabase = lazy(() => import("./coordinator/CoordinatorDatabase"));
 
 const gradientBg = "bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100";
 
@@ -69,13 +89,14 @@ function AppContent() {
       )}
      
       <main className={gradientBg + " dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex-grow"}>
-        <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/student" element={<StudentLogin />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsAndConditions />} />
-        <Route path="/contact" element={<ContactUs />} />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/student" element={<StudentLogin />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/contact" element={<ContactUs />} />
         
         {/* Student Routes - Protected */}
         <Route path="/student/change-password" element={<StudentProtectedRoute><ChangePassword /></StudentProtectedRoute>} />
@@ -112,7 +133,8 @@ function AppContent() {
         <Route path="/coordinator/profile" element={<CoordinatorProtectedRoute><CoordinatorProfile /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/change-password" element={<CoordinatorProtectedRoute><CoordinatorChangePassword /></CoordinatorProtectedRoute>} />
         <Route path="/coordinator/activity" element={<CoordinatorProtectedRoute><CoordinatorActivity /></CoordinatorProtectedRoute>} />
-      </Routes>
+          </Routes>
+        </Suspense>
       </main>
       
       {!isLoginPage && !isFeedbackForm && !isPublicPage && <Footer />}
