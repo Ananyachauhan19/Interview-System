@@ -19,6 +19,16 @@ export default function CoordinatorStudents() {
   const [availableYears, setAvailableYears] = useState([]);
   const [activityStats, setActivityStats] = useState(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  
+  // State for detailed videos/courses modals and stats
+  const [studentStats, setStudentStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [showVideosModal, setShowVideosModal] = useState(false);
+  const [showCoursesModal, setShowCoursesModal] = useState(false);
+  const [videosWatched, setVideosWatched] = useState([]);
+  const [coursesEnrolled, setCoursesEnrolled] = useState([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
+  const [loadingCourses, setLoadingCourses] = useState(false);
 
   // Configure Fuse.js for optimized fuzzy search
   const fuse = useMemo(() => {
@@ -90,8 +100,9 @@ export default function CoordinatorStudents() {
     setShowModal(true);
     setSelectedYear(new Date().getFullYear());
     
-    // Load real activity data for current year
+    // Load real activity data for current year and stats
     await loadStudentActivity(student._id, new Date().getFullYear());
+    await loadStudentStats(student._id);
   };
 
   const loadStudentActivity = async (studentId, year) => {
@@ -111,6 +122,61 @@ export default function CoordinatorStudents() {
     }
   };
 
+  const loadStudentStats = async (studentId) => {
+    setLoadingStats(true);
+    try {
+      const data = await api.getStudentStatsByAdmin(studentId);
+      setStudentStats(data.stats || null);
+    } catch (e) {
+      console.error('Failed to load student stats:', e);
+      setStudentStats(null);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const handleShowVideosWatched = async () => {
+    if (!selectedStudent) return;
+    
+    setShowVideosModal(true);
+    setLoadingVideos(true);
+    try {
+      const data = await api.getStudentVideosWatchedByAdmin(selectedStudent._id);
+      setVideosWatched(data.videos || []);
+    } catch (e) {
+      console.error('Failed to load videos watched:', e);
+      setVideosWatched([]);
+    } finally {
+      setLoadingVideos(false);
+    }
+  };
+
+  const handleShowCoursesEnrolled = async () => {
+    if (!selectedStudent) return;
+    
+    setShowCoursesModal(true);
+    setLoadingCourses(true);
+    try {
+      const data = await api.getStudentCoursesEnrolledByAdmin(selectedStudent._id);
+      setCoursesEnrolled(data.courses || []);
+    } catch (e) {
+      console.error('Failed to load courses enrolled:', e);
+      setCoursesEnrolled([]);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+
+  const closeVideosModal = () => {
+    setShowVideosModal(false);
+    setVideosWatched([]);
+  };
+
+  const closeCoursesModal = () => {
+    setShowCoursesModal(false);
+    setCoursesEnrolled([]);
+  };
+
   const handleYearChange = async (year) => {
     setSelectedYear(year);
     if (selectedStudent && selectedStudent._id) {
@@ -125,7 +191,10 @@ export default function CoordinatorStudents() {
       setActivity({});
       setAvailableYears([]);
       setActivityStats(null);
+      setStudentStats(null);
       setSelectedYear(new Date().getFullYear());
+      setVideosWatched([]);
+      setCoursesEnrolled([]);
     }, 300);
   };
 
@@ -401,6 +470,31 @@ export default function CoordinatorStudents() {
                     </div>
                   </div>
 
+                  {/* Statistics Section */}
+                  <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-700">
+                    <h4 className="font-medium text-slate-800 dark:text-gray-100 mb-4">Statistics</h4>
+                    {loadingStats ? (
+                      <div className="text-center py-4 text-slate-500 dark:text-gray-400">Loading stats...</div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        <button
+                          onClick={handleShowCoursesEnrolled}
+                          className="text-left p-4 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600 hover:bg-slate-100 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                        >
+                          <div className="text-2xl font-bold text-slate-800 dark:text-gray-100">{studentStats?.totalCoursesEnrolled || 0}</div>
+                          <div className="text-sm text-slate-500 dark:text-gray-400">Courses Enrolled</div>
+                        </button>
+                        <button
+                          onClick={handleShowVideosWatched}
+                          className="text-left p-4 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600 hover:bg-slate-100 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                        >
+                          <div className="text-2xl font-bold text-slate-800 dark:text-gray-100">{studentStats?.totalVideosWatched || 0}</div>
+                          <div className="text-sm text-slate-500 dark:text-gray-400">Videos Watched</div>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Contribution Calendar */}
                   <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-700">
                     <div className="rounded-lg p-4 bg-slate-50 dark:bg-gray-700 border border-slate-200 dark:border-gray-600">
@@ -429,6 +523,138 @@ export default function CoordinatorStudents() {
                   >
                     Close
                   </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Videos Watched Modal */}
+      <AnimatePresence>
+        {showVideosModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+              onClick={closeVideosModal}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+            >
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-slate-800 dark:text-gray-100">Videos Watched</h3>
+                  <button
+                    onClick={closeVideosModal}
+                    className="text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="overflow-y-auto max-h-[60vh] p-6">
+                  {videosWatched.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500 dark:text-gray-400">No videos watched yet</div>
+                  ) : (
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-gray-700">
+                          <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-gray-300">Video Title</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-gray-300">Subject</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-gray-300">Watched On</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {videosWatched.map((video, index) => (
+                          <tr key={index} className="border-b border-slate-100 dark:border-gray-700">
+                            <td className="py-3 px-4 text-slate-800 dark:text-gray-100">{video.videoTitle || 'Unknown Video'}</td>
+                            <td className="py-3 px-4 text-slate-600 dark:text-gray-300">{video.subjectName || 'Unknown Subject'}</td>
+                            <td className="py-3 px-4 text-slate-600 dark:text-gray-300">
+                              {video.watchedDate ? `${new Date(video.watchedDate).toLocaleDateString()} at ${new Date(video.watchedDate).toLocaleTimeString()}` : 'N/A'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Courses Enrolled Modal */}
+      <AnimatePresence>
+        {showCoursesModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+              onClick={closeCoursesModal}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+            >
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-slate-800 dark:text-gray-100">Courses Enrolled</h3>
+                  <button
+                    onClick={closeCoursesModal}
+                    className="text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="overflow-y-auto max-h-[60vh] p-6">
+                  {coursesEnrolled.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500 dark:text-gray-400">No courses enrolled yet</div>
+                  ) : (
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-gray-700">
+                          <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-gray-300">Course Name</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-gray-300">Progress</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-gray-300">Enrolled On</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {coursesEnrolled.map((course, index) => (
+                          <tr key={index} className="border-b border-slate-100 dark:border-gray-700">
+                            <td className="py-3 px-4 text-slate-800 dark:text-gray-100">{course.courseName || 'Unknown Course'}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-24 h-2 bg-slate-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-green-500 rounded-full" 
+                                    style={{ width: `${course.progressPercentage || 0}%` }}
+                                  />
+                                </div>
+                                <span className="text-sm text-slate-600 dark:text-gray-300">{course.progressPercentage || 0}%</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-slate-600 dark:text-gray-300">
+                              {course.enrollmentDate ? new Date(course.enrollmentDate).toLocaleDateString() : 'N/A'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             </motion.div>

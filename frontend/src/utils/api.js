@@ -171,6 +171,8 @@ export const api = {
   listSpecialStudentsByEvent: (eventId) => request(`/students/special/${eventId}`),
   getStudentActivityByAdmin: (studentId) => request(`/students/${studentId}/activity`),
   getStudentStatsByAdmin: (studentId) => request(`/students/${studentId}/stats`),
+  getStudentVideosWatchedByAdmin: (studentId) => request(`/students/${studentId}/videos-watched`),
+  getStudentCoursesEnrolledByAdmin: (studentId) => request(`/students/${studentId}/courses-enrolled`),
   checkStudentsCsv: (file) => {
     const fd = new FormData();
     fd.append('file', file);

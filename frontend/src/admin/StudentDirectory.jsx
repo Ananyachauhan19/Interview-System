@@ -31,6 +31,14 @@ export default function StudentDirectory() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
   const [isExporting, setIsExporting] = useState(false);
+  
+  // State for detailed videos/courses modals
+  const [showVideosModal, setShowVideosModal] = useState(false);
+  const [showCoursesModal, setShowCoursesModal] = useState(false);
+  const [videosWatched, setVideosWatched] = useState([]);
+  const [coursesEnrolled, setCoursesEnrolled] = useState([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
+  const [loadingCourses, setLoadingCourses] = useState(false);
 
   // Configure Fuse.js for optimized fuzzy search
   const currentStudents = activeTab === "students" ? students : specialStudents;
@@ -169,7 +177,53 @@ export default function StudentDirectory() {
       setActivity({});
       setActivityStats(null);
       setStudentStats(null);
+      setVideosWatched([]);
+      setCoursesEnrolled([]);
     }, 300);
+  };
+
+  const handleShowVideosWatched = async () => {
+    if (!selectedStudent) return;
+    
+    setShowVideosModal(true);
+    setLoadingVideos(true);
+    try {
+      const data = await api.getStudentVideosWatchedByAdmin(selectedStudent._id);
+      setVideosWatched(data.videos || []);
+    } catch (e) {
+      console.error('Failed to load videos watched:', e);
+      setVideosWatched([]);
+      toast.error('Failed to load videos watched');
+    } finally {
+      setLoadingVideos(false);
+    }
+  };
+
+  const handleShowCoursesEnrolled = async () => {
+    if (!selectedStudent) return;
+    
+    setShowCoursesModal(true);
+    setLoadingCourses(true);
+    try {
+      const data = await api.getStudentCoursesEnrolledByAdmin(selectedStudent._id);
+      setCoursesEnrolled(data.courses || []);
+    } catch (e) {
+      console.error('Failed to load courses enrolled:', e);
+      setCoursesEnrolled([]);
+      toast.error('Failed to load courses enrolled');
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+
+  const closeVideosModal = () => {
+    setShowVideosModal(false);
+    setVideosWatched([]);
+  };
+
+  const closeCoursesModal = () => {
+    setShowCoursesModal(false);
+    setCoursesEnrolled([]);
   };
 
   const handleDeleteStudent = async (student, e) => {
@@ -761,7 +815,10 @@ export default function StudentDirectory() {
                     ) : studentStats ? (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Total Courses Enrolled */}
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800">
+                        <button 
+                          onClick={handleShowCoursesEnrolled}
+                          className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all cursor-pointer w-full text-left"
+                        >
                           <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
                             <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
@@ -771,10 +828,13 @@ export default function StudentDirectory() {
                             <p className="text-xl font-bold text-slate-800 dark:text-white">{studentStats.totalCoursesEnrolled || 0}</p>
                             <p className="text-xs text-slate-600 dark:text-gray-300 font-medium">Courses Enrolled</p>
                           </div>
-                        </div>
+                        </button>
 
                         {/* Total Videos Watched */}
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-800">
+                        <button 
+                          onClick={handleShowVideosWatched}
+                          className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-800 hover:from-red-100 hover:to-pink-100 dark:hover:from-red-900/30 dark:hover:to-pink-900/30 transition-all cursor-pointer w-full text-left"
+                        >
                           <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-red-600 dark:bg-red-500 flex items-center justify-center">
                             <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
@@ -784,7 +844,7 @@ export default function StudentDirectory() {
                             <p className="text-xl font-bold text-slate-800 dark:text-white">{studentStats.totalVideosWatched || 0}</p>
                             <p className="text-xs text-slate-600 dark:text-gray-300 font-medium">Videos Watched</p>
                           </div>
-                        </div>
+                        </button>
 
                         {/* Problems Solved */}
                         <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
@@ -1033,6 +1093,242 @@ export default function StudentDirectory() {
           </div>
         </div>
       )}
+
+      {/* Videos Watched Detail Modal */}
+      <AnimatePresence>
+        {showVideosModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeVideosModal}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+            />
+            <div className="fixed inset-0 flex items-center justify-center z-[60] p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-gray-700">
+                  <div>
+                    <h2 className="text-2xl font-semibold text-slate-800 dark:text-gray-100">
+                      Videos Watched
+                    </h2>
+                    <p className="text-sm text-slate-600 dark:text-gray-300 mt-1">
+                      {selectedStudent?.name} - Detailed video watch history
+                    </p>
+                  </div>
+                  <button
+                    onClick={closeVideosModal}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-600 dark:text-gray-400" />
+                  </button>
+                </div>
+
+                <div className="p-6 max-h-[calc(90vh-140px)] overflow-y-auto">
+                  {loadingVideos ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
+                      <span className="ml-2 text-slate-600 dark:text-gray-400">Loading videos...</span>
+                    </div>
+                  ) : videosWatched.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-700">
+                        <thead className="bg-slate-50 dark:bg-gray-700">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-gray-300 uppercase tracking-wider">
+                              Video Title
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-gray-300 uppercase tracking-wider">
+                              Duration (mins)
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-gray-300 uppercase tracking-wider">
+                              Date & Time Watched
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-slate-200 dark:divide-gray-700">
+                          {videosWatched.map((video, index) => {
+                            const watchedDate = video.watchedDate 
+                              ? new Date(video.watchedDate).toLocaleString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                              : 'Unknown date';
+                            
+                            return (
+                              <tr key={index} className="hover:bg-slate-50 dark:hover:bg-gray-700/50">
+                                <td className="px-6 py-4">
+                                  <div className="text-sm font-medium text-slate-900 dark:text-white">
+                                    {video.videoTitle || 'Untitled Video'}
+                                  </div>
+                                  <div className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                                    {video.subjectName} • {video.chapterName}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-slate-900 dark:text-white font-medium">
+                                    {video.duration} min
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-slate-900 dark:text-white">
+                                    {watchedDate}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-slate-600 dark:text-gray-400">No videos watched yet</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Courses Enrolled Detail Modal */}
+      <AnimatePresence>
+        {showCoursesModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeCoursesModal}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+            />
+            <div className="fixed inset-0 flex items-center justify-center z-[60] p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-gray-700">
+                  <div>
+                    <h2 className="text-2xl font-semibold text-slate-800 dark:text-gray-100">
+                      Courses Enrolled
+                    </h2>
+                    <p className="text-sm text-slate-600 dark:text-gray-300 mt-1">
+                      {selectedStudent?.name} - All enrolled courses and progress
+                    </p>
+                  </div>
+                  <button
+                    onClick={closeCoursesModal}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-600 dark:text-gray-400" />
+                  </button>
+                </div>
+
+                <div className="p-6 max-h-[calc(90vh-140px)] overflow-y-auto">
+                  {loadingCourses ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
+                      <span className="ml-2 text-slate-600 dark:text-gray-400">Loading courses...</span>
+                    </div>
+                  ) : coursesEnrolled.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-700">
+                        <thead className="bg-slate-50 dark:bg-gray-700">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-gray-300 uppercase tracking-wider">
+                              Course Name
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-gray-300 uppercase tracking-wider">
+                              Enrollment Date
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-gray-300 uppercase tracking-wider">
+                              Progress Status
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-slate-200 dark:divide-gray-700">
+                          {coursesEnrolled.map((course, index) => {
+                            const enrollmentDate = course.enrollmentDate 
+                              ? new Date(course.enrollmentDate).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short', 
+                                  day: 'numeric'
+                                })
+                              : 'Unknown date';
+                            
+                            const progressColor = 
+                              course.progressPercentage === 100 ? 'text-green-600 dark:text-green-400' :
+                              course.progressPercentage >= 50 ? 'text-blue-600 dark:text-blue-400' :
+                              course.progressPercentage > 0 ? 'text-yellow-600 dark:text-yellow-400' :
+                              'text-slate-500 dark:text-gray-400';
+                            
+                            return (
+                              <tr key={index} className="hover:bg-slate-50 dark:hover:bg-gray-700/50">
+                                <td className="px-6 py-4">
+                                  <div className="text-sm font-medium text-slate-900 dark:text-white">
+                                    {course.courseName || 'Untitled Course'}
+                                  </div>
+                                  <div className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                                    {course.semesterName}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-slate-900 dark:text-white">
+                                    {enrollmentDate}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex flex-col gap-1">
+                                    <div className={`text-sm font-medium ${progressColor}`}>
+                                      {course.progressStatus || 'Not Started'}
+                                    </div>
+                                    <div className="w-full bg-slate-200 dark:bg-gray-700 rounded-full h-2">
+                                      <div 
+                                        className={`h-2 rounded-full transition-all ${
+                                          course.progressPercentage === 100 ? 'bg-green-600' :
+                                          course.progressPercentage >= 50 ? 'bg-blue-600' :
+                                          course.progressPercentage > 0 ? 'bg-yellow-600' :
+                                          'bg-slate-400'
+                                        }`}
+                                        style={{ width: `${course.progressPercentage || 0}%` }}
+                                      ></div>
+                                    </div>
+                                    <div className="text-xs text-slate-500 dark:text-gray-400">
+                                      {course.completedTopics || 0} / {course.totalTopics || 0} topics ({course.progressPercentage || 0}%)
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-slate-600 dark:text-gray-400">No courses enrolled yet</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

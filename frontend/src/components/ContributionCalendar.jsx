@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 
 // Helper to generate rolling 365 days from today backwards
 function getRolling365Days() {
@@ -60,6 +60,14 @@ export default function ContributionCalendar({
   stats = null
 }) {
   const months = useMemo(() => getRolling365Days(), []);
+  const scrollContainerRef = useRef(null);
+
+  // Scroll to the right (current month) on mount
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
+    }
+  }, [months]);
   
   return (
     <div className="w-full">
@@ -111,7 +119,7 @@ export default function ContributionCalendar({
       )}
       
       {/* Horizontal scrollable grid */}
-      <div className="overflow-x-auto pb-2">
+      <div ref={scrollContainerRef} className="overflow-x-auto pb-2">
         {Object.keys(activity).length === 0 && (
           <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
             <p className="text-xs text-yellow-800 dark:text-yellow-200">

@@ -655,3 +655,179 @@ export async function getStudentStats(req, res) {
     throw new HttpError(500, 'Failed to fetch student statistics');
   }
 }
+
+// Get detailed videos watched by a student
+// Get detailed videos watched by a student
+export async function getStudentVideosWatched(req, res) {
+  const { studentId } = req.params;
+
+  try {
+    // Find the student
+    const student = await User.findById(studentId);
+    if (!student) throw new HttpError(404, 'Student not found');
+
+    // Get learning scope for the student
+    const { allowedSemesterIds, validTopicIds } = await computeLearningScopeForStudent(student);
+
+    // Base match for Progress queries
+    const baseMatch = {
+      studentId: student._id,
+      videoWatchedSeconds: { $gt: 0 }
+    };
+    if (allowedSemesterIds.length > 0) {
+      baseMatch.semesterId = { $in: allowedSemesterIds };
+    }
+    if (validTopicIds.length > 0) {
+      baseMatch.topicId = { $in: validTopicIds };
+    }
+
+    // Get all progress entries with watched videos
+    const progressEntries = await Progress.find(baseMatch)
+      .sort({ lastAccessedAt: -1 })
+      .lean();
+
+    // For each progress entry, fetch topic details
+    const videos = await Promise.all(progressEntries.map(async (progress) => {
+      const { topicId, subjectId, chapterId, semesterId, videoWatchedSeconds, lastAccessedAt, createdAt } = progress;
+      
+      let topicName = 'Unknown Topic';
+      let subjectName = 'Unknown Subject';
+      let chapterName = 'Unknown Chapter';
+      let semesterName = 'Unknown Semester';
+      
+      try {
+        const semester = await Subject.findById(semesterId);
+        if (semester) {
+          semesterName = semester.semesterName;
+          const subject = semester.subjects.id(subjectId);
+          if (subject) {
+            subjectName = subject.subjectName;
+            const chapter = subject.chapters.id(chapterId);
+            if (chapter) {
+              chapterName = chapter.chapterName;
+              const topic = chapter.topics.id(topicId);
+              if (topic) {
+                topicName = topic.topicName;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching topic details:', e);
+      }
+
+      return {
+        videoTitle: topicName,
+        subjectName,
+        chapterName,
+        semesterName,
+        duration: videoWatchedSeconds ? Math.floor(videoWatchedSeconds / 60) : 0, // Convert to minutes
+        watchedDate: lastAccessedAt || createdAt,
+        topicId,
+        subjectId
+      };
+    }));
+
+    res.json({
+      success: true,
+      videos
+    });
+  } catch (error) {
+    console.error('[Get Student Videos Watched Error]', error);
+    throw new HttpError(500, 'Failed to fetch videos watched');
+  }
+}
+
+// Get detailed courses enrolled by a student
+export async function getStudentCoursesEnrolled(req, res) {
+  const { studentId } = req.params;
+
+  try {
+    // Find the student
+    const student = await User.findById(studentId);
+    if (!student) throw new HttpError(404, 'Student not found');
+
+    // Determine learning scope for this student
+    const { allowedSemesterIds } = await computeLearningScopeForStudent(student);
+
+    // Base match for Progress queries
+    const baseMatch = {
+      studentId: student._id
+    };
+    if (allowedSemesterIds.length > 0) {
+      baseMatch.semesterId = { $in: allowedSemesterIds };
+    }
+
+    // Get unique subjects from Progress with earliest enrollment date
+    const enrolledSubjects = await Progress.aggregate([
+      {
+        $match: baseMatch
+      },
+      {
+        $group: {
+          _id: {
+            semesterId: '$semesterId',
+            subjectId: '$subjectId'
+          },
+          firstAccessed: { $min: '$createdAt' },
+          lastAccessed: { $max: '$lastAccessedAt' },
+          totalTopics: { $sum: 1 },
+          completedTopics: {
+            $sum: { $cond: ['$completed', 1, 0] }
+          }
+        }
+      },
+      {
+        $sort: { firstAccessed: -1 }
+      }
+    ]);
+
+    // Fetch subject details for each enrolled subject
+    const courses = await Promise.all(enrolledSubjects.map(async (enrollment) => {
+      const { semesterId, subjectId } = enrollment._id;
+      
+      let courseName = 'Unknown Course';
+      let semesterName = 'Unknown Semester';
+      
+      try {
+        const semester = await Subject.findById(semesterId);
+        if (semester) {
+          semesterName = semester.semesterName;
+          const subject = semester.subjects.id(subjectId);
+          if (subject) {
+            courseName = subject.subjectName;
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching course details:', e);
+      }
+
+      const progressPercentage = enrollment.totalTopics > 0 
+        ? Math.round((enrollment.completedTopics / enrollment.totalTopics) * 100)
+        : 0;
+
+      return {
+        courseName,
+        semesterName,
+        enrollmentDate: enrollment.firstAccessed,
+        lastAccessed: enrollment.lastAccessed,
+        progressPercentage,
+        completedTopics: enrollment.completedTopics,
+        totalTopics: enrollment.totalTopics,
+        progressStatus: progressPercentage === 100 ? 'Completed' : 
+                       progressPercentage >= 50 ? 'In Progress' : 
+                       progressPercentage > 0 ? 'Started' : 'Not Started',
+        semesterId,
+        subjectId
+      };
+    }));
+
+    res.json({
+      success: true,
+      courses
+    });
+  } catch (error) {
+    console.error('[Get Student Courses Enrolled Error]', error);
+    throw new HttpError(500, 'Failed to fetch courses enrolled');
+  }
+}

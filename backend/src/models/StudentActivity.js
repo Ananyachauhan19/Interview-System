@@ -20,7 +20,8 @@ const studentActivitySchema = new mongoose.Schema({
       'VIDEO_WATCH',
       'TOPIC_COMPLETED',
       'FEEDBACK_SUBMITTED',
-      'SESSION_SCHEDULED'
+      'SESSION_SCHEDULED',
+      'COURSE_ENROLLED'
     ]
   },
   metadata: {
