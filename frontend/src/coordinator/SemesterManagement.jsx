@@ -115,8 +115,11 @@ export default function SemesterManagement() {
   const [sidebarWidth, setSidebarWidth] = useState('wide'); // 'narrow', 'wide', 'extra-wide'
   const [defaultSemestersCreated, setDefaultSemestersCreated] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [showAddSemester, setShowAddSemester] = useState(false);
+  const [newSemester, setNewSemester] = useState({ semesterName: '', semesterDescription: '' });
 
-  const sortSemestersAscending = (list = []) => {
+  // Memoize the sorting function to ensure it's stable across renders
+  const sortSemestersAscending = useCallback((list = []) => {
     const getNumber = (sem) => {
       const match = sem?.semesterName?.match(/(\d+)/);
       return match ? parseInt(match[1], 10) : Number.POSITIVE_INFINITY;
@@ -129,56 +132,39 @@ export default function SemesterManagement() {
       if (Number.isFinite(bNum)) return 1;
       return (a?.semesterName || '').localeCompare(b?.semesterName || '');
     });
-  };
-
-  useEffect(() => {
-    // Fast initial load - just fetch data without cleanup/creation
-    loadSemesters();
-    
-    // Defer cleanup and auto-creation to background (after initial render)
-    const timer = setTimeout(() => {
-      if (!initialLoadComplete) {
-        performBackgroundOptimizations();
-      }
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Background optimizations - runs after initial load
-  const performBackgroundOptimizations = useCallback(async () => {
+  // IMPORTANT: Define loadSemesters FIRST since other callbacks depend on it
+  const loadSemesters = useCallback(async () => {
     try {
-      // Step 1: Cleanup duplicates (silent)
-      try {
-        await api.cleanupDuplicateSemesters();
-      } catch (err) {
-        console.error('Background cleanup failed:', err);
-      }
+      setLoading(true);
       
-      // Step 2: Get fresh list
-      const cleanData = await api.listSemesters();
+      // Simple, fast load - just fetch the data
+      const finalData = await api.listSemesters();
       
-      // Step 3: Create missing default semesters
-      const needsReload = await ensureDefaultSemesters(cleanData.semesters || []);
+      const sortedSemesters = sortSemestersAscending(finalData.semesters || []);
+      setSemesters(sortedSemesters);
       
-      // Step 4: Reload if needed
-      if (needsReload) {
-        loadSemesters();
-      } else {
-        // Just update state with clean data
-        const sortedSemesters = sortSemestersAscending(cleanData.semesters || []);
-        setSemesters(sortedSemesters);
-        if (!selectedSemester && sortedSemesters.length > 0) {
+      // If a semester was already selected, maintain selection after reload
+      if (selectedSemester && finalData.semesters && finalData.semesters.length > 0) {
+        const updatedSelectedSemester = sortedSemesters.find(s => s._id === selectedSemester._id);
+        if (updatedSelectedSemester) {
+          setSelectedSemester(updatedSelectedSemester);
+        } else {
+          // If previously selected semester no longer exists, select first
           setSelectedSemester(sortedSemesters[0]);
         }
+      } else if (!selectedSemester && sortedSemesters && sortedSemesters.length > 0) {
+        // Only auto-select first semester if none was selected
+        setSelectedSemester(sortedSemesters[0]);
       }
-      
-      setInitialLoadComplete(true);
     } catch (err) {
-      console.error('Background optimizations failed:', err);
+      console.error('Failed to load learning modules:', err);
+      toast.error('Failed to load learning modules');
+    } finally {
+      setLoading(false);
     }
-  }, [ensureDefaultSemesters, loadSemesters, selectedSemester]);
+  }, [selectedSemester, toast, sortSemestersAscending]);
 
   // Auto-create default semesters (1-12) if they don't exist
   const ensureDefaultSemesters = useCallback(async (existingSemesters) => {
@@ -240,6 +226,55 @@ export default function SemesterManagement() {
     return false;
   }, [defaultSemestersCreated]);
 
+  // Background optimizations - runs after initial load
+  const performBackgroundOptimizations = useCallback(async () => {
+    try {
+      // Step 1: Cleanup duplicates (silent)
+      try {
+        await api.cleanupDuplicateSemesters();
+      } catch (err) {
+        console.error('Background cleanup failed:', err);
+      }
+      
+      // Step 2: Get fresh list
+      const cleanData = await api.listSemesters();
+      
+      // Step 3: Create missing default semesters
+      const needsReload = await ensureDefaultSemesters(cleanData.semesters || []);
+      
+      // Step 4: Reload if needed
+      if (needsReload) {
+        loadSemesters();
+      } else {
+        // Just update state with clean data
+        const sortedSemesters = sortSemestersAscending(cleanData.semesters || []);
+        setSemesters(sortedSemesters);
+        if (!selectedSemester && sortedSemesters.length > 0) {
+          setSelectedSemester(sortedSemesters[0]);
+        }
+      }
+      
+      setInitialLoadComplete(true);
+    } catch (err) {
+      console.error('Background optimizations failed:', err);
+    }
+  }, [ensureDefaultSemesters, loadSemesters, selectedSemester, sortSemestersAscending]);
+
+  useEffect(() => {
+    // Fast initial load - just fetch data without cleanup/creation
+    loadSemesters();
+    
+    // Defer cleanup and auto-creation to background (after initial render)
+    const timer = setTimeout(() => {
+      if (!initialLoadComplete) {
+        performBackgroundOptimizations();
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Socket.IO real-time synchronization
   useEffect(() => {
     // Connect to socket
@@ -258,37 +293,6 @@ export default function SemesterManagement() {
       socketService.off('learning-updated', handleLearningUpdate);
     };
   }, [loadSemesters]);
-
-  const loadSemesters = useCallback(async () => {
-    try {
-      setLoading(true);
-      
-      // Simple, fast load - just fetch the data
-      const finalData = await api.listSemesters();
-      
-      const sortedSemesters = sortSemestersAscending(finalData.semesters || []);
-      setSemesters(sortedSemesters);
-      
-      // If a semester was already selected, maintain selection after reload
-      if (selectedSemester && finalData.semesters && finalData.semesters.length > 0) {
-        const updatedSelectedSemester = sortedSemesters.find(s => s._id === selectedSemester._id);
-        if (updatedSelectedSemester) {
-          setSelectedSemester(updatedSelectedSemester);
-        } else {
-          // If previously selected semester no longer exists, select first
-          setSelectedSemester(sortedSemesters[0]);
-        }
-      } else if (!selectedSemester && sortedSemesters && sortedSemesters.length > 0) {
-        // Only auto-select first semester if none was selected
-        setSelectedSemester(sortedSemesters[0]);
-      }
-    } catch (err) {
-      console.error('Failed to load learning modules:', err);
-      toast.error('Failed to load learning modules');
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedSemester, toast]);
 
   const handleSelectSemester = (semester) => {
     setSelectedSemester(semester);
