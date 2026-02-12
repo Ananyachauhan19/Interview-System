@@ -6,9 +6,10 @@ import socketService from '../utils/socket';
 import {
   BookOpen, Plus, ChevronDown, ChevronRight, Edit2, Trash2, Save, X,
   Star, Upload, Link as LinkIcon, FileText, GripVertical, Video, File, Calendar, Menu, ArrowLeft,
-  Youtube, ExternalLink, FileSpreadsheet
+  Youtube, ExternalLink, FileSpreadsheet, BarChart3
 } from 'lucide-react';
 import { useToast } from '../components/CustomToast';
+import LearningAnalyticsModal from '../components/LearningAnalyticsModal';
 
 const difficultyColors = {
   'easy': 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
@@ -645,6 +646,7 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
   const [editData, setEditData] = useState({ ...subject });
   const [showAddChapter, setShowAddChapter] = useState(false);
   const [newChapter, setNewChapter] = useState({ chapterName: '', importanceLevel: 3 });
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   const handleUpdate = async () => {
     if (!editData.subjectName.trim()) {
@@ -781,10 +783,13 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             {!isEditing && (
               <>
-                <button onClick={() => setIsEditing(true)} className="p-1.5 bg-sky-50 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400 rounded hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors">
+                <button onClick={() => setShowAnalytics(true)} className="p-1.5 bg-sky-50 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400 rounded hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors" title="View Analytics">
+                  <BarChart3 className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => setIsEditing(true)} className="p-1.5 bg-slate-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-400 rounded hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-colors" title="Edit Subject">
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={onDelete} className="p-1.5 bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors">
+                <button onClick={onDelete} className="p-1.5 bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors" title="Delete Subject">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </>
@@ -880,6 +885,15 @@ function SubjectCard({ subject, semesterId, isExpanded, onToggle, onDelete, load
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Learning Analytics Modal */}
+      <LearningAnalyticsModal
+        isOpen={showAnalytics}
+        onClose={() => setShowAnalytics(false)}
+        semesterId={semesterId}
+        subjectId={subject._id}
+        subjectName={subject.subjectName}
+      />
     </Reorder.Item>
   );
 }

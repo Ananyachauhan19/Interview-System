@@ -19,10 +19,12 @@ import {
   Edit2,
   Trash2,
   GripVertical,
-  ArrowLeft
+  ArrowLeft,
+  BarChart3
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from '../components/CustomToast';
+import LearningAnalyticsModal from '../components/LearningAnalyticsModal';
 
 // Convert YouTube URL to embed format
 const convertToEmbedUrl = (url) => {
@@ -77,6 +79,7 @@ export default function AdminLearningDetail() {
   const [editingTopic, setEditingTopic] = useState(null);
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [topicImportanceLevel, setTopicImportanceLevel] = useState(3);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   useEffect(() => {
     loadCoordinatorSubjects();
@@ -397,13 +400,22 @@ export default function AdminLearningDetail() {
                     </span>
                   </p>
                 </div>
-                <button
-                  onClick={openCreateChapterModal}
-                  className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm sm:text-base"
-                >
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Add Chapter</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowAnalytics(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-lg hover:from-sky-600 hover:to-sky-700 transition-all shadow-md hover:shadow-lg text-sm font-medium"
+                  >
+                    <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>Analytics</span>
+                  </button>
+                  <button
+                    onClick={openCreateChapterModal}
+                    className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm sm:text-base"
+                  >
+                    <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>Add Chapter</span>
+                  </button>
+                </div>
               </div>
 
               {/* Chapters */}
@@ -947,6 +959,15 @@ export default function AdminLearningDetail() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Learning Analytics Modal */}
+      <LearningAnalyticsModal
+        isOpen={showAnalytics}
+        onClose={() => setShowAnalytics(false)}
+        semesterId={subjectDetails?.semesterId}
+        subjectId={subjectDetails?.subjectId}
+        subjectName={subjectDetails?.subjectName}
+      />
     </div>
   );
 }

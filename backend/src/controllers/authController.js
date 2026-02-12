@@ -13,18 +13,22 @@ import { checkEmailResetLimit, recordEmailResetAttempt } from '../middleware/rat
 // Change password for student (requires current password)
 export async function changePassword(req, res) {
   const { currentPassword, newPassword, confirmPassword } = req.body;
-  const user = req.user;
-  if (!user) throw new HttpError(401, 'Unauthorized');
+  const currentUser = req.user;
+  if (!currentUser) throw new HttpError(401, 'Unauthorized');
   
-  if (user.role !== 'student' && user.role !== 'coordinator') throw new HttpError(403, 'Only students or coordinators can change password here');
+  if (currentUser.role !== 'student' && currentUser.role !== 'coordinator') throw new HttpError(403, 'Only students or coordinators can change password here');
   if (!currentPassword || !newPassword || !confirmPassword) throw new HttpError(400, 'All fields required');
   if (newPassword !== confirmPassword) throw new HttpError(400, 'New passwords do not match');
   
   // SECURITY: Enhanced password validation
-  const passwordValidation = validatePasswordStrength(newPassword, [user.email, user.name]);
+  const passwordValidation = validatePasswordStrength(newPassword, [currentUser.email, currentUser.name]);
   if (!passwordValidation.valid) {
     throw new HttpError(400, passwordValidation.errors.join('; '));
   }
+  
+  // Fetch the actual Mongoose document (req.user is lean object)
+  const user = await User.findById(currentUser._id);
+  if (!user) throw new HttpError(404, 'User not found');
   
   // Verify current password
   const ok = await user.verifyPassword(currentPassword);
@@ -53,21 +57,25 @@ export async function changePassword(req, res) {
 // Change password for admin (requires current password) - Separate logic for admin
 export async function changeAdminPassword(req, res) {
   const { currentPassword, newPassword, confirmPassword } = req.body;
-  const user = req.user;
-  if (!user) throw new HttpError(401, 'Unauthorized');
+  const currentUser = req.user;
+  if (!currentUser) throw new HttpError(401, 'Unauthorized');
   
   // Verify user is admin
-  if (user.role !== 'admin') throw new HttpError(403, 'Only admins can use this endpoint');
+  if (currentUser.role !== 'admin') throw new HttpError(403, 'Only admins can use this endpoint');
   
   // Validate input
   if (!currentPassword || !newPassword || !confirmPassword) throw new HttpError(400, 'All fields required');
   if (newPassword !== confirmPassword) throw new HttpError(400, 'New passwords do not match');
   
   // SECURITY: Enhanced password validation
-  const passwordValidation = validatePasswordStrength(newPassword, [user.email, user.name]);
+  const passwordValidation = validatePasswordStrength(newPassword, [currentUser.email, currentUser.name]);
   if (!passwordValidation.valid) {
     throw new HttpError(400, passwordValidation.errors.join('; '));
   }
+  
+  // Fetch the actual Mongoose document (req.user is lean object)
+  const user = await User.findById(currentUser._id);
+  if (!user) throw new HttpError(404, 'User not found');
   
   // Verify current password
   const ok = await user.verifyPassword(currentPassword);
@@ -115,7 +123,7 @@ export async function seedAdminIfNeeded() {
   console.log('[Admin Seed] Admin user seeded for', emailLower);
 }
 
-export function me(req, res) {
+export async function me(req, res) {
   const u = req.user;
   if (!u) return res.status(401).json({ error: 'Unauthorized' });
   // Return fields based on role
@@ -134,9 +142,20 @@ export function me(req, res) {
     response.course = u.course;
     response.branch = u.branch;
     response.college = u.college;
-    // Map teacherIds array to comma-separated string for backwards compatibility
-    response.teacherId = Array.isArray(u.teacherIds) ? u.teacherIds.join(', ') : '';
     response.semester = u.semester;
+    
+    // Fetch coordinator names from teacherIds
+    if (Array.isArray(u.teacherIds) && u.teacherIds.length > 0) {
+      const coordinators = await User.find({ 
+        coordinatorId: { $in: u.teacherIds },
+        role: 'coordinator'
+      }).select('name coordinatorId').lean();
+      
+      const coordinatorNames = coordinators.map(c => c.name).filter(Boolean);
+      response.teacherId = coordinatorNames.length > 0 ? coordinatorNames.join(', ') : 'Not Assigned';
+    } else {
+      response.teacherId = 'Not Assigned';
+    }
   } else if (u.role === 'coordinator') {
     response.teacherId = u.coordinatorId; // Coordinators use coordinatorId as their teacherId
     response.coordinatorId = u.coordinatorId;
@@ -168,9 +187,13 @@ export async function updateMe(req, res) {
     if (college !== undefined) updates.college = trim(college);
   }
   
+  // Fetch the actual Mongoose document (req.user is lean object)
+  const userDoc = await User.findById(u._id);
+  if (!userDoc) throw new HttpError(404, 'User not found');
+  
   // Persist on underlying User model
-  Object.assign(u, updates);
-  await u.save();
+  Object.assign(userDoc, updates);
+  await userDoc.save();
   
   // Log activity
   logActivity({
@@ -185,12 +208,12 @@ export async function updateMe(req, res) {
   });
   
   // Return response based on role
-  const response = { message: 'Profile updated', user: { _id: u._id, name: u.name, email: u.email, role: u.role } };
-  if (u.role === 'student') {
-    response.user.studentId = u.studentId;
-    response.user.course = u.course;
-    response.user.branch = u.branch;
-    response.user.college = u.college;
+  const response = { message: 'Profile updated', user: { _id: userDoc._id, name: userDoc.name, email: userDoc.email, role: userDoc.role } };
+  if (userDoc.role === 'student') {
+    response.user.studentId = userDoc.studentId;
+    response.user.course = userDoc.course;
+    response.user.branch = userDoc.branch;
+    response.user.college = userDoc.college;
   }
   
   res.json(response);
@@ -223,9 +246,13 @@ export async function updateMyAvatar(req, res) {
     // Upload new avatar to Cloudinary
     const avatarUrl = await uploadAvatar(file.buffer, folder, u._id.toString());
     
+    // Fetch the actual Mongoose document (req.user is lean object)
+    const userDoc = await User.findById(u._id);
+    if (!userDoc) throw new HttpError(404, 'User not found');
+    
     // Save on user document (unified User model via req.user)
-    u.avatarUrl = avatarUrl;
-    await u.save();
+    userDoc.avatarUrl = avatarUrl;
+    await userDoc.save();
     
     // Log activity
     logActivity({
@@ -375,8 +402,13 @@ export async function login(req, res) {
 
 export async function forcePasswordChange(req, res) {
   const { newPassword } = req.body;
-  const user = req.user;
-  if (!user.mustChangePassword) return res.json({ message: 'No change required' });
+  const currentUser = req.user;
+  if (!currentUser.mustChangePassword) return res.json({ message: 'No change required' });
+  
+  // Fetch the actual Mongoose document (req.user is lean object)
+  const user = await User.findById(currentUser._id);
+  if (!user) throw new HttpError(404, 'User not found');
+  
   user.passwordHash = await User.hashPassword(newPassword);
   user.mustChangePassword = false;
   await user.save();

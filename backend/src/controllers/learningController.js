@@ -687,3 +687,197 @@ export const markTopicIncomplete = async (req, res) => {
     res.status(500).json({ message: 'Failed to mark topic as incomplete', error: error.message });
   }
 };
+
+// Get learning analytics for a subject (Admin/Coordinator)
+export const getSubjectAnalytics = async (req, res) => {
+  try {
+    const { semesterId, subjectId } = req.params;
+
+    // Get the semester and subject details
+    const semester = await Semester.findById(semesterId);
+    if (!semester) {
+      return res.status(404).json({ message: 'Semester not found' });
+    }
+
+    const subject = semester.subjects.id(subjectId);
+    if (!subject) {
+      return res.status(404).json({ message: 'Subject not found' });
+    }
+
+    // Build a map of all topics in this subject
+    const topicMap = new Map();
+
+    subject.chapters.forEach(chapter => {
+      chapter.topics.forEach(topic => {
+        topicMap.set(topic._id.toString(), {
+          topicId: topic._id,
+          topicName: topic.topicName,
+          chapterId: chapter._id,
+          chapterName: chapter.chapterName,
+          difficultyLevel: topic.difficultyLevel
+        });
+      });
+    });
+
+    // Get all progress records for this subject
+    const allProgress = await Progress.find({ subjectId }).lean();
+
+    // Get all unique student IDs who have progress
+    const studentIds = [...new Set(allProgress.map(p => p.studentId.toString()))];
+
+    // Get student details
+    const students = await User.find({
+      _id: { $in: studentIds },
+      role: 'student'
+    }).select('_id name email studentId semester course branch college').lean();
+
+    const studentMap = new Map(students.map(s => [s._id.toString(), s]));
+
+    // Get ALL students (to find who hasn't visited)
+    // For coordinators, filter by their assigned students
+    let allStudentsQuery = { role: 'student' };
+    if (req.user.role === 'coordinator') {
+      const coordId = req.user.coordinatorId;
+      if (coordId) {
+        allStudentsQuery.teacherIds = coordId;
+      }
+    }
+    const allStudents = await User.find(allStudentsQuery)
+      .select('_id name email studentId semester course branch college')
+      .lean();
+
+    // Build chapter-wise and topic-wise analytics
+    const chapterAnalytics = [];
+
+    subject.chapters.forEach(chapter => {
+      const chapterTopicIds = chapter.topics.map(t => t._id.toString());
+
+      const topicAnalytics = chapter.topics.map(topic => {
+        const topicId = topic._id.toString();
+
+        // Students who viewed/completed this topic
+        const topicProgress = allProgress.filter(p => p.topicId.toString() === topicId);
+        const viewedStudents = topicProgress.map(p => {
+          const student = studentMap.get(p.studentId.toString());
+          if (!student) return null;
+          return {
+            _id: student._id,
+            name: student.name,
+            email: student.email,
+            studentId: student.studentId,
+            semester: student.semester,
+            course: student.course,
+            branch: student.branch,
+            college: student.college,
+            completed: p.completed,
+            videoWatchedSeconds: p.videoWatchedSeconds,
+            lastAccessedAt: p.lastAccessedAt,
+            completedAt: p.completedAt
+          };
+        }).filter(Boolean);
+
+        // Students who have NOT viewed this topic
+        const viewedStudentIds = new Set(topicProgress.map(p => p.studentId.toString()));
+        const notViewedStudents = allStudents
+          .filter(s => !viewedStudentIds.has(s._id.toString()))
+          .map(s => ({
+            _id: s._id,
+            name: s.name,
+            email: s.email,
+            studentId: s.studentId,
+            semester: s.semester,
+            course: s.course,
+            branch: s.branch,
+            college: s.college
+          }));
+
+        return {
+          topicId: topic._id,
+          topicName: topic.topicName,
+          difficultyLevel: topic.difficultyLevel,
+          viewedCount: viewedStudents.length,
+          notViewedCount: notViewedStudents.length,
+          completedCount: viewedStudents.filter(s => s.completed).length,
+          viewedStudents,
+          notViewedStudents
+        };
+      });
+
+      // Chapter-level summary
+      const chapterViewedStudentIds = new Set();
+      const chapterCompletedAllStudentIds = new Set();
+
+      allProgress.forEach(p => {
+        if (chapterTopicIds.includes(p.topicId.toString())) {
+          chapterViewedStudentIds.add(p.studentId.toString());
+        }
+      });
+
+      // Students who completed ALL topics in the chapter
+      chapterViewedStudentIds.forEach(studentId => {
+        const studentTopicProgress = allProgress.filter(
+          p => p.studentId.toString() === studentId && chapterTopicIds.includes(p.topicId.toString())
+        );
+        if (studentTopicProgress.length === chapterTopicIds.length &&
+            studentTopicProgress.every(p => p.completed)) {
+          chapterCompletedAllStudentIds.add(studentId);
+        }
+      });
+
+      const chapterNotViewedStudents = allStudents
+        .filter(s => !chapterViewedStudentIds.has(s._id.toString()))
+        .map(s => ({
+          _id: s._id,
+          name: s.name,
+          email: s.email,
+          studentId: s.studentId,
+          semester: s.semester
+        }));
+
+      chapterAnalytics.push({
+        chapterId: chapter._id,
+        chapterName: chapter.chapterName,
+        totalTopics: chapter.topics.length,
+        viewedByCount: chapterViewedStudentIds.size,
+        completedByCount: chapterCompletedAllStudentIds.size,
+        notViewedCount: chapterNotViewedStudents.length,
+        notViewedStudents: chapterNotViewedStudents,
+        topics: topicAnalytics
+      });
+    });
+
+    // Overall subject summary
+    const allTopicIds = [...topicMap.keys()];
+    const subjectViewedStudentIds = new Set();
+    allProgress.forEach(p => {
+      if (allTopicIds.includes(p.topicId.toString())) {
+        subjectViewedStudentIds.add(p.studentId.toString());
+      }
+    });
+
+    const subjectNotViewedStudents = allStudents
+      .filter(s => !subjectViewedStudentIds.has(s._id.toString()))
+      .map(s => ({
+        _id: s._id,
+        name: s.name,
+        email: s.email,
+        studentId: s.studentId,
+        semester: s.semester
+      }));
+
+    res.json({
+      subjectName: subject.subjectName,
+      semesterName: semester.semesterName,
+      totalStudents: allStudents.length,
+      activeStudents: subjectViewedStudentIds.size,
+      notStartedCount: subjectNotViewedStudents.length,
+      notStartedStudents: subjectNotViewedStudents,
+      totalChapters: subject.chapters.length,
+      totalTopics: allTopicIds.length,
+      chapters: chapterAnalytics
+    });
+  } catch (error) {
+    console.error('[getSubjectAnalytics] Error:', error);
+    res.status(500).json({ message: 'Failed to fetch analytics', error: error.message });
+  }
+};

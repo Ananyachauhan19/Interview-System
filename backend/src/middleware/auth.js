@@ -29,7 +29,7 @@ export async function requireAuth(req, res, next) {
   // All tokens now resolve to the unified User model
   // Use lean() + select() for faster query - only fetch needed fields
   const user = await User.findById(payload.sub)
-    .select('_id email name role semester activeSessionToken passwordChangedAt avatarUrl coordinatorId teacherId')
+    .select('_id email name role semester activeSessionToken passwordChangedAt avatarUrl coordinatorId teacherIds studentId course branch college group department isSpecialStudent')
     .lean();
   if (!user) throw new HttpError(401, 'User not found');
   

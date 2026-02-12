@@ -322,6 +322,10 @@ export const api = {
   getTopicProgress: (topicId) => request(`/learning/topic/${topicId}/progress`),
   getSubjectProgress: (subjectId) => request(`/learning/subject/${subjectId}/progress`),
   getStudentProgress: () => request('/learning/progress'),
+  
+  // Learning Analytics (Admin/Coordinator)
+  getSubjectAnalytics: (semesterId, subjectId) => request(`/learning/analytics/subject/${semesterId}/${subjectId}`),
+
   markTopicComplete: (topicId, semesterId, subjectId, chapterId, coordinatorId) =>
     request(`/learning/topic/${topicId}/complete`, {
       method: 'POST',

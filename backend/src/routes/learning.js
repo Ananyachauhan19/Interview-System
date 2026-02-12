@@ -11,6 +11,14 @@ const requireStudentOrAdmin = (req, res, next) => {
   next();
 };
 
+// Middleware to allow admins and coordinators only
+const requireAdminOrCoordinator = (req, res, next) => {
+  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'coordinator')) {
+    return res.status(403).json({ message: 'Admin or Coordinator access only' });
+  }
+  next();
+};
+
 // Get all semesters with subjects grouped by semester and subject name
 router.get('/semesters', requireAuth, requireStudentOrAdmin, learningController.getAllSemestersForStudent);
 
@@ -42,5 +50,8 @@ router.get('/subject/:subjectId/progress', requireAuth, requireStudent, learning
 
 // Get all progress for the student (analytics) - students only
 router.get('/progress', requireAuth, requireStudent, learningController.getStudentProgress);
+
+// Learning Analytics - Admin/Coordinator only
+router.get('/analytics/subject/:semesterId/:subjectId', requireAuth, requireAdminOrCoordinator, learningController.getSubjectAnalytics);
 
 export default router;
