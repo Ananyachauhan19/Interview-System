@@ -27,27 +27,22 @@ export async function requireAuth(req, res, next) {
   const payload = verifyToken(token);
 
   // All tokens now resolve to the unified User model
-  const user = await User.findById(payload.sub);
+  // Use lean() + select() for faster query - only fetch needed fields
+  const user = await User.findById(payload.sub)
+    .select('_id email name role semester activeSessionToken passwordChangedAt avatarUrl coordinatorId teacherId')
+    .lean();
   if (!user) throw new HttpError(401, 'User not found');
   
   // SECURITY: Check if this is the active session for this user
   // When user logs in from a new device, old sessions become invalid
   const currentTokenHash = crypto.createHash('sha256').update(token).digest('hex');
-  console.log('[Session] Checking session for:', user.email);
-  console.log('[Session] Current token hash:', currentTokenHash.substring(0, 10) + '...');
-  console.log('[Session] Stored token hash:', user.activeSessionToken ? user.activeSessionToken.substring(0, 10) + '...' : 'NONE');
   
   if (user.activeSessionToken && user.activeSessionToken !== currentTokenHash) {
     // This session was invalidated by a login from another device
-    console.log('[Session] ❌ INVALID SESSION DETECTED for:', user.email);
-    console.log('[Session] Expected:', user.activeSessionToken.substring(0, 10) + '...');
-    console.log('[Session] Got:', currentTokenHash.substring(0, 10) + '...');
     throw new HttpError(401, 'Your account was accessed from another device. Please login again.', { 
       code: 'SESSION_REPLACED'
     });
   }
-  
-  console.log('[Session] ✅ Valid session for:', user.email);
   
   // SECURITY: Check if password was changed after token was issued
   // This invalidates sessions after password change

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from '../components/Footer';
 import DarkModeToggle from '../components/DarkModeToggle';
@@ -19,8 +19,15 @@ export default function LandingPage() {
   useEffect(() => {
     setIsVisible(true);
     
+    let ticking = false;
     const handleScroll = () => {
-      setScrollY(window.scrollY);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setScrollY(window.scrollY);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
     
     window.addEventListener('scroll', handleScroll);

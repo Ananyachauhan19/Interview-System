@@ -3,8 +3,12 @@ import { lazy, Suspense } from "react";
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/CustomToast';
 import SessionMonitor from './components/SessionMonitor';
-import { StudentNavbar, AdminNavbar, Footer } from "./components/Layout";
-import { CoordinatorNavbar } from "./coordinator/CoordinatorNavbar";
+
+// Lazy-load navbars to keep them out of the main bundle
+const StudentNavbar = lazy(() => import('./components/StudentNavbar').then(m => ({ default: m.StudentNavbar })));
+const AdminNavbar = lazy(() => import('./components/AdminNavbar').then(m => ({ default: m.AdminNavbar })));
+const CoordinatorNavbar = lazy(() => import('./coordinator/CoordinatorNavbar').then(m => ({ default: m.CoordinatorNavbar })));
+const Footer = lazy(() => import('./components/Footer').then(m => ({ default: m.Footer })));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -82,10 +86,12 @@ function AppContent() {
     <div className="min-h-screen w-full flex flex-col">
       <SessionMonitor />
       {!isFeedbackForm && !isPublicPage && (
-        isAdmin ? <AdminNavbar /> :
-        isCoordinator ? <CoordinatorNavbar /> :
-        isStudentDashboard ? <StudentNavbar /> :
-        null
+        <Suspense fallback={null}>
+          {isAdmin ? <AdminNavbar /> :
+           isCoordinator ? <CoordinatorNavbar /> :
+           isStudentDashboard ? <StudentNavbar /> :
+           null}
+        </Suspense>
       )}
      
       <main className={gradientBg + " dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex-grow"}>
@@ -137,7 +143,9 @@ function AppContent() {
         </Suspense>
       </main>
       
-      {!isLoginPage && !isFeedbackForm && !isPublicPage && <Footer />}
+      {!isLoginPage && !isFeedbackForm && !isPublicPage && (
+        <Suspense fallback={null}><Footer /></Suspense>
+      )}
     </div>
   );
 }

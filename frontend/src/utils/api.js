@@ -99,7 +99,13 @@ async function request(path, { method = 'GET', body, headers = {}, formData, ski
   const url = `${API_BASE}${path}`;
   
   try {
+    // Add 15s timeout via AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    opts.signal = controller.signal;
+    
     const res = await fetch(url, opts);
+    clearTimeout(timeoutId);
     
     if (!res.ok) {
       let err;
@@ -128,6 +134,11 @@ async function request(path, { method = 'GET', body, headers = {}, formData, ski
     
     return result;
   } catch (err) {
+    if (err.name === 'AbortError') {
+      const timeoutErr = new Error('Request timed out. Please check your connection and try again.');
+      timeoutErr.response = { status: 0 };
+      throw timeoutErr;
+    }
     throw err;
   }
 }

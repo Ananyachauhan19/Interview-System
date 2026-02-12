@@ -3,12 +3,16 @@ import cors from 'cors';
 import morgan from 'morgan';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './utils/errors.js';
 import { mongoSanitizeMiddleware, xssProtectionMiddleware } from './middleware/sanitization.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
 const app = express();
+
+// Gzip/Brotli compression - reduces response size by 3-5x
+app.use(compression());
 
 // Security headers - helmet with safe defaults
 app.use(helmet({
@@ -30,8 +34,12 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(mongoSanitizeMiddleware);
 app.use(xssProtectionMiddleware);
 
-// Request logging
-app.use(morgan('dev'));
+// Request logging - use 'combined' in production, 'dev' in development
+if (process.env.NODE_ENV === 'production') {
+  app.use(morgan('combined'));
+} else {
+  app.use(morgan('dev'));
+}
 
 // General API rate limiting (generous limits)
 app.use('/api', apiLimiter);
