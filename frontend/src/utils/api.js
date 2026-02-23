@@ -345,4 +345,11 @@ export const api = {
       method: 'POST', 
       body: { actionType, targetType, targetId, description, changes, metadata } 
     }),
+
+  // Join Requests
+  submitJoinRequest: (data) => request('/join/submit', { method: 'POST', body: data }),
+  checkJoinStatus: (email) => request(`/join/status?email=${encodeURIComponent(email)}`),
+  listJoinRequests: (queryString) => request(`/join/list${queryString ? '?' + queryString : ''}`),
+  approveJoinRequest: (requestId, data) => request(`/join/${requestId}/approve`, { method: 'POST', body: data }),
+  rejectJoinRequest: (requestId, reason) => request(`/join/${requestId}/reject`, { method: 'POST', body: { reason } }),
 };

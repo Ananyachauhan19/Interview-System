@@ -1,54 +1,33 @@
 /* eslint-disable no-unused-vars */
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Lock, ChevronDown, UserPlus, Database, Activity } from "lucide-react";
+import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Lock, ChevronDown, UserPlus, Database, Activity, ClipboardList } from "lucide-react";
 import { useState, useEffect } from "react";
-import { api } from "../utils/api";
 import DarkModeToggle from "./DarkModeToggle";
+import { useAuth } from "../context/AuthContext";
 
 export function AdminNavbar() {
   const location = useLocation();
+  const { user } = useAuth();
   const [active, setActive] = useState(location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
   const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
-  const [adminName, setAdminName] = useState("Loading...");
-  const [adminEmail, setAdminEmail] = useState("");
-  const [adminAvatarUrl, setAdminAvatarUrl] = useState("");
 
-  // Fetch admin profile from backend dynamically
+  // Use AuthContext user data directly - no extra API call needed
+  const adminName = user?.name || localStorage.getItem("adminName") || "Admin";
+  const adminEmail = user?.email || localStorage.getItem("adminEmail") || "";
+  const adminAvatarUrl = user?.avatarUrl || localStorage.getItem("adminAvatarUrl") || "";
+
+  // Sync to localStorage for offline fallback
   useEffect(() => {
-    async function fetchAdminProfile() {
-      try {
-        const data = await api.me();
-        if (data) {
-          // Set name from database
-          if (data.name) {
-            setAdminName(data.name);
-            localStorage.setItem("adminName", data.name);
-          }
-          // Set email from database
-          if (data.email) {
-            setAdminEmail(data.email);
-            localStorage.setItem("adminEmail", data.email);
-          }
-          // Set avatar from database
-          if (Object.prototype.hasOwnProperty.call(data, "avatarUrl")) {
-            setAdminAvatarUrl(data.avatarUrl || "");
-            localStorage.setItem("adminAvatarUrl", data.avatarUrl || "");
-          }
-        }
-      } catch (err) {
-        // On error, fallback to localStorage or defaults
-        console.warn("Admin profile fetch failed:", err?.message || err);
-        setAdminName(localStorage.getItem("adminName") || "");
-        setAdminEmail(localStorage.getItem("adminEmail") || "");
-        setAdminAvatarUrl(localStorage.getItem("adminAvatarUrl") || "");
-      }
+    if (user?.name) localStorage.setItem("adminName", user.name);
+    if (user?.email) localStorage.setItem("adminEmail", user.email);
+    if (user && Object.prototype.hasOwnProperty.call(user, "avatarUrl")) {
+      localStorage.setItem("adminAvatarUrl", user.avatarUrl || "");
     }
-    fetchAdminProfile();
-  }, []);
+  }, [user]);
 
   // Close mobile menu and all dropdowns when route changes
   useEffect(() => {
@@ -157,7 +136,7 @@ export function AdminNavbar() {
         </motion.div>
 
         {/* Center: Desktop Navigation - Left aligned after logo */}
-        <div className="hidden lg:flex items-center flex-1 gap-1 ml-4">
+        <div className="hidden lg:flex items-center flex-1 gap-0.5 ml-2">
           {/* Create Interview */}
           <Link
             to="/admin/event"
@@ -168,14 +147,14 @@ export function AdminNavbar() {
               variants={itemHover}
               whileHover="hover"
               whileTap="tap"
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
                 location.pathname === "/admin/event"
                   ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
                   : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
             >
-              <CalendarDays className="w-4 h-4" />
-              <span className="font-medium text-sm whitespace-nowrap">Create Interview</span>
+              <CalendarDays className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs whitespace-nowrap">Create Interview</span>
               
               {location.pathname === "/admin/event" && (
                 <motion.div
@@ -197,14 +176,14 @@ export function AdminNavbar() {
               variants={itemHover}
               whileHover="hover"
               whileTap="tap"
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
                 location.pathname.startsWith("/admin/event/")
                   ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
                   : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
             >
-              <BookOpen className="w-4 h-4" />
-              <span className="font-medium text-sm whitespace-nowrap">Scheduled Interview</span>
+              <BookOpen className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs whitespace-nowrap">Scheduled Interview</span>
               
               {location.pathname.startsWith("/admin/event/") && (
                 <motion.div
@@ -226,15 +205,15 @@ export function AdminNavbar() {
                 setIsAddMembersOpen(!isAddMembersOpen);
                 setIsDatabaseOpen(false);
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
                 isAddMembersOpen || addMembersItems.some(item => location.pathname === item.path)
                   ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
                   : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
             >
-              <UserPlus className="w-4 h-4" />
-              <span className="font-medium text-sm whitespace-nowrap">Add Users</span>
-              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isAddMembersOpen ? 'rotate-180' : ''}`} />
+              <UserPlus className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs whitespace-nowrap">Add Users</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isAddMembersOpen ? 'rotate-180' : ''}`} />
             </motion.button>
 
             <AnimatePresence>
@@ -277,15 +256,15 @@ export function AdminNavbar() {
                 setIsDatabaseOpen(!isDatabaseOpen);
                 setIsAddMembersOpen(false);
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
                 isDatabaseOpen || databaseItems.some(item => location.pathname === item.path)
                   ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
                   : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
             >
-              <Database className="w-4 h-4" />
-              <span className="font-medium text-sm whitespace-nowrap">Users</span>
-              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDatabaseOpen ? 'rotate-180' : ''}`} />
+              <Database className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs whitespace-nowrap">Users</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isDatabaseOpen ? 'rotate-180' : ''}`} />
             </motion.button>
 
             <AnimatePresence>
@@ -328,14 +307,14 @@ export function AdminNavbar() {
               variants={itemHover}
               whileHover="hover"
               whileTap="tap"
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
                 location.pathname === "/admin/learning"
                   ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
                   : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
             >
-              <BookOpen className="w-4 h-4" />
-              <span className="font-medium text-sm whitespace-nowrap">Learning Modules</span>
+              <BookOpen className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs whitespace-nowrap">Learning Modules</span>
               
               {location.pathname === "/admin/learning" && (
                 <motion.div
@@ -357,16 +336,45 @@ export function AdminNavbar() {
               variants={itemHover}
               whileHover="hover"
               whileTap="tap"
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
                 location.pathname === "/admin/feedback"
                   ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
                   : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
             >
-              <GraduationCap className="w-4 h-4" />
-              <span className="font-medium text-sm whitespace-nowrap">Feedback</span>
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs whitespace-nowrap">Feedback</span>
               
               {location.pathname === "/admin/feedback" && (
+                <motion.div
+                  layoutId="activeIndicator"
+                  className="absolute inset-0 border-2 border-sky-400/30 dark:border-sky-500/30 rounded-lg"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+            </motion.div>
+          </Link>
+
+          {/* Join Requests */}
+          <Link
+            to="/admin/join-requests"
+            onClick={() => setActive("/admin/join-requests")}
+            className="relative"
+          >
+            <motion.div
+              variants={itemHover}
+              whileHover="hover"
+              whileTap="tap"
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
+                location.pathname === "/admin/join-requests"
+                  ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
+                  : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+            >
+              <ClipboardList className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs whitespace-nowrap">Join Requests</span>
+              
+              {location.pathname === "/admin/join-requests" && (
                 <motion.div
                   layoutId="activeIndicator"
                   className="absolute inset-0 border-2 border-sky-400/30 dark:border-sky-500/30 rounded-lg"
@@ -754,6 +762,25 @@ export function AdminNavbar() {
                       <GraduationCap className="w-3.5 h-3.5" />
                       <span className="font-medium text-xs">Feedback</span>
                       {location.pathname === "/admin/feedback" && (
+                        <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />
+                      )}
+                    </Link>
+                  </div>
+
+                  {/* Join Requests */}
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <Link
+                      to="/admin/join-requests"
+                      onClick={() => setActive("/admin/join-requests")}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors ${
+                        location.pathname === "/admin/join-requests"
+                          ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
+                          : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      <ClipboardList className="w-3.5 h-3.5" />
+                      <span className="font-medium text-xs">Join Requests</span>
+                      {location.pathname === "/admin/join-requests" && (
                         <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />
                       )}
                     </Link>

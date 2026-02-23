@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { api, setToken } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, Book, Pen, Backpack, GraduationCap, Library, Notebook, Pencil, School, Scissors, Ruler, Brain, Globe, Code, Laptop, Calculator, Microscope, FlaskConical, Palette, Music, Headphones, Gamepad, Watch, Tablet, BookOpen, Highlighter, FileText, Clipboard, Award, Star, Lightbulb } from 'lucide-react';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
@@ -177,6 +178,7 @@ export default function StudentLoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
   // Load saved email on component mount
   React.useEffect(() => {
@@ -220,6 +222,21 @@ export default function StudentLoginPage() {
         localStorage.setItem('userId', res.user.id);
       }
       
+      // Refresh AuthContext so protected routes and navbars have user data instantly
+      await refreshUser();
+
+      // Prefetch route chunks for the user's role (non-blocking)
+      if (role === 'admin') {
+        import('../admin/EventManagement');
+        import('../admin/StudentDirectory');
+      } else if (role === 'coordinator') {
+        import('../coordinator/CoordinatorDashboard');
+        import('../coordinator/CoordinatorStudents');
+      } else {
+        import('../student/StudentDashboard');
+        import('../student/SessionAndFeedback');
+      }
+
       // Decide landing based on role
       if (role === 'admin') {
         localStorage.setItem('isAdmin', 'true');

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from '../components/Footer';
 import DarkModeToggle from '../components/DarkModeToggle';
+import { api } from '../utils/api';
 import { 
   Users, ArrowRight, Video, MessageCircle, Target, Calendar, Shield, 
   BookOpen, TrendingUp, Bell, Clock, FileText, Star, Award, 
@@ -13,11 +14,26 @@ export default function LandingPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [visibleSections, setVisibleSections] = useState(new Set());
+  const [joinStatus, setJoinStatus] = useState(null);
   const navigate = useNavigate();
   const observerRef = useRef(null);
 
   useEffect(() => {
     setIsVisible(true);
+    
+    // Check join request status
+    const checkStatus = async () => {
+      const email = localStorage.getItem('joinRequestEmail');
+      if (email) {
+        try {
+          const response = await api.checkJoinStatus(email);
+          setJoinStatus(response.status);
+        } catch (error) {
+          console.error('Failed to check join status:', error);
+        }
+      }
+    };
+    checkStatus();
     
     let ticking = false;
     const handleScroll = () => {
@@ -60,6 +76,10 @@ export default function LandingPage() {
     navigate('/student');
   };
 
+  const handleJoinClick = () => {
+    navigate('/join');
+  };
+
   const isInView = (sectionId) => visibleSections.has(sectionId);
 
   return (
@@ -97,11 +117,38 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <DarkModeToggle />
               <button 
-                onClick={handleLoginClick} 
-                className="group px-4 py-2 sm:px-7 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-sky-500 text-white rounded-xl font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+                onClick={handleJoinClick} 
+                className={`group px-4 py-2 sm:px-7 sm:py-2.5 text-white rounded-xl font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2 ${
+                  joinStatus === 'pending' 
+                    ? 'bg-amber-500 cursor-not-allowed' 
+                    : joinStatus === 'approved' 
+                    ? 'bg-green-500 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-indigo-600 to-sky-500'
+                }`}
+                disabled={joinStatus === 'pending' || joinStatus === 'approved'}
               >
-                Get Started
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                {joinStatus === 'pending' ? (
+                  <>
+                    <Clock className="w-4 h-4" />
+                    Request Pending
+                  </>
+                ) : joinStatus === 'approved' ? (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Approved - Login
+                  </>
+                ) : (
+                  <>
+                    Get Started
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={handleLoginClick} 
+                className="px-4 py-2 sm:px-6 sm:py-2.5 bg-sky-500 dark:bg-sky-600 text-white dark:text-white rounded-xl font-semibold text-sm sm:text-base shadow-md hover:shadow-lg hover:bg-sky-600 dark:hover:bg-sky-500 transform hover:scale-105 transition-all duration-300"
+              >
+                Login
               </button>
             </div>
           </div>
@@ -157,11 +204,38 @@ export default function LandingPage() {
                 style={{ animation: 'fadeInUp 1.2s ease-out 0.6s backwards' }}
               >
                 <button 
-                  onClick={handleLoginClick}
-                  className="group px-7 py-3 sm:px-10 sm:py-4 bg-gradient-to-r from-indigo-600 to-sky-600 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
+                  onClick={handleJoinClick}
+                  className={`group px-7 py-3 sm:px-10 sm:py-4 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 ${
+                    joinStatus === 'pending' 
+                      ? 'bg-amber-500 cursor-not-allowed' 
+                      : joinStatus === 'approved' 
+                      ? 'bg-green-500 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-indigo-600 to-sky-600'
+                  }`}
+                  disabled={joinStatus === 'pending' || joinStatus === 'approved'}
                 >
-                  Start Your Journey
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
+                  {joinStatus === 'pending' ? (
+                    <>
+                      <Clock className="w-5 h-5" />
+                      Request Pending
+                    </>
+                  ) : joinStatus === 'approved' ? (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Approved - Login
+                    </>
+                  ) : (
+                    <>
+                      Get Started
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
+                    </>
+                  )}
+                </button>
+                <button 
+                  onClick={handleLoginClick}
+                  className="px-7 py-3 sm:px-10 sm:py-4 bg-sky-500 dark:bg-sky-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:bg-sky-600 dark:hover:bg-sky-500 transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                  Login
                 </button>
                 <button 
                   onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}

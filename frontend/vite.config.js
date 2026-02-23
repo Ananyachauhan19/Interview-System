@@ -4,57 +4,30 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   build: {
-    // Optimize chunk splitting
+    // Optimize chunk splitting - let Vite/Rollup auto-split per lazy import
+    // instead of grouping all role pages into single large chunks
     rollupOptions: {
       output: {
         manualChunks: {
-          // Vendor chunks - separate large dependencies
+          // Only group vendor libraries - NOT route components
+          // This lets React.lazy() create individual small chunks per page
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'animation-vendor': ['framer-motion'],
-          'socket-vendor': ['socket.io-client'],
-          'icons-vendor': ['lucide-react', 'react-icons'],
-          // Split routes by role
-          'admin-routes': [
-            './src/admin/AdminDashboard.jsx',
-            './src/admin/AdminLearning.jsx',
-            './src/admin/AdminActivity.jsx',
-            './src/admin/StudentOnboarding.jsx',
-            './src/admin/StudentDirectory.jsx',
-            './src/admin/EventManagement.jsx',
-            './src/admin/EventDetail.jsx',
-            './src/admin/FeedbackReview.jsx',
-            './src/admin/CoordinatorOnboarding.jsx',
-            './src/admin/CoordinatorDirectory.jsx'
-          ],
-          'coordinator-routes': [
-            './src/coordinator/CoordinatorDashboard.jsx',
-            './src/coordinator/CoordinatorStudents.jsx',
-            './src/coordinator/SemesterManagement.jsx',
-            './src/coordinator/CoordinatorDatabase.jsx',
-            './src/coordinator/CoordinatorFeedback.jsx',
-            './src/coordinator/CoordinatorActivity.jsx'
-          ],
-          'student-routes': [
-            './src/student/StudentDashboard.jsx',
-            './src/student/StudentLearning.jsx',
-            './src/student/SessionAndFeedback.jsx',
-            './src/student/StudentProfile.jsx'
-          ]
+          'animation': ['framer-motion'],
+          'socket': ['socket.io-client'],
+          'icons': ['lucide-react', 'react-icons'],
         }
       }
     },
     // Increase chunk size warning limit
-    chunkSizeWarningLimit: 1000,
-    // Enable minification
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console.logs in production
-        drop_debugger: true
-      }
-    },
+    chunkSizeWarningLimit: 500,
+    // Use esbuild for minification (faster than terser, built into Vite)
+    minify: 'esbuild',
     // Source maps for production debugging
     sourcemap: false, // Disable for smaller bundle size
+  },
+  // Drop console.log in production builds
+  esbuild: {
+    drop: ['console', 'debugger'],
   },
   // Optimize dev server
   server: {

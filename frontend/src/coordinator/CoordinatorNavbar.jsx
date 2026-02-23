@@ -2,42 +2,29 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogOut, Menu, X, Users, CalendarDays, User, Lock, ChevronDown, LayoutDashboard, BookOpen, MessageSquare, Activity, Database } from "lucide-react";
 import { useState, useEffect } from "react";
-import { api } from "../utils/api";
 import DarkModeToggle from "../components/DarkModeToggle";
+import { useAuth } from "../context/AuthContext";
 
 export function CoordinatorNavbar() {
   const location = useLocation();
+  const { user } = useAuth();
   const [active, setActive] = useState(location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [coordinatorName, setCoordinatorName] = useState(localStorage.getItem("coordinatorName") || "Coordinator");
-  const [coordinatorEmail, setCoordinatorEmail] = useState(localStorage.getItem("coordinatorEmail") || "");
-  const [coordinatorAvatarUrl, setCoordinatorAvatarUrl] = useState(localStorage.getItem("coordinatorAvatarUrl") || "");
 
+  // Use AuthContext user data directly - no extra API call needed
+  const coordinatorName = user?.name || localStorage.getItem("coordinatorName") || "Coordinator";
+  const coordinatorEmail = user?.email || localStorage.getItem("coordinatorEmail") || "";
+  const coordinatorAvatarUrl = user?.avatarUrl || localStorage.getItem("coordinatorAvatarUrl") || "";
+
+  // Sync to localStorage for offline fallback
   useEffect(() => {
-    async function fetchProfile() {
-      const existingToken = localStorage.getItem("token");
-      if (!existingToken) return;
-      try {
-        const data = await api.me();
-        if (data && data.email) {
-          setCoordinatorEmail(data.email);
-          localStorage.setItem("coordinatorEmail", data.email);
-        }
-        if (data && data.name) {
-          setCoordinatorName(data.name);
-          localStorage.setItem("coordinatorName", data.name);
-        }
-        if (data && Object.prototype.hasOwnProperty.call(data, "avatarUrl")) {
-          setCoordinatorAvatarUrl(data.avatarUrl || "");
-          localStorage.setItem("coordinatorAvatarUrl", data.avatarUrl || "");
-        }
-      } catch (err) {
-        console.warn("Coordinator profile fetch failed:", err?.message || err);
-      }
+    if (user?.name) localStorage.setItem("coordinatorName", user.name);
+    if (user?.email) localStorage.setItem("coordinatorEmail", user.email);
+    if (user && Object.prototype.hasOwnProperty.call(user, "avatarUrl")) {
+      localStorage.setItem("coordinatorAvatarUrl", user.avatarUrl || "");
     }
-    fetchProfile();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     setIsMenuOpen(false);

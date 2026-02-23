@@ -15,42 +15,28 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import DarkModeToggle from "./DarkModeToggle";
-import { api } from "../utils/api";
+import { useAuth } from "../context/AuthContext";
 
 export function StudentNavbar() {
   const location = useLocation();
+  const { user } = useAuth();
   const [active, setActive] = useState(location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [studentName, setStudentName] = useState(localStorage.getItem("studentName") || "Student");
-  const [studentEmail, setStudentEmail] = useState(localStorage.getItem("studentEmail") || "email@example.com");
-  const [studentAvatarUrl, setStudentAvatarUrl] = useState(localStorage.getItem("studentAvatarUrl") || "");
 
-  // Fetch latest student profile (name/email/avatar) when navbar mounts
+  // Use AuthContext user data directly - no extra API call needed
+  const studentName = user?.name || localStorage.getItem("studentName") || "Student";
+  const studentEmail = user?.email || localStorage.getItem("studentEmail") || "email@example.com";
+  const studentAvatarUrl = user?.avatarUrl || localStorage.getItem("studentAvatarUrl") || "";
+
+  // Sync to localStorage for offline fallback
   useEffect(() => {
-    async function fetchStudentProfile() {
-      const existingToken = localStorage.getItem("token");
-      if (!existingToken) return;
-      try {
-        const data = await api.me();
-        if (data && data.name) {
-          setStudentName(data.name);
-          localStorage.setItem("studentName", data.name);
-        }
-        if (data && data.email) {
-          setStudentEmail(data.email);
-          localStorage.setItem("studentEmail", data.email);
-        }
-        if (data && Object.prototype.hasOwnProperty.call(data, "avatarUrl")) {
-          setStudentAvatarUrl(data.avatarUrl || "");
-          localStorage.setItem("studentAvatarUrl", data.avatarUrl || "");
-        }
-      } catch (err) {
-        console.warn("Student profile fetch failed:", err?.message || err);
-      }
+    if (user?.name) localStorage.setItem("studentName", user.name);
+    if (user?.email) localStorage.setItem("studentEmail", user.email);
+    if (user && Object.prototype.hasOwnProperty.call(user, "avatarUrl")) {
+      localStorage.setItem("studentAvatarUrl", user.avatarUrl || "");
     }
-    fetchStudentProfile();
-  }, []);
+  }, [user]);
 
   // Close mobile menu when route changes
   useEffect(() => {

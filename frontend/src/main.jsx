@@ -1,4 +1,3 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import 'react-toastify/dist/ReactToastify.css'
@@ -15,11 +14,8 @@ function hideGlobalLoader() {
   }
 }
 
-// Call hideGlobalLoader after a short delay to ensure smooth transition
-setTimeout(hideGlobalLoader, 100);
+// Remove loader immediately when React mounts (don't add artificial delay)
+hideGlobalLoader();
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+const root = createRoot(document.getElementById('root'));
+root.render(<App />);
