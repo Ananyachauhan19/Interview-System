@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { api, setToken } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Mail, Lock, Book, Pen, Backpack, GraduationCap, Library, Notebook, Pencil, School, Scissors, Ruler, Brain, Globe, Code, Laptop, Calculator, Microscope, FlaskConical, Palette, Music, Headphones, Gamepad, Watch, Tablet, BookOpen, Highlighter, FileText, Clipboard, Award, Star, Lightbulb } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Book, Pen, Backpack, GraduationCap, Library, Notebook, Pencil, School, Scissors, Ruler, Brain, Globe, Code, Laptop, Calculator, Microscope, FlaskConical, Palette, Music, Headphones, Gamepad, Watch, Tablet, BookOpen, Highlighter, FileText, Clipboard, Award, Star, Lightbulb, Loader2 } from 'lucide-react';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 const FloatingIcon = ({ icon: IconComp, delay, duration, startX, startY, endX, endY, size = 24, opacity = 0.65 }) => {
@@ -175,6 +175,7 @@ export default function StudentLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
@@ -191,6 +192,7 @@ export default function StudentLoginPage() {
 
   const handleLogin = async () => {
     setError('');
+    setLoading(true);
     try {
       const res = await api.login(email, password);
       // SECURITY: Token is now in HttpOnly cookie, no need to call setToken
@@ -261,6 +263,8 @@ export default function StudentLoginPage() {
       }
     } catch (e) {
       setError(e.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -442,11 +446,19 @@ export default function StudentLoginPage() {
                     <button
                       type="button"
                       onClick={handleLogin}
-                      className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-3 px-6 rounded-lg font-bold transform transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden shadow-lg"
+                      disabled={loading}
+                      className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-3 px-6 rounded-lg font-bold transform transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                      <span className="relative flex items-center justify-center text-base font-semibold">
-                        Sign In
+                      <span className="relative flex items-center justify-center text-base font-semibold gap-2">
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Signing In...
+                          </>
+                        ) : (
+                          'Sign In'
+                        )}
                       </span>
                     </button>
                     {error && <div className="text-red-600 font-medium text-sm text-center mt-3">{error}</div>}
