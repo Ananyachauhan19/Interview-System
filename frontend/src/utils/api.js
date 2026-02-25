@@ -319,6 +319,11 @@ export const api = {
       method: 'POST', 
       body: { videoWatchedSeconds, coordinatorId } 
     }),
+  trackWatchTime: (topicId, data) =>
+    request(`/learning/topic/${topicId}/track-watch-time`, {
+      method: 'POST',
+      body: data
+    }),
   getTopicProgress: (topicId) => request(`/learning/topic/${topicId}/progress`),
   getSubjectProgress: (subjectId) => request(`/learning/subject/${subjectId}/progress`),
   getStudentProgress: () => request('/learning/progress'),

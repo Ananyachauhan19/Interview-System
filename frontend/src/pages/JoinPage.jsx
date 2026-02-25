@@ -295,24 +295,24 @@ export default function JoinPage() {
             </div>
 
             {/* Right Panel - Registration Form */}
-            <div className="flex items-center justify-center p-6 lg:p-8 overflow-y-auto">
+            <div className="flex items-center justify-center p-4 lg:p-6 overflow-hidden">
               <div className="relative w-full max-w-md">
                 <div className="relative bg-transparent rounded-lg w-full">
                   {/* Header */}
-                  <div className="relative text-center mb-4">
-                    <div className="inline-flex items-center justify-center mb-3">
+                  <div className="relative text-center mb-2">
+                    <div className="inline-flex items-center justify-center mb-1">
                       <img 
                         src="/images/logo.png" 
                         alt="Logo" 
-                        className="h-20 lg:h-24 w-auto object-contain drop-shadow-lg"
+                        className="h-14 lg:h-16 w-auto object-contain drop-shadow-lg"
                       />
                     </div>
-                    <h1 className="text-xl lg:text-2xl font-bold text-sky-800 mb-1.5 drop-shadow-lg">
+                    <h1 className="text-lg lg:text-xl font-bold text-sky-800 mb-1 drop-shadow-lg">
                       {existingStatus === 'pending' ? 'Request Pending' : 
                        existingStatus === 'approved' ? 'Already Approved!' : 
                        'Student Registration'}
                     </h1>
-                    <p className="text-sky-600/90 text-sm lg:text-base font-medium mb-3">
+                    <p className="text-sky-600/90 text-xs lg:text-sm font-medium mb-1">
                       {existingStatus === 'pending' ? 'Your request is under review' :
                        existingStatus === 'approved' ? 'Check your email for login credentials' :
                        'Join PeerPrep platform'}
@@ -378,7 +378,7 @@ export default function JoinPage() {
 
                   {/* Registration Form - Only show if no existing status */}
                   {!existingStatus && (
-                    <form onSubmit={handleSubmit} className="relative space-y-3">
+                    <form onSubmit={handleSubmit} className="relative space-y-2">
                       {/* Name */}
                       <div className="group">
                         <label className="block text-xs font-semibold text-sky-700/90 mb-1 uppercase tracking-wide">
@@ -393,7 +393,7 @@ export default function JoinPage() {
                             value={form.name}
                             onChange={(e) => handleChange('name', e.target.value)}
                             onKeyPress={handleKeyPress}
-                            className="w-full pl-10 pr-4 py-2 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
+                            className="w-full pl-10 pr-4 py-1.5 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
                             placeholder="Enter your full name"
                           />
                         </div>
@@ -414,7 +414,7 @@ export default function JoinPage() {
                             value={form.email}
                             onChange={(e) => handleChange('email', e.target.value)}
                             onKeyPress={handleKeyPress}
-                            className="w-full pl-10 pr-4 py-2 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
+                            className="w-full pl-10 pr-4 py-1.5 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
                             placeholder="Enter your email"
                           />
                         </div>
@@ -435,7 +435,7 @@ export default function JoinPage() {
                             value={form.university}
                             onChange={(e) => handleChange('university', e.target.value)}
                             onKeyPress={handleKeyPress}
-                            className="w-full pl-10 pr-4 py-2 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
+                            className="w-full pl-10 pr-4 py-1.5 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
                             placeholder="e.g., Delhi Technical University"
                           />
                         </div>
@@ -458,7 +458,7 @@ export default function JoinPage() {
                               value={form.course}
                               onChange={(e) => handleChange('course', e.target.value)}
                               onKeyPress={handleKeyPress}
-                              className="w-full pl-10 pr-4 py-2 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
+                              className="w-full pl-10 pr-4 py-1.5 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
                               placeholder="B.Tech, BCA"
                             />
                           </div>
@@ -479,7 +479,7 @@ export default function JoinPage() {
                               value={form.branch}
                               onChange={(e) => handleChange('branch', e.target.value)}
                               onKeyPress={handleKeyPress}
-                              className="w-full pl-10 pr-4 py-2 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
+                              className="w-full pl-10 pr-4 py-1.5 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
                               placeholder="CS, IT"
                             />
                           </div>
@@ -499,7 +499,7 @@ export default function JoinPage() {
                           <select
                             value={form.semester}
                             onChange={(e) => handleChange('semester', e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 font-medium text-sm appearance-none"
+                            className="w-full pl-10 pr-4 py-1.5 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 font-medium text-sm appearance-none"
                           >
                             <option value="">Select Semester</option>
                             {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
@@ -524,7 +524,7 @@ export default function JoinPage() {
                             value={form.studentId}
                             onChange={(e) => handleChange('studentId', e.target.value)}
                             onKeyPress={handleKeyPress}
-                            className="w-full pl-10 pr-4 py-2 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
+                            className="w-full pl-10 pr-4 py-1.5 bg-white/60 border border-sky-200/50 rounded-lg focus:ring-2 focus:ring-sky-300/50 focus:border-sky-300 transition-all duration-300 backdrop-blur-sm hover:bg-white/70 text-sky-800 placeholder-sky-600/70 font-medium text-sm"
                             placeholder="Enter your student ID"
                           />
                         </div>
@@ -542,7 +542,7 @@ export default function JoinPage() {
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-2.5 px-6 rounded-lg font-bold transform transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
+                        className="w-full group relative bg-gradient-to-r from-sky-500 to-sky-600 text-white py-2 px-6 rounded-lg font-bold transform transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 focus:ring-2 focus:ring-sky-300/50 overflow-hidden shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                         <span className="relative flex items-center justify-center text-base font-semibold gap-2">
@@ -557,7 +557,7 @@ export default function JoinPage() {
                         </span>
                       </button>
 
-                      <p className="text-center text-xs text-sky-600/80 mt-3">
+                      <p className="text-center text-xs text-sky-600/80 mt-2">
                         Already have an account?{' '}
                         <button type="button" onClick={() => navigate('/student')} className="font-semibold text-sky-600 hover:text-sky-700 hover:underline">
                           Login here

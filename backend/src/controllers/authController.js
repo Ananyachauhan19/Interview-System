@@ -6,6 +6,7 @@ import { sendPasswordResetEmail } from '../utils/mailer.js';
 import { uploadAvatar, deleteAvatar, isCloudinaryConfigured } from '../utils/cloudinary.js';
 import { logActivity } from './adminActivityController.js';
 import { logStudentActivity } from './activityController.js';
+import { autoEnrollStudentInCourses } from './learningController.js';
 import { logAuthAttempt, logSuspiciousActivity } from '../utils/logger.js';
 import { validatePasswordStrength, validateEmail, generateSecureToken, hashToken } from '../utils/validators.js';
 import { checkEmailResetLimit, recordEmailResetAttempt } from '../middleware/rateLimiter.js';
@@ -33,11 +34,23 @@ export async function changePassword(req, res) {
   // Verify current password
   const ok = await user.verifyPassword(currentPassword);
   if (!ok) throw new HttpError(401, 'Current password incorrect');
-  
+
+  // Capture whether this is the student's very first login/password change
+  const wasFirstLogin = user.mustChangePassword === true && user.role === 'student';
+
   // Update password (all students and coordinators use User model hashing)
   user.passwordHash = await User.hashPassword(newPassword);
   user.mustChangePassword = false;
   await user.save();
+
+  // Auto-enroll student in all courses for their semester on first login
+  if (wasFirstLogin) {
+    // Re-fetch with populated semester field (lean object from req.user may be stale)
+    const freshStudent = await User.findById(user._id).lean();
+    autoEnrollStudentInCourses(freshStudent).then(result => {
+      console.log(`[AutoEnroll] Result for student ${user._id}:`, result);
+    });
+  }
   
   // Log activity
   logActivity({

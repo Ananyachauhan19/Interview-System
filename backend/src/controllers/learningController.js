@@ -567,6 +567,87 @@ export const startVideoTracking = async (req, res) => {
   }
 };
 
+// Track actual watch time from YouTube IFrame API
+export const trackWatchTime = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    const { watchedSeconds, videoDuration, semesterId, subjectId, chapterId, coordinatorId } = req.body;
+    const studentId = req.user._id;
+
+    if (!coordinatorId) {
+      return res.status(400).json({ message: 'Coordinator ID is required' });
+    }
+
+    const seconds = Math.max(0, Math.floor(Number(watchedSeconds) || 0));
+    const duration = Math.max(0, Math.floor(Number(videoDuration) || 0));
+
+    // Find or create progress record
+    let progress = await Progress.findOne({ studentId, topicId });
+
+    if (!progress) {
+      progress = new Progress({
+        studentId,
+        semesterId,
+        subjectId,
+        chapterId,
+        topicId,
+        coordinatorId,
+        videoWatchedSeconds: 0,
+        videoDuration: duration,
+        completed: false
+      });
+    }
+
+    const previousWatchedSeconds = progress.videoWatchedSeconds || 0;
+    const wasCompleted = progress.completed;
+
+    // Only update if new value is greater (never decrease watched time)
+    if (seconds > previousWatchedSeconds) {
+      progress.videoWatchedSeconds = seconds;
+    }
+
+    if (duration > 0) {
+      progress.videoDuration = duration;
+    }
+
+    progress.lastAccessedAt = new Date();
+
+    // Mark completed if watched >= 80% of video, or >= 180 seconds as fallback
+    const completionThreshold = duration > 0 ? duration * 0.8 : 180;
+    if (progress.videoWatchedSeconds >= completionThreshold && !progress.completed) {
+      progress.completed = true;
+      progress.completedAt = new Date();
+    }
+
+    await progress.save();
+
+    // Log video watching activity (only if meaningful new time added)
+    if (seconds > previousWatchedSeconds + 10) {
+      await logStudentActivity({
+        studentId,
+        studentModel: 'User',
+        activityType: 'VIDEO_WATCH',
+        metadata: { topicId, subjectId, chapterId, semesterId, watchedSeconds: seconds, coordinatorId }
+      });
+    }
+
+    // Log topic completion (only on first completion)
+    if (!wasCompleted && progress.completed) {
+      await logStudentActivity({
+        studentId,
+        studentModel: 'User',
+        activityType: 'TOPIC_COMPLETED',
+        metadata: { topicId, subjectId, chapterId, semesterId, coordinatorId, totalWatchedSeconds: progress.videoWatchedSeconds }
+      });
+    }
+
+    res.json({ message: 'Watch time tracked', progress });
+  } catch (error) {
+    console.error('[trackWatchTime] Error:', error);
+    res.status(500).json({ message: 'Failed to track watch time', error: error.message });
+  }
+};
+
 // Manual topic completion
 export const markTopicComplete = async (req, res) => {
   try {
@@ -881,3 +962,79 @@ export const getSubjectAnalytics = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch analytics', error: error.message });
   }
 };
+
+/**
+ * Auto-enroll a student in all courses for their semester (and lower semesters).
+ * Creates Progress documents (completed=false, videoWatchedSeconds=0) for every
+ * topic across all allowed semesters. Called once after first-time password change.
+ */
+export async function autoEnrollStudentInCourses(student) {
+  try {
+    console.log(`[AutoEnroll] Starting auto-enrollment for student: ${student._id} (semester: ${student.semester})`);
+
+    // Fetch all semesters
+    const allSemesters = await Semester.find().sort('order');
+
+    // Filter to semesters within the student's allowed range
+    const allowedSemesters = allSemesters.filter(sem => {
+      if (student.semester == null) return true; // no filter if semester not set
+      const match = sem.semesterName?.match(/\d+/);
+      if (match) {
+        const semNum = parseInt(match[0], 10);
+        return semNum <= student.semester;
+      }
+      return true; // include semesters without a number
+    });
+
+    console.log(`[AutoEnroll] Found ${allowedSemesters.length} allowed semesters (of ${allSemesters.length} total)`);
+
+    // Build Progress documents for every topic in allowed semesters
+    const progressDocs = [];
+    for (const semester of allowedSemesters) {
+      for (const subject of (semester.subjects || [])) {
+        for (const chapter of (subject.chapters || [])) {
+          for (const topic of (chapter.topics || [])) {
+            progressDocs.push({
+              studentId: student._id,
+              semesterId: semester._id,
+              subjectId: subject._id,
+              chapterId: chapter._id,
+              topicId: topic._id,
+              coordinatorId: String(semester.coordinatorId),
+              completed: false,
+              videoWatchedSeconds: 0,
+              lastAccessedAt: new Date()
+            });
+          }
+        }
+      }
+    }
+
+    if (progressDocs.length === 0) {
+      console.log(`[AutoEnroll] No topics found to enroll student in. Skipping.`);
+      return { enrolled: 0 };
+    }
+
+    // insertMany with ordered:false so duplicate-key errors (existing records) are skipped
+    let inserted = 0;
+    try {
+      const result = await Progress.insertMany(progressDocs, { ordered: false });
+      inserted = result.length;
+    } catch (bulkErr) {
+      // BulkWriteError: some docs inserted, some duplicate-key skipped
+      if (bulkErr.name === 'MongoBulkWriteError' || bulkErr.code === 11000) {
+        inserted = bulkErr.result?.nInserted ?? bulkErr.insertedDocs?.length ?? 0;
+        console.warn(`[AutoEnroll] Some topics already had progress records (skipped). Inserted: ${inserted}`);
+      } else {
+        throw bulkErr;
+      }
+    }
+
+    console.log(`[AutoEnroll] Enrolled student ${student._id} in ${inserted} topics across ${allowedSemesters.length} semesters`);
+    return { enrolled: inserted };
+  } catch (error) {
+    // Non-blocking: log but don't crash the password-change response
+    console.error('[AutoEnroll] Failed to auto-enroll student:', error);
+    return { enrolled: 0, error: error.message };
+  }
+}

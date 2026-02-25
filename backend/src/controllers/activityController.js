@@ -5,6 +5,18 @@ import StudentActivity from '../models/StudentActivity.js';
 import Subject from '../models/Subject.js';
 import { HttpError } from '../utils/errors.js';
 
+// Format seconds into a human-readable watch time string (e.g. "3m 45s", "1h 02m")
+function formatWatchTime(seconds) {
+  if (!seconds || seconds <= 0) return '0s';
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  if (hrs > 0) return `${hrs}h ${String(mins).padStart(2, '0')}m`;
+  if (mins > 0 && secs > 0) return `${mins}m ${secs}s`;
+  if (mins > 0) return `${mins}m`;
+  return `${secs}s`;
+}
+
 // Helper: determine learning scope (semesters/subjects/videos) for a given student
 // based on their current semester. This is used for both profile stats and
 // contribution calendar summary cards so that "Courses Enrolled" and
@@ -721,7 +733,9 @@ export async function getStudentVideosWatched(req, res) {
         subjectName,
         chapterName,
         semesterName,
-        duration: videoWatchedSeconds ? Math.floor(videoWatchedSeconds / 60) : 0, // Convert to minutes
+        duration: videoWatchedSeconds ? Math.floor(videoWatchedSeconds / 60) : 0, // minutes (backward compat)
+        durationSeconds: videoWatchedSeconds || 0,
+        durationDisplay: formatWatchTime(videoWatchedSeconds || 0),
         watchedDate: lastAccessedAt || createdAt,
         topicId,
         subjectId
@@ -788,6 +802,7 @@ export async function getStudentCoursesEnrolled(req, res) {
       
       let courseName = 'Unknown Course';
       let semesterName = 'Unknown Semester';
+      let actualTotalTopics = enrollment.totalTopics; // Default to Progress count
       
       try {
         const semester = await Subject.findById(semesterId);
@@ -796,14 +811,24 @@ export async function getStudentCoursesEnrolled(req, res) {
           const subject = semester.subjects.id(subjectId);
           if (subject) {
             courseName = subject.subjectName;
+            // Calculate ACTUAL total topics from curriculum (not just Progress records)
+            let topicCount = 0;
+            if (subject.chapters && Array.isArray(subject.chapters)) {
+              subject.chapters.forEach(chapter => {
+                if (chapter.topics && Array.isArray(chapter.topics)) {
+                  topicCount += chapter.topics.length;
+                }
+              });
+            }
+            actualTotalTopics = topicCount; // Use curriculum count
           }
         }
       } catch (e) {
         console.error('Error fetching course details:', e);
       }
 
-      const progressPercentage = enrollment.totalTopics > 0 
-        ? Math.round((enrollment.completedTopics / enrollment.totalTopics) * 100)
+      const progressPercentage = actualTotalTopics > 0 
+        ? Math.round((enrollment.completedTopics / actualTotalTopics) * 100)
         : 0;
 
       return {
@@ -813,7 +838,7 @@ export async function getStudentCoursesEnrolled(req, res) {
         lastAccessed: enrollment.lastAccessed,
         progressPercentage,
         completedTopics: enrollment.completedTopics,
-        totalTopics: enrollment.totalTopics,
+        totalTopics: actualTotalTopics, // Dynamic from actual curriculum
         progressStatus: progressPercentage === 100 ? 'Completed' : 
                        progressPercentage >= 50 ? 'In Progress' : 
                        progressPercentage > 0 ? 'Started' : 'Not Started',

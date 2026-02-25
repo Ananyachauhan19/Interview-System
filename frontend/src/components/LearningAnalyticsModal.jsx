@@ -14,7 +14,8 @@ import {
   UserX,
   Search,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Download
 } from 'lucide-react';
 import { api } from '../utils/api';
 
@@ -90,6 +91,52 @@ export default function LearningAnalyticsModal({ isOpen, onClose, semesterId, su
     });
   };
 
+  const downloadNotStartedCsv = () => {
+    if (!analytics?.notStartedStudents?.length) return;
+    const esc = (v) => {
+      const s = v == null ? '' : String(v);
+      return /[,"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = [
+      ['Student Name', 'Student ID', 'Email', 'Semester', 'Course', 'Branch'],
+      ...analytics.notStartedStudents.map(s => [
+        s.name || '', s.studentId || '', s.email || '',
+        s.semester || '', s.course || '', s.branch || ''
+      ])
+    ];
+    const csv = rows.map(r => r.map(esc).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `not_started_${(analytics.subjectName || subjectName || 'subject').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadTopicNotWatchedCsv = (chapterName, topicName, students) => {
+    if (!students?.length) return;
+    const esc = (v) => {
+      const s = v == null ? '' : String(v);
+      return /[,"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = [
+      ['Student Name', 'Student ID', 'Email', 'Semester', 'Course', 'Branch'],
+      ...students.map(s => [
+        s.name || '', s.studentId || '', s.email || '',
+        s.semester || '', s.course || '', s.branch || ''
+      ])
+    ];
+    const csv = rows.map(r => r.map(esc).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `not_watched_${topicName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -130,12 +177,14 @@ export default function LearningAnalyticsModal({ isOpen, onClose, semesterId, su
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-2.5 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-white" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={onClose}
+                    className="p-2.5 hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                </div>
               </div>
 
               {/* Content */}
@@ -575,6 +624,16 @@ export default function LearningAnalyticsModal({ isOpen, onClose, semesterId, su
                                                                 <p className="text-xs text-slate-500 dark:text-gray-400">No matching students found</p>
                                                               )}
                                                             </div>
+                                                            {/* Download button — bottom right */}
+                                                            <div className="flex justify-end mt-3">
+                                                              <button
+                                                                onClick={() => downloadTopicNotWatchedCsv(chapter.chapterName, topic.topicName, topic.notViewedStudents)}
+                                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition-colors"
+                                                              >
+                                                                <Download className="w-3.5 h-3.5" />
+                                                                Download List
+                                                              </button>
+                                                            </div>
                                                           </div>
                                                         </motion.div>
                                                       )}
@@ -654,6 +713,16 @@ export default function LearningAnalyticsModal({ isOpen, onClose, semesterId, su
                                   {filterStudents(analytics.notStartedStudents).length === 0 && (
                                     <p className="text-sm text-slate-500 dark:text-gray-400">No matching students found</p>
                                   )}
+                                </div>
+                                {/* Download button — bottom right */}
+                                <div className="flex justify-end mt-4">
+                                  <button
+                                    onClick={downloadNotStartedCsv}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition-colors"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    Download List
+                                  </button>
                                 </div>
                               </div>
                             </motion.div>

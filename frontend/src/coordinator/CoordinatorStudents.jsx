@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { api } from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, Loader2, X } from "lucide-react";
+import { Search, Users, Loader2, X, Download } from "lucide-react";
 import Fuse from "fuse.js";
 import ContributionCalendar from "../components/ContributionCalendar";
 
@@ -29,6 +29,7 @@ export default function CoordinatorStudents() {
   const [coursesEnrolled, setCoursesEnrolled] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 
   // Configure Fuse.js for optimized fuzzy search
   const fuse = useMemo(() => {
@@ -198,6 +199,49 @@ export default function CoordinatorStudents() {
     }, 300);
   };
 
+  // ── CSV helpers ──────────────────────────────────────────────────
+  const downloadCsv = (rows, filename) => {
+    const esc = (v) => {
+      const s = v == null ? '' : String(v);
+      return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = rows.map(r => r.map(esc).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadStudentData = async () => {
+    if (!selectedStudent) return;
+    const s = selectedStudent;
+    let stats = studentStats;
+    if (!stats) {
+      try { const d = await api.getStudentStatsByAdmin(s._id); stats = d.stats; } catch (_) {}
+    }
+    const rows = [
+      ['Name','Student ID','Email','Course','Branch','College','Semester','Group','Coordinator','Courses Enrolled','Videos Watched'],
+      [s.name, s.studentId, s.email, s.course, s.branch, s.college, s.semester, s.group, s.teacherId,
+       stats?.totalCoursesEnrolled ?? '', stats?.totalVideosWatched ?? '']
+    ];
+    downloadCsv(rows, `student_${s.studentId || s._id}_${new Date().toISOString().slice(0,10)}.csv`);
+  };
+
+  const handleDownloadAllStudents = () => {
+    if (!students.length) return;
+    setIsDownloadingAll(true);
+    try {
+      const rows = [
+        ['Name','Student ID','Email','Course','Branch','College','Semester','Group','Coordinator'],
+        ...students.map(s => [s.name, s.studentId, s.email, s.course, s.branch, s.college, s.semester, s.group, s.teacherId])
+      ];
+      downloadCsv(rows, `my_students_${new Date().toISOString().slice(0,10)}.csv`);
+    } finally {
+      setIsDownloadingAll(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex flex-col pt-16">
       <motion.div
@@ -224,7 +268,17 @@ export default function CoordinatorStudents() {
             </div>
 
             {/* Compact Search Bar */}
-            <form onSubmit={handleSearch} className="w-80">
+            <div className="flex items-center gap-2">
+              {/* Download All Students */}
+              <button
+                onClick={handleDownloadAllStudents}
+                disabled={isDownloadingAll || !students.length}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 rounded-lg transition-colors whitespace-nowrap"
+              >
+                {isDownloadingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                Download All
+              </button>
+              <form onSubmit={handleSearch} className="w-80">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-gray-500" />
                 <input
@@ -248,6 +302,7 @@ export default function CoordinatorStudents() {
                 Search by name, ID, email, branch, course, or college
               </p>
             </form>
+            </div>
           </div>
 
           {/* Stats */}
@@ -377,152 +432,128 @@ export default function CoordinatorStudents() {
             >
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-5xl w-full overflow-hidden"
               >
                 {/* Header */}
-                <div className="sticky top-0 bg-gradient-to-r from-sky-50 to-blue-50 dark:from-gray-700 dark:to-gray-700 border-b border-slate-200 dark:border-gray-600 px-6 py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                <div className="bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
                     {selectedStudent.avatarUrl ? (
-                      <img 
-                        src={selectedStudent.avatarUrl} 
-                        alt={selectedStudent.name} 
-                        className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md"
+                      <img
+                        src={selectedStudent.avatarUrl}
+                        alt={selectedStudent.name}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-white/60 shadow"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold text-2xl border-2 border-white shadow-md">
+                      <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg border-2 border-white/40">
                         {selectedStudent.name?.charAt(0)?.toUpperCase() || "?"}
                       </div>
                     )}
                     <div>
-                      <h3 className="text-xl font-semibold text-slate-800 dark:text-gray-100">{selectedStudent.name || "Unknown"}</h3>
-                      <p className="text-sm text-slate-600 dark:text-gray-400">{selectedStudent.studentId || "N/A"}</p>
+                      <h3 className="text-base font-bold text-white leading-tight">{selectedStudent.name || "Unknown"}</h3>
+                      <p className="text-xs text-sky-100">{selectedStudent.studentId || "N/A"} · {selectedStudent.course || ""} · Sem {selectedStudent.semester || "?"}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={closeModal}
-                    className="p-2 hover:bg-slate-200 dark:hover:bg-gray-600 rounded-full transition-colors"
-                  >
-                    <X className="w-5 h-5 text-slate-600 dark:text-gray-400" />
+                  <button onClick={closeModal} className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
+                    <X className="w-4 h-4 text-white" />
                   </button>
                 </div>
 
-                {/* Content */}
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Personal Information */}
-                    <div>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Name</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-100 font-medium">{selectedStudent.name || "-"}</div>
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Student ID</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-100 font-medium">{selectedStudent.studentId || "-"}</div>
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Email</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-100">{selectedStudent.email || "-"}</div>
-                        </div>
-                      </div>
-                    </div>
+                {/* Body */}
+                <div className="p-4 space-y-3">
 
-                    {/* Academic Information */}
-                    <div>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Course</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-100 font-medium">{selectedStudent.course || "-"}</div>
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Branch</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-100 font-medium">{selectedStudent.branch || "-"}</div>
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Semester</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-100">{selectedStudent.semester || "-"}</div>
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Group</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-100">{selectedStudent.group || "-"}</div>
-                        </div>
+                  {/* Info Grid — 4 columns */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {[
+                      { label: "Name",                value: selectedStudent.name },
+                      { label: "Student ID",          value: selectedStudent.studentId },
+                      { label: "Course",              value: selectedStudent.course },
+                      { label: "Branch",              value: selectedStudent.branch },
+                      { label: "Email",               value: selectedStudent.email },
+                      { label: "College",             value: selectedStudent.college },
+                      { label: "Semester",            value: selectedStudent.semester },
+                      { label: "Group",               value: selectedStudent.group },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-slate-50 dark:bg-gray-700/60 rounded-lg px-3 py-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-gray-400">{label}</p>
+                        <p className="text-xs font-semibold text-slate-800 dark:text-white mt-0.5 truncate">{value || "—"}</p>
                       </div>
-                    </div>
-
-                    {/* College Information */}
-                    <div>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">College</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-100">{selectedStudent.college || "-"}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Assignment Information */}
-                    <div>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-xs text-slate-500 dark:text-gray-400">Coordinator Assigned</label>
-                          <div className="mt-1 text-slate-800 dark:text-gray-100">{selectedStudent.teacherId || "Not Assigned"}</div>
-                        </div>
-                      </div>
-                    </div>
+                    ))}
                   </div>
 
-                  {/* Statistics Section */}
-                  <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-700">
-                    <h4 className="font-medium text-slate-800 dark:text-gray-100 mb-4">Statistics</h4>
-                    {loadingStats ? (
-                      <div className="text-center py-4 text-slate-500 dark:text-gray-400">Loading stats...</div>
+                  {/* Coordinator row */}
+                  <div className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-lg px-3 py-2 flex items-center gap-2">
+                    <svg className="w-3.5 h-3.5 text-sky-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-sky-500">Coordinator Assigned</span>
+                    <span className="text-xs font-bold text-sky-700 dark:text-sky-300 ml-1">{selectedStudent.teacherId || "Not Assigned"}</span>
+                  </div>
+
+                  {/* Stats Row */}
+                  {loadingStats ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {[1,2].map(i => <div key={i} className="h-14 animate-pulse bg-slate-100 dark:bg-gray-700 rounded-lg" />)}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={handleShowCoursesEnrolled}
+                        className="flex items-center gap-2 p-2.5 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 hover:from-blue-100 hover:to-indigo-100 transition-all text-left"
+                      >
+                        <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 dark:text-white">{studentStats?.totalCoursesEnrolled || 0}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-gray-400">Courses Enrolled</p>
+                        </div>
+                      </button>
+                      <button
+                        onClick={handleShowVideosWatched}
+                        className="flex items-center gap-2 p-2.5 rounded-lg bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-800 hover:from-red-100 hover:to-pink-100 transition-all text-left"
+                      >
+                        <div className="w-7 h-7 rounded-md bg-red-600 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 dark:text-white">{studentStats?.totalVideosWatched || 0}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-gray-400">Videos Watched</p>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Contribution Calendar */}
+                  <div className="rounded-lg bg-slate-50 dark:bg-gray-700/50 border border-slate-200 dark:border-gray-600 p-3">
+                    {loadingActivity ? (
+                      <div className="text-center py-4 text-xs text-slate-400">Loading activity...</div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <button
-                          onClick={handleShowCoursesEnrolled}
-                          className="text-left p-4 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600 hover:bg-slate-100 dark:hover:bg-gray-600 transition-colors cursor-pointer"
-                        >
-                          <div className="text-2xl font-bold text-slate-800 dark:text-gray-100">{studentStats?.totalCoursesEnrolled || 0}</div>
-                          <div className="text-sm text-slate-500 dark:text-gray-400">Courses Enrolled</div>
-                        </button>
-                        <button
-                          onClick={handleShowVideosWatched}
-                          className="text-left p-4 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600 hover:bg-slate-100 dark:hover:bg-gray-600 transition-colors cursor-pointer"
-                        >
-                          <div className="text-2xl font-bold text-slate-800 dark:text-gray-100">{studentStats?.totalVideosWatched || 0}</div>
-                          <div className="text-sm text-slate-500 dark:text-gray-400">Videos Watched</div>
-                        </button>
-                      </div>
+                      <ContributionCalendar
+                        activityByDate={activity}
+                        title="Student Activity"
+                        year={selectedYear}
+                        availableYears={availableYears}
+                        onYearChange={handleYearChange}
+                        showYearFilter={true}
+                        stats={activityStats}
+                      />
                     )}
                   </div>
 
-                  {/* Contribution Calendar */}
-                  <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-700">
-                    <div className="rounded-lg p-4 bg-slate-50 dark:bg-gray-700 border border-slate-200 dark:border-gray-600">
-                      {loadingActivity ? (
-                        <div className="text-center py-8 text-slate-500 dark:text-gray-400">Loading activity...</div>
-                      ) : (
-                        <ContributionCalendar 
-                          activityByDate={activity} 
-                          title="Student Activity"
-                          year={selectedYear}
-                          availableYears={availableYears}
-                          onYearChange={handleYearChange}
-                          showYearFilter={true}
-                          stats={activityStats}
-                        />
-                      )}
-                    </div>
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      onClick={handleDownloadStudentData}
+                      className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Download Data
+                    </button>
+                    <button
+                      onClick={closeModal}
+                      className="px-4 py-1.5 bg-slate-800 dark:bg-gray-600 text-white text-sm rounded-lg hover:bg-slate-700 dark:hover:bg-gray-500 transition-colors"
+                    >
+                      Close
+                    </button>
                   </div>
-                </div>
-
-                {/* Footer */}
-                <div className="sticky bottom-0 bg-slate-50 dark:bg-gray-700 border-t border-slate-200 dark:border-gray-600 px-6 py-4 flex justify-end">
-                  <button
-                    onClick={closeModal}
-                    className="px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-500 transition-colors"
-                  >
-                    Close
-                  </button>
                 </div>
               </div>
             </motion.div>
@@ -568,6 +599,7 @@ export default function CoordinatorStudents() {
                         <tr className="border-b border-slate-200 dark:border-gray-700">
                           <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-gray-300">Video Title</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-gray-300">Subject</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-gray-300">Watch Time</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-gray-300">Watched On</th>
                         </tr>
                       </thead>
@@ -576,6 +608,7 @@ export default function CoordinatorStudents() {
                           <tr key={index} className="border-b border-slate-100 dark:border-gray-700">
                             <td className="py-3 px-4 text-slate-800 dark:text-gray-100">{video.videoTitle || 'Unknown Video'}</td>
                             <td className="py-3 px-4 text-slate-600 dark:text-gray-300">{video.subjectName || 'Unknown Subject'}</td>
+                            <td className="py-3 px-4 text-slate-600 dark:text-gray-300">{video.durationDisplay || (video.duration > 0 ? `${video.duration}m` : '—')}</td>
                             <td className="py-3 px-4 text-slate-600 dark:text-gray-300">
                               {video.watchedDate ? `${new Date(video.watchedDate).toLocaleDateString()} at ${new Date(video.watchedDate).toLocaleTimeString()}` : 'N/A'}
                             </td>

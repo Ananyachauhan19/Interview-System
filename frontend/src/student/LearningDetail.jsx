@@ -20,6 +20,18 @@ import { api } from '../utils/api';
 import socketService from '../utils/socket';
 import { useToast } from '../components/CustomToast';
 
+// Extract YouTube video ID from any YouTube URL format
+const getYouTubeVideoId = (url) => {
+  if (!url) return null;
+  const embedMatch = url.match(/youtube\.com\/embed\/([^?&#]+)/);
+  if (embedMatch) return embedMatch[1];
+  const watchMatch = url.match(/[?&]v=([^&#]+)/);
+  if (watchMatch) return watchMatch[1];
+  const shortMatch = url.match(/youtu\.be\/([^?#]+)/);
+  if (shortMatch) return shortMatch[1];
+  return null;
+};
+
 // Convert YouTube URL to embed format
 const convertToEmbedUrl = (url) => {
   if (!url) return url;
@@ -69,6 +81,14 @@ export default function LearningDetail() {
   // Progress tracking
   const [progress, setProgress] = useState({});
 
+  // YouTube IFrame API tracking
+  const [currentVideoUrl, setCurrentVideoUrl] = useState(null); // original URL (pre-embed)
+  const ytPlayerRef = useRef(null);       // YT.Player instance
+  const watchIntervalRef = useRef(null);  // periodic ping interval
+  const watchedSecsRef = useRef(0);       // accumulated watched seconds
+  const playStartTimeRef = useRef(null);  // timestamp when play last started
+  const trackingDataRef = useRef(null);   // { topicId, semesterId, subjectId, chapterId, coordinatorId }
+
   useEffect(() => {
     loadCoordinatorSubjects();
   }, [teacherId]);
@@ -103,6 +123,24 @@ export default function LearningDetail() {
       socketService.off('learning-updated', handleLearningUpdate);
     };
   }, [semesterId, subjectId]);
+
+  // Load YouTube IFrame API script once
+  useEffect(() => {
+    if (!document.getElementById('yt-iframe-api')) {
+      const script = document.createElement('script');
+      script.id = 'yt-iframe-api';
+      script.src = 'https://www.youtube.com/iframe_api';
+      script.async = true;
+      document.body.appendChild(script);
+
+      const prevReady = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (prevReady) prevReady();
+        (window._ytReadyCallbacks || []).forEach(cb => cb());
+        window._ytReadyCallbacks = [];
+      };
+    }
+  }, []);
 
   const loadCoordinatorSubjects = async () => {
     try {
@@ -205,6 +243,101 @@ export default function LearningDetail() {
     }));
   };
 
+  // Send accumulated watch time to the backend
+  const sendWatchTime = async () => {
+    const data = trackingDataRef.current;
+    if (!data || !data.topicId) return;
+    const secs = Math.floor(watchedSecsRef.current);
+    if (secs < 3) return;
+
+    let duration = 0;
+    try {
+      if (ytPlayerRef.current?.getDuration) {
+        duration = Math.floor(ytPlayerRef.current.getDuration() || 0);
+      }
+    } catch (_) { /* player may already be destroyed */ }
+
+    try {
+      await api.trackWatchTime(data.topicId, {
+        watchedSeconds: secs,
+        videoDuration: duration,
+        semesterId: data.semesterId,
+        subjectId: data.subjectId,
+        chapterId: data.chapterId,
+        coordinatorId: data.coordinatorId
+      });
+    } catch (err) {
+      console.error('[trackWatchTime]', err);
+    }
+  };
+
+  // Handle YouTube player state changes (PLAYING → start timer, PAUSED/ENDED → accumulate)
+  const handleYTPlayerStateChange = (event) => {
+    const YT = window.YT;
+    if (!YT) return;
+    if (event.data === YT.PlayerState.PLAYING) {
+      playStartTimeRef.current = Date.now();
+      clearInterval(watchIntervalRef.current);
+      watchIntervalRef.current = setInterval(() => {
+        if (playStartTimeRef.current) {
+          const elapsed = (Date.now() - playStartTimeRef.current) / 1000;
+          watchedSecsRef.current += elapsed;
+          playStartTimeRef.current = Date.now();
+          sendWatchTime();
+        }
+      }, 30000);
+    } else if (
+      event.data === YT.PlayerState.PAUSED ||
+      event.data === YT.PlayerState.ENDED
+    ) {
+      clearInterval(watchIntervalRef.current);
+      if (playStartTimeRef.current) {
+        const elapsed = (Date.now() - playStartTimeRef.current) / 1000;
+        watchedSecsRef.current += elapsed;
+        playStartTimeRef.current = null;
+      }
+      sendWatchTime();
+    }
+  };
+
+  // Create / destroy YT.Player when the video modal opens or closes
+  useEffect(() => {
+    if (!modalOpen || modalType !== 'video' || !currentVideoUrl) return;
+
+    const videoId = getYouTubeVideoId(currentVideoUrl);
+    if (!videoId) return; // non-YouTube fallback – uses plain <iframe>
+
+    watchedSecsRef.current = 0;
+    playStartTimeRef.current = null;
+
+    const initPlayer = () => {
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.destroy(); } catch (_) {}
+        ytPlayerRef.current = null;
+      }
+      ytPlayerRef.current = new window.YT.Player('yt-player-container', {
+        videoId,
+        playerVars: { autoplay: 1, rel: 0, modestbranding: 1 },
+        events: { onStateChange: handleYTPlayerStateChange }
+      });
+    };
+
+    if (window.YT && window.YT.Player) {
+      initPlayer();
+    } else {
+      window._ytReadyCallbacks = window._ytReadyCallbacks || [];
+      window._ytReadyCallbacks.push(initPlayer);
+    }
+
+    return () => {
+      clearInterval(watchIntervalRef.current);
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.destroy(); } catch (_) {}
+        ytPlayerRef.current = null;
+      }
+    };
+  }, [modalOpen, modalType, currentVideoUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const openModal = async (type, content, topic) => {
     setModalType(type);
     
@@ -212,8 +345,19 @@ export default function LearningDetail() {
     let embedContent = content;
     
     if (type === 'video') {
-      // Convert YouTube URLs to embed format
+      // Convert YouTube URLs to embed format for non-IFrame-API fallback
       embedContent = convertToEmbedUrl(content);
+      // Store original URL and tracking data for YouTube IFrame API
+      setCurrentVideoUrl(content);
+      watchedSecsRef.current = 0;
+      playStartTimeRef.current = null;
+      trackingDataRef.current = {
+        topicId: topic?._id,
+        semesterId: subjectDetails?.semesterId,
+        subjectId: subjectDetails?.subjectId,
+        chapterId: topic?.chapterId,
+        coordinatorId: currentCoordinatorId || subjectDetails?.coordinatorId
+      };
     } else if (type === 'pdf' || type === 'notes') {
       // Handle Google Drive links for PDF viewing
       if (content.includes('drive.google.com')) {
@@ -233,9 +377,28 @@ export default function LearningDetail() {
   };
 
   const closeModal = () => {
+    clearInterval(watchIntervalRef.current);
+    if (modalType === 'video' && trackingDataRef.current) {
+      // Accumulate any remaining playing time before closing
+      if (playStartTimeRef.current) {
+        const elapsed = (Date.now() - playStartTimeRef.current) / 1000;
+        watchedSecsRef.current += elapsed;
+        playStartTimeRef.current = null;
+      }
+      const subjectIdToRefresh = trackingDataRef.current.subjectId;
+      sendWatchTime().then(() => {
+        if (subjectIdToRefresh) loadSubjectProgress(subjectIdToRefresh);
+      });
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.destroy(); } catch (_) {}
+        ytPlayerRef.current = null;
+      }
+    }
+    trackingDataRef.current = null;
     setModalOpen(false);
     setModalContent(null);
     setModalType(null);
+    setCurrentVideoUrl(null);
   };
 
   const openInNewTab = (url) => {
@@ -778,13 +941,22 @@ export default function LearningDetail() {
               {/* Modal Content */}
               <div className="flex-1 overflow-hidden p-4 bg-slate-50 dark:bg-gray-900">
                 {modalType === 'video' && (
-                  <iframe
-                    src={modalContent}
-                    className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-black"
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    title="Video Player"
-                  />
+                  getYouTubeVideoId(currentVideoUrl) ? (
+                    /* YouTube IFrame API player — the API fills this div */
+                    <div
+                      id="yt-player-container"
+                      className="w-full h-[500px] rounded-lg bg-black overflow-hidden"
+                    />
+                  ) : (
+                    /* Non-YouTube fallback: plain iframe */
+                    <iframe
+                      src={modalContent}
+                      className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-black"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      title="Video Player"
+                    />
+                  )
                 )}
                 {(modalType === 'notes' || modalType === 'pdf') && (
                   <div className="w-full h-[500px] rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden relative">

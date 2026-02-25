@@ -41,6 +41,9 @@ router.get('/topic/:topicId/progress', requireAuth, requireStudent, learningCont
 // Start video tracking (3-minute backend timer) - students only
 router.post('/topic/:topicId/start', requireAuth, requireStudent, learningController.startVideoTracking);
 
+// Track actual YouTube IFrame API watch time - students only
+router.post('/topic/:topicId/track-watch-time', requireAuth, requireStudent, learningController.trackWatchTime);
+
 // Manual topic completion - students only
 router.post('/topic/:topicId/complete', requireAuth, requireStudent, learningController.markTopicComplete);
 router.post('/topic/:topicId/incomplete', requireAuth, requireStudent, learningController.markTopicIncomplete);
