@@ -117,7 +117,23 @@ function RoutePrefetcher() {
   return null;
 }
 
+// Hide the HTML global-loader once React has mounted and rendered
+function useHideGlobalLoader() {
+  useEffect(() => {
+    const loader = document.getElementById('global-loader');
+    if (!loader) return;
+    // rAF ensures the browser has painted at least one frame before we hide
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        loader.classList.add('fade-out');
+        setTimeout(() => loader.remove(), 300);
+      });
+    });
+  }, []);
+}
+
 function AppContent() {
+  useHideGlobalLoader();
   const location = useLocation();
   const isMain = location.pathname === "/";
   const isStudentLogin = location.pathname === "/student";

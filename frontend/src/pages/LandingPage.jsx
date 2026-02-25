@@ -18,6 +18,20 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const observerRef = useRef(null);
 
+  // ── ISLAND ARCHITECTURE: dismiss the static HTML shell ──────────────
+  // The static #landing-island in index.html is visible while this
+  // component's JS chunk is being downloaded. Once we mount, the real
+  // React page is rendered underneath — fade the island out so the
+  // transition is seamless (no blank flash).
+  useEffect(() => {
+    const island = document.getElementById('landing-island');
+    if (island) {
+      island.classList.add('li-fade');
+      const t = setTimeout(() => island.remove(), 320);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   useEffect(() => {
     setIsVisible(true);
     

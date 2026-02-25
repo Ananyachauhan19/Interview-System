@@ -4,38 +4,33 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   build: {
-    // Optimize chunk splitting - let Vite/Rollup auto-split per lazy import
-    // instead of grouping all role pages into single large chunks
     rollupOptions: {
       output: {
         manualChunks: {
-          // Only group vendor libraries - NOT route components
-          // This lets React.lazy() create individual small chunks per page
+          // Core React — always needed, cache separately
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Heavy animation library — shared between pages that use it
           'animation': ['framer-motion'],
+          // Socket.io — only loaded for authenticated pages
           'socket': ['socket.io-client'],
-          'icons': ['lucide-react', 'react-icons'],
+          // NOTE: lucide-react and react-icons are intentionally NOT grouped here.
+          // Grouping them defeats tree-shaking: every lazy route would pull in the
+          // entire icon bundle. Instead we let Rollup tree-shake per route chunk.
         }
       }
     },
-    // Increase chunk size warning limit
     chunkSizeWarningLimit: 500,
-    // Use esbuild for minification (faster than terser, built into Vite)
     minify: 'esbuild',
-    // Source maps for production debugging
-    sourcemap: false, // Disable for smaller bundle size
+    sourcemap: false,
   },
-  // Drop console.log in production builds
   esbuild: {
     drop: ['console', 'debugger'],
   },
-  // Optimize dev server
   server: {
     hmr: {
       overlay: true
     }
   },
-  // Optimize dependencies
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom']
   }
