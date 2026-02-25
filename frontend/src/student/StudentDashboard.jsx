@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../utils/api";
 import {
   CheckCircle, Clock, Calendar, Users, Info, ChevronLeft,
-  BookOpen, Award, X, Search, User, UserCheck, PlusCircle, AlertCircle
+  BookOpen, Award, X, Search, User, UserCheck, PlusCircle, AlertCircle,
+  Pin, PinOff, PanelLeftClose, PanelLeftOpen, GraduationCap, TrendingUp, Target, Video, MessageSquare, Zap, ArrowRight
 } from "lucide-react";
 import DateTimePicker from "../components/DateTimePicker";
 
@@ -42,6 +43,11 @@ export default function StudentDashboard() {
   const pastDropdownRef = useRef(null);
   const [showProposeForm, setShowProposeForm] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  
+  // Sidebar collapse/expand state
+  const [sidebarPinned, setSidebarPinned] = useState(false);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
+  const sidebarExpanded = sidebarPinned || sidebarHovered;
 
   // Set mounted state after initial render to prevent flicker
   useEffect(() => {
@@ -2539,56 +2545,158 @@ export default function StudentDashboard() {
       return () => clearInterval(interval);
     }, [interviewTips.length]);
 
+    const quickLinks = [
+      {
+        title: "Learning Modules",
+        description: "Watch video lectures and track your progress across subjects",
+        icon: GraduationCap,
+        color: "from-sky-500 to-cyan-500",
+        bgLight: "bg-sky-50 dark:bg-sky-900/20",
+        textColor: "text-sky-700 dark:text-sky-300",
+        path: "/student/learning"
+      },
+      {
+        title: "Session Feedback",
+        description: "View and submit feedback for your interview sessions",
+        icon: MessageSquare,
+        color: "from-emerald-500 to-teal-500",
+        bgLight: "bg-emerald-50 dark:bg-emerald-900/20",
+        textColor: "text-emerald-700 dark:text-emerald-300",
+        path: "/student/session"
+      },
+      {
+        title: "Track Progress",
+        description: "Monitor your growth with detailed performance analytics",
+        icon: TrendingUp,
+        color: "from-purple-500 to-violet-500",
+        bgLight: "bg-purple-50 dark:bg-purple-900/20",
+        textColor: "text-purple-700 dark:text-purple-300",
+        path: "/student/learning"
+      }
+    ];
+
     return (
-      <div className="flex-1 flex flex-col p-6 sm:p-8">
-        {/* Welcome Message */}
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-gray-100 mb-2">
+      <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        {/* Welcome Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-gray-100 mb-1.5">
             Welcome back, {user?.name || me?.name || "Student"}! 👋
           </h1>
-          <p className="text-slate-600 dark:text-gray-300 text-sm sm:text-base">
-            Ready to ace your next interview? Select an interview from the left to get started.
+          <p className="text-slate-500 dark:text-gray-400 text-sm sm:text-base">
+            Select an interview from the sidebar to get started, or explore learning modules below.
           </p>
         </div>
 
-        {/* Animated Tips Section */}
-        <div className="flex-1 flex flex-col items-center justify-center">
-          <div className="w-20 h-20 mb-6 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg">
-            <BookOpen className="w-10 h-10 text-white" />
-          </div>
-          
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 mb-8 text-center">
-            Interview Sessions
+        {/* Stats Row */}
+        <div className="mb-6">
+          <StatsComponent />
+        </div>
+
+        {/* Quick Access Cards */}
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-gray-500 mb-3">
+            Quick Access
           </h2>
-
-          {/* Rotating Tips - Keep animation for smooth transitions */}
-          <div className="w-full max-w-2xl min-h-[80px] flex items-center justify-center mb-8">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentTipIndex}
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ duration: 0.5 }}
-                className="w-full"
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {quickLinks.map((link, idx) => (
+              <button
+                key={idx}
+                onClick={() => navigate(link.path)}
+                className="group text-left p-4 rounded-xl border border-slate-200 dark:border-gray-700 hover:border-slate-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 hover:shadow-md transition-all"
               >
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 border-l-4 border-indigo-500 dark:border-indigo-400 p-4 sm:p-6 rounded-r-lg shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">💡</span>
-                    </div>
-                    <p className="text-slate-700 dark:text-gray-200 text-sm sm:text-base leading-relaxed flex-1">
-                      {interviewTips[currentTipIndex]}
-                    </p>
-                  </div>
+                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${link.color} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
+                  <link.icon className="w-5 h-5 text-white" />
                 </div>
-              </motion.div>
-            </AnimatePresence>
+                <h3 className="font-semibold text-sm text-slate-800 dark:text-gray-100 mb-1 flex items-center gap-1.5">
+                  {link.title}
+                  <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-slate-400" />
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-gray-400 leading-relaxed">{link.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Two Column: Tips + Interview Prep */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          {/* Rotating Tips */}
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-gray-500 mb-3">
+              Interview Tips
+            </h2>
+            <div className="min-h-[120px] flex items-stretch">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentTipIndex}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.4 }}
+                  className="w-full"
+                >
+                  <div className="h-full bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-100 dark:border-indigo-800/30 p-5 rounded-xl">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                        <Zap className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-slate-700 dark:text-gray-200 text-sm leading-relaxed">
+                          {interviewTips[currentTipIndex]}
+                        </p>
+                        <div className="flex items-center gap-1 mt-3">
+                          {interviewTips.map((_, i) => (
+                            <div
+                              key={i}
+                              className={`h-1 rounded-full transition-all duration-300 ${
+                                i === currentTipIndex ? 'w-4 bg-indigo-500' : 'w-1.5 bg-indigo-200 dark:bg-indigo-700'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
 
-          {/* Stats */}
-          <div className="w-full max-w-2xl">
-            <StatsComponent />
+          {/* How It Works */}
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-gray-500 mb-3">
+              How It Works
+            </h2>
+            <div className="h-full bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl p-5 space-y-3">
+              {[
+                { step: "1", label: "Join an interview event", icon: Calendar, color: "text-sky-600 bg-sky-100 dark:bg-sky-900/30" },
+                { step: "2", label: "Get paired with a partner", icon: Users, color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30" },
+                { step: "3", label: "Schedule & conduct session", icon: Video, color: "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30" },
+                { step: "4", label: "Submit & receive feedback", icon: Target, color: "text-amber-600 bg-amber-100 dark:bg-amber-900/30" },
+              ].map((item) => (
+                <div key={item.step} className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${item.color}`}>
+                    <item.icon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-sm text-slate-700 dark:text-gray-200">{item.label}</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-300 dark:text-gray-600">
+                    {item.step}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500 rounded-xl p-5 text-white flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-base mb-0.5">Ready to practice?</h3>
+            <p className="text-sky-100 text-sm">Pick an interview from the sidebar to begin your session.</p>
+          </div>
+          <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+            <Zap className="w-6 h-6 text-white" />
           </div>
         </div>
       </div>
@@ -2598,15 +2706,449 @@ export default function StudentDashboard() {
   return (
     <RequirePasswordChange user={user}>
       <div className="min-h-screen w-full bg-slate-50 dark:bg-gray-900 flex flex-col pt-16">
-        <div className="flex-1 w-full mx-auto px-2 sm:px-4 py-2 sm:py-4">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3">
-            <div className={`${selectedEvent ? 'hidden' : 'block'} lg:block lg:col-span-3`}>
+        <div className="flex-1 w-full flex">
+          {/* ── Collapsible Sidebar ──────────────────────────────────────
+              Collapsed: 60px (icons only)
+              Expanded:  320px (on hover or when pinned)
+          ─────────────────────────────────────────────────────────── */}
+          <div
+            className={`hidden lg:flex flex-col flex-shrink-0 bg-white dark:bg-gray-800 border-r border-slate-200 dark:border-gray-700 h-[calc(100vh-4rem)] sticky top-16 transition-all duration-300 ease-in-out overflow-hidden ${
+              sidebarExpanded ? 'w-[320px]' : 'w-[60px]'
+            }`}
+            onMouseEnter={() => setSidebarHovered(true)}
+            onMouseLeave={() => setSidebarHovered(false)}
+          >
+            {/* Sidebar Header */}
+            <div className={`flex items-center p-3 border-b border-slate-100 dark:border-gray-700 ${sidebarExpanded ? 'justify-between' : 'justify-center'}`}>
+              {sidebarExpanded ? (
+                <>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h2 className="text-base font-semibold text-slate-800 dark:text-gray-100 truncate">Interviews</h2>
+                    <span className="px-2 py-0.5 bg-sky-500 text-white rounded-full text-xs font-medium flex-shrink-0">
+                      {filteredEvents.length}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setSidebarPinned(!sidebarPinned)}
+                    className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${
+                      sidebarPinned
+                        ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400'
+                        : 'hover:bg-slate-100 dark:hover:bg-gray-700 text-slate-400 dark:text-gray-500'
+                    }`}
+                    title={sidebarPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
+                  >
+                    {sidebarPinned ? <Pin className="w-4 h-4" /> : <PinOff className="w-4 h-4" />}
+                  </button>
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-1">
+                  <div className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-900/20">
+                    <Calendar className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                  </div>
+                  <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400">{filteredEvents.length}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Collapsed: icon buttons for tabs */}
+            {!sidebarExpanded && (
+              <div className="flex flex-col items-center gap-1 p-2 border-b border-slate-100 dark:border-gray-700">
+                {[
+                  { id: 'regular', icon: BookOpen, label: 'Regular', color: 'sky' },
+                  { id: 'special', icon: Award, label: 'Special', color: 'purple' },
+                  { id: 'past', icon: Clock, label: 'Past', color: 'slate' },
+                ].map((tab) => {
+                  const isActive = selectedKey.startsWith(tab.id);
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSelectedKey(`${tab.id}-all`)}
+                      className={`p-2 rounded-lg transition-all w-full flex items-center justify-center ${
+                        isActive
+                          ? `bg-${tab.color}-100 dark:bg-${tab.color}-900/30 text-${tab.color}-600 dark:text-${tab.color}-400`
+                          : 'text-slate-400 dark:text-gray-500 hover:bg-slate-50 dark:hover:bg-gray-700'
+                      }`}
+                      title={tab.label}
+                    >
+                      <tab.icon className="w-4 h-4" />
+                    </button>
+                  );
+                })}
+                <button
+                  className="p-2 rounded-lg transition-all w-full flex items-center justify-center text-slate-400 dark:text-gray-500 hover:bg-slate-50 dark:hover:bg-gray-700"
+                  title="Search"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Expanded: full EventList content */}
+            {sidebarExpanded && (
+              <div className="flex-1 flex flex-col overflow-hidden p-3 pt-2">
+                {/* Filters */}
+                {!selectedEvent && (
+                  <div className="space-y-2 mb-3">
+                    <div className="flex gap-1.5">
+                      {[
+                        { id: "regular", label: "Regular", color: "sky" },
+                        { id: "special", label: "Special", color: "purple" },
+                        { id: "past", label: "Past", color: "slate" }
+                      ].map((tab) => {
+                        const isActive = selectedKey.startsWith(tab.id);
+                        return (
+                          <button
+                            key={tab.id}
+                            onClick={() => {
+                              if (tab.id === "past") {
+                                setSelectedKey("past-all");
+                              } else {
+                                const currentStatus = selectedKey.split("-")[1] || "all";
+                                setSelectedKey(`${tab.id}-${currentStatus}`);
+                              }
+                            }}
+                            className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                              isActive
+                                ? tab.id === "regular"
+                                  ? "bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-md"
+                                  : tab.id === "special"
+                                  ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-md"
+                                  : "bg-gradient-to-br from-slate-500 to-slate-600 text-white shadow-md"
+                                : "bg-white dark:bg-gray-700 text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-gray-600 hover:border-slate-300 dark:hover:border-gray-500 hover:shadow-sm"
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Status Filter */}
+                    {currentType !== "past" && (
+                      <div className="flex gap-1.5">
+                        {[
+                          { id: "all", label: "All" },
+                          { id: "active", label: "Active" },
+                          { id: "upcoming", label: "Upcoming" }
+                        ].map((filter) => {
+                          const isActive = currentStatus === filter.id;
+                          return (
+                            <button
+                              key={filter.id}
+                              onClick={() => {
+                                const type = selectedKey.startsWith("special") ? "special" : "regular";
+                                setSelectedKey(`${type}-${filter.id}`);
+                              }}
+                              className={`flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all ${
+                                isActive
+                                  ? "bg-slate-800 dark:bg-gray-600 text-white shadow-sm"
+                                  : "bg-slate-50 dark:bg-gray-700 text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-600"
+                              }`}
+                            >
+                              {filter.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Search */}
+                {!selectedEvent && (
+                  <div className="relative mb-3">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500 dark:text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search interviews..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-7 pr-3 py-1.5 bg-slate-50 dark:bg-gray-700 rounded border border-slate-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm text-slate-900 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500"
+                    />
+                  </div>
+                )}
+
+                {/* Selected event close */}
+                {selectedEvent && (
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100">Selected</h2>
+                    <button
+                      onClick={handleCloseEvent}
+                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 text-slate-700 dark:text-gray-200 transition-colors"
+                      title="Close"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Event List */}
+                <div className="space-y-2 flex-1 overflow-y-auto pr-1 scrollbar-thin">
+                  {selectedEvent ? (
+                    (() => {
+                      const event = selectedEvent;
+                      const active = true;
+                      const isUpcoming = new Date(event.startDate) > now;
+                      const isActive = !isUpcoming && (!event.endDate || new Date(event.endDate) > now);
+                      const isPast = event.endDate && new Date(event.endDate) < now;
+                      const isSpecial = event.isSpecial;
+                      const eventPairs = pairs.filter(p => p.event._id === event._id);
+                      const interviewerPair = eventPairs.find(p => getUserRoleInPair(p) === "interviewer");
+                      const intervieweePair = eventPairs.find(p => getUserRoleInPair(p) === "interviewee");
+
+                      return (
+                        <div key={event._id} className="space-y-1">
+                          <button
+                            onClick={() => handleEventClick(event)}
+                            className={`w-full text-left p-3 rounded-lg transition-colors border ${
+                              isSpecial
+                                ? "border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20"
+                                : "border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/20"
+                            } ${event.joined ? isSpecial ? "ring-1 ring-purple-200 dark:ring-purple-700" : "ring-1 ring-emerald-200 dark:ring-emerald-700" : ""}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div className={`p-1.5 rounded ${event.joined ? isSpecial ? "bg-purple-100 text-purple-600" : isActive ? "bg-emerald-100 text-emerald-600" : isPast ? "bg-slate-100 text-slate-600" : "bg-amber-100 text-amber-600" : "bg-sky-100 text-sky-600"}`}>
+                                {event.joined ? <CheckCircle size={14} /> : <Calendar size={14} />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-slate-800 dark:text-gray-100 truncate text-sm">{event.name}</h3>
+                                <div className="flex items-center gap-2 mt-1 text-xs text-slate-600 dark:text-gray-400">
+                                  <Clock size={12} />
+                                  <span>{fmt(event.startDate)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                          {/* Pairing tabs */}
+                          {event.joined && (interviewerPair || intervieweePair) && (
+                            <div className="relative pl-4">
+                              <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-300 dark:bg-gray-600"></div>
+                              <div className="space-y-1">
+                                {interviewerPair && (
+                                  <div className="relative">
+                                    <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300 dark:bg-gray-600"></div>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setSelectedPairRole("interviewer"); setSelectedPair(interviewerPair); setMessage(""); }}
+                                      className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ml-3 ${
+                                        selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
+                                          ? "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-900 dark:text-indigo-300"
+                                          : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-600 text-slate-700 dark:text-gray-300"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <User className="w-3 h-3 flex-shrink-0" />
+                                        <span className="font-medium">Interviewer</span>
+                                      </div>
+                                    </button>
+                                  </div>
+                                )}
+                                {intervieweePair && (
+                                  <div className="relative">
+                                    <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300 dark:bg-gray-600"></div>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setSelectedPairRole("interviewee"); setSelectedPair(intervieweePair); setMessage(""); }}
+                                      className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ml-3 ${
+                                        selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
+                                          ? "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-900 dark:text-indigo-300"
+                                          : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-600 text-slate-700 dark:text-gray-300"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <User className="w-3 h-3 flex-shrink-0" />
+                                        <span className="font-medium">Candidate</span>
+                                      </div>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
+                  ) : filteredEvents.length === 0 ? (
+                    <div className="text-center text-slate-500 dark:text-gray-300 py-6">
+                      <Calendar className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                      <p className="text-sm">No interviews found</p>
+                    </div>
+                  ) : (
+                    filteredEvents.map((event) => {
+                      const active = selectedEvent && selectedEvent._id === event._id;
+                      const isUpcoming = new Date(event.startDate) > now;
+                      const isActive = !isUpcoming && (!event.endDate || new Date(event.endDate) > now);
+                      const isPast = event.endDate && new Date(event.endDate) < now;
+                      const isSpecial = event.isSpecial;
+                      const eventPairs = pairs.filter(p => p.event._id === event._id);
+                      const interviewerPair = eventPairs.find(p => getUserRoleInPair(p) === "interviewer");
+                      const intervieweePair = eventPairs.find(p => getUserRoleInPair(p) === "interviewee");
+
+                      return (
+                        <div key={event._id} className="space-y-1">
+                          <button
+                            onClick={() => handleEventClick(event)}
+                            className={`w-full text-left p-3 rounded-lg transition-colors border ${
+                              active
+                                ? isSpecial ? "border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20" : "border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/20"
+                                : "border-slate-200 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 hover:border-slate-300 dark:hover:border-gray-600"
+                            } ${event.joined ? isSpecial ? "ring-1 ring-purple-200 dark:ring-purple-700" : "ring-1 ring-emerald-200 dark:ring-emerald-700" : ""}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div className={`p-1.5 rounded ${event.joined ? isSpecial ? "bg-purple-100 text-purple-600" : isActive ? "bg-emerald-100 text-emerald-600" : isPast ? "bg-slate-100 text-slate-600" : "bg-amber-100 text-amber-600" : "bg-sky-100 text-sky-600"}`}>
+                                {event.joined ? <CheckCircle size={14} /> : <Calendar size={14} />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <h3 className="font-medium text-slate-800 dark:text-gray-100 truncate text-sm">{event.name}</h3>
+                                  <span className={`px-1.5 py-0.5 text-xs rounded font-medium flex-shrink-0 ${
+                                    isActive ? "bg-emerald-100 text-emerald-700" : isPast ? "bg-slate-100 text-slate-600" : "bg-amber-100 text-amber-700"
+                                  }`}>
+                                    {isActive ? "Active" : isPast ? "Past" : "Upcoming"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-600 dark:text-gray-400">
+                                  <div className="flex items-center gap-1">
+                                    <Clock size={12} />
+                                    <span>{fmt(event.startDate)}</span>
+                                  </div>
+                                  {event.joined && (
+                                    <span className="flex items-center gap-1 text-emerald-600 font-medium">
+                                      <UserCheck size={12} />
+                                      Joined
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                          {/* Pair sub-items */}
+                          {active && event.joined && (interviewerPair || intervieweePair) && (
+                            <div className="relative pl-4">
+                              <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-300 dark:bg-gray-600"></div>
+                              <div className="space-y-1">
+                                {interviewerPair && (
+                                  <div className="relative">
+                                    <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300 dark:bg-gray-600"></div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (selectedPairRole !== "interviewer" || selectedPair?._id !== interviewerPair._id) {
+                                          setSelectedPairRole("interviewer"); setSelectedPair(interviewerPair); setMessage("");
+                                        }
+                                      }}
+                                      className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ml-3 ${
+                                        selectedPairRole === "interviewer" && selectedPair?._id === interviewerPair._id
+                                          ? "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-900 dark:text-indigo-300"
+                                          : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-600 text-slate-700 dark:text-gray-300"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <User className="w-3 h-3 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                          <div className="font-medium">Interviewer</div>
+                                          <div className="flex items-center gap-2 mt-1">
+                                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                              interviewerPair.status === "completed" ? "bg-blue-100 text-blue-700" : interviewerPair.status === "scheduled" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                                            }`}>
+                                              {interviewerPair.status === "completed" ? "Finished" : interviewerPair.status === "scheduled" ? "Scheduled" : "Pending"}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  </div>
+                                )}
+                                {intervieweePair && (
+                                  <div className="relative">
+                                    <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300 dark:bg-gray-600"></div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (selectedPairRole !== "interviewee" || selectedPair?._id !== intervieweePair._id) {
+                                          setSelectedPairRole("interviewee"); setSelectedPair(intervieweePair); setMessage("");
+                                        }
+                                      }}
+                                      className={`w-full text-left px-3 py-2 rounded text-xs transition-colors border ml-3 ${
+                                        selectedPairRole === "interviewee" && selectedPair?._id === intervieweePair._id
+                                          ? "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-900 dark:text-indigo-300"
+                                          : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-600 text-slate-700 dark:text-gray-300"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <User className="w-3 h-3 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                          <div className="font-medium">Candidate</div>
+                                          <div className="flex items-center gap-2 mt-1">
+                                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                              intervieweePair.status === "completed" ? "bg-blue-100 text-blue-700" : intervieweePair.status === "scheduled" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                                            }`}>
+                                              {intervieweePair.status === "completed" ? "Finished" : intervieweePair.status === "scheduled" ? "Scheduled" : "Pending"}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Collapsed: event dots list */}
+            {!sidebarExpanded && (
+              <div className="flex-1 flex flex-col items-center gap-1.5 p-2 overflow-y-auto scrollbar-thin">
+                {filteredEvents.slice(0, 8).map((event) => {
+                  const isActive = selectedEvent && selectedEvent._id === event._id;
+                  const isJoined = event.joined;
+                  return (
+                    <button
+                      key={event._id}
+                      onClick={() => handleEventClick(event)}
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
+                        isActive
+                          ? 'bg-sky-100 dark:bg-sky-900/30 ring-2 ring-sky-400'
+                          : isJoined
+                          ? 'bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
+                          : 'hover:bg-slate-100 dark:hover:bg-gray-700'
+                      }`}
+                      title={event.name}
+                    >
+                      {isJoined ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      ) : (
+                        <Calendar className="w-4 h-4 text-slate-400 dark:text-gray-500" />
+                      )}
+                    </button>
+                  );
+                })}
+                {filteredEvents.length > 8 && (
+                  <span className="text-[10px] text-slate-400 dark:text-gray-500 font-medium">+{filteredEvents.length - 8}</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── Mobile sidebar (shows full on mobile when no event selected) ── */}
+          <div className={`${selectedEvent ? 'hidden' : 'block'} lg:hidden w-full`}>
+            <div className="bg-white dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 p-3">
+              {/* Mobile stats */}
+              <div className="mb-3">
+                <StatsComponent />
+              </div>
               <EventList />
             </div>
-            <div className={`${selectedEvent ? 'block' : 'hidden'} lg:block lg:col-span-9`}>
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-2 sm:p-4 h-[calc(100vh-5rem)] sm:h-[calc(100vh-4rem)] flex flex-col overflow-auto">
-                {selectedEvent ? <EventDetails /> : <Placeholder />}
-              </div>
+          </div>
+
+          {/* ── Main Content Area ── */}
+          <div className={`${selectedEvent ? 'block' : 'hidden'} lg:block flex-1 min-w-0`}>
+            <div className="bg-white dark:bg-gray-800 lg:rounded-none border-l-0 lg:border-l border-slate-200 dark:border-gray-700 h-[calc(100vh-5rem)] sm:h-[calc(100vh-4rem)] flex flex-col overflow-auto">
+              {selectedEvent ? <EventDetails /> : <Placeholder />}
             </div>
           </div>
         </div>
