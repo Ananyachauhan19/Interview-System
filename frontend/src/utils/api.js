@@ -68,7 +68,14 @@ export function setToken(t) {
   clearLegacyToken();
 }
 
-async function request(path, { method = 'GET', body, headers = {}, formData, skipCache = false } = {}) {
+async function request(path, {
+  method = 'GET',
+  body,
+  headers = {},
+  formData,
+  skipCache = false,
+  timeoutMs = 15000,
+} = {}) {
   // Check cache for GET requests
   const cacheKey = getCacheKey(path, method);
   if (method === 'GET' && !skipCache) {
@@ -97,14 +104,18 @@ async function request(path, { method = 'GET', body, headers = {}, formData, ski
   
   const url = `${API_BASE}${path}`;
   
+  let controller = null;
+  let timeoutId = null;
+
   try {
-    // Add 15s timeout via AbortController
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-    opts.signal = controller.signal;
+    if (timeoutMs && timeoutMs > 0) {
+      // Default timeout keeps regular requests responsive, but callers can disable it.
+      controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      opts.signal = controller.signal;
+    }
     
     const res = await fetch(url, opts);
-    clearTimeout(timeoutId);
     
     if (!res.ok) {
       let err;
@@ -144,6 +155,10 @@ async function request(path, { method = 'GET', body, headers = {}, formData, ski
       throw timeoutErr;
     }
     throw err;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
@@ -397,7 +412,11 @@ export const api = {
     const fd = new FormData();
     fd.append('language', language);
     fd.append('sourceCode', sourceCode);
-    return request(`/compiler/problems/${problemId}/submit`, { method: 'POST', formData: fd });
+    return request(`/compiler/problems/${problemId}/submit`, {
+      method: 'POST',
+      formData: fd,
+      timeoutMs: 0,
+    });
   },
   listCompilerSubmissions: ({ search = '', status = '', language = '', mode = '', page = 1, limit = 15 } = {}) => {
     const params = new URLSearchParams();
@@ -461,6 +480,7 @@ export const api = {
         source_code: sourceCode,
         language_id: getJudge0LanguageId(language),
       },
+      timeoutMs: 0,
     });
   },
   listStudentProblemSubmissions: (problemId, { mode = '', page = 1, limit = 10 } = {}) => {
@@ -471,7 +491,6 @@ export const api = {
     return request(`/compiler/problems/${problemId}/submissions?${params.toString()}`, { skipCache: true });
   },
 };
-
 
 
 
