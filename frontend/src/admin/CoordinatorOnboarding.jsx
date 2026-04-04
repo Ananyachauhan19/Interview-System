@@ -53,7 +53,7 @@ export default function CoordinatorOnboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col items-center py-4 sm:py-6 px-3 sm:px-4">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center py-4 sm:py-6 px-3 sm:px-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 p-3 sm:p-4 lg:p-6">
         <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 mt-8 sm:mt-10">
           <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-indigo-800 dark:bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm">

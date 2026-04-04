@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars */
+﻿/* eslint-disable no-unused-vars */
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,7 +11,8 @@ import {
   GraduationCap,
   User,
   Lock,
-  ChevronDown
+  ChevronDown,
+  Code2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import DarkModeToggle from "./DarkModeToggle";
@@ -72,7 +73,10 @@ export function StudentNavbar() {
     { path: "/student/dashboard", label: "Dashboard", Icon: BookOpenCheck },
     { path: "/student/learning", label: "Learning Modules", Icon: GraduationCap },
     { path: "/student/session", label: "Feedback", Icon: CalendarDays },
+    { path: "/problems", label: "Problems", Icon: Code2 },
   ];
+
+  const isItemActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   // Animation variants
   const menuVariants = {
@@ -134,7 +138,7 @@ export function StudentNavbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-0">
             {navItems.map(({ path, label, Icon }) => {
-              const isActive = active === path || location.pathname === path;
+              const isActive = isItemActive(path);
               return (
                 <Link
                   key={path}
@@ -326,7 +330,7 @@ export function StudentNavbar() {
                 {/* Mobile Menu Items */}
                 <div className="flex-1 space-y-1">
                   {navItems.map(({ path, label, Icon }) => {
-                    const isActive = active === path || location.pathname === path;
+                    const isActive = isItemActive(path);
                     return (
                       <Link
                         key={path}
@@ -384,3 +388,5 @@ export function StudentNavbar() {
     </motion.nav>
   );
 }
+
+

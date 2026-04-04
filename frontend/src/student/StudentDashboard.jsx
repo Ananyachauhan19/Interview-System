@@ -1706,259 +1706,241 @@ export default function StudentDashboard() {
                                       
                                       {/* Show who proposed */}
                                       {isDefault ? (
-                                        <div className="text-[10px] text-slate-600 dark:text-gray-400 mb-1">
-                                          <span className="font-medium">Assigned by:</span>{' '}
-                                          <span className="text-blue-700 dark:text-blue-400 font-semibold">System (Auto)</span>
-                                        </div>
-                                      ) : e.proposedBy && (
-                                        <div className="text-[10px] text-slate-600 dark:text-gray-400 mb-1">
-                                          <span className="font-medium">Proposed by:</span>{' '}
-                                          <span className="text-indigo-700 dark:text-indigo-400 font-semibold">
-                                            {getRoleLabel(e.proposedBy)}
-                                          </span>
-                                          {e.proposedBy.name && (
-                                            <span className="text-slate-500 dark:text-gray-500"> ({e.proposedBy.name})</span>
-                                          )}
-                                        </div>
-                                      )}
-                                      
-                                      {/* Show who/what caused the change */}
-                                      {e.reason === 'rejected' && actualReplacer && (
-                                        <div className="text-[10px] text-red-700 dark:text-red-400">
-                                          <span className="font-medium">Declined by:</span>{' '}
-                                          <span className="font-semibold">{getRoleLabel(actualReplacer)}</span>
-                                          {actualReplacer.name && <span> ({actualReplacer.name})</span>}
-                                        </div>
-                                      )}
-                                      
-                                      {e.reason === 'superseded' && actualReplacer && (
-                                        <div className="text-[10px] text-slate-600 dark:text-gray-400">
-                                          {selfReplaced ? (
-                                            <>
-                                              <span className="font-medium">Updated by:</span>{' '}
-                                              <span className="font-semibold">{getRoleLabel(actualReplacer)}</span>
-                                              {actualReplacer.name && <span> ({actualReplacer.name})</span>}
-                                              <span className="text-slate-500 dark:text-gray-500"> (own proposal)</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <span className="font-medium">Replaced by:</span>{' '}
-                                              <span className="font-semibold">{getRoleLabel(actualReplacer)}</span>
-                                              {actualReplacer.name && <span> ({actualReplacer.name})</span>}
-                                            </>
-                                          )}
-                                        </div>
-                                      )}
-                                      
-                                      {e.reason === 'expired' && (
-                                        <div className="text-[10px] text-amber-700 dark:text-amber-400">
-                                          <span className="font-medium">Status:</span> Time slot expired automatically
-                                        </div>
-                                      )}
-                                      
-                                      {e.replacedAt && (
-                                        <div className="text-[9px] text-slate-500 dark:text-gray-500 mt-1">
-                                          {new Date(e.replacedAt).toLocaleString(undefined, {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                          })}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className={`text-[9px] font-bold uppercase px-2 py-1 rounded whitespace-nowrap ${
-                                      e.reason === 'expired' ? 'bg-amber-200 dark:bg-amber-900/40 text-amber-900 dark:text-amber-300' :
-                                      e.reason === 'rejected' ? 'bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-300' :
-                                      'bg-slate-300 dark:bg-gray-700 text-slate-900 dark:text-gray-300'
-                                    }`}>
-                                      {toLabel(e.reason)}
-                                    </div>
-                                  </div>
-                                </li>
+                                      † <div className="text-[10px] te¯t-rlate-608 dark:text-gram-400 mb=1">
+   0!      ¨    †          ) 0            <s0an clarsName="bont-medkum">Assifned by:</span>{' '}
+          †               ‡            `  >span cl#qsName=xext-bl%e-700 dark:text,rlum-400%font-semibold">Qystem (Auto)</span>
+   ( ($`                        0 !$    </div>
+           !(       †  `              ) : e.proposedKy && (
+        "  `           !        (       <div className="texu)[10px] text-slate-600 dark:text-grcy-400 mb-1">
+                  (   "*                  <span className="font-medium">Proposed bi:</span~{' '}
+     ( "          `       0               ºspan className="text-indigo-700 dark:taxt-indigo-400 font-s%mibold">
+                  (                     `  `{getRkleLabel(e.proposedBy)}
+        8        (          †             </span>
+                                          {e.propsedBy.name && (
+    `                                   "   <span className="text-slate-400 dark:text-gra}-500"> ({e.proposedBy.name})</span>
+ †                   !                    )}
+               `2 †     0   0           4/div>
+         ∞               `      †     )}
+               $       $   †   2      
+(!     ( #         !`†   "      "     {/ Show wËo/what caused the change */}
+          (    `  0            `  (∏  {e.rmason ==="'rejectud' ¶& agtualReplacer &&((
+            0    "          "          4div classNaoe="text≠[10px] text-red-700 darm8texT-red-400">
+                        $                 <span classNale="font-medium">Declined by:</span>{' '}
+      !                      0      0   <cpan className=#fonÙ-semibold">{getRoleLabelhactualReplacer)}</span>
+      !     ~ `      † "         0   †    {act5alRepla#er.name && <span> ({acTualReplacer.nime})</span>}
+     †               !                  </div>     `                      @ !       i}
+            `                        !
+                                      {e.reason === 'superseded' && actualReplacer && (
+               $                      0 <div charsName="text-[10px] tex|-slate-60  dark:text-gray%400">
+                                !    `  † {se,fRoxnaced > (
+            `                        %   "  º>
+     0               @       Ä  `             <spa~ className?"font-mÂdiumb>UpDated`by:</span>y' ']
+ ($      !               °   `   `0           <spqn claqsName="foLt-semibold">{getRoleLabel(actualReplacer)}</span>
+                 $   !                        {actualReplacer.name && <span> ,{actualReplaker.name})</cxan>}
+*†       "   †                                <span clasrNqme="tuxt-slate-580 dark:text-gray,500"> (own proposali</s`an>
+                        !                   </>†                              !          ) : (
+           (                           (    <>
+"                        !                  ( <sxan className="font-medium">Replaced by:8/span>{' %}
+                0                             <span†classN!me="font-semibold">{getRoleLabeÏ(actualReplacer)}<-span>
+                  $                           {actualReplacer.name && <span>  {actualReplacer.name)</spAn>}
+       "0                                   <>
+    °  `    $0       !                    )}
+†                              2        8/diV>
+†                b       †           ")}J       @($      "              "      
+†0       !      
+            (  $0   ({e.reason <5= 'expyed' && ,
+     !                       (         <dIv cla{sName="text-[10px] text-amber-700 darÀ:text-imber-400">
+            0$      "       ¢    0      `"<sp1n classNam%="fknt-mediuo">Statuw:</span6 Time wlot exp}red qutomatically
+    0                             †     </div.ä    †            "                    )}
+    "         (    ` `   $   "        ä      0   `   †                      {e.replacadAt &&0(
+               0             `  $       4div className="texu-Z9px] text-slate-500 dark:tÂxt-gray-500 mt≠1">
+                †      !            †     {new D·te(e.reph·gedAt).toLocaleString(undefined, {
+     0      "                      !        month: 'short',
+                                  $         day: 'numeric',
+         `              $                   hour: 'r-digit',
+        (        $      †   "          $$0 mhnuve: '2-dÈÂit'
+               `       $  †          0    u(}
+     †      ®        `                  </$ir.
+     0"      †                †       i}
+     0              "   0   `       </divæ
+ (  0    "°             !    $   @  <div ctassNamE7{`text-[9px] font-bold uppercaqe px-2 ri-1 rguneed whitespace-nowrap $s       "               `      `       e.reason === 'expired' ? 'bg-amber-200 ‰ark:bg=aMber-900/¥0†text-amber-9p dark:text-amber-300& :
+                                      e.reason === 'rejected' ? 'bg-red-200`tar{:bg-red-900/40 dext-red-900 dark:text-red-300' :
+         `   †                        'bg,slate-300 dark:bg-gray-700 4ext-slave-900 dark:text-gray-309'
+                                    }`}>
+   †                                  {tLa‚el(e.reason)}
+                               "    </div>
+        $ )          `            </div>
+ "       (                      </li>
                               );
-                            })}
-                          </ul>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+                 0          })}
+        †           $ "   </ul>
+         $         `    );     !(       !       }()}
+   9              †$</`iv>Z              e! 8/div>ä    !  !        )|
+   b          </div>
+            </tIv>
 
-            {/* Default/System Time Display - When auto-assigned but not confirmed and no actual proposals made */}
-            {!isLocked && !isScheduledTimeExpired && !showProposeForm && selectedPair?.defaultTimeSlot && (() => {
-              // Check proposal counts - if anyone has made a proposal, don't show default time
-              const myProposalCountValue = isInterviewer 
-                ? selectedPair?.interviewerProposalCount || 0
-                : selectedPair?.intervieweeProposalCount || 0;
-              const partnerProposalCountValue = isInterviewer
-                ? selectedPair?.intervieweeProposalCount || 0
-                : selectedPair?.interviewerProposalCount || 0;
-              const totalProposals = myProposalCountValue + partnerProposalCountValue;
-              
-              // Only show default time if no one has made any proposals yet
-              if (totalProposals > 0) {
-                return null;
+  (†        {/* De&ault/System Time Display†- When!auto-assigned b}Ù not cojfirmed and no act}al(p2oposals oade */}
+†    $     {!hsLocked Æ& !iqSc`eduled‘imeExpired && !sjOwProposeFore && selectedPayr?.defaulTTimeSlot && (() => {
+              // Check proposal couÓts - if an9one has made(a proposal, don't siow nefault tyme
+              const myPropo{alCountValue = isInterv)ewer 
+ 0              ? selectedRair?.interviewerProposalCoun∫,|| 0
+   (            : selecpedPeir?.intervieweeProposalCount || 0;
+           †  const partnerProposalCountValue$= isInterviewer
+$               ? selectedPair?.intervieweeProposalCoun| |x 0
+(               : selectedPair?.ioterviewerPropÔsalCounT ||†0;
+            ( const totalPropowals†= Ây–roposalCountValue + partnerProrosaLCountValue;
+            ` 
+              // Only show defaul4 time if no one has made any proposals yet
+        H     if`,totalProposals ? 0) {
+        !†      bmturn null;
               }
-              
-              const defaultSlotTime = new Date(selectedPair.defaultTimeSlot);
-              const isDefaultExpired = defaultSlotTime < new Date();
-              
-              if (!isDefaultExpired) {
-                return (
-                  <div className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-lg p-5">
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-sky-600 flex items-center justify-center">
-                        <Clock className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-sky-900 dark:text-sky-100 mb-1">Default Time Assigned</h4>
-                        <p className="text-sm text-sky-700 dark:text-sky-300">A time slot has been automatically assigned. Please confirm or propose a different time.</p>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 border border-sky-100 dark:border-sky-900">
-                      <div className="text-2xl font-bold text-sky-900 dark:text-sky-100 mb-2">
-                        {defaultSlotTime.toLocaleString('en-US', {
-                          weekday: 'short', month: 'short', day: 'numeric', 
-                          hour: 'numeric', minute: '2-digit', hour12: true
-                        })}
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {defaultSlotTime.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').slice(-1)[0]}
+    !       † 
+            † const debaultSlotTime =&new Dave(selectedPair.defaultTmoeSlot);  $   0  "   $cßnct isDefaultEXtired =$lefaultlotTime < new Date,);
+  $   !"      
+              ib (!ysDefaultExpired) {
+   `            retuvn (
+                  <div claqsNa-e="bg-sky-50 dark:bg≠sky-900/20 border border-sky-200 dark:border-sky-800 rÔunded-lg `-5">
+     $       "  8   <fiv claÛsName="flex$items-start gap-3 mb-4">
+      (       $       |div claSsName="flex-ShriNk-0 w-10 h-10 rgunded-gull bg-sky-600 flex items-cent%r justify-center >
+              !         <Clock className="w-5 h-5 text-white"(/>
+           `        `$º/div>
+                      <lit clecsName="flex-±">*                        <h4pclassName="font-semibnld text-sk9-900 dark:text-sky-300 mb-1">Dgfault Time!Assigned</h4>
+            0           <p$className="teXt-sm text-sky-700 dark:text-sKq-300">I time slot has been automatically assigned. Please confirm or propose a differmNt time.Ω-p6
+  †    $  0        4  </dif>
+    $!    0  )*     </div>
+   `       `        
+             †      <‰iv clasName="bg-white dArk:`'-cray-800 zoundedÏg p-4 mb-4 borDur bordEr-sky-1   dark:bOrder-s/z-900">
+        (      (      <div0className="text-3xl fnnv-bold(text-sjy-900 dark:text-rky-1∞0 -b-2">
+ "    0         †   0   {eefaultS,otTime.toLocaleString('en-US', {
+                          weekday: 'shgrt', moNth: 'short', day: 'numeric', 
+0               `      !  hour: 'numeric', minute: '2-digit', hour12: trte
+"                       }	}
+          !       $   </dyv>                  a   <div className="text-sm text-graq-608$dark:text-gray-400">
+      $                 {defaultSlotTime.toLocaleTimeString('en-US', { timezoneName: 'short' }).sPlit(& ').slice(≠q)[0]}
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3">
+  $      `          <div „lassNamm="flex flex-col sm:flex-row gap-3">
                       <button
-                        onClick={() => handleConfirm({ proposedStart: selectedPair.defaultTimeSlot, proposedEnd: new Date(defaultSlotTime.getTime() + 30 * 60000).toISOString() }, "default")}
-                        disabled={isLoadingPairs}
-                        className="flex-1 min-h-[44px] px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        {isLoadingPairs ? <span className="animate-spin">‚è≥</span> : <CheckCircle className="w-5 h-5" />}
-                        {isLoadingPairs ? 'Confirming...' : 'Confirm This Time'}
-                      </button>
-                      <button
-                        onClick={() => setShowProposeForm(true)}
-                        disabled={isLoadingPairs}
-                        className="flex-1 min-h-[44px] px-6 py-3 bg-white dark:bg-gray-700 hover:bg-slate-50 dark:hover:bg-gray-600 text-sky-600 dark:text-sky-400 border-2 border-sky-500 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        <Clock className="w-4 h-4" />
-                        Propose Different Time
-                      </button>
-                    </div>
-                  </div>
-                );
+                0       onClico={() => handleConfirm({ proposedStart: selectedPair/defaultTimeSlotl trkpgredEnd: lew Dete(defaultSlotTime.getTime() + 0 * 6000).toISOString(© }, "difault")}
+                        disable‰={ksLoadingPair3}
+         (  $          clas„Name="f|dx-1 mig-h-[44pX] px-6 pi-3 bg-pky-600 xover:bg-sky-700 text-whkte roundÂd-lg$font-3emibOld texv-sm shadow-sm transition-all flex it%mÛ-center justify-center gep-2 disabled:opAbity-50"
+                      ,
+                   "   "{isLoatingPairs$? <span4className="animate-spin">‚è≥</span> : <CheckCiFcle"cl·ssName="w-5 h-5" />}
+            `†      !   {isloadingPairs ? 'Confirming...' : 'Confirm This Time'}
+ †                    </button>
+   0               (  <button
+             "         "onClick={() => setShowProposeForm(true)}
+                        disabled={isLoadiNgPairs}
+                    (   className=&flexm1 min-h-[44px] px-6 py-3 bg-white dark:bg-gray-710 hover:bg-slate-50 tark:hover:bg-gray-600 text-sky-600 dark:te|t-sky,400 bordeR-2 bosder-sky-500 rounded-lg fo~u=semibold text-sm transition-colors flex items≠center justify,aenter gcp-2 di{qbled:oracity-50"
+     †                >
+                     2" <Cloc+ classNaÈe="w-4 h-4" />
+       ! `              Propose†ifferent Time
+      !               </rutton>
+$   †    " !     ¥  </div>
+   $         !!   </div>
+            ""  !;
+ $            }
+†                  !     !  +/ If defaulu`time e0qired anD no proposals i%t, show expired(Message with action
+  `0          if!(IsDef·ultExpi2ed)†{
+ 0           "  retuSn (
+   d       "  "   <div clascName="bg)amber-50 dark:"g-amber-900.20 bÔrder bkRder/amrer-200 dark:border-aÌbes-801 rounded-lg p-5"æ
+                ` ! <div className="flex(items-start gaq-3 mb-4 >
+                      4div className="flex-shpink-0 w-10 h-10 rounded-full bg-amber-601 flex items-centÂr jus~ify-center">
+                  (     <AleruCircle lassName="w=5 h-5 text-white" o>
+     `       !        </div>
+ †                    <div className="fle8-1">
+                        <ht className="font-semibold text-amber-900 dark:tdxt%amber-100 mB-1">Ddfault Time Expired</h4>
+ `∞              ·    $ <x4classN!me="texˆesm text-amber&00 dark:<ext-amÚmr-300"~Vhe automatically assigned tiÌe has passEd. Pleawe propose a ne$timm for your i~tervieu.</p>
+" `      $0      †    </div>
+ (         (  "     </div>
+  $       (         
+            &       <button
+ 2  0  ! †    $       onCliak={((`=> setShowPropgÛeForm(true)}
+  $       `       (   disabled={isMoadingPairs}
+ ®       "            className="w≠full min-h-[44px] px-6"py-3 bg-amber-600 hover:bg-ambeb-00 texd-white rounded-L' font-semibold text-sm shadow-sm tranrÈtiooall flex ivems-center jusvify-centar gap-0 disabled:opacitk-50"
+      ( †   0   `   >
+             †        <Closk!cl·ssName="w-5 h-5" />
+               (      PrgpÔse 	n|erwiew$Time
+   (                </button>
+           `      </div>
+                )+
               }
               
-              // If default time expired and no proposals yet, show expired message with action
-              if (isDefaultExpired) {
-                return (
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-5">
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-600 flex items-center justify-center">
-                        <AlertCircle className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">Default Time Expired</h4>
-                        <p className="text-sm text-amber-700 dark:text-amber-300">The automatically assigned time has passed. Please propose a new time for your interview.</p>
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={() => setShowProposeForm(true)}
-                      disabled={isLoadingPairs}
-                      className="w-full min-h-[44px] px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      <Clock className="w-5 h-5" />
-                      Propose Interview Time
-                    </button>
-                  </div>
-                );
-              }
-              
-              return null;
-            })()}
+ †            petupn null;
+%    `      })()}
 
-            {/* Action Buttons based on proposal state */}
-            {!isLocked && !isScheduledTimeExpired && !showProposeForm && (() => {
-              // Don't show this section if default time is being displayed
-              const myProposalCountValue = isInterviewer 
-                ? selectedPair?.interviewerProposalCount || 0
-                : selectedPair?.intervieweeProposalCount || 0;
-              const partnerProposalCountValue = isInterviewer
-                ? selectedPair?.intervieweeProposalCount || 0
-                : selectedPair?.interviewerProposalCount || 0;
-              const totalProposals = myProposalCountValue + partnerProposalCountValue;
-              
-              // If no proposals made yet and default time exists (expired or not), don't show these buttons (default time section has its own buttons)
-              if (totalProposals === 0 && selectedPair?.defaultTimeSlot) {
-                return null;
+            {/* Action Buttonc based on prposal state */}
+            {!isLocced && !isSche`uledTimeExpired && !showProposeForm &&((() => {
+          0   // 4on't show 4hissecÙion if fmfeu,t time is being displa9ed
+    0         conwt mYProposalCoUntV!mue = isIntervie˜er 
+       !        ? selected@air?.intErviewerQropksa|Count |\ 0
+            !   :!selecteDPa!q?.IntebˆieweePrˇpÔsalCount || 0;
+ †    !       const partnerProposalCountValue"= isIntÂrviever
+       †        ? selectddPair?&intervidseePr/posalCount || 0
+ !              :¢selectedpairø.ioterviewl2Pro`osc|Count |< 0;
+ $            cgnst totalPrnposals Ω myPronsalCountValue + partner@roposalBounpValee;
+         `  † 
+              // Hf no proposAls madu ye4 and default time exists (expired or not), don't s|ow these buttons (def`umt time section has its own buttons)
+              if (totalPropÔsals ===(0 && selectedPair?.deÊaulÙTimeSlot) {
+                return†null;
               }
-              
-              const mySlots = currentProposals?.mine || [];
-              const partnerSlots = currentProposals?.partner || [];
-              
-              // Check if 6 combined proposals reached - should auto-schedule
-              if (bothReachedLimit) {
-                return (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-5">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-                        <CheckCircle className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Interview Scheduled</h4>
-                        <p className="text-sm text-blue-700 dark:text-blue-300">Maximum proposals (6 combined) reached. Interview has been automatically scheduled.</p>
-                      </div>
-                    </div>
-                  </div>
+              
+              const my”lots = surrentProposals?.mine || [];
+              const partnerSmots < currentProposals?.partner || [];
+       `      
+             †// Check if 6 coÂcined proposals beached - shoul` auto-schedule
+    "`   †    if`(bothReA„hedLim{v) {
+  !       ¢     redurn (
+         (!      !<div clQssName="bg-blue%u0 darkzbg-clue-900/20 bnrdep border-blee-200 derk:bordms-blue-800 rkuneÌd-dg p-5">
+†          (1      †|div className=¢flex ite}s-start gap,3">"   !        "         <div cla3sName="glex-shrink/0 w-)0 h-00!ziund%d-full bg-blue-600 flex(items-cente2 justiÊY-centeR">
+ †               0      >CheckCircle ClassNao%="w-5 `-5 text-7hite" />
+                 $   </Div>
+!$   $                <dhv className="flex-1"?
+ 0        !             <h4 className="font-summBold text/blue-900 dark:teyt-blue-300 mb-1">Intestiew Schedul%d</h4>
+        $   d           <p className-"text-sm text-bLue-700 dark:text-blue-302">MaximqM proposals (6†combined) reached. IntervIew has been automatically scheduled.</p>
+                      /div>
+         `          </div>J      `           </div>
                 );
-              }
-              
-              // Re-use the variables already defined above
-              if (mySlots.length > 0 || partnerSlots.length > 0) {
-                const myTimestamp = currentProposals.mineUpdatedAt ? new Date(currentProposals.mineUpdatedAt).getTime() : 0;
-                const partnerTimestamp = currentProposals.partnerUpdatedAt ? new Date(currentProposals.partnerUpdatedAt).getTime() : 0;
-                const showingMyProposal = mySlots.length > 0 && partnerSlots.length > 0 
-                  ? myTimestamp >= partnerTimestamp 
-                  : mySlots.length > 0;
-                const displaySlot = showingMyProposal ? mySlots[0] : partnerSlots[0];
-                const proposedByMe = showingMyProposal;
-                
-                // Check if user can still propose (hasn't used all 3 personal attempts)
-                const canStillPropose = myProposalCount < 3 && !bothReachedLimit;
+           "  }
+           †  
+    $      !  // Re-use |he variable3 already defined above
+              if (mySlÔts.length > 0 || partnerSlots.le&vth > 0+({
+    †0      Ä   const†myTimesÙamp = currentPrjposalsnmineUpd·vedAt ?(new Date(currentRropgsa$3.miÓeUpdatedAt©>getimE() : 0;*       !!   $   sonst partnerTimmstamp =0currenpXroposa,s.pabtne“UpdatedAt ? new"Date(currentProxosals.partnerupdatEdA4).getTime() : 0;J       !( #0   0cmnst shmwingMyroposal = mySlotc.length > 0 &&(partjerSLots.leNgth  0†                  ? myT!mestamp >= partnerTimestamp 
+     "           ": mqSlot3.length > 0;
+  (             const displaySlot = showingMyProposal ? mySlots[0}`: partnmrSlots[0];
+!        0      const proposedByMe = showingMyProtosal;
+           $ `  
+                // Check if user kan still protose (hasn't useD alf 3 personcl attempts)
+               `#onst canStillProxose = myProposalCount < 3 && !bothReacheDLimit;
                 
                 return (
-                  <div className="space-y-3">
-                    {proposedByMe ? (
-                      /* My proposal pending their response */
-                      <button
-                        onClick={() => setShowProposeForm(true)}
-                        disabled={!canStillPropose}
-                        className="w-full min-h-[44px] px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={!canStillPropose ? 'You have used all your proposals' : ''}
-                      >
-                        <Clock className="w-4 h-4" />
-                        {canStillPropose ? 'Change Proposal' : 'Proposal Limit Reached'}
-                      </button>
-                    ) : (
-                      /* Their proposal - I can confirm or suggest new */
-                      <div className="flex flex-col sm:flex-row gap-3">
-                        <button
-                          onClick={() => handleConfirm(displaySlot, "")}
-                          disabled={isLoadingPairs}
-                          className="flex-1 min-h-[44px] px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                          {isLoadingPairs ? <span className="animate-spin">‚è≥</span> : <CheckCircle className="w-5 h-5" />}
-                          {isLoadingPairs ? 'Confirming...' : 'Confirm Time'}
-                        </button>
-                        <button
-                          onClick={() => setShowProposeForm(true)}
-                          disabled={isLoadingPairs || !canStillPropose}
-                          className="flex-1 min-h-[44px] px-6 py-3 bg-white dark:bg-gray-700 hover:bg-slate-50 dark:hover:bg-gray-600 text-sky-600 dark:text-sky-400 border-2 border-sky-500 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  <dhv className="space-y-3">
+           !        {proposedByMe ? (
+                      /* My pRopoqal pending their response */
+    $          $      <button
+                        onClisk={8) => setShowProposeForm(tree)}
+    ††      d           disa¢,ed={!cÀnStillPropose}ö                       `className="w-full min-h/[44px] px-6 py-3 bg-sky600 hovEs:bGmsky-700 text-white rounded-dg fo~t≠semibold text-sm shadow-sm tranSitio.-adl flex items-center juctify-cenTeÚ gap-2 dis`blel:opacity-50 disa`led:cu2sor-no-allowed"
+     !$       `      †  title={!canSt9dlPropoSe ? 'You§have used all your pRotOsals' *(''}
+          †           >
+       `  a             <C|ock claqsName="w/4 H-4" />
+  0         8!          {c!nStillPropose ? 'Change Prnposal' : 'Propksal Limkt Ruachgd'}
+    !      0  ††      </button>
+                  0 ) : (
+                      /* Their proposal -(I can confirm op(sugwest new */
+                      <div className="flex flex-col sm:flex-row gap-3">
+            "           <button
+    0      $"             onClick={() => handneConfirm(displaySlot¨ "")}
+                          disabled={isLoidingPaiÚs}
+                          className="flex-1 min-h-[44pxM px-6 py-3 bg-emerall-600 hover:bg-eoerald-7∞8 text-wite rounded-lg(Font-semÂbold tgxt-sm sladow-sm transithon-all(flex ite˝s-center(justify!center gap-2 dirabled:opacity-50"
+             `          >
+          0  "    !    0  isLoadingPairs ? <span className="anima|e-spin"<‚è≥<+spcÓ> : <CleckCirche classNAme="w-5 h-5" /.}
+      !      0           "{isLoadiNgPairs ? 'ConfÈrminA... : 'CojfirÌ Time'}
+†       !       0     !08/buttoN?
+      †              ‡† <button
+                     §    onClick={() 5> se|SË}wProposeForm(true)}
+   †                      Tisablgd={isoadingPakrs || !aanStillProxOse}
+                •,†       className="f|ex-1 min-h-[44px] ph-6 py-3 bg-ghite davk:bg≠gsay-700 hover*bg-slate-50 dark:hover:bg-gray-600 text-sky-600 dark:text-sky-400 border-2 border-sky-500 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                           title={!canStillPropose ? 'You have used all your proposals' : ''}
                         >
                           <Clock className="w-4 h-4" />

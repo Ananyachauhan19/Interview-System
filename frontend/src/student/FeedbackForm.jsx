@@ -125,7 +125,7 @@ export default function FeedbackForm() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center overflow-hidden">
+      <div className="h-screen bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
         <div className="text-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-slate-200 dark:border-gray-700">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-600 dark:border-sky-500 mx-auto mb-3"></div>
           <p className="text-sm text-slate-600 dark:text-gray-300 font-medium">Loading session details...</p>
@@ -136,7 +136,7 @@ export default function FeedbackForm() {
 
   if (error) {
     return (
-      <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center overflow-hidden px-4">
+      <div className="h-screen bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden px-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-red-200 dark:border-red-700 p-6 max-w-md shadow-lg">
           <div className="flex items-center gap-2 mb-3">
             <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-500" />
@@ -156,7 +156,7 @@ export default function FeedbackForm() {
 
   if (!pair) {
     return (
-      <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center overflow-hidden">
+      <div className="h-screen bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
         <div className="text-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-slate-200 dark:border-gray-700">
           <p className="text-sm text-slate-600 dark:text-gray-300 font-medium mb-3">No session data available</p>
           <button
@@ -183,7 +183,7 @@ export default function FeedbackForm() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 overflow-hidden flex items-center justify-center">
+    <div className="h-screen bg-white dark:bg-gray-900 overflow-hidden flex items-center justify-center">
       <div className="w-full max-w-6xl px-4 py-3">
         <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 p-4 shadow-lg">
           {/* Meeting Link */}

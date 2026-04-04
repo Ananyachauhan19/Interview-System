@@ -37,6 +37,7 @@ export async function connectDb() {
     // Provide actionable suggestions
     console.error('Common causes:');
     console.error('- MONGODB_URI is missing or malformed. Expected a MongoDB connection string (mongodb+srv://... or mongodb://...).');
+    console.error('- Database username/password is wrong, or the password contains special characters and must be URL-encoded.');
     console.error('- Your IP address is not allowed by the Atlas cluster network access (whitelist).');
     console.error('- There is a network/proxy/TLS issue between this machine and Atlas (corporate proxies or old OpenSSL versions).');
     console.error('If you are in development, you can set MONGODB_URI=memory to run with an in-memory MongoDB fallback.');

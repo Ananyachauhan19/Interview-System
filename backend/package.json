@@ -5,12 +5,13 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "node --env-file=src/.env --watch src/server.js",
-    "start": "node --env-file=src/.env src/server.js",
+    "dev": "node --env-file=.env --watch src/server.js",
+    "start": "node --env-file=.env src/server.js",
     "lint": "echo 'No linter configured'",
     "test": "echo 'No tests yet'"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.894.0",
     "@supabase/supabase-js": "^2.47.10",
     "bcrypt": "^5.1.1",
     "cloudinary": "^1.41.0",
@@ -33,6 +34,8 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.15",
     "papaparse": "^5.5.2",
+    "rate-limit-redis": "^4.2.0",
+    "redis": "^4.7.0",
     "socket.io": "^4.8.1",
     "uuid": "^9.0.1",
     "winston": "^3.11.0",

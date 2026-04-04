@@ -1,8 +1,14 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
-// Load .env from this src folder
-dotenv.config({ path: './.env' });
+// Load env consistently (same strategy as src/setup.js)
+dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '..', '.env'), override: false });
+dotenv.config({ path: path.join(__dirname, '.env'), override: false });
 
 const uri = process.env.MONGODB_URI;
 console.log('MONGODB_URI (masked):', uri ? uri.replace(/(mongodb\+srv:\/\/)(.*?):(.*?)@/, '$1$2:*****@') : '(not set)');

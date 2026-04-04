@@ -277,14 +277,14 @@ export default function CoordinatorEventDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center pt-16">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center pt-16">
         <div className="text-slate-600 dark:text-gray-400">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col pt-16">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col pt-16">
       {eventCreatedMsg && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-6 py-2 rounded-lg shadow-lg z-50 text-base font-semibold">
           {eventCreatedMsg}

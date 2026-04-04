@@ -3,11 +3,38 @@
 @tailwind utilities;
 
 @layer base {
+  /* Hide scrollbars globally while keeping scrolling functional */
+  * {
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
   body {
     @apply bg-white font-sans;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+  }
+
+  /* Monaco draws its own scrollbar DOM; hide it for a LeetCode-like look */
+  .monaco-editor .scrollbar,
+  .monaco-editor .minimap-shadow,
+  .monaco-editor .scroll-decoration {
+    display: none !important;
+  }
+}
+
+/* Hide scrollbars in browsers that support scrollbar-width (Firefox) */
+@supports (scrollbar-width: none) {
+  * {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
   }
 }
 
@@ -28,7 +55,6 @@
   /* Ensure no scrolling */
   .no-scrollbar {
     -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
   }
 
   .no-scrollbar::-webkit-scrollbar {
@@ -80,34 +106,3 @@ a {
   @apply transition-colors duration-300;
 }
 
-/* Custom Scrollbar Styles */
-.activity-sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.activity-sidebar::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 3px;
-}
-
-.activity-sidebar::-webkit-scrollbar-thumb {
-  background: #9ca3af;
-  border-radius: 3px;
-}
-
-.activity-sidebar::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
-}
-
-/* Dark mode scrollbar */
-.dark .activity-sidebar::-webkit-scrollbar-track {
-  background: #1f2937;
-}
-
-.dark .activity-sidebar::-webkit-scrollbar-thumb {
-  background: #4b5563;
-}
-
-.dark .activity-sidebar::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
-}

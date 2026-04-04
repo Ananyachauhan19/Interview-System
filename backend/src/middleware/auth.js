@@ -1,4 +1,4 @@
-import { verifyToken } from '../utils/jwt.js';
+﻿import { verifyToken } from '../utils/jwt.js';
 import User from '../models/User.js';
 import { HttpError } from '../utils/errors.js';
 import crypto from 'crypto';
@@ -63,6 +63,12 @@ export function requireAdmin(req, res, next) {
   next();
 }
 
+export function requireAdminOrStudent(req, res, next) {
+  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'student')) {
+    throw new HttpError(403, 'Admin or Student only');
+  }
+  next();
+}
 export function requireAdminOrCoordinator(req, res, next) {
   if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'coordinator')) {
     throw new HttpError(403, 'Admin or Coordinator only');
@@ -79,3 +85,5 @@ export function requireCoordinator(req, res, next) {
   if (!req.user || req.user.role !== 'coordinator') throw new HttpError(403, 'Coordinator only');
   next();
 }
+
+

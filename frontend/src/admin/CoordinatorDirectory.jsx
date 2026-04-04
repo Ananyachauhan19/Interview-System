@@ -172,7 +172,7 @@ export default function CoordinatorDirectory() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col pt-16">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col pt-16">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -1,3 +1,4 @@
+import { getJudge0LanguageId } from '../admin/compiler/compilerUtils';
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000/api';
 
 /**
@@ -60,12 +61,10 @@ export function clearLegacyToken() {
 }
 
 // Kept for backwards compatibility during migration
-let token = '';
-
 export function setToken(t) {
+  void t;
   // No longer storing in localStorage for security
   // Token is now in HttpOnly cookie set by server
-  token = '';
   clearLegacyToken();
 }
 
@@ -111,7 +110,12 @@ async function request(path, { method = 'GET', body, headers = {}, formData, ski
       let err;
       try { 
         const j = await res.json(); 
-        err = new Error(j.error || j.message || JSON.stringify(j));
+        // /auth/me returns 401 when not logged in - treat as normal state
+        if (res.status === 401 && path === '/auth/me') {
+          err = new Error('Not authenticated');
+        } else {
+          err = new Error(j.error || j.message || JSON.stringify(j));
+        }
         err.response = { status: res.status, data: j };
       } catch { 
         err = new Error(res.statusText);
@@ -180,6 +184,7 @@ export const api = {
     return request(`/students/special${queryString ? '?' + queryString : ''}`);
   },
   listSpecialStudentsByEvent: (eventId) => request(`/students/special/${eventId}`),
+  getStudentByIdForAdmin: (studentId) => request(`/students/${studentId}`),
   getStudentActivityByAdmin: (studentId) => request(`/students/${studentId}/activity`),
   getStudentStatsByAdmin: (studentId) => request(`/students/${studentId}/stats`),
   getStudentVideosWatchedByAdmin: (studentId) => request(`/students/${studentId}/videos-watched`),
@@ -357,4 +362,116 @@ export const api = {
   listJoinRequests: (queryString) => request(`/join/list${queryString ? '?' + queryString : ''}`),
   approveJoinRequest: (requestId, data) => request(`/join/${requestId}/approve`, { method: 'POST', body: data }),
   rejectJoinRequest: (requestId, reason) => request(`/join/${requestId}/reject`, { method: 'POST', body: { reason } }),
+  // Compiler Module
+  getCompilerOverview: () => request('/compiler/overview', { skipCache: true }),
+  listCompilerProblems: ({ search = '', difficulty = '', tags = '', status = '', sortBy = 'updatedAt', sortOrder = 'desc', page = 1, limit = 8 } = {}) => {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (difficulty) params.append('difficulty', difficulty);
+    if (tags) params.append('tags', tags);
+    if (status) params.append('status', status);
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortOrder) params.append('sortOrder', sortOrder);
+    params.append('page', String(page));
+    params.append('limit', String(limit));
+    return request(`/compiler/problems?${params.toString()}`, { skipCache: true });
+  },
+  createCompilerProblem: (formData) => request('/compiler/problems', { method: 'POST', formData }),
+  updateCompilerProblem: (problemId, formData) => request(`/compiler/problems/${problemId}`, { method: 'PUT', formData }),
+  updateCompilerProblemStatus: (problemId, status) => {
+    const fd = new FormData();
+    fd.append('status', status);
+    return request(`/compiler/problems/${problemId}/status`, { method: 'PATCH', formData: fd });
+  },
+  deleteCompilerProblem: (problemId) => request(`/compiler/problems/${problemId}`, { method: 'DELETE' }),
+  getCompilerProblem: (problemId) => request(`/compiler/problems/${problemId}`, { skipCache: true }),
+  runCompilerPreview: (formData) => request('/compiler/problems/preview/run', { method: 'POST', formData }),
+  runCompilerProblem: (problemId, { language, sourceCode, customInput = '' }) => {
+    const fd = new FormData();
+    fd.append('language', language);
+    fd.append('sourceCode', sourceCode);
+    fd.append('customInput', customInput);
+    return request(`/compiler/problems/${problemId}/run`, { method: 'POST', formData: fd });
+  },
+  submitCompilerProblem: (problemId, { language, sourceCode }) => {
+    const fd = new FormData();
+    fd.append('language', language);
+    fd.append('sourceCode', sourceCode);
+    return request(`/compiler/problems/${problemId}/submit`, { method: 'POST', formData: fd });
+  },
+  listCompilerSubmissions: ({ search = '', status = '', language = '', mode = '', page = 1, limit = 15 } = {}) => {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (status) params.append('status', status);
+    if (language) params.append('language', language);
+    if (mode) params.append('mode', mode);
+    params.append('page', String(page));
+    params.append('limit', String(limit));
+    return request(`/compiler/submissions?${params.toString()}`, { skipCache: true });
+  },
+  getCompilerAnalytics: ({ studentId = '', problemId = '', dateFrom = '', dateTo = '' } = {}) => {
+    const params = new URLSearchParams();
+    if (studentId) params.append('studentId', studentId);
+    if (problemId) params.append('problemId', problemId);
+    if (dateFrom) params.append('dateFrom', dateFrom);
+    if (dateTo) params.append('dateTo', dateTo);
+    const query = params.toString();
+    return request(`/compiler/analytics${query ? `?${query}` : ''}`, { skipCache: true });
+  },
+  getCompilerStudentAnalytics: (studentId) => request(`/compiler/student/${studentId}`, { skipCache: true }),
+  getCompilerAnalyticsOverview: () => request('/compiler/analytics/overview', { skipCache: true }),
+  getCompilerProblemAnalytics: (problemId) => request(`/compiler/analytics/problem/${problemId}`, { skipCache: true }),
+  listStudentProblems: ({ search = '', difficulty = '', tags = '', sortBy = 'acceptanceRate', sortOrder = 'desc', page = 1, limit = 10 } = {}) => {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (difficulty) params.append('difficulty', difficulty);
+    if (tags) params.append('tags', tags);
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortOrder) params.append('sortOrder', sortOrder);
+    params.append('page', String(page));
+    params.append('limit', String(limit));
+    return request(`/compiler/problems?${params.toString()}`, { skipCache: true });
+  },
+  getStudentProblem: (problemId) => request(`/compiler/problems/${problemId}`, { skipCache: true }),
+  runStudentProblem: (problemId, { language, sourceCode, customInput = '' }) => {
+    return request('/compiler/run', {
+      method: 'POST',
+      body: {
+        problemId,
+        source_code: sourceCode,
+        language_id: getJudge0LanguageId(language),
+        stdin: customInput,
+      },
+    });
+  },
+  getStudentExpectedOutput: (problemId, { language = '', customInput = '' } = {}) => {
+    return request(`/compiler/problems/${problemId}/expected`, {
+      method: 'POST',
+      body: {
+        language,
+        stdin: customInput,
+      },
+    });
+  },
+  submitStudentProblem: (problemId, { language, sourceCode }) => {
+    return request('/compiler/submit', {
+      method: 'POST',
+      body: {
+        problemId,
+        source_code: sourceCode,
+        language_id: getJudge0LanguageId(language),
+      },
+    });
+  },
+  listStudentProblemSubmissions: (problemId, { mode = '', page = 1, limit = 10 } = {}) => {
+    const params = new URLSearchParams();
+    if (mode) params.append('mode', mode);
+    params.append('page', String(page));
+    params.append('limit', String(limit));
+    return request(`/compiler/problems/${problemId}/submissions?${params.toString()}`, { skipCache: true });
+  },
 };
+
+
+
+

@@ -32,7 +32,15 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // Input sanitization - prevents NoSQL injection and XSS
 app.use(mongoSanitizeMiddleware);
-app.use(xssProtectionMiddleware);
+// NOTE: Do not sanitize compiler payloads with xss-clean.
+// It escapes angle brackets in source code (e.g., <bits/stdc++.h> -> &lt;bits...),
+// which breaks compilation and makes Judge0 output confusing.
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/compiler') || req.path.startsWith('/compiler')) {
+    return next();
+  }
+  return xssProtectionMiddleware(req, res, next);
+});
 
 // Request logging - use 'combined' in production, 'dev' in development
 if (process.env.NODE_ENV === 'production') {

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+﻿import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect, useCallback } from "react";
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
@@ -32,6 +32,8 @@ const StudentLearning = lazy(() => import("./student/StudentLearning"));
 const LearningDetail = lazy(() => import("./student/LearningDetail"));
 const StudentProfile = lazy(() => import("./student/StudentProfile"));
 const HelpAndSupport = lazy(() => import("./student/HelpAndSupport"));
+const ProblemsPage = lazy(() => import("./student/ProblemsPage"));
+const ProblemSolver = lazy(() => import("./student/ProblemSolver"));
 
 // Admin Pages
 const AdminProtectedRoute = lazy(() => import("./admin/AdminProtectedRoute"));
@@ -40,6 +42,7 @@ const AdminLearning = lazy(() => import("./admin/AdminLearning"));
 const AdminLearningDetail = lazy(() => import("./admin/AdminLearningDetail"));
 const StudentOnboarding = lazy(() => import("./admin/StudentOnboarding"));
 const StudentDirectory = lazy(() => import("./admin/StudentDirectory"));
+const AdminStudentProfile = lazy(() => import("./admin/AdminStudentProfile"));
 const EventManagement = lazy(() => import("./admin/EventManagement"));
 const EventDetail = lazy(() => import("./admin/EventDetail"));
 const FeedbackReview = lazy(() => import("./admin/FeedbackReview"));
@@ -48,6 +51,7 @@ const CoordinatorDirectory = lazy(() => import("./admin/CoordinatorDirectory"));
 const AdminChangePassword = lazy(() => import("./admin/AdminChangePassword"));
 const AdminActivity = lazy(() => import("./admin/AdminActivity"));
 const JoinRequests = lazy(() => import("./admin/JoinRequests"));
+const AdminCompilerDashboard = lazy(() => import("./admin/compiler/AdminCompilerDashboard"));
 
 // Coordinator Pages
 const CoordinatorProtectedRoute = lazy(() => import("./coordinator/CoordinatorProtectedRoute"));
@@ -61,7 +65,7 @@ const CoordinatorFeedback = lazy(() => import("./coordinator/CoordinatorFeedback
 const CoordinatorActivity = lazy(() => import("./coordinator/CoordinatorActivity"));
 const CoordinatorDatabase = lazy(() => import("./coordinator/CoordinatorDatabase"));
 
-const gradientBg = "bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100";
+const gradientBg = "bg-white";
 
 /**
  * RoutePrefetcher - Preloads chunks for the current user's role
@@ -78,13 +82,17 @@ function RoutePrefetcher() {
     import("./student/SessionAndFeedback");
     import("./student/StudentLearning");
     import("./student/StudentProfile");
+    import("./student/ProblemsPage");
+    import("./student/ProblemSolver");
   }, []);
 
   const prefetchAdminRoutes = useCallback(() => {
     import("./admin/EventManagement");
     import("./admin/StudentDirectory");
+    import("./admin/AdminStudentProfile");
     import("./admin/CoordinatorDirectory");
     import("./admin/StudentOnboarding");
+    import("./admin/compiler/AdminCompilerDashboard");
   }, []);
 
   const prefetchCoordinatorRoutes = useCallback(() => {
@@ -98,7 +106,7 @@ function RoutePrefetcher() {
     // Prefetch based on current path - use requestIdleCallback so it doesn't
     // block the main render
     const prefetch = () => {
-      if (location.pathname.startsWith('/student/')) {
+      if (location.pathname.startsWith('/student/') || location.pathname.startsWith('/problems')) {
         prefetchStudentRoutes();
       } else if (location.pathname.startsWith('/admin/')) {
         prefetchAdminRoutes();
@@ -135,6 +143,7 @@ function useHideGlobalLoader() {
 function AppContent() {
   useHideGlobalLoader();
   const location = useLocation();
+  const isProblemSolver = /^\/problems\/[^/]+$/.test(location.pathname);
   const isMain = location.pathname === "/";
   const isStudentLogin = location.pathname === "/student";
   const isResetPassword = location.pathname === "/reset-password";
@@ -142,7 +151,8 @@ function AppContent() {
   const isPublicPage = location.pathname === "/privacy" || location.pathname === "/terms" || location.pathname === "/contact";
   const isFeedbackForm = location.pathname.startsWith("/student/feedback/");
   const isChangePassword = location.pathname === "/student/change-password" || location.pathname === "/admin/change-password" || location.pathname === "/coordinator/change-password";
-  const isStudentDashboard = location.pathname.startsWith("/student/") && !isStudentLogin && !isFeedbackForm && !isChangePassword;
+  const isStudentProblems = location.pathname.startsWith("/problems");
+  const isStudentDashboard = (location.pathname.startsWith("/student/") || isStudentProblems) && !isStudentLogin && !isFeedbackForm && !isChangePassword;
   const isAdmin = location.pathname.startsWith("/admin/");
   const isCoordinator = location.pathname.startsWith("/coordinator");
   const isLoginPage = isMain || isStudentLogin || isResetPassword || isJoinPage;
@@ -154,12 +164,12 @@ function AppContent() {
       
       {/* Navbar: Renders independently with its own Suspense boundary.
           Shows NavbarSkeleton briefly instead of nothing, so the page structure
-          streams in progressively (navbar skeleton → navbar → content skeleton → content) */}
+          streams in progressively (navbar skeleton â†’ navbar â†’ content skeleton â†’ content) */}
       {!isFeedbackForm && !isPublicPage && (
         <Suspense fallback={isAdmin || isCoordinator || isStudentDashboard ? <NavbarSkeleton /> : null}>
           {isAdmin ? <AdminNavbar /> :
            isCoordinator ? <CoordinatorNavbar /> :
-           isStudentDashboard ? <StudentNavbar /> :
+           (isStudentDashboard && !isProblemSolver) ? <StudentNavbar /> :
            null}
         </Suspense>
       )}
@@ -167,7 +177,7 @@ function AppContent() {
       {/* Main content: Each route section gets a role-appropriate skeleton.
           This is the "streaming rendering" pattern - the page structure appears 
           immediately as skeleton shapes, then real content swaps in when loaded */}
-      <main className={gradientBg + " dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex-grow"}>
+      <main className={gradientBg + " dark:bg-gray-900 flex-grow"}>
         <Suspense fallback={
           isAdmin ? <DashboardSkeleton /> :
           isCoordinator ? <DashboardSkeleton /> :
@@ -192,11 +202,14 @@ function AppContent() {
         <Route path="/student/learning" element={<StudentProtectedRoute><StudentLearning /></StudentProtectedRoute>} />
         <Route path="/student/learning/:semester/:subject/:teacherId" element={<StudentProtectedRoute><LearningDetail /></StudentProtectedRoute>} />
         <Route path="/student/help" element={<StudentProtectedRoute><HelpAndSupport /></StudentProtectedRoute>} />
+        <Route path="/problems" element={<StudentProtectedRoute><ProblemsPage /></StudentProtectedRoute>} />
+        <Route path="/problems/:id" element={<StudentProtectedRoute><ProblemSolver /></StudentProtectedRoute>} />
         
         {/* Admin Routes - Protected */}
         <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/onboarding" element={<AdminProtectedRoute><StudentOnboarding /></AdminProtectedRoute>} />
         <Route path="/admin/students" element={<AdminProtectedRoute><StudentDirectory /></AdminProtectedRoute>} />
+        <Route path="/admin/students/:studentId" element={<AdminProtectedRoute><AdminStudentProfile /></AdminProtectedRoute>} />
         <Route path="/admin/coordinator-directory" element={<AdminProtectedRoute><CoordinatorDirectory /></AdminProtectedRoute>} />
         <Route path="/admin/coordinators" element={<AdminProtectedRoute><CoordinatorOnboarding /></AdminProtectedRoute>} />
         <Route path="/admin/event" element={<AdminProtectedRoute><EventManagement /></AdminProtectedRoute>} />
@@ -207,6 +220,12 @@ function AppContent() {
         <Route path="/admin/learning/:semester/:subject/:teacherId" element={<AdminProtectedRoute><AdminLearningDetail /></AdminProtectedRoute>} />
         <Route path="/admin/activity" element={<AdminProtectedRoute><AdminActivity /></AdminProtectedRoute>} />
         <Route path="/admin/join-requests" element={<AdminProtectedRoute><JoinRequests /></AdminProtectedRoute>} />
+        <Route path="/admin/compiler" element={<AdminProtectedRoute><AdminCompilerDashboard /></AdminProtectedRoute>} />
+        <Route path="/admin/compiler/create" element={<AdminProtectedRoute><AdminCompilerDashboard /></AdminProtectedRoute>} />
+        <Route path="/admin/compiler/problems" element={<AdminProtectedRoute><AdminCompilerDashboard /></AdminProtectedRoute>} />
+        <Route path="/admin/compiler/:id/edit" element={<AdminProtectedRoute><AdminCompilerDashboard /></AdminProtectedRoute>} />
+        <Route path="/admin/compiler/:id/preview" element={<AdminProtectedRoute><AdminCompilerDashboard /></AdminProtectedRoute>} />
+        <Route path="/admin/compiler/analytics" element={<AdminProtectedRoute><AdminCompilerDashboard /></AdminProtectedRoute>} />
         
         {/* Coordinator Routes - Protected */}
         <Route path="/coordinator" element={<CoordinatorProtectedRoute><CoordinatorEventDetail /></CoordinatorProtectedRoute>} />
@@ -223,7 +242,7 @@ function AppContent() {
         </Suspense>
       </main>
       
-      {!isLoginPage && !isFeedbackForm && !isPublicPage && (
+      {!isLoginPage && !isFeedbackForm && !isPublicPage && !isProblemSolver && (
         <Suspense fallback={null}><Footer /></Suspense>
       )}
     </div>
@@ -245,3 +264,5 @@ function App() {
 }
 
 export default App;
+
+

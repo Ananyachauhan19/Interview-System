@@ -92,7 +92,7 @@ const AnimatedGrid = () => {
   return (
     <div className="absolute inset-0 opacity-20">
       <div 
-        className="absolute inset-0 bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-100"
+        className="absolute inset-0 bg-white dark:bg-gray-900"
         style={{
           backgroundImage: `
             linear-gradient(to right, rgba(14, 165, 233, 0.1) 1px, transparent 1px),

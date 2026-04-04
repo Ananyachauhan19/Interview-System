@@ -37,7 +37,7 @@ export function NavbarSkeleton() {
 // Full page skeleton with layout structure
 export function PageSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 py-8 mt-16">
         {/* Page title skeleton */}
         <Shimmer className="w-64 h-8 mb-2" />
@@ -82,7 +82,7 @@ export function PageSkeleton() {
 // Dashboard-specific skeleton (cards grid)
 export function DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 py-8 px-4">
+    <div className="min-h-screen bg-white dark:bg-gray-900 py-8 px-4">
       <div className="max-w-7xl mx-auto mt-16">
         <Shimmer className="w-56 h-8 mb-2" />
         <Shimmer className="w-80 h-4 mb-8" />
@@ -108,7 +108,7 @@ export function DashboardSkeleton() {
 // Table/list skeleton for directory pages
 export function TableSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 py-8 px-4">
+    <div className="min-h-screen bg-white dark:bg-gray-900 py-8 px-4">
       <div className="max-w-7xl mx-auto mt-16">
         <div className="flex justify-between items-center mb-6">
           <Shimmer className="w-48 h-8" />
@@ -142,7 +142,7 @@ export function TableSkeleton() {
 // Compact inline loader (replaces the generic spinner in protected routes)
 export function InlineLoader({ message = 'Loading...' }) {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 w-full">
+    <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900 w-full">
       <div className="text-center">
         <div className="relative">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-blue-600 dark:border-blue-400 mx-auto"></div>
@@ -157,7 +157,7 @@ export function InlineLoader({ message = 'Loading...' }) {
 // Event/form page skeleton 
 export function FormSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 py-8 px-4">
+    <div className="min-h-screen bg-white dark:bg-gray-900 py-8 px-4">
       <div className="max-w-4xl mx-auto mt-16">
         <Shimmer className="w-48 h-8 mb-6" />
         

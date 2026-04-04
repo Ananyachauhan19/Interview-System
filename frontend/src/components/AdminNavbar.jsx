@@ -1,7 +1,7 @@
-/* eslint-disable no-unused-vars */
+﻿/* eslint-disable no-unused-vars */
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Lock, ChevronDown, UserPlus, Database, Activity, ClipboardList } from "lucide-react";
+import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Lock, ChevronDown, UserPlus, Database, Activity, ClipboardList, Code2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import DarkModeToggle from "./DarkModeToggle";
 import { useAuth } from "../context/AuthContext";
@@ -346,6 +346,35 @@ export function AdminNavbar() {
               <span className="font-medium text-xs whitespace-nowrap">Feedback</span>
               
               {location.pathname === "/admin/feedback" && (
+                <motion.div
+                  layoutId="activeIndicator"
+                  className="absolute inset-0 border-2 border-sky-400/30 dark:border-sky-500/30 rounded-lg"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+            </motion.div>
+          </Link>
+
+          {/* Compiler */}
+          <Link
+            to="/admin/compiler"
+            onClick={() => setActive("/admin/compiler")}
+            className="relative"
+          >
+            <motion.div
+              variants={itemHover}
+              whileHover="hover"
+              whileTap="tap"
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
+                location.pathname.startsWith("/admin/compiler")
+                  ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
+                  : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+            >
+              <Code2 className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs whitespace-nowrap">Compiler</span>
+
+              {location.pathname.startsWith("/admin/compiler") && (
                 <motion.div
                   layoutId="activeIndicator"
                   className="absolute inset-0 border-2 border-sky-400/30 dark:border-sky-500/30 rounded-lg"
@@ -767,6 +796,25 @@ export function AdminNavbar() {
                     </Link>
                   </div>
 
+                  {/* Compiler */}
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <Link
+                      to="/admin/compiler"
+                      onClick={() => setActive("/admin/compiler")}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors ${
+                        location.pathname.startsWith("/admin/compiler")
+                          ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
+                          : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      <Code2 className="w-3.5 h-3.5" />
+                      <span className="font-medium text-xs">Compiler</span>
+                      {location.pathname.startsWith("/admin/compiler") && (
+                        <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />
+                      )}
+                    </Link>
+                  </div>
+
                   {/* Join Requests */}
                   <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                     <Link
@@ -823,3 +871,4 @@ export function AdminNavbar() {
     </motion.nav>
   );
 }
+

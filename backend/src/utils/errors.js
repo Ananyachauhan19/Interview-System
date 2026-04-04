@@ -8,18 +8,29 @@ export function errorHandler(err, req, res, next) {
     err.status = 400;
     err.message = 'Invalid identifier';
   }
-  
-  // SECURITY: Log full error server-side but sanitize for client
-  console.error('[ERROR]', {
+
+  const status = err.status || 500;
+
+  // SECURITY: Log server-side but avoid scary logs for expected auth failures
+  const logPayload = {
     message: err.message,
-    stack: err.stack,
     path: req.path,
     method: req.method,
     ip: req.ip,
     user: req.user?._id
-  });
-  
-  const status = err.status || 500;
+  };
+
+  // Only include stack traces for 5xx or unexpected 4xx
+  const includeStack = status >= 500 || (status >= 400 && status !== 401 && status !== 403);
+  if (includeStack) logPayload.stack = err.stack;
+
+  if (status === 401 || status === 403) {
+    console.warn('[AUTH]', logPayload);
+  } else if (status >= 400 && status < 500) {
+    console.warn('[WARN]', logPayload);
+  } else {
+    console.error('[ERROR]', logPayload);
+  }
   
   // SECURITY: In production, hide internal error details
   // Development: show full error for debugging

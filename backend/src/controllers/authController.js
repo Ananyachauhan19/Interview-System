@@ -123,11 +123,20 @@ export async function seedAdminIfNeeded() {
   const emailLower = String(email).trim().toLowerCase();
   const existing = await User.findOne({ role: 'admin', email: emailLower });
   if (existing) {
-    if (String(process.env.ADMIN_FORCE_RESET).toLowerCase() === 'true') {
+    const forceReset = String(process.env.ADMIN_FORCE_RESET).toLowerCase() === 'true';
+    const isDev = process.env.NODE_ENV !== 'production';
+
+    // In development, keep env + DB in sync so local setup is frictionless.
+    // In production, only reset when explicitly requested.
+    if (forceReset || isDev) {
       existing.passwordHash = await User.hashPassword(password);
       existing.mustChangePassword = false;
       await existing.save();
-      console.log('[Admin Seed] Existing admin password reset from ENV for', emailLower);
+      console.log(
+        '[Admin Seed] Existing admin password synced from ENV for',
+        emailLower,
+        forceReset ? '(ADMIN_FORCE_RESET=true)' : '(development)'
+      );
     }
     return;
   }

@@ -97,7 +97,7 @@ export default function LandingPage() {
   const isInView = (sectionId) => visibleSections.has(sectionId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
+    <div className="min-h-screen bg-white dark:bg-gray-900 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div 
@@ -776,7 +776,7 @@ export default function LandingPage() {
       <Footer />
 
       {/* Global Styles for Animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes fadeInUp {
           from {
             opacity: 0;

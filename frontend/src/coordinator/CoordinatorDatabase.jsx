@@ -120,7 +120,7 @@ export default function CoordinatorDatabase() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 pt-16">
+    <div className="min-h-screen bg-white dark:bg-gray-900 pt-16">
       <div className="flex h-[calc(100vh-4rem)]">
         {/* LEFT SIDEBAR - Registered Courses */}
         <div className={`${getSidebarWidthClass()} transition-all duration-300 overflow-hidden border-r border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm`}>
@@ -208,7 +208,7 @@ export default function CoordinatorDatabase() {
         </div>
 
         {/* MAIN CONTENT - Course Details */}
-        <div className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900">
           <div className="p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">

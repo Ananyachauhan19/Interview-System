@@ -86,7 +86,7 @@ export default function AdminChangePassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12">
       <div className="w-full max-w-2xl">
         {/* Back Button */}
         <button

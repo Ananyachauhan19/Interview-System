@@ -1188,7 +1188,7 @@ export default function SubjectManagement() {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4 bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen py-8 px-4 bg-white dark:bg-gray-900">
       <div className="max-w-6xl mx-auto mt-16">
         <div className="flex items-center justify-between mb-6">
           <div>
