@@ -218,14 +218,19 @@ export default function CreateProblem() {
       setCurrentProblemId(response._id);
       setCurrentStatus(response.status || status);
       setPreviewTested(Boolean(response.previewTested));
-      setForm((previous) => ({
-        ...previous,
+      setForm({
+        ...createProblemFormFromProblem(response),
         hiddenTestFiles: [],
         hiddenBulkInputFile: null,
         hiddenBulkOutputFile: null,
-        existingHiddenTestCaseCount: response.hiddenTestCaseCount || previous.existingHiddenTestCaseCount,
         previewTested: Boolean(response.previewTested),
-      }));
+      });
+      setActiveLanguage((previous) => {
+        if (response.supportedLanguages?.includes(previous)) {
+          return previous;
+        }
+        return response.supportedLanguages?.[0] || 'python';
+      });
 
       if (redirectToPreview) {
         toast.success('Draft saved. Opening preview workspace.');

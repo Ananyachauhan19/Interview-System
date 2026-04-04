@@ -299,11 +299,6 @@ function normalizeCodeTemplates(value, supportedLanguages) {
 
   supportedLanguages.forEach((language) => {
     const template = String(parsedTemplates[language] ?? '');
-
-    if (!template.trim()) {
-      throw new HttpError(400, `${language} template is required.`);
-    }
-
     templates[language] = template.replace(/\r\n/g, '\n');
   });
 

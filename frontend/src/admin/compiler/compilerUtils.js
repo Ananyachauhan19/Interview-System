@@ -6,65 +6,6 @@ export const COMPILER_LANGUAGES = [
   { id: 'c', label: 'C', monacoLanguage: 'c', judge0LanguageId: 50 },
 ];
 
-export const DEFAULT_CODE_TEMPLATES = {
-  python: `def solve():
-    # STUDENT_CODE_START
-    pass
-    # STUDENT_CODE_END
-
-
-if __name__ == "__main__":
-    solve()
-`,
-  javascript: `function solve() {
-  // STUDENT_CODE_START
-
-  // STUDENT_CODE_END
-}
-
-solve();
-`,
-  java: `import java.io.*;
-import java.util.*;
-
-public class Main {
-    public static void solve() throws Exception {
-        // STUDENT_CODE_START
-
-        // STUDENT_CODE_END
-    }
-
-    public static void main(String[] args) throws Exception {
-        solve();
-    }
-}
-`,
-  cpp: `#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    // STUDENT_CODE_START
-
-    // STUDENT_CODE_END
-
-    return 0;
-}
-`,
-  c: `#include <stdio.h>
-
-int main(void) {
-    // STUDENT_CODE_START
-
-    // STUDENT_CODE_END
-
-    return 0;
-}
-`,
-};
-
 export function createEmptySampleTestCase() {
   return {
     input: '',
@@ -88,7 +29,7 @@ export function createDefaultProblemForm() {
     tags: '',
     companyTags: '',
     supportedLanguages: ['python', 'javascript'],
-    codeTemplates: { ...DEFAULT_CODE_TEMPLATES },
+    codeTemplates: {},
     referenceSolutions: {},
     inputFormat: '',
     outputFormat: '',
@@ -119,10 +60,7 @@ export function createProblemFormFromProblem(problem) {
     tags: (problem?.tags || []).join(', '),
     companyTags: (problem?.companyTags || []).join(', '),
     supportedLanguages,
-    codeTemplates: {
-      ...DEFAULT_CODE_TEMPLATES,
-      ...(problem?.codeTemplates || {}),
-    },
+    codeTemplates: problem?.codeTemplates || {},
     referenceSolutions: problem?.referenceSolutions || {},
     inputFormat: problem?.inputFormat || '',
     outputFormat: problem?.outputFormat || '',

@@ -68,12 +68,17 @@ export default function MonacoCodeEditor({
 }) {
   const containerRef = useRef(null);
   const editorRef = useRef(null);
+  const onChangeRef = useRef(onChange);
   const mutationObserverRef = useRef(null);
   const resizeObserverRef = useRef(null);
   const [loadError, setLoadError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
   const resolvedHeight = typeof height === 'number' ? `${height}px` : height;
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,7 +130,7 @@ export default function MonacoCodeEditor({
         });
 
         editor.onDidChangeModelContent(() => {
-          onChange?.(editor.getValue());
+          onChangeRef.current?.(editor.getValue());
         });
 
         mutationObserverRef.current = new MutationObserver(() => {
@@ -196,7 +201,7 @@ export default function MonacoCodeEditor({
             <p>{loadError}</p>
             <textarea
               value={value}
-              onChange={(event) => onChange?.(event.target.value)}
+              onChange={(event) => onChangeRef.current?.(event.target.value)}
               readOnly={readOnly}
               style={{ height: resolvedHeight }}
               className="w-full rounded-xl border border-rose-200 bg-white px-3 py-3 font-mono text-xs text-slate-700 outline-none dark:border-rose-800 dark:bg-gray-950 dark:text-gray-200"
