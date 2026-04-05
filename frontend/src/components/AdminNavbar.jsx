@@ -1,7 +1,7 @@
 ﻿/* eslint-disable no-unused-vars */
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Lock, ChevronDown, UserPlus, Database, Activity, ClipboardList, Code2 } from "lucide-react";
+import { LogOut, Menu, X, Users, CalendarDays, GraduationCap, BookOpen, User, Lock, ChevronDown, UserPlus, Database, Activity, Code2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import DarkModeToggle from "./DarkModeToggle";
 import { useAuth } from "../context/AuthContext";
@@ -384,34 +384,6 @@ export function AdminNavbar() {
             </motion.div>
           </Link>
 
-          {/* Join Requests */}
-          <Link
-            to="/admin/join-requests"
-            onClick={() => setActive("/admin/join-requests")}
-            className="relative"
-          >
-            <motion.div
-              variants={itemHover}
-              whileHover="hover"
-              whileTap="tap"
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
-                location.pathname === "/admin/join-requests"
-                  ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm"
-                  : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-              }`}
-            >
-              <ClipboardList className="w-3.5 h-3.5" />
-              <span className="font-medium text-xs whitespace-nowrap">Join Requests</span>
-              
-              {location.pathname === "/admin/join-requests" && (
-                <motion.div
-                  layoutId="activeIndicator"
-                  className="absolute inset-0 border-2 border-sky-400/30 dark:border-sky-500/30 rounded-lg"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
-            </motion.div>
-          </Link>
         </div>
 
         {/* Right: Dark Mode Toggle & Profile with increased spacing */}
@@ -815,24 +787,6 @@ export function AdminNavbar() {
                     </Link>
                   </div>
 
-                  {/* Join Requests */}
-                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <Link
-                      to="/admin/join-requests"
-                      onClick={() => setActive("/admin/join-requests")}
-                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors ${
-                        location.pathname === "/admin/join-requests"
-                          ? "bg-sky-50 dark:bg-gray-800 text-sky-600 dark:text-sky-400"
-                          : "text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-gray-800"
-                      }`}
-                    >
-                      <ClipboardList className="w-3.5 h-3.5" />
-                      <span className="font-medium text-xs">Join Requests</span>
-                      {location.pathname === "/admin/join-requests" && (
-                        <div className="ml-auto w-1.5 h-1.5 bg-sky-500 dark:bg-sky-400 rounded-full" />
-                      )}
-                    </Link>
-                  </div>
                 </div>
 
                 {/* Mobile Menu Footer Actions */}

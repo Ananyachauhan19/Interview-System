@@ -20,7 +20,6 @@ const ResetPassword = lazy(() => import("./auth/ResetPassword"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const ContactUs = lazy(() => import("./pages/ContactUs"));
-const JoinPage = lazy(() => import("./pages/JoinPage"));
 
 // Student Pages
 const StudentProtectedRoute = lazy(() => import("./student/StudentProtectedRoute"));
@@ -50,7 +49,6 @@ const CoordinatorOnboarding = lazy(() => import("./admin/CoordinatorOnboarding")
 const CoordinatorDirectory = lazy(() => import("./admin/CoordinatorDirectory"));
 const AdminChangePassword = lazy(() => import("./admin/AdminChangePassword"));
 const AdminActivity = lazy(() => import("./admin/AdminActivity"));
-const JoinRequests = lazy(() => import("./admin/JoinRequests"));
 const AdminCompilerDashboard = lazy(() => import("./admin/compiler/AdminCompilerDashboard"));
 
 // Coordinator Pages
@@ -147,7 +145,6 @@ function AppContent() {
   const isMain = location.pathname === "/";
   const isStudentLogin = location.pathname === "/student";
   const isResetPassword = location.pathname === "/reset-password";
-  const isJoinPage = location.pathname === "/join";
   const isPublicPage = location.pathname === "/privacy" || location.pathname === "/terms" || location.pathname === "/contact";
   const isFeedbackForm = location.pathname.startsWith("/student/feedback/");
   const isChangePassword = location.pathname === "/student/change-password" || location.pathname === "/admin/change-password" || location.pathname === "/coordinator/change-password";
@@ -155,7 +152,7 @@ function AppContent() {
   const isStudentDashboard = (location.pathname.startsWith("/student/") || isStudentProblems) && !isStudentLogin && !isFeedbackForm && !isChangePassword;
   const isAdmin = location.pathname.startsWith("/admin/");
   const isCoordinator = location.pathname.startsWith("/coordinator");
-  const isLoginPage = isMain || isStudentLogin || isResetPassword || isJoinPage;
+  const isLoginPage = isMain || isStudentLogin || isResetPassword;
 
   return (
     <div className="min-h-screen w-full flex flex-col">
@@ -186,7 +183,6 @@ function AppContent() {
         }>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/join" element={<JoinPage />} />
             <Route path="/student" element={<StudentLogin />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -219,7 +215,6 @@ function AppContent() {
         <Route path="/admin/learning" element={<AdminProtectedRoute><AdminLearning /></AdminProtectedRoute>} />
         <Route path="/admin/learning/:semester/:subject/:teacherId" element={<AdminProtectedRoute><AdminLearningDetail /></AdminProtectedRoute>} />
         <Route path="/admin/activity" element={<AdminProtectedRoute><AdminActivity /></AdminProtectedRoute>} />
-        <Route path="/admin/join-requests" element={<AdminProtectedRoute><JoinRequests /></AdminProtectedRoute>} />
         <Route path="/admin/compiler" element={<AdminProtectedRoute><AdminCompilerDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/compiler/create" element={<AdminProtectedRoute><AdminCompilerDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/compiler/problems" element={<AdminProtectedRoute><AdminCompilerDashboard /></AdminProtectedRoute>} />

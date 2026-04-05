@@ -9,7 +9,6 @@ import coordinatorRoutes from './coordinators.js';
 import subjectRoutes from './subjects.js';
 import learningRoutes from './learning.js';
 import activityRoutes from './activity.js';
-import joinRoutes from './join.js';
 import compilerRoutes from './compiler.js';
 
 const router = Router();
@@ -23,7 +22,6 @@ router.use('/coordinators', coordinatorRoutes);
 router.use('/subjects', subjectRoutes);
 router.use('/learning', learningRoutes);
 router.use('/activity', activityRoutes);
-router.use('/join', joinRoutes);
 router.use('/compiler', compilerRoutes);
 
 export default router;
