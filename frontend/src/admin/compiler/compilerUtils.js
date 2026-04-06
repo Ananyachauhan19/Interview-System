@@ -44,6 +44,8 @@ export function createDefaultProblemForm() {
     hiddenBulkInputFile: null,
     hiddenBulkOutputFile: null,
     hiddenBulkDelimiter: '###CASE###',
+    visibility: 'public',
+    previewValidated: false,
     previewTested: false,
   };
 }
@@ -86,6 +88,8 @@ export function createProblemFormFromProblem(problem) {
     hiddenBulkInputFile: null,
     hiddenBulkOutputFile: null,
     hiddenBulkDelimiter: problem?.hiddenTestSource?.delimiter || '###CASE###',
+    visibility: problem?.visibility || 'public',
+    previewValidated: Boolean(problem?.previewValidated ?? problem?.previewTested),
     previewTested: Boolean(problem?.previewTested),
   };
 }
@@ -97,6 +101,7 @@ export function buildProblemFormData(problemForm, status) {
   formData.append('difficulty', problemForm.difficulty || 'Easy');
   formData.append('tags', problemForm.tags || '');
   formData.append('companyTags', problemForm.companyTags || '');
+  formData.append('visibility', problemForm.visibility || 'public');
   formData.append('supportedLanguages', JSON.stringify(problemForm.supportedLanguages || []));
   formData.append('codeTemplates', JSON.stringify(problemForm.codeTemplates || {}));
   formData.append('referenceSolutions', JSON.stringify(problemForm.referenceSolutions || {}));
@@ -200,7 +205,8 @@ export function difficultyBadgeClass(difficulty) {
 }
 
 export function problemStatusClass(status) {
-  return status === 'Active'
+  const normalized = String(status || '').toLowerCase();
+  return normalized === 'published' || normalized === 'active'
     ? 'bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:border-sky-800'
     : 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
 }
@@ -260,6 +266,12 @@ export function getMonacoLanguage(languageId) {
 export function getJudge0LanguageId(languageId) {
   return COMPILER_LANGUAGES.find((language) => language.id === languageId)?.judge0LanguageId || null;
 }
+
+
+
+
+
+
 
 
 
